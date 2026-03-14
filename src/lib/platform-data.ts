@@ -9,7 +9,7 @@ export const GAME_LABELS = {
 
 export type PlatformGameKey = keyof typeof GAME_LABELS;
 export type DatabaseStatus = "not_configured" | "online" | "schema_missing" | "error";
-export type ProfileSource = "demo" | "local" | "cloud";
+export type ProfileSource = "cloud";
 
 export interface RemoteScoreSummary {
   label: string;
@@ -118,7 +118,7 @@ export const DEMO_THERAPISTS: TherapistProfile[] = [
     displayName: "Uzm. Erg. Kübra Bayat",
     clinicName: "Mimio Studio",
     specialty: "Dikkat ve görsel algı",
-    source: "demo",
+    source: "cloud",
   },
   {
     id: "demo-therapist-ahmet",
@@ -126,7 +126,7 @@ export const DEMO_THERAPISTS: TherapistProfile[] = [
     displayName: "Ahmet Akyapı",
     clinicName: "Mimio Studio",
     specialty: "Motor planlama ve koordinasyon",
-    source: "demo",
+    source: "cloud",
   },
   {
     id: "demo-therapist-ozan",
@@ -134,7 +134,7 @@ export const DEMO_THERAPISTS: TherapistProfile[] = [
     displayName: "Ozan Köse",
     clinicName: "Mimio Studio",
     specialty: "Bilişsel rehabilitasyon",
-    source: "demo",
+    source: "cloud",
   },
 ];
 
@@ -152,7 +152,7 @@ export const DEMO_CLIENTS: ClientProfile[] = [
     ageGroup: "7-9 yaş",
     primaryGoal: "Seçici dikkat ve görsel tarama",
     supportLevel: "Orta destek",
-    source: "demo",
+    source: "cloud",
   },
 ];
 
@@ -180,13 +180,13 @@ export const EMPTY_PLATFORM_OVERVIEW: PlatformOverviewPayload = {
   },
   sessionInsight: {
     averageScore: 0,
-    activeTherapists: DEMO_THERAPISTS.length,
-    activeClients: DEMO_CLIENTS.length,
+    activeTherapists: 0,
+    activeClients: 0,
     lastPlayedAt: null,
   },
   remoteScores: createEmptyRemoteScores(),
-  therapists: DEMO_THERAPISTS,
-  clients: DEMO_CLIENTS,
+  therapists: [],
+  clients: [],
   recentSessions: [],
 };
 

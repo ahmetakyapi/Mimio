@@ -160,15 +160,8 @@ interface ClientDraftState {
   supportLevel: string;
 }
 
-interface LocalProfileState {
-  therapists: TherapistProfile[];
-  clients: ClientProfile[];
-}
-
 const STORAGE_KEY = "mimitherapy-scoreboard-v2";
-const PROFILE_STORAGE_KEY = "mimitherapy-local-profiles-v1";
 const SESSION_CONTEXT_KEY = "mimitherapy-session-context-v1";
-const SESSION_HISTORY_KEY = "mimitherapy-local-session-history-v1";
 const ACTIVE_THERAPIST_KEY = "mimitherapy-active-therapist-v2";
 const NOTES_KEY = "mimitherapy-notes-v1";
 const WEEKLY_PLANS_KEY = "mimitherapy-weekly-plans-v1";
@@ -318,64 +311,6 @@ function mergeScoreboard(payload: Partial<Scoreboard> | null | undefined): Score
     difference: { ...EMPTY_SCOREBOARD.difference, ...(payload?.difference ?? {}) },
     scan: { ...EMPTY_SCOREBOARD.scan, ...(payload?.scan ?? {}) },
   };
-}
-
-function mergeProfiles<T extends { id: string; displayName: string }>(cloudProfiles: T[], localProfiles: T[]) {
-  const map = new Map<string, T>();
-  for (const profile of localProfiles) map.set(profile.displayName.trim().toLocaleLowerCase("tr-TR"), profile);
-  for (const profile of cloudProfiles) map.set(profile.displayName.trim().toLocaleLowerCase("tr-TR"), profile);
-  return Array.from(map.values()).sort((left, right) => left.displayName.localeCompare(right.displayName, "tr"));
-}
-
-function parseTherapistProfiles(value: unknown): TherapistProfile[] {
-  if (!Array.isArray(value)) return [];
-  return value
-    .filter((item): item is Record<string, unknown> => !!item && typeof item === "object")
-    .map((item, index) => ({
-      id: typeof item.id === "string" ? item.id : `local-therapist-${index}`,
-      username: typeof item.username === "string" ? item.username : "",
-      displayName: typeof item.displayName === "string" ? item.displayName : "",
-      clinicName: typeof item.clinicName === "string" ? item.clinicName : "",
-      specialty: typeof item.specialty === "string" ? item.specialty : "",
-      source: "local" as const,
-    }))
-    .filter((item) => item.displayName);
-}
-
-function parseClientProfiles(value: unknown): ClientProfile[] {
-  if (!Array.isArray(value)) return [];
-  return value
-    .filter((item): item is Record<string, unknown> => !!item && typeof item === "object")
-    .map((item, index) => ({
-      id: typeof item.id === "string" ? item.id : `local-client-${index}`,
-      displayName: typeof item.displayName === "string" ? item.displayName : "",
-      ageGroup: typeof item.ageGroup === "string" ? item.ageGroup : "",
-      primaryGoal: typeof item.primaryGoal === "string" ? item.primaryGoal : "",
-      supportLevel: typeof item.supportLevel === "string" ? item.supportLevel : "",
-      source: "local" as const,
-    }))
-    .filter((item) => item.displayName);
-}
-
-function parseRecentSessions(value: unknown): RecentSessionEntry[] {
-  if (!Array.isArray(value)) return [];
-  return value
-    .filter((item): item is Record<string, unknown> => !!item && typeof item === "object")
-    .map((item, index) => ({
-      id: typeof item.id === "string" ? item.id : `local-session-${index}`,
-      therapistId: typeof item.therapistId === "string" ? item.therapistId : null,
-      therapistName: typeof item.therapistName === "string" ? item.therapistName : "Mimio Demo",
-      clientId: typeof item.clientId === "string" ? item.clientId : null,
-      clientName: typeof item.clientName === "string" ? item.clientName : "Demo Danışan",
-      gameKey: typeof item.gameKey === "string" && item.gameKey in GAME_LABELS ? (item.gameKey as GameKey) : "memory",
-      gameLabel: typeof item.gameLabel === "string" && item.gameLabel ? item.gameLabel : GAME_LABELS[typeof item.gameKey === "string" && item.gameKey in GAME_LABELS ? (item.gameKey as GameKey) : "memory"],
-      score: typeof item.score === "number" && Number.isFinite(item.score) ? Math.round(item.score) : 0,
-      source: typeof item.source === "string" ? item.source : "local-session",
-      playedAt: typeof item.playedAt === "string" ? item.playedAt : new Date(0).toISOString(),
-      sessionNote: typeof item.sessionNote === "string" ? item.sessionNote : null,
-      durationSeconds: typeof item.durationSeconds === "number" && Number.isFinite(item.durationSeconds) ? Math.round(item.durationSeconds) : null,
-    }))
-    .sort((left, right) => new Date(right.playedAt).getTime() - new Date(left.playedAt).getTime());
 }
 
 function parseSessionNotes(value: unknown): SessionNote[] {
@@ -533,8 +468,6 @@ export function MimiTherapyApp({ initialAppView = "login", onLogout }: MimiThera
   const [scoreboard, setScoreboard] = useState<Scoreboard>(EMPTY_SCOREBOARD);
   const [platformOverview, setPlatformOverview] = useState<PlatformOverviewPayload>({ ...EMPTY_PLATFORM_OVERVIEW, database: { ...EMPTY_PLATFORM_OVERVIEW.database, message: "Bulut veri katmanı kontrol ediliyor." } });
   const [platformStatus, setPlatformStatus] = useState<DatabaseStatus | "loading">("loading");
-  const [localProfiles, setLocalProfiles] = useState<LocalProfileState>({ therapists: [], clients: [] });
-  const [localSessionHistory, setLocalSessionHistory] = useState<RecentSessionEntry[]>([]);
   const [activeTherapistId, setActiveTherapistId] = useState("");
   const [activeClientId, setActiveClientId] = useState("");
   const [sessionNote, setSessionNote] = useState("");
@@ -544,7 +477,7 @@ export function MimiTherapyApp({ initialAppView = "login", onLogout }: MimiThera
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [clientDraft, setClientDraft] = useState<ClientDraftState>({ displayName: "", ageGroup: "", primaryGoal: "", supportLevel: "" });
-  const [profileFeedback, setProfileFeedback] = useState("Yerel ve bulut profilleri aynı seans masasında birleşir.");
+  const [profileFeedback, setProfileFeedback] = useState("Profiller ve seans verileri bulut veritabanından yükleniyor.");
   const [memoryCursor, setMemoryCursor] = useState(0);
   const [pairsCursor, setPairsCursor] = useState(0);
   const [pulseCursor, setPulseCursor] = useState(4);
@@ -560,20 +493,11 @@ export function MimiTherapyApp({ initialAppView = "login", onLogout }: MimiThera
   const memoryTimersRef = useRef<number[]>([]);
   const pairTimersRef = useRef<number[]>([]);
 
-  // ── On mount: check active therapist and load data ──
+  // ── On mount: restore local UI state ──
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY);
       if (stored) setScoreboard(mergeScoreboard(JSON.parse(stored) as Partial<Scoreboard>));
-
-      const storedProfiles = window.localStorage.getItem(PROFILE_STORAGE_KEY);
-      if (storedProfiles) {
-        const parsedProfiles = JSON.parse(storedProfiles) as { therapists?: unknown; clients?: unknown };
-        setLocalProfiles({ therapists: parseTherapistProfiles(parsedProfiles.therapists), clients: parseClientProfiles(parsedProfiles.clients) });
-      }
-
-      const storedHistory = window.localStorage.getItem(SESSION_HISTORY_KEY);
-      if (storedHistory) setLocalSessionHistory(parseRecentSessions(JSON.parse(storedHistory)));
 
       const storedContext = window.localStorage.getItem(SESSION_CONTEXT_KEY);
       if (storedContext) {
@@ -606,14 +530,10 @@ export function MimiTherapyApp({ initialAppView = "login", onLogout }: MimiThera
       }
     } catch {
       setScoreboard(EMPTY_SCOREBOARD);
-      setLocalProfiles({ therapists: [], clients: [] });
-      setLocalSessionHistory([]);
     }
   }, []);
 
   useEffect(() => { try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(scoreboard)); } catch { /* ignore */ } }, [scoreboard]);
-  useEffect(() => { try { window.localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(localProfiles)); } catch { /* ignore */ } }, [localProfiles]);
-  useEffect(() => { try { window.localStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify(localSessionHistory.slice(0, 24))); } catch { /* ignore */ } }, [localSessionHistory]);
   useEffect(() => { try { window.localStorage.setItem(SESSION_CONTEXT_KEY, JSON.stringify({ activeTherapistId, activeClientId, sessionNote, sessionStartedAt })); } catch { /* ignore */ } }, [activeClientId, activeTherapistId, sessionNote, sessionStartedAt]);
   useEffect(() => { try { window.localStorage.setItem(NOTES_KEY, JSON.stringify(allNotes)); } catch { /* ignore */ } }, [allNotes]);
   useEffect(() => { try { window.localStorage.setItem(WEEKLY_PLANS_KEY, JSON.stringify(allWeeklyPlans)); } catch { /* ignore */ } }, [allWeeklyPlans]);
@@ -636,7 +556,7 @@ export function MimiTherapyApp({ initialAppView = "login", onLogout }: MimiThera
       if (pairsState.locked) { clearPairTimers(); hideMismatchedPairs(); }
     };
     return () => { window.render_game_to_text = undefined; window.advanceTime = undefined; };
-  }, [activeGame, activeClientId, activeTherapistId, activeView, activeAppView, differenceCursor, differenceState, localSessionHistory.length, memoryCursor, memoryState, pairsCursor, pairsState, pulseCursor, pulseState, routeCursor, routeState, scanCursor, scanState, scoreboard, platformOverview.database.configured, platformOverview.totals.sessionCount, platformOverview.totals.totalScore, platformStatus, sessionNote]);
+  }, [activeGame, activeClientId, activeTherapistId, activeView, activeAppView, differenceCursor, differenceState, memoryCursor, memoryState, pairsCursor, pairsState, pulseCursor, pulseState, routeCursor, routeState, scanCursor, scanState, scoreboard, platformOverview.database.configured, platformOverview.totals.sessionCount, platformOverview.totals.totalScore, platformOverview.recentSessions.length, platformStatus, sessionNote]);
 
   useEffect(() => { return () => { clearMemoryTimers(); clearPairTimers(); }; }, []);
 
@@ -699,19 +619,18 @@ export function MimiTherapyApp({ initialAppView = "login", onLogout }: MimiThera
     }
   }
 
-  function handleAddClient(event: FormEvent<HTMLFormElement>) {
+  async function handleAddClient(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const displayName = addClientDraft.displayName.trim();
     if (!displayName) return;
-    const newClient: ClientProfile = {
-      id: `local-client-${Date.now()}`,
-      displayName,
-      ageGroup: addClientDraft.ageGroup.trim(),
-      primaryGoal: addClientDraft.primaryGoal.trim(),
-      supportLevel: addClientDraft.supportLevel.trim(),
-      source: "local",
-    };
-    setLocalProfiles((current) => ({ ...current, clients: [...current.clients, newClient].sort((a, b) => a.displayName.localeCompare(b.displayName, "tr")) }));
+    const created = await createProfileInBackend(
+      { kind: "client", displayName, ageGroup: addClientDraft.ageGroup.trim(), primaryGoal: addClientDraft.primaryGoal.trim(), supportLevel: addClientDraft.supportLevel.trim() },
+      "Danışan kaydedilemedi."
+    );
+    if (created) {
+      await loadPlatformOverview();
+      setProfileFeedback("Danışan başarıyla kaydedildi.");
+    }
     setAddClientDraft({ displayName: "", ageGroup: "", primaryGoal: "", supportLevel: "" });
     setShowAddClient(false);
   }
@@ -776,7 +695,7 @@ export function MimiTherapyApp({ initialAppView = "login", onLogout }: MimiThera
       return payload;
     } catch {
       setPlatformStatus("error");
-      setPlatformOverview({ ...EMPTY_PLATFORM_OVERVIEW, database: { configured: false, status: "error", provider: "PostgreSQL / Neon", message: "Sunucu durumu okunamadı. Yerel mod ile devam ediliyor." } });
+      setPlatformOverview({ ...EMPTY_PLATFORM_OVERVIEW, database: { configured: false, status: "error", provider: "PostgreSQL / Neon", message: "Sunucu durumu okunamadı. Lütfen sayfayı yenileyin." } });
       return null;
     }
   }
@@ -787,19 +706,6 @@ export function MimiTherapyApp({ initialAppView = "login", onLogout }: MimiThera
     return payload?.database.status ?? "error";
   }
 
-  function upsertLocalTherapistProfile(profile: TherapistProfile) {
-    setLocalProfiles((current) => {
-      const filtered = current.therapists.filter((item) => item.displayName.trim().toLocaleLowerCase("tr-TR") !== profile.displayName.trim().toLocaleLowerCase("tr-TR"));
-      return { ...current, therapists: [...filtered, profile].sort((left, right) => left.displayName.localeCompare(right.displayName, "tr")) };
-    });
-  }
-
-  function upsertLocalClientProfile(profile: ClientProfile) {
-    setLocalProfiles((current) => {
-      const filtered = current.clients.filter((item) => item.displayName.trim().toLocaleLowerCase("tr-TR") !== profile.displayName.trim().toLocaleLowerCase("tr-TR"));
-      return { ...current, clients: [...filtered, profile].sort((left, right) => left.displayName.localeCompare(right.displayName, "tr")) };
-    });
-  }
 
   async function createProfileInBackend(body: Record<string, string>, fallbackMessage: string): Promise<TherapistProfile | ClientProfile | null> {
     const nextPlatformStatus = await resolvePlatformStatus();
@@ -828,12 +734,11 @@ export function MimiTherapyApp({ initialAppView = "login", onLogout }: MimiThera
     event.preventDefault();
     const displayName = therapistDraft.displayName.trim();
     if (!displayName) { setProfileFeedback("Terapist kartı eklemek için ad alanını doldur."); return; }
-    const fallbackMessage = "Veritabanı aktif değil; terapist kartı bu cihazda yerel olarak saklandı.";
-    const localProfile: TherapistProfile = { id: `local-therapist-${Date.now()}`, username: therapistDraft.username.trim(), displayName, clinicName: therapistDraft.clinicName.trim(), specialty: therapistDraft.specialty.trim(), source: "local" };
-    const created = await createProfileInBackend({ kind: "therapist", username: therapistDraft.username.trim(), password: therapistDraft.password, displayName, clinicName: therapistDraft.clinicName, specialty: therapistDraft.specialty }, fallbackMessage);
-    const nextProfile = created && "clinicName" in created ? created : localProfile;
-    if (!created) upsertLocalTherapistProfile(localProfile); else setProfileFeedback("Terapist kartı bulut profiline işlendi.");
-    setActiveTherapistId(nextProfile.id);
+    const created = await createProfileInBackend({ kind: "therapist", username: therapistDraft.username.trim(), password: therapistDraft.password, displayName, clinicName: therapistDraft.clinicName, specialty: therapistDraft.specialty }, "Terapist kaydedilemedi. Veritabanı bağlantısını kontrol edin.");
+    if (created && "clinicName" in created) {
+      setProfileFeedback("Terapist başarıyla kaydedildi.");
+      setActiveTherapistId(created.id);
+    }
     setTherapistDraft({ username: "", password: "", displayName: "", clinicName: "", specialty: "" });
   }
 
@@ -841,12 +746,11 @@ export function MimiTherapyApp({ initialAppView = "login", onLogout }: MimiThera
     event.preventDefault();
     const displayName = clientDraft.displayName.trim();
     if (!displayName) { setProfileFeedback("Danışan kartı eklemek için ad alanını doldur."); return; }
-    const fallbackMessage = "Veritabanı aktif değil; danışan kartı bu cihazda yerel olarak saklandı.";
-    const localProfile: ClientProfile = { id: `local-client-${Date.now()}`, displayName, ageGroup: clientDraft.ageGroup.trim(), primaryGoal: clientDraft.primaryGoal.trim(), supportLevel: clientDraft.supportLevel.trim(), source: "local" };
-    const created = await createProfileInBackend({ kind: "client", displayName, ageGroup: clientDraft.ageGroup, primaryGoal: clientDraft.primaryGoal, supportLevel: clientDraft.supportLevel }, fallbackMessage);
-    const nextProfile = created && "ageGroup" in created ? created : localProfile;
-    if (!created) upsertLocalClientProfile(localProfile); else setProfileFeedback("Danışan kartı bulut profiline işlendi.");
-    setActiveClientId(nextProfile.id);
+    const created = await createProfileInBackend({ kind: "client", displayName, ageGroup: clientDraft.ageGroup, primaryGoal: clientDraft.primaryGoal, supportLevel: clientDraft.supportLevel }, "Danışan kaydedilemedi. Veritabanı bağlantısını kontrol edin.");
+    if (created && "ageGroup" in created) {
+      setProfileFeedback("Danışan başarıyla kaydedildi.");
+      setActiveClientId(created.id);
+    }
     setClientDraft({ displayName: "", ageGroup: "", primaryGoal: "", supportLevel: "" });
   }
 
@@ -874,19 +778,18 @@ export function MimiTherapyApp({ initialAppView = "login", onLogout }: MimiThera
     const playedAt = new Date().toISOString();
     const durationSeconds = Math.max(45, Math.round((Date.now() - sessionStartedAt) / 1000));
     const sessionEntry: RecentSessionEntry = {
-      id: `local-session-${playedAt}-${game}-${Math.random().toString(16).slice(2, 8)}`,
+      id: `session-${playedAt}-${game}-${Math.random().toString(16).slice(2, 8)}`,
       therapistId: activeTherapist?.id ?? null,
-      therapistName: activeTherapist?.displayName ?? "Mimio Demo",
+      therapistName: activeTherapist?.displayName ?? "Terapist",
       clientId: activeClient?.id ?? null,
-      clientName: activeClient?.displayName ?? "Demo Danışan",
-      gameKey: game, gameLabel: GAME_LABELS[game], score: nextScore, source: "local-session", playedAt,
+      clientName: activeClient?.displayName ?? "Danışan",
+      gameKey: game, gameLabel: GAME_LABELS[game], score: nextScore, source: "web-app", playedAt,
       sessionNote: sessionNote.trim() || null, durationSeconds,
     };
     setScoreboard((current) => {
       const entry = current[game];
       return { ...current, [game]: { ...entry, best: Math.max(entry.best, nextScore), last: nextScore, plays: entry.plays + 1 } };
     });
-    setLocalSessionHistory((current) => [sessionEntry, ...current].sort((left, right) => new Date(right.playedAt).getTime() - new Date(left.playedAt).getTime()).slice(0, 24));
     void syncScoreToBackend(game, nextScore, metadata, sessionEntry);
   }
 
@@ -1088,23 +991,23 @@ export function MimiTherapyApp({ initialAppView = "login", onLogout }: MimiThera
   // ── Derived values ──
   const activeTab = GAME_TABS.find((tab) => tab.key === activeGame) ?? GAME_TABS[0];
   const activeCategory = GAME_CATEGORIES.find((category) => category.key === activeTab.category) ?? GAME_CATEGORIES[0];
-  const therapistOptions = mergeProfiles(platformOverview.therapists, localProfiles.therapists);
-  const clientOptions = mergeProfiles(platformOverview.clients, localProfiles.clients);
+  const therapistOptions = platformOverview.therapists;
+  const clientOptions = platformOverview.clients;
   const activeTherapist = therapistOptions.find((profile) => profile.id === activeTherapistId) ?? therapistOptions[0] ?? null;
   const activeClient = clientOptions.find((profile) => profile.id === activeClientId) ?? clientOptions[0] ?? null;
   const visibleTabs = GAME_TABS.filter((tab) => tab.category === activeTab.category);
   const activeScoreCard = scoreboard[activeGame];
   const activeRemoteScore = platformOverview.remoteScores[activeGame];
   const scoreCards = Object.values(scoreboard);
-  const recentSessionFeed = (platformStatus === "online" ? platformOverview.recentSessions : localSessionHistory).slice(0, 6);
-  const effectiveSessionCount = platformStatus === "online" ? platformOverview.totals.sessionCount : localSessionHistory.length;
-  const effectiveAverageScore = platformStatus === "online" ? platformOverview.sessionInsight.averageScore : localSessionHistory.length > 0 ? Math.round(localSessionHistory.reduce((sum, session) => sum + session.score, 0) / localSessionHistory.length) : 0;
-  const effectiveLastPlayedAt = platformStatus === "online" ? platformOverview.sessionInsight.lastPlayedAt : localSessionHistory[0]?.playedAt ?? null;
+  const recentSessionFeed = platformOverview.recentSessions.slice(0, 6);
+  const effectiveSessionCount = platformOverview.totals.sessionCount;
+  const effectiveAverageScore = platformOverview.sessionInsight.averageScore;
+  const effectiveLastPlayedAt = platformOverview.sessionInsight.lastPlayedAt;
   const selectedClient = clientOptions.find((c) => c.id === selectedClientId) ?? null;
   const clientNotes = allNotes.filter((n) => n.clientId === selectedClientId).sort((a, b) => b.date.localeCompare(a.date));
   const routeCommandMeta = ROUTE_COMMANDS.find((item) => item.key === routeState.command) ?? null;
 
-  const thisWeekCount = localSessionHistory.filter((s) => {
+  const thisWeekCount = platformOverview.recentSessions.filter((s) => {
     const sessionDate = new Date(s.playedAt);
     const now = new Date();
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -1412,7 +1315,7 @@ export function MimiTherapyApp({ initialAppView = "login", onLogout }: MimiThera
             ) : (
               <div className={styles.clientsGrid}>
                 {clientOptions.map((client) => {
-                  const sessionCount = localSessionHistory.filter((s) => s.clientId === client.id).length;
+                  const sessionCount = platformOverview.recentSessions.filter((s) => s.clientId === client.id).length;
                   return (
                     <div key={client.id} className={styles.clientCard}>
                       <div className={styles.clientCardName}>{client.displayName}</div>
@@ -1570,7 +1473,7 @@ export function MimiTherapyApp({ initialAppView = "login", onLogout }: MimiThera
               {clientDetailTab === "scores" && (
                 <div className={styles.scoreHistorySection}>
                   {GAME_TABS.map((game) => {
-                    const gameSessions = localSessionHistory.filter((s) => s.gameKey === game.key && s.clientId === selectedClient.id);
+                    const gameSessions = platformOverview.recentSessions.filter((s) => s.gameKey === game.key && s.clientId === selectedClient.id);
                     const gameScore = scoreboard[game.key];
                     const maxScore = Math.max(gameScore.best, 1);
                     return (
