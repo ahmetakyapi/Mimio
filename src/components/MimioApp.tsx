@@ -401,6 +401,12 @@ function getTodayString() {
   return `${y}-${m}-${d}`;
 }
 
+function formatElapsed(totalSeconds: number): string {
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+}
+
 function getWeekStart(dateStr?: string): string {
   const date = dateStr ? new Date(dateStr) : new Date();
   const day = date.getDay();
@@ -453,6 +459,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
   // ── Therapy Program state ──
   const THERAPY_PROGRESS_KEY = "mimio-therapy-progress-v1";
+  const THERAPY_FAVORITES_KEY = "mimio-therapy-favorites-v1";
+  const THERAPY_CUSTOM_NOTES_KEY = "mimio-therapy-custom-notes-v1";
   const [tpSelectedDomain, setTpSelectedDomain] = useState<TherapyDomainKey | null>(null);
   const [tpSelectedClientId, setTpSelectedClientId] = useState<string | null>(null);
   const [tpActiveTab, setTpActiveTab] = useState<"domains" | "activities" | "games" | "plan" | "progress">("domains");
@@ -461,6 +469,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const [tpProgressEntries, setTpProgressEntries] = useState<ProgressEntry[]>([]);
   const [tpProgressForm, setTpProgressForm] = useState({ goalId: "", value: 50, note: "" });
   const [tpShowProgressForm, setTpShowProgressForm] = useState(false);
+  const [tpFavoriteActivities, setTpFavoriteActivities] = useState<string[]>([]);
+  const [tpActivitySearch, setTpActivitySearch] = useState("");
+  const [tpExpandedActivity, setTpExpandedActivity] = useState<string | null>(null);
+  const [tpCustomNotes, setTpCustomNotes] = useState<Record<string, string>>({});
+  const [tpSubSkillFilter, setTpSubSkillFilter] = useState<string>("all");
+  const [tpShowHomeOnly, setTpShowHomeOnly] = useState(false);
 
   // ── Existing state ──
   const [activeView, setActiveView] = useState<ViewKey>("platform");
@@ -492,6 +506,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const [scanState, setScanState] = useState<ScanState>({ tiles: [], targetLabel: "", targetId: null, round: 0, score: 0, phase: "idle", revealId: null, message: "Üstteki hedef simgeyi ızgara içinde bul." });
   const memoryTimersRef = useRef<number[]>([]);
   const pairTimersRef = useRef<number[]>([]);
+  const gameDetailsRef = useRef<HTMLDetailsElement>(null);
+  const [gameElapsed, setGameElapsed] = useState(0);
 
   // ── On mount: restore local UI state ──
   useEffect(() => {
@@ -528,6 +544,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         const parsed = JSON.parse(storedProgress);
         if (Array.isArray(parsed)) setTpProgressEntries(parsed as ProgressEntry[]);
       }
+      const storedFavs = window.localStorage.getItem(THERAPY_FAVORITES_KEY);
+      if (storedFavs) { const p = JSON.parse(storedFavs); if (Array.isArray(p)) setTpFavoriteActivities(p); }
+      const storedCNotes = window.localStorage.getItem(THERAPY_CUSTOM_NOTES_KEY);
+      if (storedCNotes) { const p = JSON.parse(storedCNotes); if (p && typeof p === "object") setTpCustomNotes(p as Record<string, string>); }
     } catch {
       setScoreboard(EMPTY_SCOREBOARD);
     }
@@ -538,11 +558,27 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   useEffect(() => { try { window.localStorage.setItem(NOTES_KEY, JSON.stringify(allNotes)); } catch { /* ignore */ } }, [allNotes]);
   useEffect(() => { try { window.localStorage.setItem(WEEKLY_PLANS_KEY, JSON.stringify(allWeeklyPlans)); } catch { /* ignore */ } }, [allWeeklyPlans]);
   useEffect(() => { try { window.localStorage.setItem(THERAPY_PROGRESS_KEY, JSON.stringify(tpProgressEntries)); } catch { /* ignore */ } }, [tpProgressEntries]);
+  useEffect(() => { try { window.localStorage.setItem(THERAPY_FAVORITES_KEY, JSON.stringify(tpFavoriteActivities)); } catch { /* ignore */ } }, [tpFavoriteActivities]);
+  useEffect(() => { try { window.localStorage.setItem(THERAPY_CUSTOM_NOTES_KEY, JSON.stringify(tpCustomNotes)); } catch { /* ignore */ } }, [tpCustomNotes]);
 
   useEffect(() => {
     if (!activeTherapistId && !activeClientId) return;
     setSessionStartedAt(Date.now());
   }, [activeClientId, activeTherapistId]);
+
+  // ── Game timer: tick every second while on games view ──
+  useEffect(() => {
+    if (activeAppView !== "games") return;
+    const tick = () => setGameElapsed(Math.floor((Date.now() - sessionStartedAt) / 1000));
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [activeAppView, sessionStartedAt]);
+
+  // ── Close details panel when switching games ──
+  useEffect(() => {
+    if (gameDetailsRef.current) gameDetailsRef.current.open = false;
+  }, [activeGame]);
 
   useEffect(() => { void loadPlatformOverview(); }, []);
 
@@ -668,6 +704,16 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
   function handleDeleteProgressEntry(entryId: string) {
     setTpProgressEntries((current) => current.filter((e) => e.id !== entryId));
+  }
+
+  function toggleFavoriteActivity(activityId: string) {
+    setTpFavoriteActivities((current) =>
+      current.includes(activityId) ? current.filter((id) => id !== activityId) : [...current, activityId]
+    );
+  }
+
+  function saveTpCustomNote(activityId: string, note: string) {
+    setTpCustomNotes((current) => ({ ...current, [activityId]: note }));
   }
 
   // ── Load plan when client/week changes ──
@@ -1184,6 +1230,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             <span className={styles.navIcon}>⚕</span>
             <span>Terapi Programı</span>
           </button>
+          <button type="button" className={`${styles.navItem} ${styles.navItemLogout}`} onClick={handleLogout}>
+            <span className={styles.navIcon}>⏻</span>
+            <span>Çıkış</span>
+          </button>
         </div>
 
         <div className={styles.sidebarUser}>
@@ -1520,6 +1570,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 </span>
               </div>
               <div className={styles.workspaceBarRight}>
+                <div className={styles.gameTimer}>
+                  <span className={styles.gameTimerIcon}>⏱</span>
+                  <span className={styles.gameTimerValue}>{formatElapsed(gameElapsed)}</span>
+                  <span className={styles.gameTimerLabel}>seans süresi</span>
+                  <button type="button" className={styles.gameTimerReset} onClick={resetSessionClock}>Sıfırla</button>
+                </div>
                 <button type="button" className={styles.secondaryButton} onClick={() => setActiveAppView("dashboard")}>Panel</button>
               </div>
             </div>
@@ -1533,6 +1589,11 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 <select value={activeClient?.id ?? ""} onChange={(event) => setActiveClientId(event.target.value)} className={styles.mobileSelectCompact}>
                   {clientOptions.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}</option>)}
                 </select>
+                <div className={styles.gameTimer}>
+                  <span className={styles.gameTimerIcon}>⏱</span>
+                  <span className={styles.gameTimerValue}>{formatElapsed(gameElapsed)}</span>
+                  <button type="button" className={styles.gameTimerReset} onClick={resetSessionClock}>↺</button>
+                </div>
               </div>
               <div className={styles.mobileCategoryStrip}>
                 {GAME_CATEGORIES.map((category) => {
@@ -1636,30 +1697,6 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               </aside>
 
               <section className={styles.gameWorkspace}>
-                <details className={styles.workspaceTopDetails} open>
-                  <summary className={styles.workspaceTopSummary}>
-                    <span className={styles.sectionEyebrow}>{activeCategory.title}</span>
-                    <h3>{activeTab.title}</h3>
-                  </summary>
-                  <p>{activeTab.blurb}</p>
-                  <div className={styles.goalPills}>
-                    {activeTab.goals.map((goal) => <span key={goal}>{goal}</span>)}
-                  </div>
-                  <div className={styles.workspaceMeta}>
-                    <div className={styles.workspaceMetaCards}>
-                      <div className={styles.workspaceMetaCard}><span>En iyi</span><strong>{activeScoreCard.best}</strong></div>
-                      <div className={styles.workspaceMetaCard}><span>Son</span><strong>{activeScoreCard.last}</strong></div>
-                      <div className={styles.workspaceMetaCard}><span>Tekrar</span><strong>{activeScoreCard.plays}</strong></div>
-                    </div>
-                    {activeRemoteScore.best > 0 && (
-                      <span style={{ color: "#4e7494", fontSize: "0.86rem" }}>
-                        Sunucu en iyi: <strong style={{ color: "#071e30" }}>{activeRemoteScore.best}</strong>
-                        {activeRemoteScore.lastPlayedAt ? ` · ${formatPlayedAt(activeRemoteScore.lastPlayedAt)}` : ""}
-                      </span>
-                    )}
-                  </div>
-                </details>
-
                 {activeGame === "memory" && (
                   <section className={styles.gameCard}>
                     <div className={styles.gameStatusRow}>
@@ -1849,6 +1886,31 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   </section>
                 )}
 
+                <details ref={gameDetailsRef} className={styles.workspaceTopDetails}>
+                  <summary className={styles.workspaceTopSummary}>
+                    <span className={styles.sectionEyebrow}>{activeCategory.title}</span>
+                    <h3>{activeTab.title}</h3>
+                    <span className={styles.workspaceTopToggle}>▾ Detaylar</span>
+                  </summary>
+                  <p>{activeTab.blurb}</p>
+                  <div className={styles.goalPills}>
+                    {activeTab.goals.map((goal) => <span key={goal}>{goal}</span>)}
+                  </div>
+                  <div className={styles.workspaceMeta}>
+                    <div className={styles.workspaceMetaCards}>
+                      <div className={styles.workspaceMetaCard}><span>En iyi</span><strong>{activeScoreCard.best}</strong></div>
+                      <div className={styles.workspaceMetaCard}><span>Son</span><strong>{activeScoreCard.last}</strong></div>
+                      <div className={styles.workspaceMetaCard}><span>Tekrar</span><strong>{activeScoreCard.plays}</strong></div>
+                    </div>
+                    {activeRemoteScore.best > 0 && (
+                      <span style={{ color: "#4e7494", fontSize: "0.86rem" }}>
+                        Sunucu en iyi: <strong style={{ color: "#071e30" }}>{activeRemoteScore.best}</strong>
+                        {activeRemoteScore.lastPlayedAt ? ` · ${formatPlayedAt(activeRemoteScore.lastPlayedAt)}` : ""}
+                      </span>
+                    )}
+                  </div>
+                </details>
+
               </section>
             </div>
           </div>
@@ -1857,15 +1919,16 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         {/* ── Therapy Program ── */}
         {activeAppView === "therapy-program" && (
           <div className={styles.therapyProgramPage}>
+            {/* ── Header with client picker ── */}
             <div className={styles.tpHeader}>
               <div>
                 <h1 className={styles.tpTitle}>Terapi Programı</h1>
-                <p className={styles.tpLead}>Kanıta dayalı ergoterapi alanlarına göre aktivite önerileri, oyun eşlemeleri ve haftalık plan üreticisi.</p>
+                <p className={styles.tpLead}>Kanıta dayalı ergoterapi alanlarına göre kişiselleştirilmiş aktivite önerileri, oyun eşlemeleri, haftalık plan üreticisi ve ilerleme takibi.</p>
               </div>
               {clientOptions.length > 0 && (
                 <div className={styles.tpClientPicker}>
                   <label className={styles.fieldBlock}>
-                    <span>Danışan seç</span>
+                    <span className={styles.tpPickerLabel}>Danışan Seç</span>
                     <select value={tpSelectedClientId ?? ""} onChange={(e) => setTpSelectedClientId(e.target.value || null)} className={styles.inputSurface}>
                       <option value="">Danışan seçin...</option>
                       {clientOptions.map((c) => <option key={c.id} value={c.id}>{c.displayName}</option>)}
@@ -1875,13 +1938,23 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               )}
             </div>
 
-            {/* Domain Tabs */}
+            {/* ── Scrollable Tabs ── */}
             <div className={styles.tpTabStrip}>
-              <button type="button" className={`${styles.tpTab} ${tpActiveTab === "domains" ? styles.tpTabActive : ""}`} onClick={() => setTpActiveTab("domains")}>Terapi Alanları</button>
-              <button type="button" className={`${styles.tpTab} ${tpActiveTab === "activities" ? styles.tpTabActive : ""}`} onClick={() => setTpActiveTab("activities")} disabled={!tpSelectedDomain}>Aktiviteler</button>
-              <button type="button" className={`${styles.tpTab} ${tpActiveTab === "games" ? styles.tpTabActive : ""}`} onClick={() => setTpActiveTab("games")} disabled={!tpSelectedDomain}>Oyun Eşleme</button>
-              <button type="button" className={`${styles.tpTab} ${tpActiveTab === "plan" ? styles.tpTabActive : ""}`} onClick={() => setTpActiveTab("plan")} disabled={!tpSelectedDomain}>Haftalık Plan</button>
-              <button type="button" className={`${styles.tpTab} ${tpActiveTab === "progress" ? styles.tpTabActive : ""}`} onClick={() => setTpActiveTab("progress")} disabled={!tpSelectedClientId}>İlerleme</button>
+              <button type="button" className={`${styles.tpTab} ${tpActiveTab === "domains" ? styles.tpTabActive : ""}`} onClick={() => setTpActiveTab("domains")}>
+                <span className={styles.tpTabIcon}>🏥</span> Terapi Alanları
+              </button>
+              <button type="button" className={`${styles.tpTab} ${tpActiveTab === "activities" ? styles.tpTabActive : ""}`} onClick={() => setTpActiveTab("activities")} disabled={!tpSelectedDomain}>
+                <span className={styles.tpTabIcon}>📋</span> Aktiviteler
+              </button>
+              <button type="button" className={`${styles.tpTab} ${tpActiveTab === "games" ? styles.tpTabActive : ""}`} onClick={() => setTpActiveTab("games")} disabled={!tpSelectedDomain}>
+                <span className={styles.tpTabIcon}>🎮</span> Oyun Eşleme
+              </button>
+              <button type="button" className={`${styles.tpTab} ${tpActiveTab === "plan" ? styles.tpTabActive : ""}`} onClick={() => setTpActiveTab("plan")} disabled={!tpSelectedDomain}>
+                <span className={styles.tpTabIcon}>📅</span> Haftalık Plan
+              </button>
+              <button type="button" className={`${styles.tpTab} ${tpActiveTab === "progress" ? styles.tpTabActive : ""}`} onClick={() => setTpActiveTab("progress")} disabled={!tpSelectedClientId}>
+                <span className={styles.tpTabIcon}>📊</span> İlerleme
+              </button>
             </div>
 
             <div className={styles.tpContent}>
@@ -1890,19 +1963,26 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               {tpActiveTab === "domains" && (
                 <div>
                   <h2 className={styles.tpSectionTitle}>Ergoterapi Uygulama Alanları</h2>
-                  <p style={{ color: "#567896", marginBottom: "24px", fontSize: "0.94rem" }}>Danışanın ihtiyacına uygun terapi alanını seçin. Sistem, alan bazında hedefler, aktiviteler ve oyun önerileri üretecektir.</p>
+                  <p className={styles.tpSectionLead}>Danışanın ihtiyacına uygun terapi alanını seçin. Sistem, alan bazında hedefler, aktiviteler ve oyun önerileri üretecektir.</p>
                   <div className={styles.tpDomainsGrid}>
-                    {THERAPY_DOMAINS.map((domain) => (
-                      <button key={domain.key} type="button" className={`${styles.tpDomainCard} ${tpSelectedDomain === domain.key ? styles.tpDomainCardActive : ""}`} onClick={() => handleSelectDomain(domain.key)} style={{ "--domain-color": domain.color } as CSSProperties}>
-                        <span className={styles.tpDomainIcon}>{domain.icon}</span>
-                        <strong className={styles.tpDomainLabel}>{domain.label}</strong>
-                        <p className={styles.tpDomainDesc}>{domain.description}</p>
-                        <div className={styles.tpDomainMeta}>
-                          <span>{domain.goals.length} hedef</span>
-                          <span>{domain.activities.length} aktivite</span>
-                        </div>
-                      </button>
-                    ))}
+                    {THERAPY_DOMAINS.map((domain) => {
+                      const gameMappingCount = GAME_THERAPY_MAPPINGS.filter((m) => m.suitableDomains.includes(domain.key)).length;
+                      return (
+                        <button key={domain.key} type="button" className={`${styles.tpDomainCard} ${tpSelectedDomain === domain.key ? styles.tpDomainCardActive : ""}`} onClick={() => handleSelectDomain(domain.key)} style={{ "--domain-color": domain.color } as CSSProperties}>
+                          <span className={styles.tpDomainIcon}>{domain.icon}</span>
+                          <strong className={styles.tpDomainLabel}>{domain.label}</strong>
+                          <p className={styles.tpDomainDesc}>{domain.description}</p>
+                          <div className={styles.tpDomainMeta}>
+                            <span>🎯 {domain.goals.length} hedef</span>
+                            <span>📋 {domain.activities.length} aktivite</span>
+                            <span>🎮 {gameMappingCount} oyun</span>
+                          </div>
+                          <div className={styles.tpDomainAges}>
+                            {domain.suitableAgeGroups.map((ag) => <span key={ag} className={styles.tpAgeBadge}>{ag}</span>)}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -1911,7 +1991,17 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               {tpActiveTab === "activities" && tpSelectedDomain && (() => {
                 const domain = THERAPY_DOMAINS.find((d) => d.key === tpSelectedDomain);
                 if (!domain) return null;
-                const filteredActivities = tpDifficultyFilter === "all" ? domain.activities : domain.activities.filter((a) => a.difficulty === tpDifficultyFilter);
+                const subSkillNames = Array.from(new Set(domain.activities.map((a) => a.subSkill)));
+                let filteredActivities = domain.activities;
+                if (tpDifficultyFilter !== "all") filteredActivities = filteredActivities.filter((a) => a.difficulty === tpDifficultyFilter);
+                if (tpSubSkillFilter !== "all") filteredActivities = filteredActivities.filter((a) => a.subSkill === tpSubSkillFilter);
+                if (tpShowHomeOnly) filteredActivities = filteredActivities.filter((a) => a.homeExercise);
+                if (tpActivitySearch.trim()) {
+                  const q = tpActivitySearch.toLocaleLowerCase("tr-TR");
+                  filteredActivities = filteredActivities.filter((a) => a.label.toLocaleLowerCase("tr-TR").includes(q) || a.description.toLocaleLowerCase("tr-TR").includes(q) || a.subSkill.toLocaleLowerCase("tr-TR").includes(q));
+                }
+                const favoriteActivities = domain.activities.filter((a) => tpFavoriteActivities.includes(a.id));
+
                 return (
                   <div>
                     <div className={styles.tpSectionHeader}>
@@ -1919,12 +2009,38 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         <span className={styles.tpDomainBadge} style={{ background: domain.color }}>{domain.icon} {domain.label}</span>
                         <h2 className={styles.tpSectionTitle}>Terapi Hedefleri ve Aktiviteler</h2>
                       </div>
-                      <button type="button" className={styles.primaryButton} onClick={handleGeneratePlan}>Plan Üret →</button>
+                      <div className={styles.tpHeaderActions}>
+                        <button type="button" className={styles.secondaryButton} onClick={() => setTpActiveTab("games")}>🎮 Oyun Eşleme</button>
+                        <button type="button" className={styles.primaryButton} onClick={handleGeneratePlan}>📅 Plan Üret →</button>
+                      </div>
                     </div>
 
-                    {/* Goals */}
-                    <div className={styles.tpGoalsSection}>
-                      <h3 className={styles.tpSubTitle}>Terapi Hedefleri</h3>
+                    {/* ── Quick stats ── */}
+                    <div className={styles.tpQuickStats}>
+                      <div className={styles.tpQuickStatCard}>
+                        <span className={styles.tpQuickStatValue}>{domain.goals.length}</span>
+                        <span className={styles.tpQuickStatLabel}>Hedef</span>
+                      </div>
+                      <div className={styles.tpQuickStatCard}>
+                        <span className={styles.tpQuickStatValue}>{domain.activities.length}</span>
+                        <span className={styles.tpQuickStatLabel}>Aktivite</span>
+                      </div>
+                      <div className={styles.tpQuickStatCard}>
+                        <span className={styles.tpQuickStatValue}>{domain.subSkills.length}</span>
+                        <span className={styles.tpQuickStatLabel}>Beceri Alanı</span>
+                      </div>
+                      <div className={styles.tpQuickStatCard}>
+                        <span className={styles.tpQuickStatValue}>{favoriteActivities.length}</span>
+                        <span className={styles.tpQuickStatLabel}>Favori</span>
+                      </div>
+                    </div>
+
+                    {/* ── Goals accordion ── */}
+                    <details className={styles.tpCollapsible}>
+                      <summary className={styles.tpCollapsibleSummary}>
+                        <span>🎯 Terapi Hedefleri</span>
+                        <span className={styles.tpCollapsibleCount}>{domain.goals.length}</span>
+                      </summary>
                       <div className={styles.tpGoalsGrid}>
                         {domain.goals.map((goal) => (
                           <div key={goal.id} className={styles.tpGoalCard}>
@@ -1933,21 +2049,25 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           </div>
                         ))}
                       </div>
-                    </div>
+                    </details>
 
-                    {/* Functional Challenges */}
-                    <div className={styles.tpChallengesSection}>
-                      <h3 className={styles.tpSubTitle}>Fonksiyonel Zorluklar</h3>
+                    {/* ── Challenges chips ── */}
+                    <details className={styles.tpCollapsible}>
+                      <summary className={styles.tpCollapsibleSummary}>
+                        <span>⚠️ Fonksiyonel Zorluklar</span>
+                        <span className={styles.tpCollapsibleCount}>{domain.challenges.length}</span>
+                      </summary>
                       <div className={styles.tpChipList}>
-                        {domain.challenges.map((ch) => (
-                          <span key={ch.id} className={styles.tpChip}>{ch.label}</span>
-                        ))}
+                        {domain.challenges.map((ch) => <span key={ch.id} className={styles.tpChip}>{ch.label}</span>)}
                       </div>
-                    </div>
+                    </details>
 
-                    {/* Sub Skills */}
-                    <div className={styles.tpSkillsSection}>
-                      <h3 className={styles.tpSubTitle}>Alt Beceriler</h3>
+                    {/* ── Sub Skills ── */}
+                    <details className={styles.tpCollapsible}>
+                      <summary className={styles.tpCollapsibleSummary}>
+                        <span>🧩 Alt Beceriler</span>
+                        <span className={styles.tpCollapsibleCount}>{domain.subSkills.length}</span>
+                      </summary>
                       <div className={styles.tpSkillsGrid}>
                         {domain.subSkills.map((skill) => (
                           <div key={skill.id} className={styles.tpSkillCard}>
@@ -1956,12 +2076,31 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           </div>
                         ))}
                       </div>
-                    </div>
+                    </details>
 
-                    {/* Activities */}
+                    {/* ── Favorites ── */}
+                    {favoriteActivities.length > 0 && (
+                      <div className={styles.tpFavoritesSection}>
+                        <h3 className={styles.tpSubTitle}>⭐ Favori Aktiviteler</h3>
+                        <div className={styles.tpFavoritesStrip}>
+                          {favoriteActivities.map((act) => (
+                            <div key={act.id} className={styles.tpFavoriteChip}>
+                              <span>{act.label}</span>
+                              <span className={`${styles.tpDiffDot} ${styles[`tpDiff_${act.difficulty}`]}`} />
+                              <button type="button" className={styles.tpFavBtn} onClick={() => toggleFavoriteActivity(act.id)} title="Favoriden çıkar">✕</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── Activity filters ── */}
                     <div className={styles.tpActivitiesSection}>
                       <div className={styles.tpActivitiesHeader}>
                         <h3 className={styles.tpSubTitle}>Aktivite Önerileri</h3>
+                      </div>
+                      <div className={styles.tpFiltersBar}>
+                        <input type="search" placeholder="Aktivite ara..." value={tpActivitySearch} onChange={(e) => setTpActivitySearch(e.target.value)} className={styles.tpSearchInput} />
                         <div className={styles.tpFilterRow}>
                           {(["all", "kolay", "orta", "zor"] as const).map((level) => (
                             <button key={level} type="button" className={`${styles.tpFilterBtn} ${tpDifficultyFilter === level ? styles.tpFilterBtnActive : ""}`} onClick={() => setTpDifficultyFilter(level)}>
@@ -1969,33 +2108,78 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                             </button>
                           ))}
                         </div>
+                        <select value={tpSubSkillFilter} onChange={(e) => setTpSubSkillFilter(e.target.value)} className={styles.tpFilterSelect}>
+                          <option value="all">Tüm beceriler</option>
+                          {subSkillNames.map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                        <label className={styles.tpToggleLabel}>
+                          <input type="checkbox" checked={tpShowHomeOnly} onChange={(e) => setTpShowHomeOnly(e.target.checked)} />
+                          <span>🏠 Ev ödevi</span>
+                        </label>
                       </div>
 
                       {filteredActivities.length === 0 ? (
-                        <p style={{ color: "#7a99b4", padding: "20px 0" }}>Bu zorluk seviyesinde aktivite bulunmuyor.</p>
+                        <div className={styles.tpEmptyState}>
+                          <span style={{ fontSize: "2rem" }}>🔍</span>
+                          <p>Seçili filtrelere uygun aktivite bulunamadı.</p>
+                        </div>
                       ) : (
                         <div className={styles.tpActivitiesGrid}>
-                          {filteredActivities.map((activity) => (
-                            <div key={activity.id} className={styles.tpActivityCard}>
-                              <div className={styles.tpActivityTop}>
-                                <strong>{activity.label}</strong>
-                                <span className={`${styles.tpDiffBadge} ${styles[`tpDiff_${activity.difficulty}`]}`}>{activity.difficulty === "kolay" ? "Kolay" : activity.difficulty === "orta" ? "Orta" : "Zor"}</span>
-                              </div>
-                              <p className={styles.tpActivityDesc}>{activity.description}</p>
-                              <div className={styles.tpActivityMeta}>
-                                <span className={styles.tpMetaItem}>📁 {activity.subSkill}</span>
-                                <span className={styles.tpMetaItem}>🏷️ {activity.activityType}</span>
-                                <span className={styles.tpMetaItem}>⏱️ {activity.sessionMinutes} dk</span>
-                                {activity.homeExercise && <span className={styles.tpMetaItem}>🏠 Ev ödevi</span>}
-                              </div>
-                              {activity.materials.length > 0 && (
-                                <div className={styles.tpMaterials}>
-                                  <span style={{ fontWeight: 600, fontSize: "0.8rem", color: "#4a7090" }}>Materyaller:</span>
-                                  {activity.materials.map((m) => <span key={m} className={styles.tpMaterialChip}>{m}</span>)}
+                          {filteredActivities.map((activity) => {
+                            const isFav = tpFavoriteActivities.includes(activity.id);
+                            const isExpanded = tpExpandedActivity === activity.id;
+                            const customNote = tpCustomNotes[activity.id] ?? "";
+                            return (
+                              <div key={activity.id} className={`${styles.tpActivityCard} ${isExpanded ? styles.tpActivityCardExpanded : ""}`}>
+                                <div className={styles.tpActivityTop}>
+                                  <strong>{activity.label}</strong>
+                                  <div className={styles.tpActivityTopRight}>
+                                    <button type="button" className={`${styles.tpFavStar} ${isFav ? styles.tpFavStarActive : ""}`} onClick={() => toggleFavoriteActivity(activity.id)} title={isFav ? "Favoriden çıkar" : "Favorilere ekle"}>
+                                      {isFav ? "★" : "☆"}
+                                    </button>
+                                    <span className={`${styles.tpDiffBadge} ${styles[`tpDiff_${activity.difficulty}`]}`}>
+                                      {activity.difficulty === "kolay" ? "Kolay" : activity.difficulty === "orta" ? "Orta" : "Zor"}
+                                    </span>
+                                  </div>
                                 </div>
-                              )}
-                            </div>
-                          ))}
+                                <p className={styles.tpActivityDesc}>{activity.description}</p>
+                                <div className={styles.tpActivityMeta}>
+                                  <span className={styles.tpMetaItem}>📁 {activity.subSkill}</span>
+                                  <span className={styles.tpMetaItem}>🏷️ {activity.activityType}</span>
+                                  <span className={styles.tpMetaItem}>⏱️ {activity.sessionMinutes} dk</span>
+                                  {activity.homeExercise && <span className={styles.tpMetaItem}>🏠 Ev ödevi</span>}
+                                </div>
+                                <button type="button" className={styles.tpExpandBtn} onClick={() => setTpExpandedActivity(isExpanded ? null : activity.id)}>
+                                  {isExpanded ? "Kapat ▴" : "Detaylar ▾"}
+                                </button>
+                                {isExpanded && (
+                                  <div className={styles.tpActivityExpanded}>
+                                    {activity.materials.length > 0 && (
+                                      <div className={styles.tpMaterials}>
+                                        <span className={styles.tpMaterialsLabel}>Materyaller:</span>
+                                        <div className={styles.tpMaterialChips}>
+                                          {activity.materials.map((m) => <span key={m} className={styles.tpMaterialChip}>{m}</span>)}
+                                        </div>
+                                      </div>
+                                    )}
+                                    <div className={styles.tpRelatedGoals}>
+                                      <span className={styles.tpMaterialsLabel}>İlgili Hedefler:</span>
+                                      <div className={styles.tpChipList}>
+                                        {activity.goals.map((gId) => {
+                                          const goal = domain.goals.find((g) => g.id === gId);
+                                          return goal ? <span key={gId} className={styles.tpChip}>{goal.label}</span> : null;
+                                        })}
+                                      </div>
+                                    </div>
+                                    <div className={styles.tpCustomNoteBox}>
+                                      <span className={styles.tpMaterialsLabel}>Terapist Notu:</span>
+                                      <textarea value={customNote} onChange={(e) => saveTpCustomNote(activity.id, e.target.value)} placeholder="Bu aktivite için notlarınızı yazın..." className={styles.tpCustomNoteInput} rows={2} />
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -2016,7 +2200,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         <h2 className={styles.tpSectionTitle}>Dijital Oyun Eşlemesi</h2>
                       </div>
                     </div>
-                    <p style={{ color: "#567896", marginBottom: "24px", fontSize: "0.94rem" }}>Bu terapi alanı için uygun dijital oyunlar ve terapötik amaçları.</p>
+                    <p className={styles.tpSectionLead}>Bu terapi alanı için uygun dijital oyunlar ve terapötik amaçları. Doğrudan oyunu açabilirsiniz.</p>
 
                     <div className={styles.tpGamesGrid}>
                       {gameMappings.map((mapping) => {
@@ -2025,31 +2209,38 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         return (
                           <div key={mapping.gameKey} className={styles.tpGameCard}>
                             <div className={styles.tpGameCardHeader}>
-                              <strong>{gameTab.title}</strong>
-                              <span style={{ color: "#6987a4", fontSize: "0.84rem" }}>{gameTab.kicker}</span>
+                              <div className={styles.tpGameCardIcon}>{gameTab.category === "memorySkills" ? "🧠" : gameTab.category === "motorSkills" ? "🎯" : "👁️"}</div>
+                              <div>
+                                <strong>{gameTab.title}</strong>
+                                <span className={styles.tpGameKicker}>{gameTab.kicker}</span>
+                              </div>
                             </div>
                             <p className={styles.tpGameRationale}>{mapping.therapeuticRationale}</p>
                             <div className={styles.tpGamePurposes}>
-                              <span style={{ fontWeight: 700, fontSize: "0.8rem", color: "#0d2c44" }}>Terapötik Amaçlar:</span>
-                              {mapping.purposes.map((p) => (
-                                <span key={p} className={styles.tpPurposeChip}>{GAME_PURPOSE_LABELS[p]}</span>
-                              ))}
+                              <span className={styles.tpMaterialsLabel}>Terapötik Amaçlar:</span>
+                              <div className={styles.tpChipList}>
+                                {mapping.purposes.map((p) => <span key={p} className={styles.tpPurposeChip}>{GAME_PURPOSE_LABELS[p]}</span>)}
+                              </div>
                             </div>
                             <div className={styles.tpGameDifficulty}>
-                              <span style={{ fontWeight: 600, fontSize: "0.8rem", color: "#4a7090" }}>Zorluk uyumu:</span>
+                              <span className={styles.tpMaterialsLabel}>Zorluk uyumu:</span>
                               {mapping.difficultyFit.map((d) => (
                                 <span key={d} className={`${styles.tpDiffBadge} ${styles[`tpDiff_${d}`]}`}>{d === "kolay" ? "Kolay" : d === "orta" ? "Orta" : "Zor"}</span>
                               ))}
                             </div>
-                            <button type="button" className={styles.primaryButton} style={{ marginTop: "14px", width: "100%", padding: "10px 16px", fontSize: "0.86rem" }} onClick={() => openGameView(mapping.gameKey)}>Oyunu Aç →</button>
+                            <button type="button" className={styles.tpPlayGameBtn} onClick={() => openGameView(mapping.gameKey)}>
+                              ▶ Oyunu Aç
+                            </button>
                           </div>
                         );
                       })}
                     </div>
 
-                    {/* Full Game Mapping Reference Table */}
-                    <div className={styles.tpMappingTable}>
-                      <h3 className={styles.tpSubTitle}>Tüm Oyun–Amaç Eşleme Tablosu</h3>
+                    {/* Full mapping table */}
+                    <details className={styles.tpCollapsible}>
+                      <summary className={styles.tpCollapsibleSummary}>
+                        <span>📊 Tüm Oyun–Amaç Eşleme Tablosu</span>
+                      </summary>
                       <div className={styles.tpTableWrap}>
                         <table className={styles.tpTable}>
                           <thead>
@@ -2075,7 +2266,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           </tbody>
                         </table>
                       </div>
-                    </div>
+                    </details>
                   </div>
                 );
               })()}
@@ -2091,31 +2282,33 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         <span className={styles.tpDomainBadge} style={{ background: domain.color }}>{domain.icon} {domain.label}</span>
                         <h2 className={styles.tpSectionTitle}>Haftalık Terapi Planı</h2>
                       </div>
-                      <button type="button" className={styles.primaryButton} onClick={handleGeneratePlan}>{tpGeneratedPlan ? "Yeniden Üret" : "Plan Üret"}</button>
+                      <button type="button" className={styles.primaryButton} onClick={handleGeneratePlan}>{tpGeneratedPlan ? "🔄 Yeniden Üret" : "📅 Plan Üret"}</button>
                     </div>
 
                     {!tpGeneratedPlan ? (
-                      <div className={styles.tpPlanEmpty}>
-                        <span style={{ fontSize: "3rem" }}>📋</span>
+                      <div className={styles.tpEmptyState}>
+                        <span style={{ fontSize: "3.5rem" }}>📋</span>
+                        <h3>Henüz plan oluşturulmadı</h3>
                         <p>Seçili terapi alanına göre otomatik haftalık plan oluşturmak için "Plan Üret" butonuna tıklayın.</p>
-                        <p style={{ color: "#7a99b4", fontSize: "0.84rem" }}>Sistem, alanın hedeflerini, aktivitelerini ve uygun dijital oyunları kullanarak 3 günlük bir yapı önerecektir.</p>
+                        <p style={{ color: "#7a99b4", fontSize: "0.84rem", marginTop: 4 }}>Sistem, alanın hedeflerini, aktivitelerini ve uygun dijital oyunları kullanarak 3 günlük bir yapı önerecektir.</p>
+                        <button type="button" className={styles.primaryButton} style={{ marginTop: 16 }} onClick={handleGeneratePlan}>📅 Plan Üret</button>
                       </div>
                     ) : (
                       <div>
-                        {/* Weekly Plan Summary */}
+                        {/* Summary cards */}
                         <div className={styles.tpPlanSummary}>
                           <div className={styles.tpPlanSummaryCard}>
-                            <span className={styles.tpPlanLabel}>Ana Hedef</span>
+                            <span className={styles.tpPlanLabel}>🎯 Ana Hedef</span>
                             <strong>{tpGeneratedPlan.weeklyPlan.mainGoal}</strong>
                           </div>
                           <div className={styles.tpPlanSummaryCard}>
-                            <span className={styles.tpPlanLabel}>Anahtar Aktiviteler</span>
+                            <span className={styles.tpPlanLabel}>📋 Anahtar Aktiviteler</span>
                             <ul className={styles.tpPlanList}>
                               {tpGeneratedPlan.weeklyPlan.keyActivities.map((a, i) => <li key={i}>{a}</li>)}
                             </ul>
                           </div>
                           <div className={styles.tpPlanSummaryCard}>
-                            <span className={styles.tpPlanLabel}>Dijital Oyunlar</span>
+                            <span className={styles.tpPlanLabel}>🎮 Dijital Oyunlar</span>
                             <div className={styles.tpChipList}>
                               {tpGeneratedPlan.weeklyPlan.digitalGames.map((gk) => {
                                 const gt = GAME_TABS.find((g) => g.key === gk);
@@ -2124,19 +2317,22 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                             </div>
                           </div>
                           <div className={styles.tpPlanSummaryCard}>
-                            <span className={styles.tpPlanLabel}>Ev Ödevi</span>
+                            <span className={styles.tpPlanLabel}>🏠 Ev Ödevi</span>
                             <strong>{tpGeneratedPlan.weeklyPlan.homeExercise}</strong>
                           </div>
                         </div>
 
-                        {/* Daily Structure */}
+                        {/* Daily cards */}
                         <h3 className={styles.tpSubTitle} style={{ marginTop: "32px" }}>Günlük Yapı</h3>
                         <div className={styles.tpDailyGrid}>
                           {tpGeneratedPlan.dailyStructure.map((day, i) => {
                             const gameTab = GAME_TABS.find((g) => g.key === day.game);
                             return (
                               <div key={i} className={styles.tpDayCard}>
-                                <div className={styles.tpDayHeader}>{day.dayLabel}</div>
+                                <div className={styles.tpDayHeader}>
+                                  <span className={styles.tpDayNumber}>{i + 1}</span>
+                                  {day.dayLabel}
+                                </div>
                                 <div className={styles.tpDayBody}>
                                   <div className={styles.tpDayRow}>
                                     <span className={styles.tpDayRowLabel}>Aktivite</span>
@@ -2144,7 +2340,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                                   </div>
                                   <div className={styles.tpDayRow}>
                                     <span className={styles.tpDayRowLabel}>Dijital Oyun</span>
-                                    <span>{gameTab?.title ?? day.game}</span>
+                                    <button type="button" className={styles.tpDayGameBtn} onClick={() => openGameView(day.game)}>
+                                      ▶ {gameTab?.title ?? day.game}
+                                    </button>
                                   </div>
                                   <div className={styles.tpDayRow}>
                                     <span className={styles.tpDayRowLabel}>Gözlem</span>
@@ -2156,7 +2354,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           })}
                         </div>
 
-                        <p style={{ marginTop: "20px", color: "#7a99b4", fontSize: "0.86rem" }}><em>Not: {tpGeneratedPlan.weeklyPlan.sessionNotes}</em></p>
+                        <p style={{ marginTop: "20px", color: "#7a99b4", fontSize: "0.86rem", fontStyle: "italic" }}>Not: {tpGeneratedPlan.weeklyPlan.sessionNotes}</p>
                       </div>
                     )}
                   </div>
@@ -2165,34 +2363,56 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
               {/* ── Progress Tab ── */}
               {tpActiveTab === "progress" && (() => {
-                const selectedClient = clientOptions.find((c) => c.id === tpSelectedClientId) ?? null;
-                if (!selectedClient) return (
-                  <div className={styles.tpPlanEmpty}>
-                    <span style={{ fontSize: "3rem" }}>📊</span>
+                const selectedProgressClient = clientOptions.find((c) => c.id === tpSelectedClientId) ?? null;
+                if (!selectedProgressClient) return (
+                  <div className={styles.tpEmptyState}>
+                    <span style={{ fontSize: "3.5rem" }}>📊</span>
+                    <h3>Danışan seçilmedi</h3>
                     <p>İlerleme takibi için üst kısımdan bir danışan seçin.</p>
                   </div>
                 );
                 const domain = tpSelectedDomain ? THERAPY_DOMAINS.find((d) => d.key === tpSelectedDomain) : null;
-                const clientProgress = tpProgressEntries.filter((e) => e.clientId === selectedClient.id).sort((a, b) => b.date.localeCompare(a.date));
+                const clientProgress = tpProgressEntries.filter((e) => e.clientId === selectedProgressClient.id).sort((a, b) => b.date.localeCompare(a.date));
                 const goals = domain?.goals ?? [];
 
-                // Calculate average per goal
                 const goalAverages = goals.map((goal) => {
                   const entries = clientProgress.filter((e) => e.goalId === goal.id);
                   const avg = entries.length > 0 ? Math.round(entries.reduce((s, e) => s + e.value, 0) / entries.length) : 0;
                   return { ...goal, average: avg, count: entries.length };
                 });
 
+                const overallAvg = goalAverages.length > 0 ? Math.round(goalAverages.reduce((s, g) => s + g.average, 0) / goalAverages.length) : 0;
+
                 return (
                   <div>
                     <div className={styles.tpSectionHeader}>
                       <div>
-                        <h2 className={styles.tpSectionTitle}>İlerleme Takibi — {selectedClient.displayName}</h2>
-                        {domain && <span className={styles.tpDomainBadge} style={{ background: domain.color }}>{domain.icon} {domain.label}</span>}
+                        <h2 className={styles.tpSectionTitle}>İlerleme Takibi</h2>
+                        <div className={styles.tpProgressClientInfo}>
+                          <span className={styles.tpProgressClientName}>{selectedProgressClient.displayName}</span>
+                          {domain && <span className={styles.tpDomainBadge} style={{ background: domain.color }}>{domain.icon} {domain.label}</span>}
+                        </div>
                       </div>
                       <button type="button" className={styles.primaryButton} onClick={() => setTpShowProgressForm(!tpShowProgressForm)}>+ Kayıt Ekle</button>
                     </div>
 
+                    {/* Overall score */}
+                    <div className={styles.tpOverallScore}>
+                      <div className={styles.tpOverallScoreRing}>
+                        <svg viewBox="0 0 36 36" className={styles.tpScoreRingSvg}>
+                          <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(14,165,233,0.1)" strokeWidth="3" />
+                          <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="url(#progressGrad)" strokeWidth="3" strokeDasharray={`${overallAvg}, 100`} strokeLinecap="round" />
+                          <defs><linearGradient id="progressGrad"><stop offset="0%" stopColor="#2563eb" /><stop offset="100%" stopColor="#06b6d4" /></linearGradient></defs>
+                        </svg>
+                        <span className={styles.tpOverallScoreValue}>{overallAvg}%</span>
+                      </div>
+                      <div className={styles.tpOverallScoreMeta}>
+                        <strong>Genel İlerleme</strong>
+                        <span>{clientProgress.length} kayıt · {goalAverages.filter((g) => g.count > 0).length}/{goals.length} hedef takipte</span>
+                      </div>
+                    </div>
+
+                    {/* Progress form */}
                     {tpShowProgressForm && domain && (
                       <div className={styles.tpProgressForm}>
                         <h4>Yeni İlerleme Kaydı</h4>
@@ -2205,9 +2425,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                             </select>
                           </label>
                           <label className={styles.fieldBlock}>
-                            <span>Değer (0-100): {tpProgressForm.value}</span>
-                            <input type="range" min={0} max={100} value={tpProgressForm.value} onChange={(e) => setTpProgressForm((c) => ({ ...c, value: Number(e.target.value) }))} className={styles.tpRangeInput} />
-                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.76rem", color: "#7a99b4" }}>
+                            <span>Değer: <strong>{tpProgressForm.value}%</strong></span>
+                            <input type="range" min={0} max={100} step={5} value={tpProgressForm.value} onChange={(e) => setTpProgressForm((c) => ({ ...c, value: Number(e.target.value) }))} className={styles.tpRangeInput} />
+                            <div className={styles.tpRangeLabels}>
                               {INDEPENDENCE_LEVELS.map((lvl) => <span key={lvl.key}>{lvl.label}</span>)}
                             </div>
                           </label>
@@ -2215,7 +2435,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                             <span>Not</span>
                             <textarea value={tpProgressForm.note} onChange={(e) => setTpProgressForm((c) => ({ ...c, note: e.target.value }))} placeholder="Gözlem veya değerlendirme notu..." className={`${styles.inputSurface} ${styles.textareaSurface}`} rows={3} />
                           </label>
-                          <div style={{ display: "flex", gap: "10px" }}>
+                          <div className={styles.tpFormActions}>
                             <button type="button" className={styles.primaryButton} onClick={handleAddProgressEntry}>Kaydet</button>
                             <button type="button" className={styles.secondaryButton} onClick={() => setTpShowProgressForm(false)}>İptal</button>
                           </div>
@@ -2223,21 +2443,21 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       </div>
                     )}
 
-                    {/* Goal Averages */}
+                    {/* Goal bars */}
                     {goalAverages.length > 0 && (
                       <div className={styles.tpProgressSummary}>
-                        <h3 className={styles.tpSubTitle}>Hedef Bazlı Ortalama</h3>
+                        <h3 className={styles.tpSubTitle}>Hedef Bazlı İlerleme</h3>
                         <div className={styles.tpProgressBars}>
                           {goalAverages.map((ga) => (
                             <div key={ga.id} className={styles.tpProgressBarRow}>
                               <div className={styles.tpProgressBarLabel}>
                                 <span>{ga.label}</span>
-                                <span>{ga.average}%</span>
+                                <span className={styles.tpBarValue}>{ga.average}%</span>
                               </div>
                               <div className={styles.tpProgressBarTrack}>
                                 <div className={styles.tpProgressBarFill} style={{ width: `${ga.average}%` }} />
                               </div>
-                              <span style={{ fontSize: "0.78rem", color: "#7a99b4" }}>{ga.count} kayıt</span>
+                              <span className={styles.tpBarCount}>{ga.count} kayıt</span>
                             </div>
                           ))}
                         </div>
@@ -2248,7 +2468,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     <div className={styles.tpProgressHistory}>
                       <h3 className={styles.tpSubTitle}>İlerleme Geçmişi</h3>
                       {clientProgress.length === 0 ? (
-                        <p style={{ color: "#7a99b4", padding: "16px 0" }}>Henüz ilerleme kaydı eklenmedi.</p>
+                        <div className={styles.tpEmptyState}>
+                          <span style={{ fontSize: "2rem" }}>📝</span>
+                          <p>Henüz ilerleme kaydı eklenmedi. Yukarıdaki "Kayıt Ekle" butonunu kullanın.</p>
+                        </div>
                       ) : (
                         <div className={styles.tpProgressList}>
                           {clientProgress.map((entry) => {
@@ -2264,9 +2487,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                                     <span>{entry.value}%</span>
                                   </div>
                                 </div>
-                                <span style={{ fontSize: "0.82rem", color: "#7a99b4" }}>{formatDate(entry.date)}</span>
-                                {entry.note && <p style={{ marginTop: "6px", color: "#567896", fontSize: "0.88rem" }}>{entry.note}</p>}
-                                <button type="button" style={{ background: "none", border: "none", color: "#b33a4e", fontSize: "0.8rem", cursor: "pointer", padding: "4px 0", marginTop: "6px" }} onClick={() => handleDeleteProgressEntry(entry.id)}>Sil</button>
+                                <span className={styles.tpProgressDate}>{formatDate(entry.date)}</span>
+                                {entry.note && <p className={styles.tpProgressNote}>{entry.note}</p>}
+                                <button type="button" className={styles.tpDeleteBtn} onClick={() => handleDeleteProgressEntry(entry.id)}>Sil</button>
                               </div>
                             );
                           })}

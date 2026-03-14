@@ -1851,6 +1851,9 @@
 .workspaceTopSummary {
   cursor: pointer;
   list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .workspaceTopSummary::-webkit-details-marker {
@@ -1862,764 +1865,75 @@
   content: "";
 }
 
-/* =========================================================
-   RESPONSIVE
-   ========================================================= */
-
-@media (max-width: 1200px) {
-  .heroSection {
-    grid-template-columns: 1fr;
-  }
-
-  .heroRight {
-    position: static;
-  }
-
-  .categoriesGrid,
-  .gameLibraryGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .gamesLayout {
-    grid-template-columns: 1fr;
-  }
-
-  .gamesSidebar {
-    position: static;
-  }
-
-  .workspaceMetaCards {
-    flex-wrap: wrap;
-  }
-
-  .workspaceTopDetails {
-    padding: 22px 24px;
-    border-radius: 26px;
-  }
-
-  .workspaceTopDetails h3 {
-    font-size: 1.6rem;
-  }
+.workspaceTopToggle {
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6987a4;
+  transition: transform 0.2s ease;
 }
 
-@media (max-width: 860px) {
-  .page {
-    padding: 12px;
-  }
-
-  .topBar {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 14px 16px;
-    border-radius: 22px;
-  }
-
-  .topControls {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .tabSwitch {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .tabButton {
-    flex: 1;
-    padding: 10px 12px;
-    font-size: 0.84rem;
-  }
-
-  .viewPanel {
-    padding: 16px;
-    border-radius: 22px;
-  }
-
-  .heroContent {
-    padding: 20px;
-  }
-
-  .heroTitle {
-    max-width: none;
-    font-size: clamp(2rem, 8vw, 3rem);
-  }
-
-  .heroStats,
-  .selectorGrid,
-  .sessionInsightRow,
-  .profileManagementGrid,
-  .profileFormFields {
-    grid-template-columns: 1fr;
-  }
-
-  .categoriesGrid,
-  .gameLibraryGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .ctaBanner {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 22px 20px;
-  }
-
-  .workspaceBar {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 12px 16px;
-    gap: 10px;
-    border-radius: 18px;
-    margin-bottom: 16px;
-  }
-
-  .workspaceBarLeft {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .workspaceBarRight {
-    flex-wrap: wrap;
-    width: 100%;
-  }
-
-  .workspaceCrumb {
-    font-size: 0.88rem;
-  }
-
-  .workspaceSessionBadge {
-    font-size: 0.78rem;
-    padding: 5px 10px;
-  }
-
-  /* Games sidebar becomes horizontal on tablet */
-  .gamesLayout {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-
-  .gamesSidebar {
-    display: none;
-  }
-
-  .mobileGameNav {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 12px 14px;
-    margin-bottom: 12px;
-    border-radius: 22px;
-    background:
-      linear-gradient(160deg, rgba(255, 255, 255, 0.92) 0%, rgba(232, 248, 255, 0.78) 100%);
-    border: 1px solid rgba(110, 172, 214, 0.18);
-    backdrop-filter: blur(20px);
-    box-shadow:
-      0 8px 24px rgba(60, 130, 190, 0.08),
-      0 2px 6px rgba(80, 145, 198, 0.04);
-  }
-
-  .sidebarBlockDesktopOnly {
-    display: none;
-  }
-
-  .workspaceTopDetails {
-    padding: 16px 18px;
-    border-radius: 22px;
-  }
-
-  .workspaceTopDetails h3 {
-    font-size: 1.3rem;
-  }
-
-  .workspaceTopDetails > p {
-    font-size: 0.86rem;
-    line-height: 1.58;
-    margin: 6px 0 12px;
-  }
-
-  .workspaceTopSummary {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .workspaceTopSummary .sectionEyebrow {
-    margin-bottom: 0;
-  }
-
-  .workspaceTopSummary h3 {
-    margin: 0;
-    font-size: 1.1rem;
-  }
-
-  .sidebarBlock {
-    padding: 16px;
-    border-radius: 20px;
-  }
-
-  /* Game cards */
-  .gameCard {
-    padding: 18px;
-    border-radius: 22px;
-  }
-
-  .gameStatusRow {
-    padding: 12px 14px;
-    border-radius: 16px;
-    gap: 6px;
-  }
-
-  .statusValue {
-    font-size: 1.4rem;
-  }
-
-  .gameMessage {
-    font-size: 0.9rem;
-    min-height: 36px;
-  }
-
-  .shortcutHint {
-    display: none;
-  }
-
-  /* Game grids - touch-optimized */
-  .memoryGrid,
-  .pulseGrid,
-  .differenceGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-  }
-
-  .pairsGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-  }
-
-  .scanGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-  }
-
-  .routeGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-  }
-
-  /* Tile min-heights for touch */
-  .memoryTile {
-    min-height: 110px;
-    padding: 14px 10px;
-    border-radius: 20px;
-  }
-
-  .pairsTile {
-    min-height: 110px;
-    border-radius: 18px;
-  }
-
-  .pairsInner {
-    min-height: 110px;
-    padding: 12px;
-    gap: 6px;
-  }
-
-  .pulseTile {
-    min-height: 80px;
-    border-radius: 18px;
-  }
-
-  .routeTile {
-    min-height: 90px;
-    border-radius: 20px;
-  }
-
-  .differenceTile,
-  .scanTile {
-    min-height: 90px;
-    border-radius: 18px;
-  }
-
-  .routeStage {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  .routeCommandCard,
-  .scanTargetPanel {
-    padding: 14px;
-    border-radius: 18px;
-  }
-
-  .routeCommandCard strong,
-  .scanTargetPanel strong {
-    font-size: 1.4rem;
-    margin-top: 6px;
-  }
-
-  .routeCommandCard span:last-child {
-    font-size: 1.8rem;
-    margin-top: 6px;
-  }
-
-  .differenceInner {
-    min-height: 90px;
-    padding: 10px;
-    gap: 6px;
-  }
-
-  .differenceIcon {
-    font-size: 1.8rem;
-  }
-
-  .differenceLabel {
-    font-size: 0.78rem;
-  }
-
-  .scanInner {
-    min-height: 90px;
-    padding: 10px;
-    gap: 6px;
-  }
-
-  .routeHistory {
-    gap: 6px;
-  }
-
-  .routeHistory span {
-    padding: 6px 10px;
-    font-size: 0.82rem;
-  }
-
-  .workspaceMetaCards {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .workspaceMetaCard {
-    flex: 1;
-    min-width: 80px;
-    padding: 10px 12px;
-    border-radius: 14px;
-  }
-
-  .workspaceMetaCard strong {
-    font-size: 1.3rem;
-  }
-
-  .workspaceMeta {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .controlRow {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .primaryButton,
-  .secondaryButton {
-    padding: 12px 18px;
-    font-size: 0.88rem;
-    border-radius: 14px;
-  }
+.workspaceTopDetails[open] .workspaceTopToggle {
+  transform: rotate(180deg);
 }
 
-@media (max-width: 560px) {
-  .page {
-    padding: 8px;
-  }
-
-  /* Game grids — 2 columns for small phones for playability */
-  .memoryGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .pulseGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .differenceGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .scanGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .routeGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .pairsGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  /* Tiles — bigger touch targets on phone */
-  .memoryTile {
-    min-height: 100px;
-    padding: 10px 8px;
-    border-radius: 16px;
-    gap: 6px;
-  }
-
-  .memoryTileIcon {
-    font-size: 2rem;
-  }
-
-  .memoryTileLabel {
-    font-size: 0.72rem;
-  }
-
-  .pairsTile {
-    min-height: 100px;
-    border-radius: 16px;
-  }
-
-  .pairsInner {
-    min-height: 100px;
-    padding: 8px;
-    gap: 4px;
-  }
-
-  .pairsIcon,
-  .scanIcon {
-    font-size: 1.7rem;
-  }
-
-  .pairsLabel {
-    font-size: 0.74rem;
-  }
-
-  .pairsPlaceholder {
-    font-size: 1.5rem;
-  }
-
-  .pulseTile {
-    min-height: 72px;
-    padding: 10px;
-    border-radius: 16px;
-  }
-
-  .routeTile {
-    min-height: 80px;
-    border-radius: 16px;
-  }
-
-  .differenceTile,
-  .scanTile {
-    min-height: 80px;
-    border-radius: 16px;
-  }
-
-  .gameMessage {
-    font-size: 0.84rem;
-    min-height: 30px;
-    padding: 6px 10px;
-  }
-
-  /* Sidebar already hidden on mobile via 860px breakpoint */
-
-  /* Inner tiles for difference & scan */
-  .differenceInner {
-    min-height: 80px;
-    padding: 8px;
-    gap: 4px;
-  }
-
-  .differenceIcon {
-    font-size: 1.5rem;
-  }
-
-  .differenceLabel {
-    font-size: 0.72rem;
-  }
-
-  .scanInner {
-    min-height: 80px;
-    padding: 8px;
-    gap: 4px;
-  }
-
-  .routeCommandCard,
-  .scanTargetPanel {
-    padding: 12px;
-    border-radius: 16px;
-  }
-
-  .routeCommandCard strong,
-  .scanTargetPanel strong {
-    font-size: 1.2rem;
-    margin-top: 4px;
-  }
-
-  .routeCommandCard span:last-child {
-    font-size: 1.5rem;
-    margin-top: 4px;
-  }
-
-  .routeHistory span {
-    padding: 5px 8px;
-    font-size: 0.76rem;
-  }
-
-  /* Status row compacted */
-  .gameStatusRow {
-    padding: 10px 12px;
-    gap: 4px;
-  }
-
-  .statusValue {
-    font-size: 1.2rem;
-  }
-
-  .statusLabel {
-    font-size: 0.68rem;
-  }
-
-  .gameCard {
-    padding: 14px;
-    border-radius: 18px;
-  }
-
-  .workspaceTopDetails {
-    padding: 14px;
-    border-radius: 18px;
-  }
-
-  .workspaceTopDetails h3 {
-    font-size: 1.1rem;
-  }
-
-  .workspaceTopSummary {
-    gap: 8px;
-  }
-
-  .workspaceTopSummary h3 {
-    font-size: 1rem;
-  }
-
-  .workspaceMetaCards {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-
-  .workspaceMetaCard {
-    padding: 8px 10px;
-    border-radius: 12px;
-  }
-
-  .workspaceMetaCard strong {
-    font-size: 1.1rem;
-    margin-top: 3px;
-  }
-
-  .workspaceMetaCard span {
-    font-size: 0.64rem;
-  }
-
-  /* Buttons full-width on small screens */
-  .controlRow {
-    flex-direction: column;
-  }
-
-  .controlRow .primaryButton,
-  .controlRow .secondaryButton {
-    width: 100%;
-    text-align: center;
-    justify-content: center;
-  }
-
-  .viewPanel {
-    padding: 12px;
-    border-radius: 18px;
-  }
-
-  .topBar {
-    padding: 12px 14px;
-    border-radius: 18px;
-  }
-
-  .sidebarBlock {
-    padding: 14px;
-    border-radius: 16px;
-  }
+.workspaceTopSummary h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: #071e30;
 }
 
-/* ── Landscape mode on phones — game area optimization ── */
-
-@media (max-width: 900px) and (orientation: landscape) and (max-height: 500px) {
-  .sidebar {
-    min-height: 52px;
-  }
-
-  .navItem {
-    padding: 4px 6px;
-    flex-direction: row;
-    gap: 6px;
-  }
-
-  .navItem span:not(.navIcon) {
-    font-size: 0.64rem;
-  }
-
-  .navIcon {
-    width: 24px;
-    height: 24px;
-    font-size: 0.76rem;
-  }
-
-  .mainContent {
-    padding: 8px 12px 60px;
-  }
-
-  /* Game workspace — compact in landscape */
-  .workspaceTopDetails {
-    padding: 10px 14px;
-  }
-
-  .workspaceTopDetails h3 {
-    font-size: 1.1rem;
-  }
-
-  .workspaceMetaCards {
-    gap: 6px;
-  }
-
-  .workspaceBar {
-    padding: 8px 12px;
-    margin-bottom: 8px;
-  }
-
-  .gameCard {
-    padding: 10px;
-  }
-
-  .gameStatusRow {
-    padding: 8px 10px;
-    gap: 4px;
-  }
-
-  .statusValue {
-    font-size: 1.1rem;
-  }
-
-  .gameMessage {
-    font-size: 0.82rem;
-    min-height: 28px;
-  }
-
-  /* Game grids — 4 columns for landscape */
-  .memoryGrid,
-  .pairsGrid,
-  .differenceGrid,
-  .scanGrid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .pulseGrid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .routeGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  /* Tiles — shorter for landscape viewport */
-  .memoryTile {
-    min-height: 72px;
-    padding: 8px 6px;
-  }
-
-  .memoryTileIcon { font-size: 1.5rem; }
-  .memoryTileLabel { font-size: 0.64rem; }
-
-  .pairsTile { min-height: 72px; }
-  .pairsInner { min-height: 72px; padding: 6px; }
-  .pairsIcon, .scanIcon { font-size: 1.3rem; }
-  .pairsLabel { font-size: 0.64rem; }
-
-  .pulseTile { min-height: 56px; }
-  .routeTile { min-height: 64px; }
-  .differenceTile, .scanTile { min-height: 64px; }
-
-  .differenceInner {
-    min-height: 64px;
-    padding: 6px;
-    gap: 2px;
-  }
-
-  .differenceIcon { font-size: 1.3rem; }
-  .differenceLabel { font-size: 0.64rem; }
-
-  .scanInner {
-    min-height: 64px;
-    padding: 6px;
-    gap: 2px;
-  }
-
-  .routeStage {
-    grid-template-columns: 200px 1fr;
-    gap: 8px;
-  }
-
-  .routeCommandCard strong {
-    font-size: 1.1rem;
-  }
-
-  .routeCommandCard span:last-child {
-    font-size: 1.4rem;
-  }
-
-  /* Sidebar hidden in landscape game mode */
-  .gamesSidebar {
-    display: none;
-  }
-
-  .controlRow {
-    flex-direction: row;
-    gap: 6px;
-  }
-
-  .primaryButton, .secondaryButton {
-    padding: 10px 14px;
-    font-size: 0.82rem;
-  }
+/* ── Game Timer ── */
+.gameTimer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.92), rgba(240,249,255,0.88));
+  border: 1px solid rgba(110,172,214,0.18);
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 8px rgba(60,130,190,0.06);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .viewPanel,
-  .gameLibraryCard {
-    animation: none;
-  }
-
-  .primaryButton,
-  .secondaryButton,
-  .categoryFeatureCard,
-  .categoryTab,
-  .gameTabItem,
-  .memoryTile,
-  .pulseTile,
-  .differenceTile,
-  .pairsTile,
-  .routeTile,
-  .scanTile {
-    transition: none;
-  }
+.gameTimerIcon {
+  font-size: 1rem;
+  opacity: 0.7;
 }
 
-/* ==========================================================
-   NEW MULTI-SCREEN PREMIUM UI
-   Login · App Shell · Dashboard · Clients · Client Detail
-   ========================================================== */
+.gameTimerValue {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #0a2740;
+  letter-spacing: 0.02em;
+  min-width: 52px;
+}
+
+.gameTimerLabel {
+  font-size: 0.74rem;
+  color: #6987a4;
+  font-weight: 600;
+}
+
+.gameTimerReset {
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(110,172,214,0.2);
+  background: rgba(255,255,255,0.8);
+  color: #3a6888;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.gameTimerReset:hover {
+  background: rgba(37,99,235,0.08);
+  border-color: rgba(37,99,235,0.2);
+  color: #1d4ed8;
+}
 
 /* ── Login Screen ── */
 
@@ -2632,6 +1946,7 @@
   align-items: center;
   justify-content: center;
   padding: 48px 24px;
+  overflow-y: auto;
 }
 
 .loginBrand {
@@ -3047,6 +2362,11 @@
   background: rgba(254,226,226,0.5);
   border-color: rgba(252,165,165,0.4);
   color: #7c2d12;
+}
+
+/* Mobile logout nav item */
+.navItemLogout {
+  display: none; /* shown only on mobile via media query */
 }
 
 .mainContent {
@@ -3710,7 +3030,9 @@
 
 @media (max-width: 900px) {
   .loginShell {
-    padding: 32px 16px;
+    padding: 24px 16px;
+    justify-content: flex-start;
+    padding-top: env(safe-area-inset-top, 24px);
   }
 
   .loginCard {
@@ -3722,8 +3044,13 @@
     font-size: 1.4rem;
   }
 
+  .loginLead {
+    font-size: 0.88rem;
+    margin-bottom: 18px;
+  }
+
   .loginInput {
-    min-height: 50px;
+    min-height: 48px;
     font-size: 1rem;
     border-radius: 14px;
   }
@@ -3732,6 +3059,10 @@
     min-height: 52px;
     font-size: 1rem;
     border-radius: 14px;
+  }
+
+  .loginBrand {
+    margin-bottom: 16px;
   }
 
   .appShell {
@@ -3768,6 +3099,16 @@
   .sidebarLogo,
   .sidebarUser {
     display: none;
+  }
+
+  .navItemLogout {
+    display: flex;
+    color: #b45c5c;
+  }
+
+  .navItemLogout .navIcon {
+    background: rgba(220,38,38,0.1);
+    color: #dc2626;
   }
 
   .sidebarNav {
@@ -3945,6 +3286,282 @@
   /* Recent sessions */
   .recentSessionCard {
     padding: 10px 12px;
+    border-radius: 14px;
+  }
+
+  /* Games layout: hide sidebar, show mobile nav */
+  .gamesSidebar {
+    display: none;
+  }
+
+  .mobileGameNav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    border-radius: 22px;
+    background:
+      linear-gradient(160deg, rgba(255, 255, 255, 0.92) 0%, rgba(232, 248, 255, 0.78) 100%);
+    border: 1px solid rgba(110, 172, 214, 0.18);
+    backdrop-filter: blur(20px);
+    box-shadow:
+      0 8px 24px rgba(60, 130, 190, 0.08),
+      0 2px 6px rgba(80, 145, 198, 0.04);
+  }
+
+  .sidebarBlockDesktopOnly {
+    display: none;
+  }
+
+  .shortcutHint {
+    display: none;
+  }
+
+  /* Game timer mobile */
+  .gameTimer {
+    padding: 6px 12px;
+    border-radius: 12px;
+    gap: 6px;
+  }
+
+  .gameTimerValue {
+    font-size: 0.84rem;
+  }
+
+  .gameTimerLabel {
+    display: none;
+  }
+
+  .gameTimerReset {
+    padding: 3px 8px;
+    font-size: 0.7rem;
+  }
+
+  /* Game card mobile */
+  .gameCard {
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .gameStatusRow {
+    padding: 12px 14px;
+    border-radius: 16px;
+    gap: 6px;
+  }
+
+  .statusValue {
+    font-size: 1.4rem;
+  }
+
+  .gameMessage {
+    font-size: 0.9rem;
+    min-height: 36px;
+  }
+
+  /* workspace top details */
+  .workspaceTopDetails {
+    padding: 16px 18px;
+    border-radius: 22px;
+  }
+
+  .workspaceTopDetails h3 {
+    font-size: 1.3rem;
+  }
+
+  .workspaceTopDetails > p {
+    font-size: 0.86rem;
+    line-height: 1.58;
+    margin: 6px 0 12px;
+  }
+
+  .workspaceTopSummary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .workspaceTopSummary .sectionEyebrow {
+    margin-bottom: 0;
+  }
+
+  .workspaceTopSummary h3 {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+
+  .workspaceBar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px 16px;
+    gap: 10px;
+    border-radius: 18px;
+    margin-bottom: 16px;
+  }
+
+  .workspaceBarLeft {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .workspaceBarRight {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .workspaceCrumb {
+    font-size: 0.88rem;
+  }
+
+  .workspaceSessionBadge {
+    font-size: 0.78rem;
+    padding: 5px 10px;
+  }
+
+  .sidebarBlock {
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+  /* Game grids - touch-optimized */
+  .memoryGrid,
+  .pulseGrid,
+  .differenceGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .pairsGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .scanGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .routeGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  /* Tile min-heights for touch */
+  .memoryTile {
+    min-height: 110px;
+    padding: 14px 10px;
+    border-radius: 20px;
+  }
+
+  .pairsTile {
+    min-height: 110px;
+    border-radius: 18px;
+  }
+
+  .pairsInner {
+    min-height: 110px;
+    padding: 12px;
+    gap: 6px;
+  }
+
+  .pulseTile {
+    min-height: 80px;
+    border-radius: 18px;
+  }
+
+  .routeTile {
+    min-height: 90px;
+    border-radius: 20px;
+  }
+
+  .differenceTile,
+  .scanTile {
+    min-height: 90px;
+    border-radius: 18px;
+  }
+
+  .routeStage {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .routeCommandCard,
+  .scanTargetPanel {
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .routeCommandCard strong,
+  .scanTargetPanel strong {
+    font-size: 1.4rem;
+    margin-top: 6px;
+  }
+
+  .routeCommandCard span:last-child {
+    font-size: 1.8rem;
+    margin-top: 6px;
+  }
+
+  .differenceInner {
+    min-height: 90px;
+    padding: 10px;
+    gap: 6px;
+  }
+
+  .differenceIcon {
+    font-size: 1.8rem;
+  }
+
+  .differenceLabel {
+    font-size: 0.78rem;
+  }
+
+  .scanInner {
+    min-height: 90px;
+    padding: 10px;
+    gap: 6px;
+  }
+
+  .routeHistory {
+    gap: 6px;
+  }
+
+  .routeHistory span {
+    padding: 6px 10px;
+    font-size: 0.82rem;
+  }
+
+  .workspaceMetaCards {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .workspaceMetaCard {
+    flex: 1;
+    min-width: 80px;
+    padding: 10px 12px;
+    border-radius: 14px;
+  }
+
+  .workspaceMetaCard strong {
+    font-size: 1.3rem;
+  }
+
+  .workspaceMeta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .controlRow {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .primaryButton,
+  .secondaryButton {
+    padding: 12px 18px;
+    font-size: 0.88rem;
     border-radius: 14px;
   }
 }
@@ -4376,18 +3993,6 @@
   gap: 12px;
 }
 
-.tpGameCardHeader {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.tpGameCardHeader strong {
-  font-size: 1.06rem;
-  font-weight: 800;
-  color: #0c1f2e;
-}
-
 .tpGameRationale {
   margin: 0;
   font-size: 0.86rem;
@@ -4696,9 +4301,553 @@
   transition: width 0.3s ease;
 }
 
+/* ── New therapy program UI components ── */
+
+.tpSectionLead {
+  color: #567896;
+  margin-bottom: 24px;
+  font-size: 0.94rem;
+  line-height: 1.55;
+}
+
+.tpPickerLabel {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6987a4;
+}
+
+.tpTabIcon {
+  font-size: 0.9rem;
+}
+
+.tpDomainAges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.tpAgeBadge {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: rgba(14,165,233,0.06);
+  color: #3a6888;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border: 1px solid rgba(14,165,233,0.1);
+}
+
+.tpHeaderActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tpQuickStats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.tpQuickStatCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 12px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(255,255,255,0.94), rgba(224,242,254,0.5));
+  border: 1px solid rgba(140,196,228,0.18);
+  box-shadow: 0 4px 16px rgba(96,154,198,0.06);
+}
+
+.tpQuickStatValue {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #0c1f2e;
+  letter-spacing: -0.03em;
+}
+
+.tpQuickStatLabel {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6987a4;
+}
+
+/* ── Collapsible sections ── */
+
+.tpCollapsible {
+  margin-bottom: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(140,196,228,0.16);
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+}
+
+.tpCollapsibleSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 22px;
+  cursor: pointer;
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: #0d2c44;
+  list-style: none;
+  transition: background 0.15s;
+}
+
+.tpCollapsibleSummary::-webkit-details-marker { display: none; }
+.tpCollapsibleSummary::marker { display: none; content: ""; }
+
+.tpCollapsibleSummary:hover {
+  background: rgba(14,165,233,0.04);
+}
+
+.tpCollapsibleCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: rgba(14,165,233,0.08);
+  color: #0c5687;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.tpCollapsible > .tpGoalsGrid,
+.tpCollapsible > .tpChipList,
+.tpCollapsible > .tpSkillsGrid,
+.tpCollapsible > .tpTableWrap {
+  padding: 0 22px 20px;
+}
+
+/* ── Favorites ── */
+
+.tpFavoritesSection {
+  margin-bottom: 24px;
+}
+
+.tpFavoritesStrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tpFavoriteChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(251,191,36,0.12), rgba(245,158,11,0.08));
+  border: 1px solid rgba(251,191,36,0.2);
+  color: #92400e;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.tpFavBtn {
+  background: none;
+  border: none;
+  color: #b45309;
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.tpDiffDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── Activity search & filters ── */
+
+.tpFiltersBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.tpSearchInput {
+  flex: 1;
+  min-width: 180px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(140,196,228,0.25);
+  background: rgba(255,255,255,0.9);
+  font-size: 0.86rem;
+  color: #0d2c44;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.tpSearchInput:focus {
+  border-color: rgba(14,165,233,0.4);
+  box-shadow: 0 0 0 3px rgba(14,165,233,0.08);
+}
+
+.tpFilterSelect {
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(140,196,228,0.25);
+  background: rgba(255,255,255,0.9);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #3a6888;
+  cursor: pointer;
+}
+
+.tpToggleLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #3a6888;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tpToggleLabel input[type="checkbox"] {
+  accent-color: #2563eb;
+}
+
+/* ── Empty state ── */
+
+.tpEmptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 60px 20px;
+  text-align: center;
+  border-radius: 22px;
+  background: rgba(255,255,255,0.7);
+  border: 1.5px dashed rgba(140,196,228,0.3);
+}
+
+.tpEmptyState h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0d2c44;
+}
+
+.tpEmptyState p {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #567896;
+  max-width: 440px;
+}
+
+/* ── Activity card expanded state ── */
+
+.tpActivityCardExpanded {
+  border-color: rgba(14,165,233,0.22);
+  box-shadow: 0 12px 40px rgba(96,154,198,0.14);
+}
+
+.tpActivityTopRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tpFavStar {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #cbd5e1;
+  transition: color 0.15s, transform 0.15s;
+  padding: 0;
+  line-height: 1;
+}
+
+.tpFavStar:hover { color: #f59e0b; transform: scale(1.15); }
+.tpFavStarActive { color: #f59e0b; }
+
+.tpExpandBtn {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 0;
+  margin-top: 4px;
+  transition: color 0.15s;
+}
+
+.tpExpandBtn:hover { color: #1d4ed8; }
+
+.tpActivityExpanded {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(140,196,228,0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tpMaterialsLabel {
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #4a7090;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.tpMaterialChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tpRelatedGoals {
+  display: flex;
+  flex-direction: column;
+}
+
+.tpCustomNoteBox {
+  display: flex;
+  flex-direction: column;
+}
+
+.tpCustomNoteInput {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(140,196,228,0.2);
+  background: rgba(248,252,255,0.9);
+  font-size: 0.84rem;
+  color: #0d2c44;
+  resize: vertical;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.tpCustomNoteInput:focus {
+  border-color: rgba(14,165,233,0.35);
+}
+
+/* ── Game card improvements ── */
+
+.tpGameCardIcon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+}
+
+.tpGameCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tpGameCardHeader strong {
+  font-size: 1.06rem;
+  font-weight: 800;
+  color: #0c1f2e;
+  display: block;
+}
+
+.tpGameKicker {
+  color: #6987a4;
+  font-size: 0.82rem;
+  display: block;
+}
+
+.tpPlayGameBtn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px 16px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, #2563eb, #0ea5e9);
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.tpPlayGameBtn:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+/* ── Day card improvements ── */
+
+.tpDayNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.2);
+  font-size: 0.82rem;
+  font-weight: 800;
+  margin-right: 8px;
+}
+
+.tpDayGameBtn {
+  background: none;
+  border: 1px solid rgba(37,99,235,0.2);
+  border-radius: 10px;
+  padding: 6px 12px;
+  color: #2563eb;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.tpDayGameBtn:hover {
+  background: rgba(37,99,235,0.06);
+}
+
+/* ── Progress improvements ── */
+
+.tpProgressClientInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.tpProgressClientName {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0d2c44;
+}
+
+.tpOverallScore {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px;
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(255,255,255,0.94), rgba(224,242,254,0.5));
+  border: 1px solid rgba(140,196,228,0.18);
+  box-shadow: 0 6px 24px rgba(96,154,198,0.08);
+  margin-bottom: 24px;
+}
+
+.tpOverallScoreRing {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+}
+
+.tpScoreRingSvg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.tpOverallScoreValue {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #0c1f2e;
+}
+
+.tpOverallScoreMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tpOverallScoreMeta strong {
+  font-size: 1.06rem;
+  font-weight: 800;
+  color: #0c1f2e;
+}
+
+.tpOverallScoreMeta span {
+  font-size: 0.86rem;
+  color: #567896;
+}
+
+.tpBarValue {
+  font-weight: 800;
+  color: #2563eb;
+}
+
+.tpBarCount {
+  font-size: 0.78rem;
+  color: #7a99b4;
+}
+
+.tpRangeLabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: #7a99b4;
+  margin-top: 2px;
+}
+
+.tpFormActions {
+  display: flex;
+  gap: 10px;
+}
+
+.tpProgressDate {
+  font-size: 0.82rem;
+  color: #7a99b4;
+}
+
+.tpProgressNote {
+  margin: 6px 0 0;
+  color: #567896;
+  font-size: 0.88rem;
+}
+
+.tpDeleteBtn {
+  background: none;
+  border: none;
+  color: #b33a4e;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 4px 0;
+  margin-top: 6px;
+  font-weight: 600;
+  transition: color 0.15s;
+}
+
+.tpDeleteBtn:hover {
+  color: #991b1b;
+}
+
 /* ── Responsive overrides for therapy program ── */
 
 @media (max-width: 768px) {
+
+  /* Grid layouts → single column */
   .tpDomainsGrid {
     grid-template-columns: 1fr;
   }
@@ -4712,6 +4861,26 @@
     grid-template-columns: 1fr;
   }
 
+  /* Quick stats → 2 columns on mobile */
+  .tpQuickStats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .tpQuickStatCard {
+    padding: 12px 8px;
+    border-radius: 14px;
+  }
+
+  .tpQuickStatValue {
+    font-size: 1.3rem;
+  }
+
+  .tpQuickStatLabel {
+    font-size: 0.68rem;
+  }
+
+  /* Header & section layout */
   .tpSectionHeader {
     flex-direction: column;
   }
@@ -4719,6 +4888,11 @@
   .tpActivitiesHeader {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .tpHeaderActions {
+    width: 100%;
+    flex-direction: column;
   }
 
   .tpHeader {
@@ -4735,6 +4909,11 @@
     width: 100%;
   }
 
+  .tpSectionLead {
+    font-size: 0.88rem;
+  }
+
+  /* Tabs → horizontal scroll */
   .tpTabStrip {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -4755,6 +4934,11 @@
     white-space: nowrap;
   }
 
+  .tpTabIcon {
+    font-size: 0.82rem;
+  }
+
+  /* Domain cards */
   .tpDomainCard {
     padding: 18px;
     border-radius: 18px;
@@ -4764,21 +4948,132 @@
   .tpDomainLabel { font-size: 0.96rem; }
   .tpDomainDesc { font-size: 0.82rem; }
 
+  .tpDomainAges {
+    gap: 3px;
+  }
+
+  .tpAgeBadge {
+    font-size: 0.64rem;
+    padding: 1px 6px;
+  }
+
+  /* Collapsible sections */
+  .tpCollapsible {
+    border-radius: 16px;
+    margin-bottom: 12px;
+  }
+
+  .tpCollapsibleSummary {
+    padding: 14px 16px;
+    font-size: 0.9rem;
+  }
+
+  .tpCollapsibleCount {
+    min-width: 22px;
+    height: 22px;
+    font-size: 0.72rem;
+  }
+
+  .tpCollapsible > .tpGoalsGrid,
+  .tpCollapsible > .tpChipList,
+  .tpCollapsible > .tpSkillsGrid,
+  .tpCollapsible > .tpTableWrap {
+    padding: 0 16px 16px;
+  }
+
+  /* Favorites */
+  .tpFavoritesStrip {
+    gap: 6px;
+  }
+
+  .tpFavoriteChip {
+    padding: 5px 10px;
+    font-size: 0.76rem;
+    border-radius: 11px;
+  }
+
+  /* Filters bar → stack vertically */
+  .tpFiltersBar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .tpSearchInput {
+    min-width: 0;
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 0.84rem;
+    border-radius: 12px;
+  }
+
+  .tpFilterSelect {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+
+  .tpToggleLabel {
+    font-size: 0.8rem;
+  }
+
+  /* Cards */
   .tpGoalCard {
     padding: 16px;
     border-radius: 16px;
   }
 
   .tpActivityCard {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .tpActivityTopRight {
+    gap: 6px;
+  }
+
+  .tpFavStar {
+    font-size: 1rem;
+  }
+
+  .tpExpandBtn {
+    font-size: 0.76rem;
+  }
+
+  .tpActivityExpanded {
+    gap: 10px;
+  }
+
+  .tpCustomNoteInput {
+    padding: 8px 10px;
+    font-size: 0.82rem;
+    border-radius: 10px;
+  }
+
+  .tpGameCard {
     padding: 18px;
     border-radius: 16px;
   }
 
-  .tpGameCard {
-    padding: 20px;
-    border-radius: 18px;
+  .tpGameCardIcon {
+    font-size: 1.5rem;
   }
 
+  .tpGameCardHeader strong {
+    font-size: 0.96rem;
+  }
+
+  .tpGameKicker {
+    font-size: 0.76rem;
+  }
+
+  .tpPlayGameBtn {
+    padding: 10px 14px;
+    font-size: 0.84rem;
+    border-radius: 12px;
+  }
+
+  /* Day cards */
   .tpDayCard {
     border-radius: 16px;
   }
@@ -4788,11 +5083,39 @@
     font-size: 0.9rem;
   }
 
+  .tpDayNumber {
+    width: 24px;
+    height: 24px;
+    font-size: 0.76rem;
+    border-radius: 6px;
+  }
+
   .tpDayBody {
     padding: 14px 16px;
     gap: 10px;
   }
 
+  .tpDayGameBtn {
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    border-radius: 8px;
+  }
+
+  /* Empty state */
+  .tpEmptyState {
+    padding: 40px 16px;
+    border-radius: 16px;
+  }
+
+  .tpEmptyState h3 {
+    font-size: 1rem;
+  }
+
+  .tpEmptyState p {
+    font-size: 0.86rem;
+  }
+
+  /* Filter row (difficulty buttons) */
   .tpFilterRow {
     flex-wrap: wrap;
     gap: 6px;
@@ -4803,12 +5126,76 @@
     font-size: 0.8rem;
   }
 
+  /* Section titles */
   .tpSectionTitle {
     font-size: 1.15rem;
   }
 
   .tpSubTitle {
     font-size: 0.96rem;
+  }
+
+  /* Progress tab */
+  .tpOverallScore {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 14px;
+    padding: 20px 16px;
+    border-radius: 18px;
+  }
+
+  .tpOverallScoreRing {
+    width: 70px;
+    height: 70px;
+  }
+
+  .tpOverallScoreValue {
+    font-size: 1.15rem;
+  }
+
+  .tpOverallScoreMeta {
+    align-items: center;
+  }
+
+  .tpOverallScoreMeta strong {
+    font-size: 0.96rem;
+  }
+
+  .tpOverallScoreMeta span {
+    font-size: 0.82rem;
+  }
+
+  .tpProgressClientInfo {
+    justify-content: center;
+  }
+
+  .tpProgressClientName {
+    font-size: 0.92rem;
+  }
+
+  .tpBarValue {
+    font-size: 0.92rem;
+  }
+
+  .tpRangeLabels {
+    font-size: 0.68rem;
+  }
+
+  .tpFormActions {
+    flex-direction: column;
+  }
+
+  .tpProgressDate {
+    font-size: 0.78rem;
+  }
+
+  .tpProgressNote {
+    font-size: 0.84rem;
+  }
+
+  .tpDeleteBtn {
+    font-size: 0.76rem;
   }
 
   /* Table horizontal scroll */
@@ -4828,6 +5215,7 @@
     padding: 10px 14px;
   }
 
+  /* Progress form & cards */
   .tpProgressForm {
     padding: 18px;
     border-radius: 16px;
@@ -4843,6 +5231,7 @@
     border-radius: 16px;
   }
 
+  /* Material chips */
   .tpMaterials {
     gap: 4px;
   }
@@ -4850,6 +5239,10 @@
   .tpMaterialChip {
     font-size: 0.72rem;
     padding: 2px 8px;
+  }
+
+  .tpMaterialChips {
+    gap: 4px;
   }
 
   .tpChipList {
@@ -4860,6 +5253,11 @@
     padding: 5px 12px;
     font-size: 0.78rem;
     border-radius: 10px;
+  }
+
+  /* Game description toggle */
+  .workspaceTopToggle {
+    font-size: 0.8rem;
   }
 }
 
@@ -4978,6 +5376,96 @@
   .tpTab {
     padding: 8px 12px;
     font-size: 0.78rem;
+  }
+
+  /* Therapy program – extra small */
+  .tpQuickStats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  .tpQuickStatCard {
+    padding: 10px 6px;
+    border-radius: 12px;
+  }
+
+  .tpQuickStatValue {
+    font-size: 1.1rem;
+  }
+
+  .tpQuickStatLabel {
+    font-size: 0.62rem;
+  }
+
+  .tpCollapsible {
+    border-radius: 14px;
+  }
+
+  .tpCollapsibleSummary {
+    padding: 12px 14px;
+    font-size: 0.86rem;
+  }
+
+  .tpSearchInput {
+    padding: 8px 10px;
+    font-size: 0.82rem;
+    border-radius: 10px;
+  }
+
+  .tpFilterSelect {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+  }
+
+  .tpOverallScore {
+    padding: 16px 12px;
+    border-radius: 14px;
+  }
+
+  .tpOverallScoreRing {
+    width: 60px;
+    height: 60px;
+  }
+
+  .tpOverallScoreValue {
+    font-size: 1rem;
+  }
+
+  .tpEmptyState {
+    padding: 30px 12px;
+    border-radius: 14px;
+  }
+
+  .tpEmptyState h3 {
+    font-size: 0.94rem;
+  }
+
+  .tpEmptyState p {
+    font-size: 0.8rem;
+  }
+
+  .tpActivityCard,
+  .tpGameCard,
+  .tpGoalCard {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .tpPlayGameBtn {
+    padding: 9px 12px;
+    font-size: 0.8rem;
+    border-radius: 10px;
+  }
+
+  .tpFavoriteChip {
+    padding: 4px 8px;
+    font-size: 0.72rem;
+    border-radius: 8px;
+  }
+
+  .tpDayGameBtn {
+    padding: 4px 8px;
+    font-size: 0.76rem;
   }
 
   .navItem {
