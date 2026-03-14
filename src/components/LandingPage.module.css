@@ -129,18 +129,20 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  border: none;
   border-radius: 10px;
   background: transparent;
   color: #0a1629;
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   cursor: pointer;
   transition: background 0.15s;
   flex-shrink: 0;
+  padding: 0;
+  margin-left: auto;
 }
 
 .mobileMenuBtn:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: rgba(37, 99, 235, 0.07);
 }
 
 @media (max-width: 768px) {

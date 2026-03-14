@@ -492,6 +492,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const [loginError, setLoginError] = useState("");
   const [clientDraft, setClientDraft] = useState<ClientDraftState>({ displayName: "", ageGroup: "", primaryGoal: "", supportLevel: "" });
   const [profileFeedback, setProfileFeedback] = useState("Profiller ve seans verileri bulut veritabanından yükleniyor.");
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [memoryCursor, setMemoryCursor] = useState(0);
   const [pairsCursor, setPairsCursor] = useState(0);
   const [pulseCursor, setPulseCursor] = useState(4);
@@ -508,6 +509,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const pairTimersRef = useRef<number[]>([]);
   const gameDetailsRef = useRef<HTMLDetailsElement>(null);
   const [gameElapsed, setGameElapsed] = useState(0);
+  const [gameTimerKey, setGameTimerKey] = useState(0);
 
   // ── On mount: restore local UI state ──
   useEffect(() => {
@@ -566,18 +568,20 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     setSessionStartedAt(Date.now());
   }, [activeClientId, activeTherapistId]);
 
-  // ── Game timer: tick every second while on games view ──
+  // ── Game timer: starts only when a game begins ──
   useEffect(() => {
-    if (activeAppView !== "games") return;
-    const tick = () => setGameElapsed(Math.floor((Date.now() - sessionStartedAt) / 1000));
-    tick();
-    const id = window.setInterval(tick, 1000);
+    if (gameTimerKey === 0) return;
+    setGameElapsed(0);
+    const startedAt = Date.now();
+    const id = window.setInterval(() => setGameElapsed(Math.floor((Date.now() - startedAt) / 1000)), 1000);
     return () => window.clearInterval(id);
-  }, [activeAppView, sessionStartedAt]);
+  }, [gameTimerKey]);
 
-  // ── Close details panel when switching games ──
+  // ── Reset timer and close details when switching games ──
   useEffect(() => {
     if (gameDetailsRef.current) gameDetailsRef.current.open = false;
+    setGameTimerKey(0);
+    setGameElapsed(0);
   }, [activeGame]);
 
   useEffect(() => { void loadPlatformOverview(); }, []);
@@ -800,7 +804,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     setClientDraft({ displayName: "", ageGroup: "", primaryGoal: "", supportLevel: "" });
   }
 
-  function resetSessionClock() { setSessionStartedAt(Date.now()); setProfileFeedback("Seans süresi sıfırlandı ve yeni oturum akışı başlatıldı."); }
+  function resetSessionClock() { setSessionStartedAt(Date.now()); setGameTimerKey(0); setGameElapsed(0); setProfileFeedback("Seans süresi sıfırlandı."); }
 
   async function syncScoreToBackend(game: GameKey, nextScore: number, metadata: Record<string, unknown>, sessionEntry: RecentSessionEntry) {
     const nextPlatformStatus = await resolvePlatformStatus();
@@ -863,7 +867,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     memoryTimersRef.current.push(window.setTimeout(() => setMemoryState((current) => ({ ...current, flashIndex: null, phase: "ready", message: "Sırayı tekrar et. Yanlış seçimde tur kapanır." })), 360 + nextSequence.length * 720));
   }
 
-  function startMemoryGame() { setMemoryCursor(0); playMemorySequence(createMemorySequence(MEMORY_START_LENGTH), 0); }
+  function startMemoryGame() { setGameTimerKey(k => k + 1); setMemoryCursor(0); playMemorySequence(createMemorySequence(MEMORY_START_LENGTH), 0); }
   function replayMemorySequence() { if (memoryState.sequence.length === 0) return; playMemorySequence(memoryState.sequence, memoryState.score); }
 
   function handleMemoryPick(index: number) {
@@ -886,7 +890,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     memoryTimersRef.current.push(window.setTimeout(() => setMemoryState((current) => ({ ...current, flashIndex: null })), 220));
   }
 
-  function startPairsGame() { clearPairTimers(); setPairsCursor(0); setPairsState({ tiles: createPairsDeck(), moves: 0, pairsFound: 0, locked: false, phase: "playing", message: "Kartları aç ve aynı simgeleri eşleştir." }); }
+  function startPairsGame() { setGameTimerKey(k => k + 1); clearPairTimers(); setPairsCursor(0); setPairsState({ tiles: createPairsDeck(), moves: 0, pairsFound: 0, locked: false, phase: "playing", message: "Kartları aç ve aynı simgeleri eşleştir." }); }
 
   function hideMismatchedPairs() { setPairsState((current) => ({ ...current, locked: false, tiles: current.tiles.map((tile) => (tile.matched ? tile : { ...tile, revealed: false })), message: "Kartlar kapandı. Şimdi doğru çifti bul." })); }
 
@@ -915,7 +919,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     pairTimersRef.current.push(window.setTimeout(() => hideMismatchedPairs(), 700));
   }
 
-  function startPulseGame() { setPulseCursor(4); setPulseState({ activeIndex: randomIndex(PULSE_LABELS.length), round: 1, hits: 0, misses: 0, combo: 0, points: 0, phase: "playing", message: "Işıklanan hedefe ritmi bozmadan dokun." }); }
+  function startPulseGame() { setGameTimerKey(k => k + 1); setPulseCursor(4); setPulseState({ activeIndex: randomIndex(PULSE_LABELS.length), round: 1, hits: 0, misses: 0, combo: 0, points: 0, phase: "playing", message: "Işıklanan hedefe ritmi bozmadan dokun." }); }
 
   function handlePulsePick(index: number) {
     if (pulseState.phase !== "playing" || pulseState.activeIndex === null) return;
@@ -933,7 +937,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     setPulseState({ activeIndex: randomIndex(PULSE_LABELS.length, pulseState.activeIndex), round: nextRound, hits: nextHits, misses: nextMisses, combo: nextCombo, points: nextPoints, phase: "playing", message: isHit ? `Temiz vuruş. Seri ${nextCombo}, puan ${nextPoints}.` : `Hedef değişti. Hata sayısı ${nextMisses}, puan ${nextPoints}.` });
   }
 
-  function startRouteGame() { setRouteCursor(0); setRouteState({ command: createRouteCommand(), round: 1, score: 0, streak: 0, phase: "playing", history: [], message: "Ortadaki komutu oku ve doğru yön düğmesine bas." }); }
+  function startRouteGame() { setGameTimerKey(k => k + 1); setRouteCursor(0); setRouteState({ command: createRouteCommand(), round: 1, score: 0, streak: 0, phase: "playing", history: [], message: "Ortadaki komutu oku ve doğru yön düğmesine bas." }); }
 
   function handleRoutePick(command: CommandKey) {
     if (routeState.phase !== "playing" || !routeState.command) return;
@@ -951,6 +955,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   }
 
   function startDifferenceGame() {
+    setGameTimerKey(k => k + 1);
     const round = createDifferenceRound(1);
     setDifferenceCursor(0);
     setDifferenceState({ ...round, round: 1, score: 0, phase: "playing", revealId: null, message: "Altı kartı tara; farklı olanı seç." });
@@ -976,6 +981,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   }
 
   function startScanGame() {
+    setGameTimerKey(k => k + 1);
     const round = createScanRound(1);
     setScanCursor(0);
     setScanState({ ...round, round: 1, score: 0, phase: "playing", revealId: null, message: "Üstteki hedef simgeyi ızgara içinde bul." });
@@ -1228,11 +1234,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           </button>
           <button type="button" className={`${styles.navItem} ${activeAppView === "therapy-program" ? styles.navItemActive : ""}`} onClick={() => setActiveAppView("therapy-program")}>
             <span className={styles.navIcon}>⚕</span>
-            <span>Terapi Programı</span>
-          </button>
-          <button type="button" className={`${styles.navItem} ${styles.navItemLogout}`} onClick={handleLogout}>
-            <span className={styles.navIcon}>⏻</span>
-            <span>Çıkış</span>
+            <span>Terapi</span>
           </button>
         </div>
 
@@ -1244,6 +1246,39 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           <button type="button" className={styles.logoutBtn} onClick={handleLogout}>Çıkış</button>
         </div>
       </nav>
+
+      {/* ── Mobile top bar ── */}
+      <header className={styles.mobileTopBar}>
+        <div className={styles.mobileTopLogo}>
+          <span className={styles.brandBadge}>Mi</span>
+          <span className={styles.mobileTopLogoText}>Mimio</span>
+        </div>
+        <div className={styles.mobileTopActions}>
+          <button type="button" className={styles.mobileUserBtn} onClick={() => setShowUserMenu((v) => !v)}>
+            <span className={styles.mobileUserAvatar}>
+              {activeTherapist?.displayName?.[0]?.toUpperCase() ?? "T"}
+            </span>
+          </button>
+          {showUserMenu && (
+            <>
+              <div className={styles.mobileUserMenuBackdrop} onClick={() => setShowUserMenu(false)} />
+              <div className={styles.mobileUserMenu}>
+                <div className={styles.mobileUserMenuInfo}>
+                  <strong>{activeTherapist?.displayName ?? "Terapist"}</strong>
+                  <span>{activeTherapist?.clinicName || "Bağımsız terapist"}</span>
+                </div>
+                <div className={styles.mobileUserMenuDivider} />
+                <button type="button" className={styles.mobileUserMenuItem} onClick={() => setShowUserMenu(false)}>
+                  <span>⚙</span> Ayarlar
+                </button>
+                <button type="button" className={`${styles.mobileUserMenuItem} ${styles.mobileUserMenuItemDanger}`} onClick={() => { setShowUserMenu(false); handleLogout(); }}>
+                  <span>⏻</span> Çıkış Yap
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </header>
 
       <div className={styles.mainContent}>
 
@@ -1368,13 +1403,20 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   const sessionCount = platformOverview.recentSessions.filter((s) => s.clientId === client.id).length;
                   return (
                     <div key={client.id} className={styles.clientCard}>
-                      <div className={styles.clientCardName}>{client.displayName}</div>
+                      <div className={styles.clientCardTop}>
+                        <div className={styles.clientCardAvatar}>
+                          {client.displayName[0]?.toUpperCase()}
+                        </div>
+                        <div className={styles.clientCardMeta}>
+                          <div className={styles.clientCardName}>{client.displayName}</div>
+                          <span className={styles.clientCardSessions}>{sessionCount} seans kaydı</span>
+                        </div>
+                      </div>
                       <div className={styles.clientCardChips}>
                         {client.ageGroup && <span className={styles.chip}>{client.ageGroup}</span>}
                         {client.supportLevel && <span className={styles.chip}>{client.supportLevel}</span>}
                       </div>
-                      {client.primaryGoal && <p style={{ margin: "8px 0", color: "#567896", fontSize: "0.9rem" }}>{client.primaryGoal}</p>}
-                      <p style={{ margin: "4px 0 12px", color: "#7a99b4", fontSize: "0.84rem" }}>{sessionCount} seans kaydı</p>
+                      {client.primaryGoal && <p className={styles.clientCardGoal}>{client.primaryGoal}</p>}
                       <div className={styles.clientCardActions}>
                         <button type="button" className={styles.secondaryButton} onClick={() => handleSelectClient(client.id)}>Detay</button>
                         <button type="button" className={styles.primaryButton} onClick={() => { setSelectedClientId(client.id); setActiveClientId(client.id); setActiveAppView("games"); }}>Oyna</button>
@@ -1558,7 +1600,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
         {/* ── Games View ── */}
         {activeAppView === "games" && (
-          <div>
+          <div className={styles.gamesPage}>
             <div className={styles.workspaceBar}>
               <div className={styles.workspaceBarLeft}>
                 <span className={styles.workspaceCrumb}>Oyun Çalışma Alanı</span>

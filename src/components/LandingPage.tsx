@@ -140,8 +140,8 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             <button className={styles.navLoginBtn} onClick={onLogin}>
               Giriş Yap
             </button>
-            <button className={styles.navRegisterBtn} onClick={onRegister}>
-              Ücretsiz Başla
+            <button className={styles.navRegisterBtn} onClick={onLogin}>
+              Hemen Başla
             </button>
           </div>
 
@@ -180,8 +180,8 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
           <button className={styles.navLoginBtn} onClick={() => { setMobileMenuOpen(false); onLogin(); }}>
             Giriş Yap
           </button>
-          <button className={styles.navRegisterBtn} onClick={() => { setMobileMenuOpen(false); onRegister(); }}>
-            Ücretsiz Başla
+          <button className={styles.navRegisterBtn} onClick={() => { setMobileMenuOpen(false); onLogin(); }}>
+            Hemen Başla
           </button>
         </div>
       </div>
@@ -216,8 +216,8 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             </p>
 
             <div className={styles.heroCtas}>
-              <button className={styles.heroCtaPrimary} onClick={onRegister}>
-                <span>Ücretsiz Başla</span>
+              <button className={styles.heroCtaPrimary} onClick={onLogin}>
+                <span>Hemen Başla</span>
                 <svg
                   width="18"
                   height="18"
@@ -496,8 +496,8 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             Ücretsiz hesap oluşturun, dakikalar içinde ilk danışanınızı ekleyin.
           </p>
           <div className={styles.ctaActions}>
-            <button className={styles.ctaBtn} onClick={onRegister}>
-              Ücretsiz Hesap Oluştur
+            <button className={styles.ctaBtn} onClick={onLogin}>
+              Hemen Başla
             </button>
             <button className={styles.ctaBtnSecondary} onClick={onLogin}>
               Giriş Yap

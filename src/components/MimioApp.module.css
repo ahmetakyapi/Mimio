@@ -831,6 +831,11 @@
    GAMES VIEW — Layout
    ========================================================= */
 
+.gamesPage {
+  display: flex;
+  flex-direction: column;
+}
+
 .gamesLayout {
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
@@ -1696,6 +1701,7 @@
 .mobileSessionRow {
   display: flex;
   gap: 8px;
+  align-items: center;
 }
 
 .mobileSelectCompact {
@@ -2222,6 +2228,132 @@
   color: #0f172a;
 }
 
+/* ── Mobile Top Bar ── */
+
+.mobileTopBar {
+  display: none;
+}
+
+.mobileTopLogo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mobileTopLogoText {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: #0a1629;
+}
+
+.mobileTopActions {
+  position: relative;
+}
+
+.mobileUserBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobileUserAvatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb, #06b6d4);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(37,99,235,0.25);
+}
+
+.mobileUserMenuBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 98;
+}
+
+.mobileUserMenu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 99;
+  min-width: 200px;
+  background: rgba(255,255,255,0.98);
+  backdrop-filter: blur(24px);
+  border-radius: 18px;
+  border: 1px solid rgba(140,196,228,0.2);
+  box-shadow: 0 16px 48px rgba(37,99,235,0.12), 0 2px 8px rgba(0,0,0,0.06);
+  padding: 8px;
+  overflow: hidden;
+}
+
+.mobileUserMenuInfo {
+  padding: 10px 12px 8px;
+}
+
+.mobileUserMenuInfo strong {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0c2438;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobileUserMenuInfo span {
+  display: block;
+  font-size: 0.75rem;
+  color: #6987a4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobileUserMenuDivider {
+  height: 1px;
+  background: rgba(140,196,228,0.2);
+  margin: 4px 0;
+}
+
+.mobileUserMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1e4060;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.mobileUserMenuItem:hover {
+  background: rgba(14,165,233,0.07);
+}
+
+.mobileUserMenuItemDanger {
+  color: #c0392b;
+}
+
+.mobileUserMenuItemDanger:hover {
+  background: rgba(220,38,38,0.07);
+}
+
 /* ── App Shell: Sidebar + Main ── */
 
 .appShell {
@@ -2705,13 +2837,16 @@
 }
 
 .clientCard {
-  padding: 24px 26px;
+  padding: 20px 22px;
   border-radius: 22px;
-  background: rgba(255,255,255,0.86);
+  background: rgba(255,255,255,0.92);
   backdrop-filter: blur(16px);
   border: 1px solid rgba(140,196,228,0.18);
-  box-shadow: 0 6px 24px rgba(96,154,198,0.08);
+  box-shadow: 0 4px 20px rgba(96,154,198,0.07);
   transition: all 0.16s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .clientCard:hover {
@@ -2720,12 +2855,55 @@
   border-color: rgba(14,165,233,0.22);
 }
 
+.clientCardTop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.clientCardAvatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(37,99,235,0.22);
+}
+
+.clientCardMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
 .clientCardName {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 800;
   letter-spacing: -0.03em;
   color: #0c1f2e;
-  margin-bottom: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.clientCardSessions {
+  font-size: 0.78rem;
+  color: #7a99b4;
+  font-weight: 500;
+}
+
+.clientCardGoal {
+  margin: 0;
+  color: #567896;
+  font-size: 0.88rem;
+  line-height: 1.45;
 }
 
 .clientCardChips {
@@ -3031,8 +3209,7 @@
 @media (max-width: 900px) {
   .loginShell {
     padding: 24px 16px;
-    justify-content: flex-start;
-    padding-top: env(safe-area-inset-top, 24px);
+    justify-content: center;
   }
 
   .loginCard {
@@ -3065,12 +3242,36 @@
     margin-bottom: 16px;
   }
 
+  .mobileTopBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 60;
+    height: 56px;
+    padding: 0 16px;
+    background: rgba(255,255,255,0.96);
+    backdrop-filter: blur(28px) saturate(180%);
+    border-bottom: 1px solid rgba(140,196,228,0.15);
+    box-shadow: 0 1px 0 rgba(140,196,228,0.1), 0 4px 16px rgba(96,154,198,0.06);
+  }
+
   .appShell {
     grid-template-columns: 1fr;
     grid-template-rows: 1fr auto;
     grid-template-areas:
       "main"
       "sidebar";
+    padding-top: 56px; /* push grid below fixed mobileTopBar */
+  }
+
+  .sidebarLogo,
+  .sidebarUser,
+  .navItemLogout {
+    display: none;
   }
 
   .sidebar {
@@ -3080,31 +3281,24 @@
     right: 0;
     top: auto;
     height: auto;
-    min-height: 62px;
+    min-height: 64px;
     padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-top: 6px;
     flex-direction: row;
     align-items: center;
     justify-content: space-around;
-    padding-top: 0;
-    padding-left: 8px;
-    padding-right: 8px;
+    padding-left: 4px;
+    padding-right: 4px;
     border-right: none;
-    border-top: 1px solid rgba(140,196,228,0.2);
-    box-shadow: 0 -4px 20px rgba(96,154,198,0.1);
+    border-top: 1px solid rgba(140,196,228,0.15);
+    background: rgba(255,255,255,0.96);
+    backdrop-filter: blur(28px) saturate(180%);
+    box-shadow: 0 -1px 0 rgba(140,196,228,0.15), 0 -8px 32px rgba(96,154,198,0.08);
     z-index: 50;
     grid-area: sidebar;
     overflow: visible;
   }
 
-  .sidebarLogo,
-  .sidebarUser {
-    display: none;
-  }
-
-  .navItemLogout {
-    display: flex;
-    color: #b45c5c;
-  }
 
   .navItemLogout .navIcon {
     background: rgba(220,38,38,0.1);
@@ -3120,37 +3314,75 @@
 
   .navItem {
     flex-direction: column;
-    gap: 3px;
-    padding: 8px 6px;
+    gap: 2px;
+    padding: 6px 4px;
     font-size: 0.68rem;
-    border-radius: 12px;
-    min-width: 56px;
+    border-radius: 14px;
+    min-width: 52px;
+    flex: 1;
     justify-content: center;
     align-items: center;
+    max-width: 80px;
   }
 
   .navItem span:not(.navIcon) {
     display: block;
-    font-size: 0.66rem;
+    font-size: 0.64rem;
+    font-weight: 600;
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 72px;
+    max-width: 64px;
+    color: #5a7a90;
+    letter-spacing: -0.01em;
+  }
+
+  .navItemActive span:not(.navIcon) {
+    color: #003d5c;
+    font-weight: 700;
   }
 
   .navIcon {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    font-size: 0.84rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: transform 0.15s;
+  }
+
+  .navItemActive .navIcon {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(14,165,233,0.35);
   }
 
   .mainContent {
-    padding: 16px 16px 84px;
+    padding: 16px 12px 88px;
     grid-area: main;
     max-width: 100%;
     overflow-x: hidden;
+  }
+
+  /* Games page: fill full available height */
+  .gamesPage {
+    min-height: calc(100dvh - 64px - 56px - 12px); /* viewport - bottom nav - top bar - gap */
+  }
+
+  .gamesLayout {
+    display: block;
+    flex: 1;
+  }
+
+  .gameWorkspace {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .gameWorkspace > section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
   }
 
   /* Dashboard */
@@ -3212,16 +3444,30 @@
   /* Clients */
   .clientsGrid {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 10px;
   }
 
   .clientCard {
-    padding: 18px 20px;
+    padding: 16px 18px;
     border-radius: 18px;
+    gap: 10px;
+  }
+
+  .clientCardAvatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    font-size: 1rem;
   }
 
   .clientCardName {
-    font-size: 1.06rem;
+    font-size: 1rem;
+  }
+
+  .clientCardActions {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 8px;
   }
 
   .addClientForm {
@@ -3297,17 +3543,14 @@
   .mobileGameNav {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 12px 14px;
-    margin-bottom: 12px;
-    border-radius: 22px;
-    background:
-      linear-gradient(160deg, rgba(255, 255, 255, 0.92) 0%, rgba(232, 248, 255, 0.78) 100%);
-    border: 1px solid rgba(110, 172, 214, 0.18);
+    gap: 6px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(110, 172, 214, 0.15);
     backdrop-filter: blur(20px);
-    box-shadow:
-      0 8px 24px rgba(60, 130, 190, 0.08),
-      0 2px 6px rgba(80, 145, 198, 0.04);
+    box-shadow: 0 4px 16px rgba(60, 130, 190, 0.07);
   }
 
   .sidebarBlockDesktopOnly {
@@ -3342,6 +3585,7 @@
   .gameCard {
     padding: 18px;
     border-radius: 22px;
+    flex: 1;
   }
 
   .gameStatusRow {
@@ -3391,12 +3635,7 @@
   }
 
   .workspaceBar {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 12px 16px;
-    gap: 10px;
-    border-radius: 18px;
-    margin-bottom: 16px;
+    display: none;
   }
 
   .workspaceBarLeft {
