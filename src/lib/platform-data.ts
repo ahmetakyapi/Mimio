@@ -1,0 +1,224 @@
+export const GAME_LABELS = {
+  memory: "Sıra Hafızası",
+  pairs: "Kart Eşle",
+  pulse: "Mavi Nabız",
+  route: "Komut Rotası",
+  difference: "Fark Avcısı",
+  scan: "Hedef Tarama",
+} as const;
+
+export type PlatformGameKey = keyof typeof GAME_LABELS;
+export type DatabaseStatus = "not_configured" | "online" | "schema_missing" | "error";
+export type ProfileSource = "demo" | "local" | "cloud";
+
+export interface RemoteScoreSummary {
+  label: string;
+  best: number;
+  last: number;
+  sessions: number;
+  lastPlayedAt: string | null;
+}
+
+export interface TherapistProfile {
+  id: string;
+  username: string;
+  displayName: string;
+  clinicName: string;
+  specialty: string;
+  source: ProfileSource;
+}
+
+export interface ClientProfile {
+  id: string;
+  displayName: string;
+  ageGroup: string;
+  primaryGoal: string;
+  supportLevel: string;
+  source: ProfileSource;
+}
+
+export interface RecentSessionEntry {
+  id: string;
+  therapistId: string | null;
+  therapistName: string;
+  clientId: string | null;
+  clientName: string;
+  gameKey: PlatformGameKey;
+  gameLabel: string;
+  score: number;
+  source: string;
+  playedAt: string;
+  sessionNote: string | null;
+  durationSeconds: number | null;
+}
+
+export interface SessionInsight {
+  averageScore: number;
+  activeTherapists: number;
+  activeClients: number;
+  lastPlayedAt: string | null;
+}
+
+export interface PlatformOverviewPayload {
+  database: {
+    configured: boolean;
+    status: DatabaseStatus;
+    provider: string;
+    message: string;
+  };
+  totals: {
+    sessionCount: number;
+    totalScore: number;
+  };
+  sessionInsight: SessionInsight;
+  remoteScores: Record<PlatformGameKey, RemoteScoreSummary>;
+  therapists: TherapistProfile[];
+  clients: ClientProfile[];
+  recentSessions: RecentSessionEntry[];
+}
+
+export interface SessionCreatePayload {
+  therapistId?: string;
+  therapistName?: string;
+  clientId?: string;
+  clientName?: string;
+  gameKey: PlatformGameKey;
+  score: number;
+  source?: string;
+  playedAt?: string;
+  sessionNote?: string;
+  durationSeconds?: number;
+  metadata?: Record<string, unknown>;
+}
+
+export interface TherapistCreatePayload {
+  username: string;
+  password: string;
+  displayName: string;
+  clinicName?: string;
+  specialty?: string;
+}
+
+export interface LoginPayload {
+  username: string;
+  password: string;
+}
+
+export interface ClientCreatePayload {
+  displayName: string;
+  ageGroup?: string;
+  primaryGoal?: string;
+  supportLevel?: string;
+}
+
+export const DEMO_THERAPISTS: TherapistProfile[] = [
+  {
+    id: "demo-therapist-kubra",
+    username: "kubrabayat",
+    displayName: "Uzm. Erg. Kübra Bayat",
+    clinicName: "Mimio Studio",
+    specialty: "Dikkat ve görsel algı",
+    source: "demo",
+  },
+  {
+    id: "demo-therapist-ahmet",
+    username: "ahmetakyapi",
+    displayName: "Ahmet Akyapı",
+    clinicName: "Mimio Studio",
+    specialty: "Motor planlama ve koordinasyon",
+    source: "demo",
+  },
+  {
+    id: "demo-therapist-ozan",
+    username: "ozankose",
+    displayName: "Ozan Köse",
+    clinicName: "Mimio Studio",
+    specialty: "Bilişsel rehabilitasyon",
+    source: "demo",
+  },
+];
+
+/** Default passwords for seed users (plain text — will be hashed during seed) */
+export const SEED_USER_PASSWORDS: Record<string, string> = {
+  kubrabayat: "kubra1907",
+  ahmetakyapi: "ahmet1907",
+  ozankose: "ozan1907",
+};
+
+export const DEMO_CLIENTS: ClientProfile[] = [
+  {
+    id: "demo-client-deniz",
+    displayName: "Deniz A.",
+    ageGroup: "7-9 yaş",
+    primaryGoal: "Seçici dikkat ve görsel tarama",
+    supportLevel: "Orta destek",
+    source: "demo",
+  },
+];
+
+export function createEmptyRemoteScores(): Record<PlatformGameKey, RemoteScoreSummary> {
+  return {
+    memory: { label: GAME_LABELS.memory, best: 0, last: 0, sessions: 0, lastPlayedAt: null },
+    pairs: { label: GAME_LABELS.pairs, best: 0, last: 0, sessions: 0, lastPlayedAt: null },
+    pulse: { label: GAME_LABELS.pulse, best: 0, last: 0, sessions: 0, lastPlayedAt: null },
+    route: { label: GAME_LABELS.route, best: 0, last: 0, sessions: 0, lastPlayedAt: null },
+    difference: { label: GAME_LABELS.difference, best: 0, last: 0, sessions: 0, lastPlayedAt: null },
+    scan: { label: GAME_LABELS.scan, best: 0, last: 0, sessions: 0, lastPlayedAt: null },
+  };
+}
+
+export const EMPTY_PLATFORM_OVERVIEW: PlatformOverviewPayload = {
+  database: {
+    configured: false,
+    status: "not_configured",
+    provider: "PostgreSQL / Neon",
+    message: "DATABASE_URL tanımlandığında bulut veri katmanı aktif olur.",
+  },
+  totals: {
+    sessionCount: 0,
+    totalScore: 0,
+  },
+  sessionInsight: {
+    averageScore: 0,
+    activeTherapists: DEMO_THERAPISTS.length,
+    activeClients: DEMO_CLIENTS.length,
+    lastPlayedAt: null,
+  },
+  remoteScores: createEmptyRemoteScores(),
+  therapists: DEMO_THERAPISTS,
+  clients: DEMO_CLIENTS,
+  recentSessions: [],
+};
+
+export function isPlatformGameKey(value: string): value is PlatformGameKey {
+  return value in GAME_LABELS;
+}
+
+// ── New multi-screen architecture types ──
+
+export type AppView = "login" | "register" | "dashboard" | "clients" | "client-detail" | "games" | "therapy-program";
+
+export interface SessionNote {
+  id: string;
+  clientId: string;
+  therapistId: string;
+  date: string; // "2026-03-14"
+  content: string;
+  createdAt: string;
+}
+
+export interface WeeklyPlanEntry {
+  gameKey: PlatformGameKey;
+  goal: string;
+}
+
+export type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+
+export interface WeeklyPlan {
+  id: string;
+  clientId: string;
+  therapistId: string;
+  weekStartDate: string;
+  days: Record<DayKey, WeeklyPlanEntry[]>;
+  updatedAt: string;
+}

@@ -1,0 +1,13 @@
+.next
+node_modules
+npm-debug.log*
+dist
+
+# env files (contain secrets)
+.env
+.env.local
+.env.production.local
+
+# build & test artefacts
+output/
+*.tsbuildinfo

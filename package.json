@@ -1,0 +1,25 @@
+{
+  "name": "mimio",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "db:bootstrap": "node scripts/db-bootstrap.mjs",
+    "vercel-build": "node scripts/db-bootstrap.mjs && next build"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.2",
+    "next": "14.0.4",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "20.17.19",
+    "@types/react": "18.3.18",
+    "@types/react-dom": "18.3.5",
+    "playwright": "^1.58.2",
+    "typescript": "5.8.2"
+  }
+}

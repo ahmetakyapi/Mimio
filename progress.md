@@ -1,0 +1,40 @@
+Original prompt: Ergoterapistler için interaktif oyunlar yapıp, onların kişisel becerilerini geliştirecek hem oynarken eğlenecekleri hemde sürekli kendine bir şeyler katıp, motor becelerini hafıza yeteneklerini farkları bulabileceği, arayüzü çok güzel havalı mavi beyaz tonlarında gradientlerin olduğu oyunların skorlarını görebildikleri, çok kapsamlı interaktif çok güzel bir platform yapmak istiyorum. Ergoterapistlerin yaptığı aktiviteler ve oyunları araştırıp bana bu tarz içerikleri yapacak bir web uygulaması yapalım. Full responsive olsun mobilde çok güzel gözüksün. MimiTherapy olsun adı da
+
+- 2026-03-14: Standalone app will live at `/Users/ahmet/Documents/Projects/personal-projects/MimiTherapy`.
+- 2026-03-14: Created a fresh Next.js standalone app with App Router, global glassmorphism styling, and a MimiTherapy landing/game hub experience.
+- 2026-03-14: Implemented three responsive therapist-facing mini games with persistent local scores: sequence memory, motor target tapping, and odd-one-out visual discrimination.
+- 2026-03-14: Added keyboard-friendly controls (`A/B`, arrows, `Enter`, `Space`) so the game hub is easier to navigate and easier to test.
+- 2026-03-14: Embedded research-informed OT content cards using AOTA and OT resources as the content backbone for the platform.
+- 2026-03-14: Validation completed with `npm run build`, the required `develop-web-game` Playwright client run, and `node scripts/ui-smoke.mjs` for desktop/mobile smoke coverage.
+- 2026-03-14: Test artifacts saved to `output/web-game/` and `output/playwright/`.
+- 2026-03-14: Updated the UI copy to fully Turkish-facing text and replaced ASCII approximations with proper Turkish characters.
+- 2026-03-14: Grouped the mini games into separate skill categories so memory, motor, and visual-perception games are presented independently.
+- 2026-03-14: Dev-server verification required a restart because Next.js hot-reload cache started serving missing chunk errors after the text/category refactor.
+- 2026-03-14: Removed a category/game synchronization loop by deriving the active category from the selected game instead of mirroring both in state.
+- 2026-03-14: Rebuilt the UI around two clear tabs: a premium landing-style `Platform` screen with animated story cards and a separate `Oyunlar` workspace for the interactive games.
+- 2026-03-14: Replaced the previous crowded single-screen layout with a sequential product-story flow, game showcase cards, research cards, and a calmer second-tab game dashboard.
+- 2026-03-14: Finalized the visible copy into Turkish-facing labels such as `Tanıtım`, `Oyunlar`, and `Oyun Alanını Aç`, removing leftover mixed-language UI text.
+- 2026-03-14: Updated `scripts/ui-smoke.mjs` for the new navigation model so smoke coverage now opens the `Oyunlar` tab before exercising the games.
+- 2026-03-14: Validation rerun completed with `npm run build`, `node scripts/ui-smoke.mjs`, and the required `web_game_playwright_client` landing capture.
+- 2026-03-14: During verification the Next.js dev server again hit the missing `./73.js` chunk issue; restarting `npm run dev -- --hostname 127.0.0.1 --port 4301` resolved it.
+- 2026-03-14: Reworked the landing copy to behave like a project-introduction page instead of a generic promotional page; headings now explain the project scope, step flow, categories, and module structure more directly.
+- 2026-03-14: Expanded the platform from 3 games to 6 games by adding `Kart Eşle`, `Komut Rotası`, and `Hedef Tarama`, bringing each skill category up to two playable games.
+- 2026-03-14: Updated the responsive game workspace and smoke coverage so all six games are exercised in sequence and their score records are written into the local scoreboard.
+- 2026-03-14: Visual verification for this revision was completed against refreshed artifacts in `output/playwright/` and `output/web-game-landing/`.
+- 2026-03-14: Product review noted that the next major leap should be deeper multi-stage game loops, therapist-facing session metrics, and more occupation-based scenarios tied to home/school/community participation instead of only abstract mini-games.
+- 2026-03-14: Reframed the UI around a more premium glass-product aesthetic inspired by the user's reference, while intentionally avoiding the childlike illustration style.
+- 2026-03-14: Renamed the primary tab flow to `Ana Sayfa` and `Oyunlar`, tightened the landing copy into shorter product-language blocks, and rebuilt the hero into a stronger split layout with a studio-style right panel.
+- 2026-03-14: Upgraded the games workspace into a cleaner control panel with dedicated navigation, category icon cards, active-game stat cards, and a more professional scoreboard presentation.
+- 2026-03-14: Validation rerun succeeded with `npm run build`, `node scripts/ui-smoke.mjs`, and the required `web_game_playwright_client`; refreshed artifacts were written to `output/playwright/` and `output/web-game-premium/`.
+- 2026-03-14: The recurring Next.js dev-server chunk issue resurfaced during verification; killing the stale process on `127.0.0.1:4301` and restarting `npm run dev -- --hostname 127.0.0.1 --port 4301` resolved it.
+- 2026-03-14: Added a real Next.js backend layer with Neon/PostgreSQL compatibility by introducing shared platform data contracts, a server-side database helper, and `GET /api/platform/overview` plus `POST /api/platform/sessions` route handlers.
+- 2026-03-14: Added `.env.example` and `npm run db:bootstrap` so the project can be pointed at a Neon database and initialize the `session_runs` schema without manual SQL setup.
+- 2026-03-14: Integrated the frontend scoreboard with the backend overview API, surfaced database health inside the games workspace, and kept the app safe in local-only mode when `DATABASE_URL` is not configured.
+- 2026-03-14: Verification for the backend-ready revision succeeded with `npm run build`, `node scripts/ui-smoke.mjs`, the required `web_game_playwright_client`, and direct local checks against `/api/platform/overview`; console errors were cleared after skipping cloud writes when the database is offline.
+- 2026-03-14: Expanded the platform data model with therapist profiles, client profiles, session notes, duration tracking, and richer recent-session records so seans bağlamı artık skorların yanında taşınabiliyor.
+- 2026-03-14: Added `POST /api/platform/profiles` and upgraded the schema/bootstrap flow so demo therapists and clients are seeded into Neon/Postgres when the database is online.
+- 2026-03-14: Reworked the landing page into a real `seans masası` with therapist selection, client selection, inline note entry, local profile creation fallback, and a premium session timeline preview.
+- 2026-03-14: Updated the games workspace so the sidebar now preserves active therapist/client context, shows richer session history, and keeps working even when the app is operating without `DATABASE_URL`.
+- 2026-03-14: Smoke coverage now fills the new seans masası, creates local therapist/client cards, carries the session note into the games workspace, and then exercises all six games end-to-end without console errors.
+- TODO: If this prototype moves toward production, add real therapist/user accounts, session notes, and configurable difficulty profiles per client.
+- TODO: The next visual step should push the premium direction further with custom iconography, longer editorial sections, and more distinctive game-specific art surfaces instead of only system-level abstract cards.
