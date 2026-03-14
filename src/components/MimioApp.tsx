@@ -1524,6 +1524,35 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               </div>
             </div>
 
+            {/* ── Mobile-first: compact session + game picker ── */}
+            <div className={styles.mobileGameNav}>
+              <div className={styles.mobileSessionRow}>
+                <select value={activeTherapist?.id ?? ""} onChange={(event) => setActiveTherapistId(event.target.value)} className={styles.mobileSelectCompact}>
+                  {therapistOptions.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}</option>)}
+                </select>
+                <select value={activeClient?.id ?? ""} onChange={(event) => setActiveClientId(event.target.value)} className={styles.mobileSelectCompact}>
+                  {clientOptions.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}</option>)}
+                </select>
+              </div>
+              <div className={styles.mobileCategoryStrip}>
+                {GAME_CATEGORIES.map((category) => {
+                  const isActive = activeTab.category === category.key;
+                  return (
+                    <button key={category.key} type="button" className={`${styles.mobileCategoryChip} ${isActive ? styles.mobileCategoryChipActive : ""}`} onClick={() => openCategory(category.key)}>
+                      <span>{category.icon}</span> {category.title}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className={styles.mobileGameStrip}>
+                {visibleTabs.map((tab) => (
+                  <button key={tab.key} type="button" className={`${styles.mobileGameChip} ${activeGame === tab.key ? styles.mobileGameChipActive : ""}`} onClick={() => setActiveGame(tab.key)}>
+                    {tab.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className={styles.gamesLayout}>
               <aside className={styles.gamesSidebar}>
                 <div className={styles.sidebarBlock}>
@@ -1572,7 +1601,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   </div>
                 </div>
 
-                <div className={styles.sidebarBlock}>
+                <div className={`${styles.sidebarBlock} ${styles.sidebarBlockDesktopOnly}`}>
                   <span className={styles.sectionEyebrow}>Skor özeti</span>
                   <div className={styles.scoreSummaryList}>
                     {scoreCards.map((card) => (
@@ -1586,7 +1615,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 </div>
 
                 {recentSessionFeed.length > 0 && (
-                  <div className={styles.sidebarBlock}>
+                  <div className={`${styles.sidebarBlock} ${styles.sidebarBlockDesktopOnly}`}>
                     <span className={styles.sectionEyebrow}>Son oturumlar</span>
                     <div className={styles.recentSessionList}>
                       {recentSessionFeed.slice(0, 3).map((session) => (
@@ -1607,6 +1636,30 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               </aside>
 
               <section className={styles.gameWorkspace}>
+                <details className={styles.workspaceTopDetails} open>
+                  <summary className={styles.workspaceTopSummary}>
+                    <span className={styles.sectionEyebrow}>{activeCategory.title}</span>
+                    <h3>{activeTab.title}</h3>
+                  </summary>
+                  <p>{activeTab.blurb}</p>
+                  <div className={styles.goalPills}>
+                    {activeTab.goals.map((goal) => <span key={goal}>{goal}</span>)}
+                  </div>
+                  <div className={styles.workspaceMeta}>
+                    <div className={styles.workspaceMetaCards}>
+                      <div className={styles.workspaceMetaCard}><span>En iyi</span><strong>{activeScoreCard.best}</strong></div>
+                      <div className={styles.workspaceMetaCard}><span>Son</span><strong>{activeScoreCard.last}</strong></div>
+                      <div className={styles.workspaceMetaCard}><span>Tekrar</span><strong>{activeScoreCard.plays}</strong></div>
+                    </div>
+                    {activeRemoteScore.best > 0 && (
+                      <span style={{ color: "#4e7494", fontSize: "0.86rem" }}>
+                        Sunucu en iyi: <strong style={{ color: "#071e30" }}>{activeRemoteScore.best}</strong>
+                        {activeRemoteScore.lastPlayedAt ? ` · ${formatPlayedAt(activeRemoteScore.lastPlayedAt)}` : ""}
+                      </span>
+                    )}
+                  </div>
+                </details>
+
                 {activeGame === "memory" && (
                   <section className={styles.gameCard}>
                     <div className={styles.gameStatusRow}>
@@ -1796,27 +1849,6 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   </section>
                 )}
 
-                <div className={styles.workspaceTop}>
-                  <span className={styles.sectionEyebrow}>{activeCategory.title}</span>
-                  <h3>{activeTab.title}</h3>
-                  <p>{activeTab.blurb}</p>
-                  <div className={styles.goalPills}>
-                    {activeTab.goals.map((goal) => <span key={goal}>{goal}</span>)}
-                  </div>
-                  <div className={styles.workspaceMeta}>
-                    <div className={styles.workspaceMetaCards}>
-                      <div className={styles.workspaceMetaCard}><span>En iyi</span><strong>{activeScoreCard.best}</strong></div>
-                      <div className={styles.workspaceMetaCard}><span>Son</span><strong>{activeScoreCard.last}</strong></div>
-                      <div className={styles.workspaceMetaCard}><span>Tekrar</span><strong>{activeScoreCard.plays}</strong></div>
-                    </div>
-                    {activeRemoteScore.best > 0 && (
-                      <span style={{ color: "#4e7494", fontSize: "0.86rem" }}>
-                        Sunucu en iyi: <strong style={{ color: "#071e30" }}>{activeRemoteScore.best}</strong>
-                        {activeRemoteScore.lastPlayedAt ? ` · ${formatPlayedAt(activeRemoteScore.lastPlayedAt)}` : ""}
-                      </span>
-                    )}
-                  </div>
-                </div>
               </section>
             </div>
           </div>

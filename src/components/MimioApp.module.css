@@ -1111,50 +1111,6 @@
   gap: 16px;
 }
 
-.workspaceTop {
-  padding: 28px 30px;
-  border-radius: 32px;
-  border: 1px solid rgba(110, 180, 220, 0.2);
-  background:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.95) 0%, rgba(230, 248, 255, 0.78) 100%),
-    radial-gradient(circle at 92% 8%, rgba(19, 184, 255, 0.14), transparent 48%);
-  backdrop-filter: blur(22px);
-  box-shadow:
-    0 20px 52px rgba(60, 130, 190, 0.11),
-    0 4px 12px rgba(80, 145, 198, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
-  position: relative;
-  overflow: hidden;
-}
-
-.workspaceTop::before {
-  content: "";
-  position: absolute;
-  bottom: -50px;
-  right: -50px;
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(19, 184, 255, 0.07), transparent 70%);
-  pointer-events: none;
-}
-
-.workspaceTop h3 {
-  margin: 6px 0 10px;
-  font-size: 2.2rem;
-  line-height: 1.06;
-  letter-spacing: -0.05em;
-  color: #071e30;
-}
-
-.workspaceTop > p {
-  margin: 0 0 16px;
-  max-width: 56ch;
-  color: #4e7494;
-  font-size: 0.96rem;
-  line-height: 1.72;
-}
-
 .workspaceMeta {
   display: flex;
   align-items: center;
@@ -1730,6 +1686,183 @@
 }
 
 /* =========================================================
+   MOBILE GAME NAV — Compact inline navigation (hidden on desktop)
+   ========================================================= */
+
+.mobileGameNav {
+  display: none; /* shown via media query on small screens */
+}
+
+.mobileSessionRow {
+  display: flex;
+  gap: 8px;
+}
+
+.mobileSelectCompact {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(110, 172, 214, 0.22);
+  background: rgba(255, 255, 255, 0.88);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #0e2e48;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23607d96'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px 6px;
+  padding-right: 26px;
+}
+
+.mobileCategoryStrip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 2px 0;
+}
+
+.mobileCategoryStrip::-webkit-scrollbar {
+  display: none;
+}
+
+.mobileCategoryChip {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(110, 172, 214, 0.18);
+  background: rgba(255, 255, 255, 0.8);
+  color: #3a6888;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.mobileCategoryChip:hover {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.mobileCategoryChipActive {
+  background: linear-gradient(135deg, rgba(214, 244, 255, 0.98), rgba(255, 255, 255, 0.96));
+  border-color: rgba(17, 152, 222, 0.28);
+  color: #0a2e48;
+  box-shadow: 0 4px 14px rgba(17, 152, 222, 0.12);
+}
+
+.mobileGameStrip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 2px 0;
+}
+
+.mobileGameStrip::-webkit-scrollbar {
+  display: none;
+}
+
+.mobileGameChip {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(110, 172, 214, 0.14);
+  background: rgba(255, 255, 255, 0.72);
+  color: #3a6888;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.mobileGameChip:hover {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.mobileGameChipActive {
+  background: linear-gradient(135deg, #1198de, #0d7ec0);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(17, 152, 222, 0.22);
+}
+
+/* Desktop-only sidebar blocks (hidden on mobile) */
+.sidebarBlockDesktopOnly {
+  /* visible by default; hidden in mobile media queries */
+}
+
+/* =========================================================
+   WORKSPACE TOP — details/summary for collapsible on mobile
+   ========================================================= */
+
+.workspaceTopDetails {
+  padding: 28px 30px;
+  border-radius: 32px;
+  border: 1px solid rgba(110, 180, 220, 0.2);
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.95) 0%, rgba(230, 248, 255, 0.78) 100%),
+    radial-gradient(circle at 92% 8%, rgba(19, 184, 255, 0.14), transparent 48%);
+  backdrop-filter: blur(22px);
+  box-shadow:
+    0 20px 52px rgba(60, 130, 190, 0.11),
+    0 4px 12px rgba(80, 145, 198, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  position: relative;
+  overflow: hidden;
+}
+
+.workspaceTopDetails::before {
+  content: "";
+  position: absolute;
+  bottom: -50px;
+  right: -50px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(19, 184, 255, 0.07), transparent 70%);
+  pointer-events: none;
+}
+
+.workspaceTopDetails h3 {
+  margin: 6px 0 0;
+  font-size: 2.2rem;
+  line-height: 1.06;
+  letter-spacing: -0.05em;
+  color: #071e30;
+}
+
+.workspaceTopDetails > p {
+  margin: 10px 0 16px;
+  max-width: 56ch;
+  color: #4e7494;
+  font-size: 0.96rem;
+  line-height: 1.72;
+}
+
+.workspaceTopSummary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.workspaceTopSummary::-webkit-details-marker {
+  display: none;
+}
+
+.workspaceTopSummary::marker {
+  display: none;
+  content: "";
+}
+
+/* =========================================================
    RESPONSIVE
    ========================================================= */
 
@@ -1757,6 +1890,15 @@
 
   .workspaceMetaCards {
     flex-wrap: wrap;
+  }
+
+  .workspaceTopDetails {
+    padding: 22px 24px;
+    border-radius: 26px;
+  }
+
+  .workspaceTopDetails h3 {
+    font-size: 1.6rem;
   }
 }
 
@@ -1856,10 +1998,57 @@
   }
 
   .gamesSidebar {
-    position: static;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    display: none;
+  }
+
+  .mobileGameNav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    border-radius: 22px;
+    background:
+      linear-gradient(160deg, rgba(255, 255, 255, 0.92) 0%, rgba(232, 248, 255, 0.78) 100%);
+    border: 1px solid rgba(110, 172, 214, 0.18);
+    backdrop-filter: blur(20px);
+    box-shadow:
+      0 8px 24px rgba(60, 130, 190, 0.08),
+      0 2px 6px rgba(80, 145, 198, 0.04);
+  }
+
+  .sidebarBlockDesktopOnly {
+    display: none;
+  }
+
+  .workspaceTopDetails {
+    padding: 16px 18px;
+    border-radius: 22px;
+  }
+
+  .workspaceTopDetails h3 {
+    font-size: 1.3rem;
+  }
+
+  .workspaceTopDetails > p {
+    font-size: 0.86rem;
+    line-height: 1.58;
+    margin: 6px 0 12px;
+  }
+
+  .workspaceTopSummary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .workspaceTopSummary .sectionEyebrow {
+    margin-bottom: 0;
+  }
+
+  .workspaceTopSummary h3 {
+    margin: 0;
+    font-size: 1.1rem;
   }
 
   .sidebarBlock {
@@ -2022,15 +2211,6 @@
     align-items: flex-start;
   }
 
-  .workspaceTop {
-    padding: 20px;
-    border-radius: 22px;
-  }
-
-  .workspaceTop h3 {
-    font-size: 1.6rem;
-  }
-
   .controlRow {
     flex-wrap: wrap;
     gap: 8px;
@@ -2143,11 +2323,7 @@
     padding: 6px 10px;
   }
 
-  /* Sidebar blocks collapse to single column on phone */
-  .gamesSidebar {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
+  /* Sidebar already hidden on mobile via 860px breakpoint */
 
   /* Inner tiles for difference & scan */
   .differenceInner {
@@ -2211,13 +2387,21 @@
     border-radius: 18px;
   }
 
-  .workspaceTop {
-    padding: 16px;
+  .workspaceTopDetails {
+    padding: 14px;
     border-radius: 18px;
   }
 
-  .workspaceTop h3 {
-    font-size: 1.3rem;
+  .workspaceTopDetails h3 {
+    font-size: 1.1rem;
+  }
+
+  .workspaceTopSummary {
+    gap: 8px;
+  }
+
+  .workspaceTopSummary h3 {
+    font-size: 1rem;
   }
 
   .workspaceMetaCards {
@@ -2295,11 +2479,11 @@
   }
 
   /* Game workspace — compact in landscape */
-  .workspaceTop {
+  .workspaceTopDetails {
     padding: 10px 14px;
   }
 
-  .workspaceTop h3 {
+  .workspaceTopDetails h3 {
     font-size: 1.1rem;
   }
 
