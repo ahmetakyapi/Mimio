@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import LandingPage from "./LandingPage";
-import { MimiTherapyApp } from "./MimiTherapyApp";
+import { MimioApp } from "./MimioApp";
 
 type TopView = "landing" | "app";
 
-const ACTIVE_THERAPIST_KEY = "mimitherapy-active-therapist-v2";
+const ACTIVE_THERAPIST_KEY = "mimio-active-therapist-v2";
 
 export function ClientRoot() {
   const [topView, setTopView] = useState<TopView>("landing");
@@ -41,7 +41,7 @@ export function ClientRoot() {
   }
 
   return (
-    <MimiTherapyApp
+    <MimioApp
       initialAppView={initialAppView}
       onLogout={() => setTopView("landing")}
     />

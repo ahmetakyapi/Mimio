@@ -1,8 +1,5 @@
 import { neon } from "@neondatabase/serverless";
 import {
-  DEMO_CLIENTS,
-  DEMO_THERAPISTS,
-  SEED_USER_PASSWORDS,
   EMPTY_PLATFORM_OVERVIEW,
   GAME_LABELS,
   createEmptyRemoteScores,
@@ -86,45 +83,6 @@ function isSchemaMissingError(error: unknown) {
   );
 }
 
-async function seedProfileLibrary(sql: SqlClient) {
-  for (const therapist of DEMO_THERAPISTS) {
-    const plainPassword = SEED_USER_PASSWORDS[therapist.username] ?? null;
-    if (plainPassword) {
-      // Upsert with password hash using pgcrypto's crypt + bf
-      await sql.query(
-        `INSERT INTO therapist_profiles (display_name, clinic_name, specialty, username, password_hash)
-        VALUES ($1, $2, $3, $4, crypt($5, gen_salt('bf', 8)))
-        ON CONFLICT (display_name)
-        DO UPDATE SET clinic_name = EXCLUDED.clinic_name, specialty = EXCLUDED.specialty,
-                      username = EXCLUDED.username,
-                      password_hash = COALESCE(EXCLUDED.password_hash, therapist_profiles.password_hash),
-                      updated_at = NOW()`,
-        [therapist.displayName, therapist.clinicName, therapist.specialty, therapist.username, plainPassword]
-      );
-    } else {
-      await sql.query(
-        `INSERT INTO therapist_profiles (display_name, clinic_name, specialty, username)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (display_name)
-        DO UPDATE SET clinic_name = EXCLUDED.clinic_name, specialty = EXCLUDED.specialty,
-                      username = COALESCE(EXCLUDED.username, therapist_profiles.username),
-                      updated_at = NOW()`,
-        [therapist.displayName, therapist.clinicName, therapist.specialty, therapist.username]
-      );
-    }
-  }
-
-  for (const client of DEMO_CLIENTS) {
-    await sql.query(
-      `INSERT INTO client_profiles (display_name, age_group, primary_goal, support_level)
-      VALUES ($1, $2, $3, $4)
-      ON CONFLICT (display_name)
-      DO UPDATE SET age_group = EXCLUDED.age_group, primary_goal = EXCLUDED.primary_goal, support_level = EXCLUDED.support_level, updated_at = NOW()`,
-      [client.displayName, client.ageGroup, client.primaryGoal, client.supportLevel]
-    );
-  }
-}
-
 export async function bootstrapPlatformSchema(sql = getSqlClient()) {
   if (!sql) {
     throw new Error("DATABASE_URL tanımlı değil.");
@@ -133,8 +91,6 @@ export async function bootstrapPlatformSchema(sql = getSqlClient()) {
   for (const query of SCHEMA_QUERIES) {
     await sql.query(query);
   }
-
-  await seedProfileLibrary(sql);
 }
 
 export async function getPlatformOverviewFromDatabase(): Promise<PlatformOverviewPayload> {

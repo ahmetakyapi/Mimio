@@ -1,78 +1,49 @@
 #!/usr/bin/env node
-// filepath: /Users/ahmet/Documents/Projects/personal-projects/MimiTherapy/scripts/db-bootstrap.mjs
 //
-// Neon PostgreSQL şemasını oluşturur ve seed kullanıcılarını ekler.
+// Neon PostgreSQL şemasını oluşturur.
+// Seed kullanıcıları uygulama arayüzündeki "Kayıt Ol" formuyla eklenir;
+// bu script yalnızca tablo ve indeksleri hazırlar.
+//
 // Kullanım:
 //   DATABASE_URL="postgres://..." node scripts/db-bootstrap.mjs
 //   veya .env.local / .env dosyasından otomatik yüklenir.
 
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { neon } from "@neondatabase/serverless";
-
-/* ── Seed verisi ── */
-
-const SEED_THERAPISTS = [
-  {
-    username: "kubrabayat",
-    password: "kubra1907",
-    displayName: "Uzm. Erg. Kübra Bayat",
-    clinicName: "Mimio Studio",
-    specialty: "Dikkat ve görsel algı",
-  },
-  {
-    username: "ahmetakyapi",
-    password: "ahmet1907",
-    displayName: "Ahmet Akyapı",
-    clinicName: "Mimio Studio",
-    specialty: "Motor planlama ve koordinasyon",
-  },
-  {
-    username: "ozankose",
-    password: "ozan1907",
-    displayName: "Ozan Köse",
-    clinicName: "Mimio Studio",
-    specialty: "Bilişsel rehabilitasyon",
-  },
-];
-
-const SEED_CLIENTS = [
-  {
-    displayName: "Deniz A.",
-    ageGroup: "7-9 yaş",
-    primaryGoal: "Seçici dikkat ve görsel tarama",
-    supportLevel: "Orta destek",
-  },
-  {
-    displayName: "Lina K.",
-    ageGroup: "6-8 yaş",
-    primaryGoal: "Sıralama hafızası ve yönerge takibi",
-    supportLevel: "Kademeli ipucu",
-  },
-  {
-    displayName: "Kaan T.",
-    ageGroup: "8-10 yaş",
-    primaryGoal: "El-göz koordinasyonu",
-    supportLevel: "Düşük destek",
-  },
-];
 
 /* ── Env yükleme ── */
 
 if (!process.env.DATABASE_URL) {
-  for (const f of [".env.local", ".env"]) {
-    if (existsSync(f)) {
-      process.loadEnvFile(f);
+  try {
+    for (const f of [".env.local", ".env"]) {
+      if (existsSync(f)) {
+        const content = readFileSync(f, "utf-8");
+        for (const line of content.split("\n")) {
+          const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+          if (match && !process.env[match[1]]) {
+            let val = match[2] ?? "";
+            if (
+              (val.startsWith('"') && val.endsWith('"')) ||
+              (val.startsWith("'") && val.endsWith("'"))
+            ) {
+              val = val.slice(1, -1);
+            }
+            process.env[match[1]] = val;
+          }
+        }
+      }
     }
+  } catch {
+    // ignore env loading errors
   }
 }
 
 if (!process.env.DATABASE_URL) {
-  console.error(
-    "❌  DATABASE_URL tanımlı değil.\n" +
-      "    .env.local dosyasına Neon bağlantı dizesini ekleyin veya\n" +
-      "    DATABASE_URL=... node scripts/db-bootstrap.mjs şeklinde çalıştırın."
+  console.log(
+    "⏭️  DATABASE_URL tanımlı değil — veritabanı bootstrap'ı atlanıyor.\n" +
+      "    Bu normal bir durumdur, build devam edecek."
   );
-  process.exit(1);
+  process.exit(0);
 }
 
 const sql = neon(process.env.DATABASE_URL);
@@ -80,10 +51,8 @@ const sql = neon(process.env.DATABASE_URL);
 /* ── Şema ── */
 
 const SCHEMA_QUERIES = [
-  // pgcrypto → crypt() & gen_salt()
   "CREATE EXTENSION IF NOT EXISTS pgcrypto",
 
-  // Terapist profilleri
   `CREATE TABLE IF NOT EXISTS therapist_profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     display_name TEXT NOT NULL UNIQUE,
@@ -101,7 +70,6 @@ const SCHEMA_QUERIES = [
      ON therapist_profiles (username)
      WHERE username IS NOT NULL AND username != ''`,
 
-  // Danışan profilleri
   `CREATE TABLE IF NOT EXISTS client_profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     display_name TEXT NOT NULL UNIQUE,
@@ -112,7 +80,6 @@ const SCHEMA_QUERIES = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
 
-  // Seans kayıtları
   `CREATE TABLE IF NOT EXISTS session_runs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     therapist_id UUID,
@@ -148,40 +115,5 @@ for (const query of SCHEMA_QUERIES) {
 }
 
 console.log("✅  Tablolar ve indeksler hazır.");
-
-/* ── Seed: terapistler (şifreli) ── */
-
-for (const t of SEED_THERAPISTS) {
-  await sql.query(
-    `INSERT INTO therapist_profiles (display_name, clinic_name, specialty, username, password_hash)
-     VALUES ($1, $2, $3, $4, crypt($5, gen_salt('bf', 8)))
-     ON CONFLICT (display_name)
-     DO UPDATE SET
-       clinic_name     = EXCLUDED.clinic_name,
-       specialty       = EXCLUDED.specialty,
-       username        = EXCLUDED.username,
-       password_hash   = crypt($5, gen_salt('bf', 8)),
-       updated_at      = NOW()`,
-    [t.displayName, t.clinicName, t.specialty, t.username, t.password]
-  );
-  console.log(`   👤  ${t.displayName} (${t.username})`);
-}
-
-/* ── Seed: danışanlar ── */
-
-for (const c of SEED_CLIENTS) {
-  await sql.query(
-    `INSERT INTO client_profiles (display_name, age_group, primary_goal, support_level)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (display_name)
-     DO UPDATE SET
-       age_group     = EXCLUDED.age_group,
-       primary_goal  = EXCLUDED.primary_goal,
-       support_level = EXCLUDED.support_level,
-       updated_at    = NOW()`,
-    [c.displayName, c.ageGroup, c.primaryGoal, c.supportLevel]
-  );
-  console.log(`   🧒  ${c.displayName}`);
-}
-
-console.log("\n🎉  MimiTherapy veritabanı hazır — Vercel deploy'a hazırsınız!");
+console.log("\n🎉  Mimio veritabanı hazır — Vercel deploy'a hazırsınız!");
+console.log("    İlk terapist hesabını uygulamadaki Kayıt Ol formundan oluşturabilirsiniz.");

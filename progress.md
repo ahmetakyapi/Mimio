@@ -1,7 +1,7 @@
-Original prompt: Ergoterapistler için interaktif oyunlar yapıp, onların kişisel becerilerini geliştirecek hem oynarken eğlenecekleri hemde sürekli kendine bir şeyler katıp, motor becelerini hafıza yeteneklerini farkları bulabileceği, arayüzü çok güzel havalı mavi beyaz tonlarında gradientlerin olduğu oyunların skorlarını görebildikleri, çok kapsamlı interaktif çok güzel bir platform yapmak istiyorum. Ergoterapistlerin yaptığı aktiviteler ve oyunları araştırıp bana bu tarz içerikleri yapacak bir web uygulaması yapalım. Full responsive olsun mobilde çok güzel gözüksün. MimiTherapy olsun adı da
+Original prompt: Ergoterapistler için interaktif oyunlar yapıp, onların kişisel becerilerini geliştirecek hem oynarken eğlenecekleri hemde sürekli kendine bir şeyler katıp, motor becelerini hafıza yeteneklerini farkları bulabileceği, arayüzü çok güzel havalı mavi beyaz tonlarında gradientlerin olduğu oyunların skorlarını görebildikleri, çok kapsamlı interaktif çok güzel bir platform yapmak istiyorum. Ergoterapistlerin yaptığı aktiviteler ve oyunları araştırıp bana bu tarz içerikleri yapacak bir web uygulaması yapalım. Full responsive olsun mobilde çok güzel gözüksün. Mimio olsun adı da
 
-- 2026-03-14: Standalone app will live at `/Users/ahmet/Documents/Projects/personal-projects/MimiTherapy`.
-- 2026-03-14: Created a fresh Next.js standalone app with App Router, global glassmorphism styling, and a MimiTherapy landing/game hub experience.
+- 2026-03-14: Standalone app will live at `/Users/ahmet/Documents/Projects/personal-projects/Mimio`.
+- 2026-03-14: Created a fresh Next.js standalone app with App Router, global glassmorphism styling, and a Mimio landing/game hub experience.
 - 2026-03-14: Implemented three responsive therapist-facing mini games with persistent local scores: sequence memory, motor target tapping, and odd-one-out visual discrimination.
 - 2026-03-14: Added keyboard-friendly controls (`A/B`, arrows, `Enter`, `Space`) so the game hub is easier to navigate and easier to test.
 - 2026-03-14: Embedded research-informed OT content cards using AOTA and OT resources as the content backbone for the platform.

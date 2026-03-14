@@ -91,7 +91,7 @@ async function configureSessionDesk(page) {
 
   await usernameInput.fill("testuzmani");
   await displayNameInput.fill("Erg. Test Uzmanı");
-  await clinicInput.fill("MimiTherapy Lab");
+  await clinicInput.fill("Mimio Lab");
   await specialtyInput.fill("Motor planlama");
   await clickButtonByName(page, "Hesabı Oluştur ve Gir →");
 

@@ -17,7 +17,7 @@ import {
   type WeeklyPlan,
   type WeeklyPlanEntry,
 } from "@/lib/platform-data";
-import styles from "./MimiTherapyApp.module.css";
+import styles from "./MimioApp.module.css";
 import {
   THERAPY_DOMAINS,
   GAME_THERAPY_MAPPINGS,
@@ -160,11 +160,11 @@ interface ClientDraftState {
   supportLevel: string;
 }
 
-const STORAGE_KEY = "mimitherapy-scoreboard-v2";
-const SESSION_CONTEXT_KEY = "mimitherapy-session-context-v1";
-const ACTIVE_THERAPIST_KEY = "mimitherapy-active-therapist-v2";
-const NOTES_KEY = "mimitherapy-notes-v1";
-const WEEKLY_PLANS_KEY = "mimitherapy-weekly-plans-v1";
+const STORAGE_KEY = "mimio-scoreboard-v2";
+const SESSION_CONTEXT_KEY = "mimio-session-context-v1";
+const ACTIVE_THERAPIST_KEY = "mimio-active-therapist-v2";
+const NOTES_KEY = "mimio-notes-v1";
+const WEEKLY_PLANS_KEY = "mimio-weekly-plans-v1";
 
 const MEMORY_START_LENGTH = 3;
 const PULSE_TOTAL_ROUNDS = 20;
@@ -432,12 +432,12 @@ function moveGridCursor(current: number, key: string, columns: number, itemCount
   return current;
 }
 
-interface MimiTherapyAppProps {
+interface MimioAppProps {
   initialAppView?: "login" | "register";
   onLogout?: () => void;
 }
 
-export function MimiTherapyApp({ initialAppView = "login", onLogout }: MimiTherapyAppProps = {}) {
+export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps = {}) {
   // ── New multi-screen state ──
   const [activeAppView, setActiveAppView] = useState<AppView>(initialAppView);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
@@ -452,7 +452,7 @@ export function MimiTherapyApp({ initialAppView = "login", onLogout }: MimiThera
   const [addClientDraft, setAddClientDraft] = useState<ClientDraftState>({ displayName: "", ageGroup: "", primaryGoal: "", supportLevel: "" });
 
   // ── Therapy Program state ──
-  const THERAPY_PROGRESS_KEY = "mimitherapy-therapy-progress-v1";
+  const THERAPY_PROGRESS_KEY = "mimio-therapy-progress-v1";
   const [tpSelectedDomain, setTpSelectedDomain] = useState<TherapyDomainKey | null>(null);
   const [tpSelectedClientId, setTpSelectedClientId] = useState<string | null>(null);
   const [tpActiveTab, setTpActiveTab] = useState<"domains" | "activities" | "games" | "plan" | "progress">("domains");

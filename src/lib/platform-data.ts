@@ -111,51 +111,6 @@ export interface ClientCreatePayload {
   supportLevel?: string;
 }
 
-export const DEMO_THERAPISTS: TherapistProfile[] = [
-  {
-    id: "demo-therapist-kubra",
-    username: "kubrabayat",
-    displayName: "Uzm. Erg. Kübra Bayat",
-    clinicName: "Mimio Studio",
-    specialty: "Dikkat ve görsel algı",
-    source: "cloud",
-  },
-  {
-    id: "demo-therapist-ahmet",
-    username: "ahmetakyapi",
-    displayName: "Ahmet Akyapı",
-    clinicName: "Mimio Studio",
-    specialty: "Motor planlama ve koordinasyon",
-    source: "cloud",
-  },
-  {
-    id: "demo-therapist-ozan",
-    username: "ozankose",
-    displayName: "Ozan Köse",
-    clinicName: "Mimio Studio",
-    specialty: "Bilişsel rehabilitasyon",
-    source: "cloud",
-  },
-];
-
-/** Default passwords for seed users (plain text — will be hashed during seed) */
-export const SEED_USER_PASSWORDS: Record<string, string> = {
-  kubrabayat: "kubra1907",
-  ahmetakyapi: "ahmet1907",
-  ozankose: "ozan1907",
-};
-
-export const DEMO_CLIENTS: ClientProfile[] = [
-  {
-    id: "demo-client-deniz",
-    displayName: "Deniz A.",
-    ageGroup: "7-9 yaş",
-    primaryGoal: "Seçici dikkat ve görsel tarama",
-    supportLevel: "Orta destek",
-    source: "cloud",
-  },
-];
-
 export function createEmptyRemoteScores(): Record<PlatformGameKey, RemoteScoreSummary> {
   return {
     memory: { label: GAME_LABELS.memory, best: 0, last: 0, sessions: 0, lastPlayedAt: null },
