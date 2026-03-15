@@ -198,7 +198,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             </button>
             <button
               onClick={onRegister}
-              className="text-sm font-semibold bg-(--color-text-strong) text-white px-5 py-2.5 rounded-xl hover:opacity-90 transition-opacity"
+              className="text-sm font-semibold bg-(--color-primary) text-white px-5 py-2.5 rounded-xl hover:bg-(--color-primary-hover) transition-colors"
             >
               Hemen Başla
             </button>
@@ -353,7 +353,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             {/* App window */}
             <div className="w-full max-w-md bg-(--color-surface-strong) rounded-2xl shadow-xl border border-(--color-line) overflow-hidden" style={{ backdropFilter: "blur(16px)" }}>
               {/* macOS window chrome */}
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-(--color-line)" style={{ background: "rgba(255,255,255,0.03)" }}>
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-(--color-line)" style={{ background: "var(--color-surface)" }}>
                 <div className="flex gap-1.5">
                   <div className="w-3 h-3 rounded-full bg-red-400/70" />
                   <div className="w-3 h-3 rounded-full bg-amber-400/70" />
@@ -365,7 +365,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               {/* App layout */}
               <div className="flex" style={{ height: 280 }}>
                 {/* Narrow sidebar */}
-                <div className="w-[60px] border-r border-(--color-line) flex flex-col items-center py-3 gap-1 shrink-0" style={{ background: "rgba(4,8,16,0.6)" }}>
+                <div className="w-[60px] border-r border-(--color-line) flex flex-col items-center py-3 gap-1 shrink-0" style={{ background: "var(--color-sidebar)" }}>
                   <div className="w-9 h-9 rounded-xl bg-(--color-primary) flex items-center justify-center text-white font-bold text-sm mb-2">M</div>
                   {[
                     { Icon: LayoutDashboard, label: "Panel", active: false },
@@ -385,8 +385,8 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 <div className="flex-1 p-4 flex flex-col gap-3 overflow-hidden">
                   {/* Header placeholders */}
                   <div className="flex flex-col gap-1.5">
-                    <div className="h-3 bg-white/8 rounded-full w-3/4" />
-                    <div className="h-2.5 bg-white/5 rounded-full w-1/2" />
+                    <div className="h-3 rounded-full w-3/4 bg-(--color-skeleton-hi)" />
+                    <div className="h-2.5 rounded-full w-1/2 bg-(--color-skeleton-lo)" />
                   </div>
                   {/* 3 stat cards */}
                   <div className="grid grid-cols-3 gap-2">
@@ -399,11 +399,11 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                   </div>
                   {/* Client rows */}
                   {[0, 1].map((i) => (
-                    <div key={i} className="flex items-center gap-2.5 border border-(--color-line) rounded-xl px-3 py-2" style={{ background: "rgba(255,255,255,0.04)" }}>
+                    <div key={i} className="flex items-center gap-2.5 border border-(--color-line) rounded-xl px-3 py-2" style={{ background: "var(--color-surface)" }}>
                       <div className="w-7 h-7 rounded-lg bg-(--color-primary) shrink-0" />
                       <div className="flex-1 flex flex-col gap-1 min-w-0">
-                        <div className="h-2.5 bg-white/8 rounded-full w-3/4" />
-                        <div className="h-2 bg-white/5 rounded-full w-1/2" />
+                        <div className="h-2.5 rounded-full w-3/4 bg-(--color-skeleton-hi)" />
+                        <div className="h-2 rounded-full w-1/2 bg-(--color-skeleton-lo)" />
                       </div>
                       <div className="w-10 h-6 bg-(--color-primary)/70 rounded-lg shrink-0" />
                     </div>
@@ -416,7 +416,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       </section>
 
       {/* ── Stats Bar ── */}
-      <section className="border-t border-b border-(--color-line) py-10" style={{ background: "rgba(255,255,255,0.025)" }}>
+      <section className="border-t border-b border-(--color-line) py-10" style={{ background: "var(--color-surface)" }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid grid-cols-3 divide-x divide-(--color-line)">
             {STATS.map((s) => (
@@ -526,7 +526,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       </section>
 
       {/* ── Games ── */}
-      <section id="games" className="py-24 px-6" style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,0.1), transparent), rgba(4,7,13,0.9)" }}>
+      <section id="games" className="py-24 px-6 section-games">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial="hidden"
@@ -539,13 +539,13 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               Terapötik İçerik
             </motion.p>
             <div className="flex items-end justify-between gap-4 flex-wrap">
-              <motion.h2 variants={fadeUp} className="text-4xl font-extrabold text-white max-w-md leading-tight">
+              <motion.h2 variants={fadeUp} className="text-4xl font-extrabold text-(--color-games-text) max-w-md leading-tight">
                 Her oyun spesifik bir gelişim alanını hedefler ve çocukların ilgisini çekecek şekilde tasarlanmıştır.
               </motion.h2>
               <motion.button
                 variants={fadeUp}
                 onClick={onLogin}
-                className="text-sm font-semibold text-white bg-white/10 hover:bg-white/20 border border-white/20 px-5 py-2.5 rounded-xl transition-colors whitespace-nowrap"
+                className="text-sm font-semibold text-(--color-games-text) bg-(--color-games-badge-bg) hover:bg-(--color-games-card-hover) border border-(--color-games-badge-border) px-5 py-2.5 rounded-xl transition-colors whitespace-nowrap"
               >
                 Tüm Kataloğu Gör
               </motion.button>
@@ -565,10 +565,10 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 <motion.div
                   key={game.key}
                   variants={fadeUp}
-                  className="bg-white/4 backdrop-blur rounded-3xl overflow-hidden border border-white/8 hover:bg-white/8 transition-colors group cursor-pointer"
+                  className="backdrop-blur rounded-3xl overflow-hidden border transition-colors group cursor-pointer bg-(--color-games-card-bg) border-(--color-games-card-border) hover:bg-(--color-games-card-hover)"
                   onClick={onLogin}
                 >
-                  <div className="aspect-[4/3] bg-gradient-to-br from-[rgba(10,16,30,0.9)] to-[rgba(4,7,13,0.95)] flex items-center justify-center relative overflow-hidden">
+                  <div className="aspect-[4/3] game-tile-preview flex items-center justify-center relative overflow-hidden">
                     <div
                       className="absolute inset-0 opacity-20"
                       style={{
@@ -576,13 +576,13 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                       }}
                     />
                     <Icon size={48} color={game.color} className="opacity-80" />
-                    <span className="absolute bottom-3 left-3 text-xs font-semibold text-white bg-white/10 backdrop-blur px-2.5 py-1 rounded-full border border-white/20">
+                    <span className="absolute bottom-3 left-3 text-xs font-semibold text-(--color-games-text) bg-(--color-games-badge-bg) backdrop-blur px-2.5 py-1 rounded-full border border-(--color-games-badge-border)">
                       {game.area}
                     </span>
                   </div>
                   <div className="p-5">
-                    <h3 className="font-bold text-white mb-1">{game.label}</h3>
-                    <p className="text-sm text-slate-400">{game.desc}</p>
+                    <h3 className="font-bold text-(--color-games-text) mb-1">{game.label}</h3>
+                    <p className="text-sm text-(--color-games-text-soft)">{game.desc}</p>
                   </div>
                 </motion.div>
               );
@@ -630,7 +630,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="border-t border-(--color-line) py-10 px-6" style={{ background: "rgba(255,255,255,0.02)" }}>
+      <footer className="border-t border-(--color-line) py-10 px-6" style={{ background: "var(--color-surface)" }}>
         <div className="max-w-6xl mx-auto flex flex-col items-center gap-3">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-(--color-primary) flex items-center justify-center text-white font-bold text-sm">M</div>

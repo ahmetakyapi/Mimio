@@ -2888,8 +2888,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                             {label: <span className="flex items-center gap-1"><ClipboardList size={11} />Anahtar Aktiviteler</span>, content: <ul className="list-disc pl-4 text-(--color-text-soft) text-xs space-y-1 m-0">{tpGeneratedPlan.weeklyPlan.keyActivities.map((a, i) => <li key={i}>{a}</li>)}</ul>},
                             {label: <span className="flex items-center gap-1"><Gamepad2 size={11} />Dijital Oyunlar</span>, content: <div className="flex flex-wrap gap-1">{tpGeneratedPlan.weeklyPlan.digitalGames.map((gk) => { const gt = GAME_TABS.find((g) => g.key === gk); return <span key={gk} className="bg-(--color-primary-light) text-(--color-primary) text-xs px-2 py-0.5 rounded-full">{gt?.title ?? gk}</span>; })}</div>},
                             {label: <span className="flex items-center gap-1"><Home size={11} />Ev Ödevi</span>, content: <strong className="text-(--color-text-strong) text-sm">{tpGeneratedPlan.weeklyPlan.homeExercise}</strong>},
-                          ].map(({label, content}) => (
-                            <div key={label} className="bg-(--color-surface-strong) rounded-xl border border-(--color-line) p-4 flex flex-col gap-2">
+                          ].map(({label, content}, i) => (
+                            <div key={i} className="bg-(--color-surface-strong) rounded-xl border border-(--color-line) p-4 flex flex-col gap-2">
                               <span className="text-[10px] font-bold uppercase tracking-wider text-(--color-text-muted)">{label}</span>
                               {content}
                             </div>
