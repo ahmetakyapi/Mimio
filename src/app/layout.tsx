@@ -17,10 +17,35 @@ const inter = Inter({
   display: "swap",
 });
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://mimio.app'
+const DESCRIPTION = "Ergoterapistler için motor beceri, hafıza ve görsel ayrım oyunlarını tek merkezde buluşturan etkileşimli platform."
+
 export const metadata: Metadata = {
   title: "Mimio",
-  description:
-    "Ergoterapistler için motor beceri, hafıza ve görsel ayrım oyunlarını tek merkezde buluşturan etkileşimli platform.",
+  description: DESCRIPTION,
+  metadataBase: new URL(APP_URL),
+  openGraph: {
+    title: "Mimio",
+    description: DESCRIPTION,
+    url: APP_URL,
+    siteName: "Mimio",
+    images: [
+      {
+        url: "/api/og",
+        width: 1200,
+        height: 630,
+        alt: "Mimio — Ergoterapistler için Yeni Nesil Platform",
+      },
+    ],
+    locale: "tr_TR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Mimio",
+    description: DESCRIPTION,
+    images: ["/api/og"],
+  },
 };
 
 export const viewport: Viewport = {

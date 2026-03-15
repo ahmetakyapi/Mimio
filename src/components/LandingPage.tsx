@@ -637,7 +637,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             <span className="font-bold text-(--color-text-strong) text-lg">Mimio</span>
           </div>
           <p className="text-sm text-(--color-text-muted)">
-            © 2025 Mimio Ergoterapi Platformu. Tüm hakları saklıdır.
+            © 2026 Mimio Ergoterapi Platformu. Tüm hakları saklıdır.
           </p>
         </div>
       </footer>
