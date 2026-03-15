@@ -3,6 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, FormEvent } from "react";
 import {
+  LayoutDashboard, Users, Gamepad2, Stethoscope, UserPlus, Brain, Hand, Eye, Settings, LogOut, Clock, ChevronDown, RotateCcw, Sun, Moon,
+  Baby, Zap, Puzzle, PersonStanding, Briefcase, Handshake,
+  Target, ClipboardList, Home, Tag, FlaskConical, Lightbulb, BookOpen, BarChart3, Search, RefreshCw, Map, Layers, CalendarDays, TrendingUp, Grid3X3,
+  type LucideIcon,
+} from "lucide-react";
+import { useTheme } from "./ThemeProvider";
+import {
   EMPTY_PLATFORM_OVERVIEW,
   GAME_LABELS,
   type AppView,
@@ -17,7 +24,7 @@ import {
   type WeeklyPlan,
   type WeeklyPlanEntry,
 } from "@/lib/platform-data";
-import styles from "./MimioApp.module.css";
+
 import {
   THERAPY_DOMAINS,
   GAME_THERAPY_MAPPINGS,
@@ -31,7 +38,6 @@ import {
   type ProgressEntry,
 } from "@/lib/therapy-program-data";
 
-type ViewKey = "platform" | "games";
 type GameKey = PlatformGameKey;
 type GameCategoryKey = "memorySkills" | "motorSkills" | "visualSkills";
 type PatternKey = "rings" | "grid" | "wave";
@@ -183,14 +189,14 @@ const ROUTE_COMMANDS = [
 ];
 
 const SYMBOL_LIBRARY: SymbolVariant[] = [
-  { label: "Bulut", icon: "☁", accent: "#23b8ff", background: "linear-gradient(180deg, rgba(236,250,255,0.96), rgba(219,241,255,0.78))", pattern: "rings" },
-  { label: "Damlacık", icon: "◔", accent: "#0da7ff", background: "linear-gradient(180deg, rgba(229,248,255,0.96), rgba(214,236,255,0.8))", pattern: "grid" },
-  { label: "Kırık Çizgi", icon: "〰", accent: "#2ca8ff", background: "linear-gradient(180deg, rgba(240,251,255,0.96), rgba(224,238,255,0.78))", pattern: "wave" },
-  { label: "Halka", icon: "◎", accent: "#54ccff", background: "linear-gradient(180deg, rgba(238,249,255,0.96), rgba(221,240,255,0.78))", pattern: "rings" },
-  { label: "Işık", icon: "✦", accent: "#78dbff", background: "linear-gradient(180deg, rgba(245,252,255,0.96), rgba(228,241,255,0.78))", pattern: "grid" },
-  { label: "Dalga", icon: "≈", accent: "#49b8ff", background: "linear-gradient(180deg, rgba(236,249,255,0.96), rgba(219,236,255,0.82))", pattern: "wave" },
-  { label: "Çember", icon: "○", accent: "#0cc8e4", background: "linear-gradient(180deg, rgba(228,252,255,0.96), rgba(208,247,255,0.82))", pattern: "rings" },
-  { label: "Kare", icon: "□", accent: "#3daaee", background: "linear-gradient(180deg, rgba(225,242,255,0.96), rgba(208,237,255,0.8))", pattern: "grid" },
+  { label: "Bulut", icon: "☁", accent: "#23b8ff", background: "linear-gradient(180deg, rgba(6,22,48,0.92), rgba(4,14,34,0.78))", pattern: "rings" },
+  { label: "Damlacık", icon: "◔", accent: "#0da7ff", background: "linear-gradient(180deg, rgba(5,18,42,0.92), rgba(3,12,30,0.80))", pattern: "grid" },
+  { label: "Kırık Çizgi", icon: "〰", accent: "#2ca8ff", background: "linear-gradient(180deg, rgba(7,20,46,0.92), rgba(5,14,36,0.78))", pattern: "wave" },
+  { label: "Halka", icon: "◎", accent: "#54ccff", background: "linear-gradient(180deg, rgba(6,24,50,0.92), rgba(4,16,38,0.78))", pattern: "rings" },
+  { label: "Işık", icon: "✦", accent: "#78dbff", background: "linear-gradient(180deg, rgba(8,26,52,0.92), rgba(5,18,40,0.78))", pattern: "grid" },
+  { label: "Dalga", icon: "≈", accent: "#49b8ff", background: "linear-gradient(180deg, rgba(5,20,44,0.92), rgba(3,14,32,0.82))", pattern: "wave" },
+  { label: "Çember", icon: "○", accent: "#0cc8e4", background: "linear-gradient(180deg, rgba(4,22,40,0.92), rgba(3,16,30,0.82))", pattern: "rings" },
+  { label: "Kare", icon: "□", accent: "#3daaee", background: "linear-gradient(180deg, rgba(6,20,44,0.92), rgba(4,14,34,0.80))", pattern: "grid" },
 ];
 
 const GAME_TABS = [
@@ -207,6 +213,8 @@ const GAME_CATEGORIES = [
   { key: "motorSkills" as const, title: "Motor Beceri Oyunları", kicker: "Motor alanı", icon: "✦", description: "Hedefleme, yön takibi ve ritim odaklı yanıtlar daha kontrollü bir çalışma akışı sunar." },
   { key: "visualSkills" as const, title: "Görsel Algı Oyunları", kicker: "Algı alanı", icon: "◌", description: "Görsel ayrım, tarama ve seçici dikkat görevleri aynı görsel sistem içinde ilerler." },
 ];
+
+const CATEGORY_ICONS = { memorySkills: Brain, motorSkills: Hand, visualSkills: Eye } as const;
 
 const EMPTY_SCOREBOARD: Scoreboard = {
   memory: { label: GAME_LABELS.memory, best: 0, last: 0, plays: 0 },
@@ -227,12 +235,6 @@ const DAY_LABELS: Record<DayKey, string> = {
   mon: "Pzt", tue: "Sal", wed: "Çar", thu: "Per", fri: "Cum", sat: "Cmt", sun: "Paz",
 };
 
-declare global {
-  interface Window {
-    render_game_to_text?: () => string;
-    advanceTime?: (ms: number) => void;
-  }
-}
 
 function randomIndex(length: number, avoid?: number) {
   let next = Math.floor(Math.random() * length);
@@ -438,12 +440,37 @@ function moveGridCursor(current: number, key: string, columns: number, itemCount
   return current;
 }
 
+const DOMAIN_ICON_MAP: Record<string, LucideIcon> = {
+  baby: Baby,
+  brain: Brain,
+  zap: Zap,
+  puzzle: Puzzle,
+  "person-standing": PersonStanding,
+  briefcase: Briefcase,
+  handshake: Handshake,
+};
+
+const GAME_ICON_MAP: Record<string, LucideIcon> = {
+  memory: Brain,
+  pairs: Grid3X3,
+  pulse: Target,
+  route: Map,
+  difference: Eye,
+  scan: Search,
+};
+
+function DomainIcon({ iconKey, size = 20, color, className }: { iconKey: string; size?: number; color?: string; className?: string }) {
+  const Icon = DOMAIN_ICON_MAP[iconKey] ?? Brain;
+  return <Icon size={size} className={className} style={color ? { color } : undefined} />;
+}
+
 interface MimioAppProps {
   initialAppView?: "login" | "register";
   onLogout?: () => void;
 }
 
 export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps = {}) {
+  const { theme, toggle: toggleTheme } = useTheme();
   // ── New multi-screen state ──
   const [activeAppView, setActiveAppView] = useState<AppView>(initialAppView);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
@@ -475,9 +502,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const [tpCustomNotes, setTpCustomNotes] = useState<Record<string, string>>({});
   const [tpSubSkillFilter, setTpSubSkillFilter] = useState<string>("all");
   const [tpShowHomeOnly, setTpShowHomeOnly] = useState(false);
+  const [tpSelectedDays, setTpSelectedDays] = useState<string[]>(["Pazartesi", "Çarşamba", "Cuma"]);
 
   // ── Existing state ──
-  const [activeView, setActiveView] = useState<ViewKey>("platform");
   const [activeGame, setActiveGame] = useState<GameKey>("memory");
   const [scoreboard, setScoreboard] = useState<Scoreboard>(EMPTY_SCOREBOARD);
   const [platformOverview, setPlatformOverview] = useState<PlatformOverviewPayload>({ ...EMPTY_PLATFORM_OVERVIEW, database: { ...EMPTY_PLATFORM_OVERVIEW.database, message: "Bulut veri katmanı kontrol ediliyor." } });
@@ -586,17 +613,6 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
   useEffect(() => { void loadPlatformOverview(); }, []);
 
-  useEffect(() => {
-    window.render_game_to_text = () => JSON.stringify({ activeView, activeGame, scoreboard, activeAppView, sessionDesk: { therapistId: activeTherapistId, clientId: activeClientId } });
-    window.advanceTime = () => {
-      if (memoryState.phase === "showing" && memoryState.sequence.length > 0) {
-        clearMemoryTimers();
-        setMemoryState((current) => ({ ...current, flashIndex: null, phase: "ready", message: "Hızlı test modu: şimdi aynı sırayı sen gir." }));
-      }
-      if (pairsState.locked) { clearPairTimers(); hideMismatchedPairs(); }
-    };
-    return () => { window.render_game_to_text = undefined; window.advanceTime = undefined; };
-  }, [activeGame, activeClientId, activeTherapistId, activeView, activeAppView, differenceCursor, differenceState, memoryCursor, memoryState, pairsCursor, pairsState, pulseCursor, pulseState, routeCursor, routeState, scanCursor, scanState, scoreboard, platformOverview.database.configured, platformOverview.totals.sessionCount, platformOverview.totals.totalScore, platformOverview.recentSessions.length, platformStatus, sessionNote]);
 
   useEffect(() => { return () => { clearMemoryTimers(); clearPairTimers(); }; }, []);
 
@@ -685,9 +701,16 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
   function handleGeneratePlan() {
     if (!tpSelectedDomain) return;
-    const plan = generateWeeklyPlanSuggestion(tpSelectedDomain);
+    const plan = generateWeeklyPlanSuggestion(tpSelectedDomain, tpSelectedDays);
     setTpGeneratedPlan(plan);
     setTpActiveTab("plan");
+  }
+
+  function togglePlanDay(day: string) {
+    setTpSelectedDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+    setTpGeneratedPlan(null);
   }
 
   function handleAddProgressEntry() {
@@ -845,7 +868,6 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
   function openGameView(game: GameKey) {
     setActiveGame(game);
-    setActiveView("games");
     setActiveAppView("games");
   }
 
@@ -1074,28 +1096,39 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     if (!activeClient && clientOptions.length > 0) setActiveClientId(clientOptions[0].id);
   }, [activeClient, clientOptions]);
 
+  // ── Shared auth layout wrapper ──
+  const authInp = "w-full px-4 py-3 border border-(--color-line) rounded-2xl bg-(--color-surface-strong) text-(--color-text-strong) text-sm placeholder:text-(--color-text-muted) focus:outline-none focus:ring-2 focus:ring-(--color-primary)/25 focus:border-(--color-primary) transition-colors";
+
   // ── Register view ──
   if (activeAppView === "register") {
     return (
-      <div className={styles.loginShell}>
-        <div className={styles.loginBrand}>
-          <button type="button" className={styles.loginBrandLogoBtn} onClick={onLogout} style={{ cursor: "pointer", background: "none", border: "none", display: "flex", alignItems: "center", gap: 10, padding: 0 }}>
-            <div className={styles.loginBrandLogo}>Mi</div>
-            <h1 className={styles.loginBrandTitle}>Mimio</h1>
-          </button>
-          <p className={styles.loginBrandLead}>Ergoterapistler için geliştirilmiş profesyonel platform</p>
-          <ul className={styles.loginFeatureList}>
-            <li className={styles.loginFeatureItem}>6 benzersiz ergoterapi oyunu</li>
-            <li className={styles.loginFeatureItem}>Danışan yönetimi ve seans takibi</li>
-            <li className={styles.loginFeatureItem}>Haftalık plan ve not sistemi</li>
-            <li className={styles.loginFeatureItem}>Terapi programı ve aktivite önerileri</li>
-          </ul>
-        </div>
-        <div className={styles.loginCard}>
-          <h2 className={styles.loginTitle}>Hesap Oluştur</h2>
-          <p className={styles.loginLead}>Dakikalar içinde profilinizi oluşturun ve danışanlarınızla çalışmaya başlayın.</p>
-          {loginError && <p style={{ color: "#dc2626", fontSize: "0.9rem", margin: "0 0 8px", fontWeight: 500 }}>{loginError}</p>}
-          <form className={styles.loginForm} onSubmit={async (e) => {
+      <div className="min-h-dvh flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(99,102,241,0.14),transparent)]" />
+        <div className="absolute bottom-0 left-0 right-0 h-64 -z-10 bg-[radial-gradient(ellipse_60%_60%_at_50%_100%,rgba(99,102,241,0.08),transparent)]" />
+
+        {/* Logo */}
+        <button type="button" onClick={onLogout} className="flex flex-col items-center gap-2 mb-8 bg-transparent border-none cursor-pointer group">
+          <div className="w-12 h-12 rounded-2xl bg-(--color-primary) flex items-center justify-center text-white font-bold text-lg shadow-(--shadow-primary) group-hover:scale-105 transition-transform">Mi</div>
+          <span className="font-bold text-(--color-text-strong) text-lg">Mimio</span>
+        </button>
+
+        {/* Card */}
+        <div className="w-full max-w-md bg-(--color-surface-strong) rounded-3xl border border-(--color-line) shadow-(--shadow-elevated) p-8" style={{ backdropFilter: "blur(16px)" }}>
+          {/* Badge */}
+          <div className="flex justify-center mb-5">
+            <span className="inline-flex items-center gap-2 text-xs font-semibold text-(--color-primary) bg-(--color-primary-light) px-3 py-1.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-(--color-primary)" />
+              Ücretsiz Hesap Oluştur
+            </span>
+          </div>
+          <h2 className="text-2xl font-extrabold text-(--color-text-strong) text-center mb-1">Hesabınızı Oluşturun</h2>
+          <p className="text-(--color-text-soft) text-sm text-center mb-6">Dakikalar içinde başlayın, danışanlarınızla çalışmaya başlayın.</p>
+
+          {loginError && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4 text-red-400 text-sm">{loginError}</div>
+          )}
+
+          <form className="flex flex-col gap-3" onSubmit={async (e) => {
             e.preventDefault();
             setLoginError("");
             const username = therapistDraft.username.trim().toLocaleLowerCase("tr-TR");
@@ -1111,10 +1144,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 body: JSON.stringify({ kind: "therapist", username, password, displayName, clinicName: therapistDraft.clinicName.trim(), specialty: therapistDraft.specialty.trim() }),
               });
               const data = await response.json().catch(() => null) as { ok?: boolean; profile?: TherapistProfile; message?: string } | null;
-              if (!response.ok || !data?.ok) {
-                setLoginError(data?.message ?? "Kayıt sırasında bir hata oluştu.");
-                return;
-              }
+              if (!response.ok || !data?.ok) { setLoginError(data?.message ?? "Kayıt sırasında bir hata oluştu."); return; }
               await loadPlatformOverview();
               setTherapistDraft({ username: "", password: "", displayName: "", clinicName: "", specialty: "" });
               setLoginError("");
@@ -1123,48 +1153,61 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               setLoginError("Sunucuya bağlanılamadı. Lütfen tekrar deneyin.");
             }
           }}>
-            <input value={therapistDraft.username} onChange={(e) => { setLoginError(""); setTherapistDraft((c) => ({ ...c, username: e.target.value.replace(/\s/g, "").toLocaleLowerCase("tr-TR") })); }} placeholder="Kullanıcı adı (benzersiz, boşluksuz)" className={styles.loginInput} required autoComplete="username" />
-            <input type="password" value={therapistDraft.password} onChange={(e) => { setLoginError(""); setTherapistDraft((c) => ({ ...c, password: e.target.value })); }} placeholder="Şifre (en az 4 karakter)" className={styles.loginInput} required autoComplete="new-password" />
-            <input value={therapistDraft.displayName} onChange={(e) => setTherapistDraft((c) => ({ ...c, displayName: e.target.value }))} placeholder="Ad soyad — örn. Uzm. Erg. Elif Kara" className={styles.loginInput} required />
-            <input value={therapistDraft.clinicName} onChange={(e) => setTherapistDraft((c) => ({ ...c, clinicName: e.target.value }))} placeholder="Kurum / klinik adı (isteğe bağlı)" className={styles.loginInput} />
-            <input value={therapistDraft.specialty} onChange={(e) => setTherapistDraft((c) => ({ ...c, specialty: e.target.value }))} placeholder="Uzmanlık alanı (isteğe bağlı)" className={styles.loginInput} />
-            <button type="submit" className={styles.loginSubmitBtn}>Hesabı Oluştur ve Gir →</button>
+            <input value={therapistDraft.username} onChange={(e) => { setLoginError(""); setTherapistDraft((c) => ({ ...c, username: e.target.value.replace(/\s/g, "").toLocaleLowerCase("tr-TR") })); }} placeholder="Kullanıcı adı (boşluksuz, benzersiz)" className={authInp} required autoComplete="username" />
+            <input type="password" value={therapistDraft.password} onChange={(e) => { setLoginError(""); setTherapistDraft((c) => ({ ...c, password: e.target.value })); }} placeholder="Şifre (en az 4 karakter)" className={authInp} required autoComplete="new-password" />
+            <input value={therapistDraft.displayName} onChange={(e) => setTherapistDraft((c) => ({ ...c, displayName: e.target.value }))} placeholder="Ad soyad — örn. Uzm. Erg. Elif Kara" className={authInp} required />
+            <div className="grid grid-cols-2 gap-3">
+              <input value={therapistDraft.clinicName} onChange={(e) => setTherapistDraft((c) => ({ ...c, clinicName: e.target.value }))} placeholder="Kurum / klinik (isteğe bağlı)" className={authInp} />
+              <input value={therapistDraft.specialty} onChange={(e) => setTherapistDraft((c) => ({ ...c, specialty: e.target.value }))} placeholder="Uzmanlık (isteğe bağlı)" className={authInp} />
+            </div>
+            <button type="submit" className="w-full bg-(--color-primary) text-white font-semibold py-3.5 rounded-2xl hover:bg-(--color-primary-hover) transition-colors text-sm border-none cursor-pointer mt-1 shadow-(--shadow-primary)">
+              Hesabı Oluştur ve Gir →
+            </button>
           </form>
-          <p className={styles.loginSwitchText}>
+
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px bg-(--color-line)" />
+            <span className="text-(--color-text-muted) text-xs">veya</span>
+            <div className="flex-1 h-px bg-(--color-line)" />
+          </div>
+
+          <p className="text-(--color-text-soft) text-sm text-center">
             Zaten hesabınız var mı?{" "}
-            <button type="button" className={styles.loginSwitchLink} onClick={() => { setActiveAppView("login"); setLoginError(""); }}>Giriş yapın</button>
+            <button type="button" className="text-(--color-primary) font-semibold hover:underline bg-transparent border-none cursor-pointer" onClick={() => { setActiveAppView("login"); setLoginError(""); }}>Giriş yapın</button>
           </p>
-          {onLogout && (
-            <button type="button" className={styles.loginBackLink} onClick={onLogout}>← Ana Sayfaya Dön</button>
-          )}
         </div>
+
+        {onLogout && (
+          <button type="button" className="mt-6 text-(--color-text-muted) text-sm bg-transparent border-none cursor-pointer hover:text-(--color-text-body) transition-colors flex items-center gap-1" onClick={onLogout}>
+            ← Ana Sayfaya Dön
+          </button>
+        )}
       </div>
     );
   }
 
   if (activeAppView === "login") {
     return (
-      <div className={styles.loginShell}>
-        <div className={styles.loginBrand}>
-          <button type="button" className={styles.loginBrandLogoBtn} onClick={onLogout} style={{ cursor: "pointer", background: "none", border: "none", display: "flex", alignItems: "center", gap: 10, padding: 0 }}>
-            <div className={styles.loginBrandLogo}>Mi</div>
-            <h1 className={styles.loginBrandTitle}>Mimio</h1>
-          </button>
-          <p className={styles.loginBrandLead}>Ergoterapistler için oyun platformu</p>
-          <ul className={styles.loginFeatureList}>
-            <li className={styles.loginFeatureItem}>6 ergoterapi oyun modülü</li>
-            <li className={styles.loginFeatureItem}>Danışan profili ve seans takibi</li>
-            <li className={styles.loginFeatureItem}>Haftalık plan ve not yönetimi</li>
-            <li className={styles.loginFeatureItem}>Terapi programı ve aktivite önerileri</li>
-          </ul>
-        </div>
-        <div className={styles.loginCard}>
-          <h2 className={styles.loginTitle}>Giriş Yap</h2>
-          <p className={styles.loginLead}>Kullanıcı adınız ve şifrenizle giriş yapın.</p>
+      <div className="min-h-dvh flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(99,102,241,0.14),transparent)]" />
+        <div className="absolute bottom-0 left-0 right-0 h-64 -z-10 bg-[radial-gradient(ellipse_60%_60%_at_50%_100%,rgba(99,102,241,0.08),transparent)]" />
 
-          {loginError && <p style={{ color: "#dc2626", fontSize: "0.9rem", margin: "0 0 8px", fontWeight: 500 }}>{loginError}</p>}
+        {/* Logo */}
+        <button type="button" onClick={onLogout} className="flex flex-col items-center gap-2 mb-8 bg-transparent border-none cursor-pointer group">
+          <div className="w-12 h-12 rounded-2xl bg-(--color-primary) flex items-center justify-center text-white font-bold text-lg shadow-(--shadow-primary) group-hover:scale-105 transition-transform">Mi</div>
+          <span className="font-bold text-(--color-text-strong) text-lg">Mimio</span>
+        </button>
 
-          <form className={styles.loginForm} onSubmit={async (e) => {
+        {/* Card */}
+        <div className="w-full max-w-sm bg-(--color-surface-strong) rounded-3xl border border-(--color-line) shadow-(--shadow-elevated) p-8" style={{ backdropFilter: "blur(16px)" }}>
+          <h2 className="text-2xl font-extrabold text-(--color-text-strong) text-center mb-1">Tekrar Hoş Geldiniz</h2>
+          <p className="text-(--color-text-soft) text-sm text-center mb-7">Hesabınıza giriş yapın.</p>
+
+          {loginError && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4 text-red-400 text-sm">{loginError}</div>
+          )}
+
+          <form className="flex flex-col gap-3" onSubmit={async (e) => {
             e.preventDefault();
             setLoginError("");
             const username = loginUsername.trim().toLocaleLowerCase("tr-TR");
@@ -1178,101 +1221,131 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 body: JSON.stringify({ kind: "login", username, password }),
               });
               const data = await response.json().catch(() => null) as { ok?: boolean; profile?: TherapistProfile; message?: string } | null;
-              if (!response.ok || !data?.ok) {
-                setLoginError(data?.message ?? "Giriş sırasında bir hata oluştu.");
-                return;
-              }
+              if (!response.ok || !data?.ok) { setLoginError(data?.message ?? "Giriş sırasında bir hata oluştu."); return; }
               await loadPlatformOverview();
-              setLoginUsername("");
-              setLoginPassword("");
-              setLoginError("");
+              setLoginUsername(""); setLoginPassword(""); setLoginError("");
               handleLogin(data.profile!.id);
             } catch {
               setLoginError("Sunucuya bağlanılamadı. Lütfen tekrar deneyin.");
             }
           }}>
-            <input value={loginUsername} onChange={(e) => { setLoginError(""); setLoginUsername(e.target.value.replace(/\s/g, "").toLocaleLowerCase("tr-TR")); }} placeholder="Kullanıcı adı" className={styles.loginInput} required autoComplete="username" />
-            <input type="password" value={loginPassword} onChange={(e) => { setLoginError(""); setLoginPassword(e.target.value); }} placeholder="Şifre" className={styles.loginInput} required autoComplete="current-password" />
-            <button type="submit" className={styles.loginSubmitBtn}>Giriş Yap</button>
+            <input value={loginUsername} onChange={(e) => { setLoginError(""); setLoginUsername(e.target.value.replace(/\s/g, "").toLocaleLowerCase("tr-TR")); }} placeholder="Kullanıcı adı" className={authInp} required autoComplete="username" />
+            <input type="password" value={loginPassword} onChange={(e) => { setLoginError(""); setLoginPassword(e.target.value); }} placeholder="Şifre" className={authInp} required autoComplete="current-password" />
+            <button type="submit" className="w-full bg-(--color-primary) text-white font-semibold py-3.5 rounded-2xl hover:bg-(--color-primary-hover) transition-colors text-sm border-none cursor-pointer mt-1 shadow-(--shadow-primary)">
+              Giriş Yap
+            </button>
           </form>
-          <p className={styles.loginSwitchText}>
+
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px bg-(--color-line)" />
+            <span className="text-(--color-text-muted) text-xs">veya</span>
+            <div className="flex-1 h-px bg-(--color-line)" />
+          </div>
+
+          <p className="text-(--color-text-soft) text-sm text-center">
             Hesabınız yok mu?{" "}
-            <button type="button" className={styles.loginSwitchLink} onClick={() => { setActiveAppView("register"); setLoginError(""); }}>Kayıt olun</button>
+            <button type="button" className="text-(--color-primary) font-semibold hover:underline bg-transparent border-none cursor-pointer" onClick={() => { setActiveAppView("register"); setLoginError(""); }}>Ücretsiz kayıt olun</button>
           </p>
-          {onLogout && (
-            <button type="button" className={styles.loginBackLink} onClick={onLogout}>← Ana Sayfaya Dön</button>
-          )}
+        </div>
+
+        {onLogout && (
+          <button type="button" className="mt-6 text-(--color-text-muted) text-sm bg-transparent border-none cursor-pointer hover:text-(--color-text-body) transition-colors" onClick={onLogout}>
+            ← Ana Sayfaya Dön
+          </button>
+        )}
+
+        {/* Trust badges */}
+        <div className="flex items-center gap-6 mt-8 text-xs text-(--color-text-muted)">
+          {["Ücretsiz başla", "Kurulum yok", "Veri güvenliği"].map((t) => (
+            <span key={t} className="flex items-center gap-1.5">
+              <span className="w-1 h-1 rounded-full bg-(--color-accent-green)" />
+              {t}
+            </span>
+          ))}
         </div>
       </div>
     );
   }
 
   // ── App shell (sidebar + content) ──
+  const navItem = "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-(--color-text-body) hover:bg-(--color-surface-elevated) transition-colors w-full text-left border-none bg-transparent cursor-pointer";
+  const navItemActive = "bg-(--color-primary-light) text-(--color-primary)";
+  const btnPrimary = "bg-(--color-primary) text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-(--color-primary-hover) transition-colors cursor-pointer border-none disabled:opacity-50";
+  const btnSecondary = "bg-(--color-surface-strong) text-(--color-text-body) text-sm font-medium px-4 py-2 rounded-xl border border-(--color-line) hover:bg-(--color-surface-elevated) transition-colors cursor-pointer disabled:opacity-50";
+  const inputCls = "w-full px-3 py-2.5 border border-(--color-line) rounded-xl bg-(--color-surface-strong) text-(--color-text-strong) text-sm placeholder:text-(--color-text-muted) focus:outline-none focus:ring-2 focus:ring-(--color-primary)/25 focus:border-(--color-primary) transition-colors";
   return (
-    <main className={styles.appShell}>
-      <nav className={styles.sidebar}>
-        <button type="button" className={styles.sidebarLogo} onClick={handleLogout} style={{ cursor: "pointer", background: "none", border: "none", textAlign: "left" }}>
-          <span className={styles.brandBadge}>Mi</span>
+    <main className="flex h-dvh overflow-hidden bg-(--color-page-bg)">
+      <nav className="hidden lg:flex flex-col w-64 bg-(--color-sidebar) border-r border-(--color-line) shrink-0 overflow-y-auto" style={{ backdropFilter: "blur(20px)" }}>
+        <button type="button" className="flex items-center gap-3 px-4 py-5 border-b border-(--color-line) w-full text-left cursor-pointer bg-transparent border-none" onClick={handleLogout} style={{ cursor: "pointer", background: "none", border: "none", borderBottom: "1px solid var(--color-line)", textAlign: "left" }}>
+          <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-(--color-primary) text-white font-bold text-sm shrink-0">Mi</span>
           <div>
-            <p className={styles.brandName}>Mimio</p>
-            <p className={styles.brandCaption}>Ergoterapi platformu</p>
+            <p className="font-bold text-(--color-text-strong) text-sm leading-tight m-0">Mimio</p>
+            <p className="text-(--color-text-muted) text-xs m-0">Ergoterapi platformu</p>
           </div>
         </button>
 
-        <div className={styles.sidebarNav}>
-          <button type="button" className={`${styles.navItem} ${activeAppView === "dashboard" ? styles.navItemActive : ""}`} onClick={() => setActiveAppView("dashboard")}>
-            <span className={styles.navIcon}>◎</span>
+        <div className="flex flex-col gap-1 p-3 flex-1">
+          <button type="button" className={`${navItem} ${activeAppView === "dashboard" ? navItemActive : ""}`} onClick={() => setActiveAppView("dashboard")}>
+            <LayoutDashboard size={16} />
             <span>Panel</span>
           </button>
-          <button type="button" className={`${styles.navItem} ${(activeAppView === "clients" || activeAppView === "client-detail") ? styles.navItemActive : ""}`} onClick={() => setActiveAppView("clients")}>
-            <span className={styles.navIcon}>◈</span>
+          <button type="button" className={`${navItem} ${(activeAppView === "clients" || activeAppView === "client-detail") ? navItemActive : ""}`} onClick={() => setActiveAppView("clients")}>
+            <Users size={16} />
             <span>Danışanlar</span>
           </button>
-          <button type="button" className={`${styles.navItem} ${activeAppView === "games" ? styles.navItemActive : ""}`} onClick={() => setActiveAppView("games")}>
-            <span className={styles.navIcon}>✦</span>
+          <button type="button" className={`${navItem} ${activeAppView === "games" ? navItemActive : ""}`} onClick={() => setActiveAppView("games")}>
+            <Gamepad2 size={16} />
             <span>Oyun Alanı</span>
           </button>
-          <button type="button" className={`${styles.navItem} ${activeAppView === "therapy-program" ? styles.navItemActive : ""}`} onClick={() => setActiveAppView("therapy-program")}>
-            <span className={styles.navIcon}>⚕</span>
+          <button type="button" className={`${navItem} ${activeAppView === "therapy-program" ? navItemActive : ""}`} onClick={() => setActiveAppView("therapy-program")}>
+            <Stethoscope size={16} />
             <span>Terapi</span>
           </button>
         </div>
 
-        <div className={styles.sidebarUser}>
-          <div className={styles.sidebarUserInfo}>
-            <strong>{activeTherapist?.displayName ?? "Terapist"}</strong>
-            <span>{activeTherapist?.clinicName || "Bağımsız terapist"}</span>
+        <div className="flex items-center gap-3 p-4 border-t border-(--color-line) mt-auto">
+          <div className="w-8 h-8 rounded-full bg-(--color-primary)/10 flex items-center justify-center text-(--color-primary) font-bold text-sm shrink-0">
+            {activeTherapist?.displayName?.[0]?.toUpperCase() ?? "T"}
           </div>
-          <button type="button" className={styles.logoutBtn} onClick={handleLogout}>Çıkış</button>
+          <div className="flex flex-col flex-1 min-w-0">
+            <strong className="text-(--color-text-strong) text-xs font-semibold truncate">{activeTherapist?.displayName ?? "Terapist"}</strong>
+            <span className="text-(--color-text-muted) text-xs truncate">{activeTherapist?.clinicName || "Bağımsız terapist"}</span>
+          </div>
+          <button type="button" onClick={toggleTheme} className="w-7 h-7 rounded-lg flex items-center justify-center text-(--color-text-muted) hover:text-(--color-primary) hover:bg-(--color-primary-light) bg-transparent border-none cursor-pointer transition-colors shrink-0" aria-label="Tema değiştir">
+            {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+          </button>
+          <button type="button" className="text-xs text-(--color-text-muted) hover:text-(--color-accent-red) bg-transparent border-none cursor-pointer font-medium" onClick={handleLogout}>Çıkış</button>
         </div>
       </nav>
 
       {/* ── Mobile top bar ── */}
-      <header className={styles.mobileTopBar}>
-        <div className={styles.mobileTopLogo}>
-          <span className={styles.brandBadge}>Mi</span>
-          <span className={styles.mobileTopLogoText}>Mimio</span>
+      <header className="flex lg:hidden items-center justify-between px-4 py-3 border-b border-(--color-line) shrink-0 fixed top-0 left-0 right-0 z-30" style={{ background: "var(--color-chrome-nav)", backdropFilter: "blur(20px)" }}>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-(--color-primary) text-white font-bold text-xs">Mi</span>
+          <span className="font-bold text-(--color-text-strong) text-sm">Mimio</span>
         </div>
-        <div className={styles.mobileTopActions}>
-          <button type="button" className={styles.mobileUserBtn} onClick={() => setShowUserMenu((v) => !v)}>
-            <span className={styles.mobileUserAvatar}>
-              {activeTherapist?.displayName?.[0]?.toUpperCase() ?? "T"}
-            </span>
+        <div className="relative">
+          <button type="button" className="w-9 h-9 rounded-full bg-(--color-primary)/10 flex items-center justify-center border-none cursor-pointer" onClick={() => setShowUserMenu((v) => !v)}>
+            <span className="text-(--color-primary) font-bold text-sm">{activeTherapist?.displayName?.[0]?.toUpperCase() ?? "T"}</span>
           </button>
           {showUserMenu && (
             <>
-              <div className={styles.mobileUserMenuBackdrop} onClick={() => setShowUserMenu(false)} />
-              <div className={styles.mobileUserMenu}>
-                <div className={styles.mobileUserMenuInfo}>
-                  <strong>{activeTherapist?.displayName ?? "Terapist"}</strong>
-                  <span>{activeTherapist?.clinicName || "Bağımsız terapist"}</span>
+              <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
+              <div className="absolute right-0 top-11 z-50 bg-(--color-surface-strong) rounded-2xl shadow-(--shadow-elevated) border border-(--color-line) p-2 min-w-[200px]" style={{ backdropFilter: "blur(16px)" }}>
+                <div className="px-3 py-2 flex flex-col">
+                  <strong className="text-(--color-text-strong) text-sm">{activeTherapist?.displayName ?? "Terapist"}</strong>
+                  <span className="text-(--color-text-muted) text-xs">{activeTherapist?.clinicName || "Bağımsız terapist"}</span>
                 </div>
-                <div className={styles.mobileUserMenuDivider} />
-                <button type="button" className={styles.mobileUserMenuItem} onClick={() => setShowUserMenu(false)}>
-                  <span>⚙</span> Ayarlar
+                <div className="h-px bg-(--color-line) my-1" />
+                <button type="button" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-(--color-text-body) hover:bg-(--color-surface-elevated) w-full text-left bg-transparent border-none cursor-pointer" onClick={() => { setShowUserMenu(false); toggleTheme(); }}>
+                  {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+                  {theme === "dark" ? "Açık Tema" : "Koyu Tema"}
                 </button>
-                <button type="button" className={`${styles.mobileUserMenuItem} ${styles.mobileUserMenuItemDanger}`} onClick={() => { setShowUserMenu(false); handleLogout(); }}>
-                  <span>⏻</span> Çıkış Yap
+                <button type="button" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-(--color-text-body) hover:bg-(--color-surface-elevated) w-full text-left bg-transparent border-none cursor-pointer" onClick={() => setShowUserMenu(false)}>
+                  <Settings size={14} /> Ayarlar
+                </button>
+                <button type="button" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-(--color-accent-red) hover:bg-red-500/10 w-full text-left bg-transparent border-none cursor-pointer" onClick={() => { setShowUserMenu(false); handleLogout(); }}>
+                  <LogOut size={14} /> Çıkış Yap
                 </button>
               </div>
             </>
@@ -1280,85 +1353,211 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         </div>
       </header>
 
-      <div className={styles.mainContent}>
+      <div className="flex-1 overflow-y-auto pt-[52px] pb-16 lg:pt-0 lg:pb-0">
 
         {/* ── Dashboard ── */}
         {activeAppView === "dashboard" && (
-          <div className={styles.dashboardPage}>
-            <div className={styles.dashboardHeader}>
-              <h1 className={styles.dashboardGreeting}>Merhaba, {activeTherapist?.displayName?.split(" ")[0] ?? "Terapist"} 👋</h1>
-              <p className={styles.dashboardDate}>{formatDate(getTodayString())}</p>
-            </div>
+          <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-8">
 
-            <div className={styles.statsStrip}>
-              <div className={styles.dashStatCard}>
-                <strong>{effectiveSessionCount}</strong>
-                <span>Toplam Seans</span>
-              </div>
-              <div className={styles.dashStatCard}>
-                <strong>{clientOptions.length}</strong>
-                <span>Danışan Sayısı</span>
-              </div>
-              <div className={styles.dashStatCard}>
-                <strong>{thisWeekCount}</strong>
-                <span>Bu Hafta</span>
+            {/* Header */}
+            <div className="flex items-start justify-between pt-1">
+              <div>
+                <p className="text-(--color-text-muted) text-xs font-semibold uppercase tracking-widest mb-2">{formatDate(getTodayString())}</p>
+                <h1 className="text-3xl lg:text-4xl font-extrabold m-0 leading-tight" style={{
+                  background: "linear-gradient(135deg, var(--color-text-strong) 0%, #a5b4fc 55%, #818cf8 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}>
+                  Merhaba, {activeTherapist?.displayName?.split(" ")[0] ?? "Terapist"} 👋
+                </h1>
               </div>
             </div>
 
-            <div className={styles.quickActions}>
-              <button type="button" className={styles.quickActionCard} onClick={() => { setShowAddClient(true); setActiveAppView("clients"); }}>
-                <span className={styles.quickActionIcon}>+</span>
-                <strong>Yeni Danışan Ekle</strong>
-                <span>Profil oluştur ve seans başlat</span>
-              </button>
-              <button type="button" className={styles.quickActionCard} onClick={() => setActiveAppView("games")}>
-                <span className={styles.quickActionIcon}>✦</span>
-                <strong>Oyun Alanını Aç</strong>
-                <span>6 modülle seans çalışma alanı</span>
-              </button>
-              <button type="button" className={styles.quickActionCard} onClick={() => setActiveAppView("therapy-program")}>
-                <span className={styles.quickActionIcon}>⚕</span>
-                <strong>Terapi Programı</strong>
-                <span>Aktivite önerileri ve haftalık plan</span>
-              </button>
-            </div>
-
-            <div className={styles.categoriesRow}>
-              {GAME_CATEGORIES.map((cat) => {
-                const count = GAME_TABS.filter((g) => g.category === cat.key).length;
-                return (
-                  <button key={cat.key} type="button" className={styles.categoryPickCard} onClick={() => { openCategory(cat.key); }}>
-                    <span className={styles.categoryPickIcon}>{cat.icon}</span>
-                    <strong>{cat.title}</strong>
-                    <span>{count} oyun</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className={styles.recentActivitySection}>
-              <h2>Son Seanslar</h2>
-              {recentSessionFeed.length === 0 ? (
-                <div className={styles.activityEmpty}>
-                  <span>🎮</span>
-                  <p>Henüz seans kaydı yok. Oyun alanına geçerek ilk seansını başlatabilirsin.</p>
-                  <button type="button" className={styles.primaryButton} onClick={() => setActiveAppView("games")}>Oyun Alanını Aç</button>
-                </div>
-              ) : (
-                <div className={styles.activityFeed}>
-                  {recentSessionFeed.map((session) => (
-                    <div key={session.id} className={styles.activityCard}>
-                      <div className={styles.activityCardLeft}>
-                        <strong>{session.gameLabel}</strong>
-                        <span>{session.clientName}</span>
+            {/* Stats */}
+            {(() => {
+              const isLight = theme === "light";
+              const statItems = [
+                {
+                  v: effectiveSessionCount, l: "Toplam Seans", Icon: Gamepad2,
+                  gradient: isLight ? "linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(99,102,241,0.04) 100%)" : "linear-gradient(135deg, rgba(99,102,241,0.22) 0%, rgba(79,70,229,0.05) 100%)",
+                  border: isLight ? "rgba(99,102,241,0.28)" : "rgba(99,102,241,0.32)",
+                  glow: isLight ? "none" : "0 0 48px rgba(99,102,241,0.18)",
+                  color: isLight ? "#3730a3" : "#a5b4fc",
+                  iconBg: isLight ? "rgba(99,102,241,0.14)" : "rgba(99,102,241,0.2)",
+                  iconColor: isLight ? "#4338ca" : "#818cf8",
+                },
+                {
+                  v: clientOptions.length, l: "Danışan", Icon: Users,
+                  gradient: isLight ? "linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0.04) 100%)" : "linear-gradient(135deg, rgba(16,185,129,0.22) 0%, rgba(5,150,105,0.05) 100%)",
+                  border: isLight ? "rgba(16,185,129,0.28)" : "rgba(16,185,129,0.32)",
+                  glow: isLight ? "none" : "0 0 48px rgba(16,185,129,0.14)",
+                  color: isLight ? "#065f46" : "#6ee7b7",
+                  iconBg: isLight ? "rgba(16,185,129,0.14)" : "rgba(16,185,129,0.2)",
+                  iconColor: isLight ? "#047857" : "#34d399",
+                },
+                {
+                  v: thisWeekCount, l: "Bu Hafta", Icon: LayoutDashboard,
+                  gradient: isLight ? "linear-gradient(135deg, rgba(245,158,11,0.12) 0%, rgba(245,158,11,0.04) 100%)" : "linear-gradient(135deg, rgba(245,158,11,0.22) 0%, rgba(217,119,6,0.05) 100%)",
+                  border: isLight ? "rgba(245,158,11,0.3)" : "rgba(245,158,11,0.32)",
+                  glow: isLight ? "none" : "0 0 48px rgba(245,158,11,0.14)",
+                  color: isLight ? "#92400e" : "#fcd34d",
+                  iconBg: isLight ? "rgba(245,158,11,0.14)" : "rgba(245,158,11,0.2)",
+                  iconColor: isLight ? "#b45309" : "#f59e0b",
+                },
+              ];
+              return (
+                <div className="grid grid-cols-3 gap-4">
+                  {statItems.map(({ v, l, gradient, border, glow, color, Icon, iconBg, iconColor }) => (
+                    <div key={l} className="rounded-2xl p-5 relative overflow-hidden" style={{ background: gradient, border: `1px solid ${border}`, boxShadow: glow }}>
+                      <div className="absolute top-4 right-4 w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: iconBg }}>
+                        <Icon size={15} style={{ color: iconColor }} />
                       </div>
-                      <div className={styles.activityCardRight}>
-                        <strong>{session.score}</strong>
-                        <span>{formatPlayedAt(session.playedAt)}</span>
-                        {session.durationSeconds && <span>{formatDuration(session.durationSeconds)}</span>}
-                      </div>
+                      <strong className="text-4xl lg:text-5xl font-extrabold block mt-1 mb-2" style={{ color }}>{v}</strong>
+                      <span className="text-(--color-text-soft) text-sm font-medium">{l}</span>
                     </div>
                   ))}
+                </div>
+              );
+            })()}
+
+            {/* Quick Actions */}
+            {(() => {
+              const isLight = theme === "light";
+              const actions = [
+                {
+                  Icon: UserPlus, title: "Yeni Danışan Ekle", sub: "Profil oluştur ve seans başlat",
+                  action: () => { setShowAddClient(true); setActiveAppView("clients"); },
+                  gradient: isLight ? "linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(16,185,129,0.03) 100%)" : "linear-gradient(135deg, rgba(16,185,129,0.14) 0%, rgba(16,185,129,0.03) 100%)",
+                  border: isLight ? "rgba(16,185,129,0.3)" : "rgba(16,185,129,0.25)",
+                  iconBg: isLight ? "rgba(16,185,129,0.14)" : "rgba(16,185,129,0.2)",
+                  iconColor: isLight ? "#047857" : "#34d399",
+                },
+                {
+                  Icon: Gamepad2, title: "Oyun Alanını Aç", sub: "6 modülle seans çalışma alanı",
+                  action: () => setActiveAppView("games"),
+                  gradient: isLight ? "linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(99,102,241,0.03) 100%)" : "linear-gradient(135deg, rgba(99,102,241,0.14) 0%, rgba(99,102,241,0.03) 100%)",
+                  border: isLight ? "rgba(99,102,241,0.28)" : "rgba(99,102,241,0.25)",
+                  iconBg: isLight ? "rgba(99,102,241,0.14)" : "rgba(99,102,241,0.2)",
+                  iconColor: isLight ? "#4338ca" : "#818cf8",
+                },
+                {
+                  Icon: Stethoscope, title: "Terapi Programı", sub: "Aktivite önerileri ve haftalık plan",
+                  action: () => setActiveAppView("therapy-program"),
+                  gradient: isLight ? "linear-gradient(135deg, rgba(6,182,212,0.1) 0%, rgba(6,182,212,0.03) 100%)" : "linear-gradient(135deg, rgba(6,182,212,0.14) 0%, rgba(6,182,212,0.03) 100%)",
+                  border: isLight ? "rgba(6,182,212,0.3)" : "rgba(6,182,212,0.25)",
+                  iconBg: isLight ? "rgba(6,182,212,0.14)" : "rgba(6,182,212,0.2)",
+                  iconColor: isLight ? "#0e7490" : "#22d3ee",
+                },
+              ] as const;
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {actions.map(({ Icon, title, sub, action, gradient, border, iconBg, iconColor }) => (
+                    <button key={title} type="button" onClick={action}
+                      className="flex flex-col gap-2 p-5 rounded-2xl border text-left cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-(--shadow-elevated) group shadow-(--shadow-card)"
+                      style={{ background: gradient, borderColor: border }}>
+                      <span className="w-11 h-11 rounded-xl flex items-center justify-center mb-1 transition-transform duration-200 group-hover:scale-110" style={{ background: iconBg }}>
+                        <Icon size={20} style={{ color: iconColor }} />
+                      </span>
+                      <strong className="text-(--color-text-strong) text-sm font-semibold">{title}</strong>
+                      <span className="text-(--color-text-soft) text-xs leading-relaxed">{sub}</span>
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* Game Categories */}
+            <div className="space-y-3">
+              <h2 className="text-xs font-semibold text-(--color-text-muted) uppercase tracking-widest m-0">Oyun Kategorileri</h2>
+              <div className="grid grid-cols-3 gap-4">
+                {GAME_CATEGORIES.map((cat, catIdx) => {
+                  const count = GAME_TABS.filter((g) => g.category === cat.key).length;
+                  const CatIcon = CATEGORY_ICONS[cat.key];
+                  const isLight = theme === "light";
+                  const catStyles = [
+                    {
+                      bg: isLight ? "rgba(139,92,246,0.12)" : "rgba(139,92,246,0.16)",
+                      color: isLight ? "#6d28d9" : "#c4b5fd",
+                      border: isLight ? "rgba(139,92,246,0.28)" : "rgba(139,92,246,0.3)",
+                      glow: isLight ? "none" : "0 0 32px rgba(139,92,246,0.1)",
+                      labelBg: isLight ? "rgba(139,92,246,0.12)" : "rgba(139,92,246,0.18)",
+                      labelColor: isLight ? "#5b21b6" : "#a78bfa",
+                    },
+                    {
+                      bg: isLight ? "rgba(245,158,11,0.12)" : "rgba(245,158,11,0.16)",
+                      color: isLight ? "#b45309" : "#fcd34d",
+                      border: isLight ? "rgba(245,158,11,0.28)" : "rgba(245,158,11,0.3)",
+                      glow: isLight ? "none" : "0 0 32px rgba(245,158,11,0.1)",
+                      labelBg: isLight ? "rgba(245,158,11,0.12)" : "rgba(245,158,11,0.18)",
+                      labelColor: isLight ? "#92400e" : "#f59e0b",
+                    },
+                    {
+                      bg: isLight ? "rgba(6,182,212,0.12)" : "rgba(6,182,212,0.16)",
+                      color: isLight ? "#0e7490" : "#67e8f9",
+                      border: isLight ? "rgba(6,182,212,0.28)" : "rgba(6,182,212,0.3)",
+                      glow: isLight ? "none" : "0 0 32px rgba(6,182,212,0.1)",
+                      labelBg: isLight ? "rgba(6,182,212,0.12)" : "rgba(6,182,212,0.18)",
+                      labelColor: isLight ? "#155e75" : "#06b6d4",
+                    },
+                  ][catIdx] ?? {
+                    bg: "rgba(99,102,241,0.12)", color: isLight ? "#4338ca" : "#818cf8",
+                    border: "rgba(99,102,241,0.22)", glow: "none",
+                    labelBg: "rgba(99,102,241,0.12)", labelColor: isLight ? "#3730a3" : "#6366f1",
+                  };
+                  return (
+                    <button key={cat.key} type="button"
+                      className="flex flex-col gap-2 p-5 rounded-2xl border text-left cursor-pointer transition-all duration-200 hover:-translate-y-0.5 bg-(--color-surface-strong) group"
+                      style={{ borderColor: catStyles.border, boxShadow: catStyles.glow }}
+                      onClick={() => { openCategory(cat.key); }}>
+                      <span className="w-11 h-11 rounded-xl flex items-center justify-center mb-1 transition-transform duration-200 group-hover:scale-110" style={{ background: catStyles.bg }}>
+                        <CatIcon size={20} style={{ color: catStyles.color }} />
+                      </span>
+                      <strong className="text-(--color-text-strong) text-sm font-semibold">{cat.title}</strong>
+                      <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full self-start" style={{ background: catStyles.labelBg, color: catStyles.labelColor }}>{count} oyun</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Recent Sessions */}
+            <div className="space-y-3">
+              <h2 className="text-xs font-semibold text-(--color-text-muted) uppercase tracking-widest m-0">Son Seanslar</h2>
+              {recentSessionFeed.length === 0 ? (
+                <div className="bg-(--color-surface-strong) rounded-2xl border border-(--color-line) p-8 text-center flex flex-col items-center gap-3">
+                  <Gamepad2 size={36} strokeWidth={1.5} className="text-(--color-text-muted)" />
+                  <p className="text-(--color-text-soft) text-sm">Henüz seans kaydı yok. Oyun alanına geçerek ilk seansını başlatabilirsin.</p>
+                  <button type="button" className={btnPrimary} onClick={() => setActiveAppView("games")}>Oyun Alanını Aç</button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {recentSessionFeed.map((session) => {
+                    const isLight = theme === "light";
+                    return (
+                      <div key={session.id} className="flex items-center justify-between rounded-2xl border border-(--color-line) px-5 py-4 transition-all duration-200 hover:border-[rgba(99,102,241,0.3)] bg-(--color-surface-strong) group">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-105" style={{ background: isLight ? "rgba(99,102,241,0.1)" : "rgba(99,102,241,0.14)" }}>
+                            <Gamepad2 size={16} style={{ color: isLight ? "#4338ca" : "#818cf8" }} />
+                          </div>
+                          <div className="flex flex-col gap-0.5">
+                            <strong className="text-(--color-text-strong) text-sm font-semibold">{session.gameLabel}</strong>
+                            <span className="text-(--color-text-muted) text-xs">{session.clientName}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-6">
+                          <div className="flex flex-col items-end gap-0.5">
+                            <span className="text-(--color-text-muted) text-xs">{formatPlayedAt(session.playedAt)}</span>
+                            {session.durationSeconds && <span className="text-(--color-text-muted) text-xs">{formatDuration(session.durationSeconds)}</span>}
+                          </div>
+                          <div className="flex flex-col items-center justify-center min-w-[52px]">
+                            <strong className="text-2xl font-extrabold leading-none" style={{ color: isLight ? "#3730a3" : "#a5b4fc" }}>{session.score}</strong>
+                            <span className="text-(--color-text-muted) text-[10px] font-medium uppercase tracking-wide">puan</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1367,59 +1566,75 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
         {/* ── Clients List ── */}
         {activeAppView === "clients" && (
-          <div className={styles.clientsPage}>
-            <div className={styles.clientsHeader}>
+          <div className="p-6 max-w-5xl mx-auto space-y-6">
+            <div className="flex items-center justify-between">
               <div>
-                <h1>Danışanlar</h1>
-                <span className={styles.clientsCount}>{clientOptions.length} danışan</span>
+                <h1 className="text-2xl font-bold text-(--color-text-strong) m-0">Danışanlar</h1>
+                <span className="text-(--color-text-muted) text-sm">{clientOptions.length} danışan</span>
               </div>
-              <button type="button" className={styles.primaryButton} onClick={() => setShowAddClient(!showAddClient)}>+ Yeni Danışan</button>
+              <button type="button" className={btnPrimary} onClick={() => setShowAddClient(!showAddClient)}>+ Yeni Danışan</button>
             </div>
 
             {showAddClient && (
-              <div className={styles.addClientPanel}>
-                <h3>Yeni Danışan Ekle</h3>
-                <form className={styles.addClientForm} onSubmit={handleAddClient}>
-                  <input value={addClientDraft.displayName} onChange={(e) => setAddClientDraft((c) => ({ ...c, displayName: e.target.value }))} placeholder="Danışan adı (örn. Ada Y.)" className={styles.inputSurface} required />
-                  <input value={addClientDraft.ageGroup} onChange={(e) => setAddClientDraft((c) => ({ ...c, ageGroup: e.target.value }))} placeholder="Yaş grubu (örn. 7-9 yaş)" className={styles.inputSurface} />
-                  <input value={addClientDraft.primaryGoal} onChange={(e) => setAddClientDraft((c) => ({ ...c, primaryGoal: e.target.value }))} placeholder="Birincil hedef (örn. Görsel tarama)" className={styles.inputSurface} />
-                  <input value={addClientDraft.supportLevel} onChange={(e) => setAddClientDraft((c) => ({ ...c, supportLevel: e.target.value }))} placeholder="Destek düzeyi (örn. Orta destek)" className={styles.inputSurface} />
-                  <div style={{ display: "flex", gap: "10px" }}>
-                    <button type="submit" className={styles.primaryButton}>Kaydet</button>
-                    <button type="button" className={styles.secondaryButton} onClick={() => setShowAddClient(false)}>İptal</button>
+              <div className="bg-(--color-surface-strong) rounded-2xl border border-(--color-line) p-5">
+                <h3 className="text-(--color-text-strong) font-semibold mb-3">Yeni Danışan Ekle</h3>
+                <form className="flex flex-col gap-3" onSubmit={handleAddClient}>
+                  <input value={addClientDraft.displayName} onChange={(e) => setAddClientDraft((c) => ({ ...c, displayName: e.target.value }))} placeholder="Danışan adı (örn. Ada Y.)" className={inputCls} required />
+                  <input value={addClientDraft.ageGroup} onChange={(e) => setAddClientDraft((c) => ({ ...c, ageGroup: e.target.value }))} placeholder="Yaş grubu (örn. 7-9 yaş)" className={inputCls} />
+                  <input value={addClientDraft.primaryGoal} onChange={(e) => setAddClientDraft((c) => ({ ...c, primaryGoal: e.target.value }))} placeholder="Birincil hedef (örn. Görsel tarama)" className={inputCls} />
+                  <input value={addClientDraft.supportLevel} onChange={(e) => setAddClientDraft((c) => ({ ...c, supportLevel: e.target.value }))} placeholder="Destek düzeyi (örn. Orta destek)" className={inputCls} />
+                  <div className="flex gap-2">
+                    <button type="submit" className={btnPrimary}>Kaydet</button>
+                    <button type="button" className={btnSecondary} onClick={() => setShowAddClient(false)}>İptal</button>
                   </div>
                 </form>
               </div>
             )}
 
             {clientOptions.length === 0 ? (
-              <div className={styles.clientsEmpty}>
-                <span>◈</span>
-                <p>Henüz danışan eklenmedi. Yukarıdaki butonu kullanarak ilk danışanı ekleyebilirsin.</p>
+              <div className="bg-(--color-surface-strong) rounded-2xl border border-(--color-line) p-12 text-center flex flex-col items-center gap-3">
+                <span className="text-4xl">◈</span>
+                <p className="text-(--color-text-soft) text-sm">Henüz danışan eklenmedi. Yukarıdaki butonu kullanarak ilk danışanı ekleyebilirsin.</p>
               </div>
             ) : (
-              <div className={styles.clientsGrid}>
-                {clientOptions.map((client) => {
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {clientOptions.map((client, clientIdx) => {
                   const sessionCount = platformOverview.recentSessions.filter((s) => s.clientId === client.id).length;
+                  const avatarPalette = theme === "light" ? [
+                    { bg: "rgba(99,102,241,0.10)", color: "#4338ca", border: "rgba(99,102,241,0.22)" },
+                    { bg: "rgba(16,185,129,0.10)", color: "#047857", border: "rgba(16,185,129,0.22)" },
+                    { bg: "rgba(245,158,11,0.10)", color: "#b45309", border: "rgba(245,158,11,0.22)" },
+                    { bg: "rgba(6,182,212,0.10)", color: "#0e7490", border: "rgba(6,182,212,0.22)" },
+                    { bg: "rgba(168,85,247,0.10)", color: "#7c3aed", border: "rgba(168,85,247,0.22)" },
+                    { bg: "rgba(236,72,153,0.10)", color: "#be185d", border: "rgba(236,72,153,0.22)" },
+                  ] : [
+                    { bg: "rgba(99,102,241,0.18)", color: "#a5b4fc", border: "rgba(99,102,241,0.3)" },
+                    { bg: "rgba(16,185,129,0.18)", color: "#6ee7b7", border: "rgba(16,185,129,0.3)" },
+                    { bg: "rgba(245,158,11,0.18)", color: "#fcd34d", border: "rgba(245,158,11,0.3)" },
+                    { bg: "rgba(6,182,212,0.18)", color: "#67e8f9", border: "rgba(6,182,212,0.3)" },
+                    { bg: "rgba(168,85,247,0.18)", color: "#d8b4fe", border: "rgba(168,85,247,0.3)" },
+                    { bg: "rgba(236,72,153,0.18)", color: "#f9a8d4", border: "rgba(236,72,153,0.3)" },
+                  ];
+                  const palette = avatarPalette[clientIdx % avatarPalette.length];
                   return (
-                    <div key={client.id} className={styles.clientCard}>
-                      <div className={styles.clientCardTop}>
-                        <div className={styles.clientCardAvatar}>
+                    <div key={client.id} className="bg-(--color-surface-strong) rounded-2xl border border-(--color-line) p-5 flex flex-col gap-3 shadow-(--shadow-card) hover:shadow-(--shadow-elevated) hover:border-(--color-primary)/20 transition-all group">
+                      <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-xl font-bold flex items-center justify-center text-base shrink-0 transition-transform group-hover:scale-105" style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>
                           {client.displayName[0]?.toUpperCase()}
                         </div>
-                        <div className={styles.clientCardMeta}>
-                          <div className={styles.clientCardName}>{client.displayName}</div>
-                          <span className={styles.clientCardSessions}>{sessionCount} seans kaydı</span>
+                        <div className="flex flex-col min-w-0">
+                          <div className="font-semibold text-(--color-text-strong) text-sm truncate">{client.displayName}</div>
+                          <span className="text-(--color-text-muted) text-xs">{sessionCount} seans kaydı</span>
                         </div>
                       </div>
-                      <div className={styles.clientCardChips}>
-                        {client.ageGroup && <span className={styles.chip}>{client.ageGroup}</span>}
-                        {client.supportLevel && <span className={styles.chip}>{client.supportLevel}</span>}
+                      <div className="flex flex-wrap gap-1">
+                        {client.ageGroup && <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: palette.bg, color: palette.color }}>{client.ageGroup}</span>}
+                        {client.supportLevel && <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: palette.bg, color: palette.color }}>{client.supportLevel}</span>}
                       </div>
-                      {client.primaryGoal && <p className={styles.clientCardGoal}>{client.primaryGoal}</p>}
-                      <div className={styles.clientCardActions}>
-                        <button type="button" className={styles.secondaryButton} onClick={() => handleSelectClient(client.id)}>Detay</button>
-                        <button type="button" className={styles.primaryButton} onClick={() => { setSelectedClientId(client.id); setActiveClientId(client.id); setActiveAppView("games"); }}>Oyna</button>
+                      {client.primaryGoal && <p className="text-(--color-text-soft) text-sm m-0">{client.primaryGoal}</p>}
+                      <div className="flex gap-2 mt-auto">
+                        <button type="button" className={btnSecondary} onClick={() => handleSelectClient(client.id)}>Detay</button>
+                        <button type="button" className={btnPrimary} onClick={() => { setSelectedClientId(client.id); setActiveClientId(client.id); setActiveAppView("games"); }}>Oyna</button>
                       </div>
                     </div>
                   );
@@ -1430,58 +1645,117 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         )}
 
         {/* ── Client Detail ── */}
-        {activeAppView === "client-detail" && selectedClient && (
-          <div className={styles.clientDetailPage}>
-            <button type="button" className={styles.clientDetailBack} onClick={() => setActiveAppView("clients")}>← Danışanlar</button>
+        {activeAppView === "client-detail" && selectedClient && (() => {
+          const isLight = theme === "light";
+          const clientIdx = clientOptions.findIndex((c) => c.id === selectedClientId);
+          const palette = (isLight ? [
+            { bg: "rgba(99,102,241,0.10)", color: "#4338ca", border: "rgba(99,102,241,0.25)", glow: "rgba(99,102,241,0.08)", gradientFrom: "rgba(99,102,241,0.07)" },
+            { bg: "rgba(16,185,129,0.10)", color: "#047857", border: "rgba(16,185,129,0.25)", glow: "rgba(16,185,129,0.08)", gradientFrom: "rgba(16,185,129,0.07)" },
+            { bg: "rgba(245,158,11,0.10)", color: "#b45309", border: "rgba(245,158,11,0.25)", glow: "rgba(245,158,11,0.08)", gradientFrom: "rgba(245,158,11,0.07)" },
+            { bg: "rgba(6,182,212,0.10)",  color: "#0e7490", border: "rgba(6,182,212,0.25)",  glow: "rgba(6,182,212,0.08)",  gradientFrom: "rgba(6,182,212,0.07)" },
+            { bg: "rgba(168,85,247,0.10)", color: "#7c3aed", border: "rgba(168,85,247,0.25)", glow: "rgba(168,85,247,0.08)", gradientFrom: "rgba(168,85,247,0.07)" },
+          ] : [
+            { bg: "rgba(99,102,241,0.18)", color: "#a5b4fc", border: "rgba(99,102,241,0.35)", glow: "rgba(99,102,241,0.18)", gradientFrom: "rgba(99,102,241,0.12)" },
+            { bg: "rgba(16,185,129,0.18)", color: "#6ee7b7", border: "rgba(16,185,129,0.35)", glow: "rgba(16,185,129,0.14)", gradientFrom: "rgba(16,185,129,0.12)" },
+            { bg: "rgba(245,158,11,0.18)", color: "#fcd34d", border: "rgba(245,158,11,0.35)", glow: "rgba(245,158,11,0.14)", gradientFrom: "rgba(245,158,11,0.12)" },
+            { bg: "rgba(6,182,212,0.18)",  color: "#67e8f9", border: "rgba(6,182,212,0.35)",  glow: "rgba(6,182,212,0.14)",  gradientFrom: "rgba(6,182,212,0.12)" },
+            { bg: "rgba(168,85,247,0.18)", color: "#d8b4fe", border: "rgba(168,85,247,0.35)", glow: "rgba(168,85,247,0.14)", gradientFrom: "rgba(168,85,247,0.12)" },
+          ])[clientIdx % 5];
+          const clientSessions = platformOverview.recentSessions.filter((s) => s.clientId === selectedClientId);
+          const bestScore = clientSessions.length > 0 ? Math.max(...clientSessions.map((s) => s.score)) : 0;
+          return (
+            <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
 
-            <div className={styles.clientDetailHeader}>
-              <h1 className={styles.clientDetailName}>{selectedClient.displayName}</h1>
-              <div className={styles.clientDetailChips}>
-                {selectedClient.ageGroup && <span className={styles.chip}>{selectedClient.ageGroup}</span>}
-                {selectedClient.primaryGoal && <span className={styles.chip}>{selectedClient.primaryGoal}</span>}
-                {selectedClient.supportLevel && <span className={styles.chip}>{selectedClient.supportLevel}</span>}
+              {/* Back */}
+              <button type="button" className="flex items-center gap-1.5 text-(--color-primary) text-sm font-semibold bg-transparent border-none cursor-pointer px-0 hover:opacity-75 transition-opacity" onClick={() => setActiveAppView("clients")}>
+                ← Danışanlar
+              </button>
+
+              {/* Hero card */}
+              <div className="rounded-2xl border p-6 overflow-hidden" style={{
+                background: `linear-gradient(135deg, ${palette.gradientFrom} 0%, transparent 55%)`,
+                borderColor: palette.border,
+                boxShadow: isLight ? `0 2px 16px ${palette.glow}` : `0 0 60px ${palette.glow}, inset 0 1px 0 rgba(255,255,255,0.04)`,
+              }}>
+                <div className="flex items-start gap-5 mb-5">
+                  <div className="w-16 h-16 rounded-2xl font-extrabold flex items-center justify-center text-2xl shrink-0" style={{ background: palette.bg, color: palette.color, border: `2px solid ${palette.border}` }}>
+                    {selectedClient.displayName[0]?.toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0 pt-1">
+                    <h1 className="text-2xl font-extrabold m-0 mb-2.5 text-(--color-text-strong)">{selectedClient.displayName}</h1>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedClient.ageGroup && <span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>{selectedClient.ageGroup}</span>}
+                      {selectedClient.primaryGoal && <span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>{selectedClient.primaryGoal}</span>}
+                      {selectedClient.supportLevel && <span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>{selectedClient.supportLevel}</span>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mini stats */}
+                <div className="grid grid-cols-3 gap-3 mb-5">
+                  {[
+                    { label: "Toplam Seans", value: clientSessions.length },
+                    { label: "En İyi Skor", value: bestScore || "—" },
+                    { label: "Not Sayısı", value: clientNotes.length },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="rounded-xl p-3 text-center" style={{ background: isLight ? "rgba(0,0,0,0.03)" : "rgba(0,0,0,0.25)", border: `1px solid ${palette.border}` }}>
+                      <strong className="text-xl font-extrabold block leading-none mb-1" style={{ color: palette.color }}>{value}</strong>
+                      <span className="text-(--color-text-muted) text-xs">{label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <button type="button" className={`${btnPrimary} w-full justify-center flex items-center gap-2`} onClick={() => { setActiveClientId(selectedClient.id); setActiveAppView("games"); }}>
+                  <Gamepad2 size={16} /> Bu Danışanla Oyna
+                </button>
               </div>
-              <div className={styles.clientDetailActions}>
-                <button type="button" className={styles.primaryButton} onClick={() => { setActiveClientId(selectedClient.id); setActiveAppView("games"); }}>Bu Danışanla Oyna</button>
+
+              {/* Tabs */}
+              <div className="flex gap-1 p-1 rounded-xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
+                {(["notes", "plan", "scores"] as const).map((tab) => (
+                  <button key={tab} type="button"
+                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150 border-none cursor-pointer ${clientDetailTab === tab ? "bg-(--color-surface-strong) text-(--color-text-strong) shadow-sm" : "text-(--color-text-soft) hover:text-(--color-text-body) bg-transparent"}`}
+                    onClick={() => setClientDetailTab(tab)}>
+                    {tab === "notes" ? "Notlar" : tab === "plan" ? "Haftalık Plan" : "Skor Geçmişi"}
+                  </button>
+                ))}
               </div>
-            </div>
 
-            <div className={styles.clientTabStrip}>
-              <button type="button" className={`${styles.clientTab} ${clientDetailTab === "notes" ? styles.clientTabActive : ""}`} onClick={() => setClientDetailTab("notes")}>Notlar</button>
-              <button type="button" className={`${styles.clientTab} ${clientDetailTab === "plan" ? styles.clientTabActive : ""}`} onClick={() => setClientDetailTab("plan")}>Haftalık Plan</button>
-              <button type="button" className={`${styles.clientTab} ${clientDetailTab === "scores" ? styles.clientTabActive : ""}`} onClick={() => setClientDetailTab("scores")}>Skor Geçmişi</button>
-            </div>
-
-            <div className={styles.clientTabContent}>
+              {/* ── Notes ── */}
               {clientDetailTab === "notes" && (
-                <div>
-                  <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
-                    <button type="button" className={styles.primaryButton} onClick={() => setShowNoteForm(!showNoteForm)}>+ Not Ekle</button>
+                <div className="space-y-4">
+                  <div className="flex justify-end">
+                    <button type="button" className={btnPrimary} onClick={() => setShowNoteForm(!showNoteForm)}>+ Not Ekle</button>
                   </div>
 
                   {showNoteForm && (
-                    <div className={styles.addNotePanel}>
-                      <h4>Yeni Not</h4>
-                      <div className={styles.noteForm}>
-                        <input type="date" value={noteForm.date} onChange={(e) => setNoteForm((c) => ({ ...c, date: e.target.value }))} className={styles.inputSurface} />
-                        <textarea value={noteForm.content} onChange={(e) => setNoteForm((c) => ({ ...c, content: e.target.value }))} placeholder="Seans notu, gözlem veya hedef..." className={`${styles.inputSurface} ${styles.textareaSurface}`} rows={4} />
-                        <div style={{ display: "flex", gap: "10px" }}>
-                          <button type="button" className={styles.primaryButton} onClick={handleAddNote}>Kaydet</button>
-                          <button type="button" className={styles.secondaryButton} onClick={() => setShowNoteForm(false)}>İptal</button>
-                        </div>
+                    <div className="rounded-2xl border border-(--color-line) p-5 bg-(--color-surface-strong) space-y-3">
+                      <h4 className="text-(--color-text-strong) font-semibold m-0">Yeni Not</h4>
+                      <input type="date" value={noteForm.date} onChange={(e) => setNoteForm((c) => ({ ...c, date: e.target.value }))} className={inputCls} />
+                      <textarea value={noteForm.content} onChange={(e) => setNoteForm((c) => ({ ...c, content: e.target.value }))} placeholder="Seans notu, gözlem veya hedef..." className={`${inputCls} resize-none`} rows={4} />
+                      <div className="flex gap-2">
+                        <button type="button" className={btnPrimary} onClick={handleAddNote}>Kaydet</button>
+                        <button type="button" className={btnSecondary} onClick={() => setShowNoteForm(false)}>İptal</button>
                       </div>
                     </div>
                   )}
 
                   {clientNotes.length === 0 ? (
-                    <div className={styles.scoreHistoryEmpty}><p>Henüz not eklenmedi.</p></div>
+                    <div className="rounded-2xl border border-(--color-line) p-8 text-center bg-(--color-surface-strong)">
+                      <p className="text-(--color-text-muted) text-sm m-0">Henüz not eklenmedi.</p>
+                    </div>
                   ) : (
-                    <div className={styles.notesList}>
+                    <div className="space-y-3">
                       {clientNotes.map((note) => (
-                        <div key={note.id} className={styles.noteCard}>
-                          <div className={styles.noteCardDate}>{formatDate(note.date)}</div>
-                          <p className={styles.noteCardContent}>{note.content}</p>
-                          <button type="button" style={{ background: "none", border: "none", color: "#b33a4e", fontSize: "0.8rem", cursor: "pointer", padding: "4px 0" }} onClick={() => handleDeleteNote(note.id)}>Sil</button>
+                        <div key={note.id} className="rounded-2xl border border-(--color-line) overflow-hidden bg-(--color-surface-strong) flex">
+                          <div className="w-1 shrink-0" style={{ background: palette.color }} />
+                          <div className="flex-1 px-4 py-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: palette.bg, color: palette.color }}>{formatDate(note.date)}</span>
+                              <button type="button" className="text-xs font-medium px-2.5 py-1 rounded-lg border-none cursor-pointer transition-opacity hover:opacity-75" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }} onClick={() => handleDeleteNote(note.id)}>Sil</button>
+                            </div>
+                            <p className="text-(--color-text-body) text-sm m-0 leading-relaxed">{note.content}</p>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1489,102 +1763,181 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 </div>
               )}
 
+              {/* ── Weekly Plan ── */}
               {clientDetailTab === "plan" && (
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
-                    <button type="button" className={styles.secondaryButton} onClick={() => setPlanWeekStart(addDays(planWeekStart, -7))}>←</button>
-                    <strong style={{ color: "#0d2c44" }}>
-                      {formatDate(planWeekStart)} – {formatDate(addDays(planWeekStart, 6))}
-                    </strong>
-                    <button type="button" className={styles.secondaryButton} onClick={() => setPlanWeekStart(addDays(planWeekStart, 7))}>→</button>
+                <div className="space-y-4">
+
+                  {/* Week navigation */}
+                  <div className="flex items-center gap-3">
+                    <button type="button"
+                      className="w-9 h-9 rounded-full flex items-center justify-center border text-(--color-text-soft) hover:text-(--color-text-strong) transition-all cursor-pointer shrink-0 text-base"
+                      style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}
+                      onClick={() => setPlanWeekStart(addDays(planWeekStart, -7))}>
+                      ←
+                    </button>
+                    <div className="flex-1 text-center">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-(--color-text-muted) m-0 mb-0.5">Haftalık Plan</p>
+                      <strong className="text-sm font-bold text-(--color-text-strong)">{formatDate(planWeekStart)} – {formatDate(addDays(planWeekStart, 6))}</strong>
+                    </div>
+                    <button type="button"
+                      className="w-9 h-9 rounded-full flex items-center justify-center border text-(--color-text-soft) hover:text-(--color-text-strong) transition-all cursor-pointer shrink-0 text-base"
+                      style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}
+                      onClick={() => setPlanWeekStart(addDays(planWeekStart, 7))}>
+                      →
+                    </button>
                   </div>
 
-                  <div className={styles.weeklyPlanGrid}>
+                  {/* Day rows */}
+                  <div className="space-y-2">
                     {DAY_KEYS.map((day, dayIndex) => {
                       const dayDate = addDays(planWeekStart, dayIndex);
                       const entries = planEdits[day];
+                      const isToday = dayDate === getTodayString();
+                      const isWeekend = dayIndex >= 5;
+                      const dayNames: Record<DayKey, string> = { mon: "Pazartesi", tue: "Salı", wed: "Çarşamba", thu: "Perşembe", fri: "Cuma", sat: "Cumartesi", sun: "Pazar" };
                       return (
-                        <div key={day} className={styles.weeklyDay}>
-                          <div className={styles.weeklyDayHeader}>
-                            <strong>{DAY_LABELS[day]}</strong>
-                            <span style={{ fontSize: "0.76rem", color: "#7a99b4" }}>{dayDate.slice(8)}</span>
-                          </div>
-                          {entries.map((entry, entryIndex) => (
-                            <div key={entryIndex} className={styles.weeklyEntry}>
-                              <select
-                                value={entry.gameKey}
-                                className={`${styles.inputSurface} ${styles.weeklyEntryGame}`}
-                                onChange={(e) => {
-                                  const newKey = e.target.value as PlatformGameKey;
-                                  setPlanEdits((current) => {
-                                    const updated = [...current[day]];
-                                    updated[entryIndex] = { ...updated[entryIndex], gameKey: newKey };
-                                    return { ...current, [day]: updated };
-                                  });
-                                }}
-                              >
-                                {GAME_TABS.map((g) => <option key={g.key} value={g.key}>{g.title}</option>)}
-                              </select>
-                              <input
-                                value={entry.goal}
-                                placeholder="Hedef..."
-                                className={`${styles.inputSurface} ${styles.weeklyEntryGoal}`}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setPlanEdits((current) => {
-                                    const updated = [...current[day]];
-                                    updated[entryIndex] = { ...updated[entryIndex], goal: val };
-                                    return { ...current, [day]: updated };
-                                  });
-                                }}
-                              />
-                              <button type="button" style={{ background: "none", border: "none", color: "#b33a4e", cursor: "pointer", fontSize: "0.8rem" }} onClick={() => {
-                                setPlanEdits((current) => {
-                                  const updated = current[day].filter((_, i) => i !== entryIndex);
-                                  return { ...current, [day]: updated };
-                                });
-                              }}>×</button>
+                        <div key={day} className="rounded-2xl border overflow-hidden" style={{
+                          borderColor: isToday ? palette.border : "var(--color-line)",
+                          background: isToday
+                            ? (isLight ? `linear-gradient(135deg, ${palette.bg} 0%, rgba(255,255,255,0.5) 100%)` : `linear-gradient(135deg, ${palette.gradientFrom} 0%, var(--color-surface-strong) 100%)`)
+                            : "var(--color-surface-strong)",
+                          boxShadow: isToday && !isLight ? `0 0 24px ${palette.glow}` : "none",
+                          opacity: isWeekend && !isToday ? 0.75 : 1,
+                        }}>
+
+                          {/* Row header */}
+                          <div className="flex items-center gap-4 px-4 py-3">
+                            {/* Date badge */}
+                            <div className="w-12 h-12 rounded-xl flex flex-col items-center justify-center shrink-0" style={{
+                              background: isToday ? palette.bg : (isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)"),
+                              border: `1px solid ${isToday ? palette.border : "var(--color-line)"}`,
+                            }}>
+                              <span className="text-[9px] font-extrabold uppercase tracking-wider leading-none" style={{ color: isToday ? palette.color : "var(--color-text-muted)" }}>
+                                {DAY_LABELS[day]}
+                              </span>
+                              <strong className="text-lg font-extrabold leading-tight" style={{ color: isToday ? palette.color : "var(--color-text-strong)" }}>
+                                {dayDate.slice(8)}
+                              </strong>
                             </div>
-                          ))}
-                          <button type="button" style={{ fontSize: "0.8rem", color: "#0ea5e9", background: "none", border: "none", cursor: "pointer", padding: "4px 0" }} onClick={() => {
-                            setPlanEdits((current) => ({
-                              ...current,
-                              [day]: [...current[day], { gameKey: "memory" as PlatformGameKey, goal: "" }],
-                            }));
-                          }}>+ Oyun Ekle</button>
+
+                            {/* Day name + today badge */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold" style={{ color: isToday ? palette.color : (isWeekend ? "var(--color-text-soft)" : "var(--color-text-strong)") }}>
+                                  {dayNames[day]}
+                                </span>
+                                {isToday && (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: palette.bg, color: palette.color }}>
+                                    Bugün
+                                  </span>
+                                )}
+                              </div>
+                              {entries.length > 0 && (
+                                <span className="text-xs text-(--color-text-muted)">{entries.length} aktivite planlandı</span>
+                              )}
+                            </div>
+
+                            {/* Add button */}
+                            <button type="button"
+                              className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-xl border cursor-pointer transition-all hover:opacity-75"
+                              style={{
+                                background: isToday ? palette.bg : (isLight ? "rgba(99,102,241,0.08)" : "rgba(99,102,241,0.1)"),
+                                borderColor: isToday ? palette.border : (isLight ? "rgba(99,102,241,0.2)" : "rgba(99,102,241,0.18)"),
+                                color: isToday ? palette.color : (isLight ? "#4338ca" : "#818cf8"),
+                              }}
+                              onClick={() => { setPlanEdits((current) => ({ ...current, [day]: [...current[day], { gameKey: "memory" as PlatformGameKey, goal: "" }] })); }}>
+                              + Oyun Ekle
+                            </button>
+                          </div>
+
+                          {/* Entries */}
+                          {entries.length > 0 && (
+                            <div className="px-4 pb-4 space-y-2">
+                              <div className="h-px" style={{ background: isToday ? palette.border : "var(--color-line)" }} />
+                              <div className="pt-1 space-y-2">
+                                {entries.map((entry, entryIndex) => (
+                                  <div key={entryIndex} className="flex items-start gap-3 rounded-xl px-3 py-2.5" style={{
+                                    background: isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)",
+                                    border: `1px solid ${isToday ? palette.border : "var(--color-line)"}`,
+                                  }}>
+                                    {/* Game number */}
+                                    <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-extrabold" style={{ background: palette.bg, color: palette.color }}>
+                                      {entryIndex + 1}
+                                    </div>
+
+                                    {/* Game select + goal input */}
+                                    <div className="flex-1 min-w-0 space-y-1.5">
+                                      <select
+                                        value={entry.gameKey}
+                                        className="w-full text-sm font-semibold bg-transparent border-none outline-none cursor-pointer"
+                                        style={{ color: "var(--color-text-strong)" }}
+                                        onChange={(e) => {
+                                          const newKey = e.target.value as PlatformGameKey;
+                                          setPlanEdits((current) => { const updated = [...current[day]]; updated[entryIndex] = { ...updated[entryIndex], gameKey: newKey }; return { ...current, [day]: updated }; });
+                                        }}>
+                                        {GAME_TABS.map((g) => <option key={g.key} value={g.key}>{g.title}</option>)}
+                                      </select>
+                                      <input
+                                        value={entry.goal}
+                                        placeholder="Hedef notu ekle..."
+                                        className="w-full text-xs bg-transparent border-none outline-none"
+                                        style={{ color: "var(--color-text-soft)" }}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          setPlanEdits((current) => { const updated = [...current[day]]; updated[entryIndex] = { ...updated[entryIndex], goal: val }; return { ...current, [day]: updated }; });
+                                        }} />
+                                    </div>
+
+                                    {/* Delete */}
+                                    <button type="button"
+                                      className="shrink-0 w-6 h-6 rounded-lg flex items-center justify-center border-none cursor-pointer text-xs font-bold transition-opacity hover:opacity-70"
+                                      style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }}
+                                      onClick={() => { setPlanEdits((current) => { const updated = current[day].filter((_, i) => i !== entryIndex); return { ...current, [day]: updated }; }); }}>
+                                      ×
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
                   </div>
-                  <div style={{ marginTop: "20px" }}>
-                    <button type="button" className={styles.primaryButton} onClick={handleSaveWeeklyPlan}>Planı Kaydet</button>
-                  </div>
+
+                  <button type="button" className={btnPrimary} onClick={handleSaveWeeklyPlan}>
+                    Planı Kaydet
+                  </button>
                 </div>
               )}
 
+              {/* ── Score History ── */}
               {clientDetailTab === "scores" && (
-                <div className={styles.scoreHistorySection}>
+                <div className="space-y-4">
                   {GAME_TABS.map((game) => {
                     const gameSessions = platformOverview.recentSessions.filter((s) => s.gameKey === game.key && s.clientId === selectedClient.id);
                     const gameScore = scoreboard[game.key];
+                    if (gameScore.plays === 0) return null;
                     const maxScore = Math.max(gameScore.best, 1);
+                    const pct = Math.min(100, (gameScore.best / maxScore) * 100);
                     return (
-                      <div key={game.key} className={styles.scoreGameSection}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                          <strong style={{ color: "#0d2c44" }}>{game.title}</strong>
-                          <span style={{ color: "#7a99b4", fontSize: "0.84rem" }}>{gameScore.plays} oynama</span>
+                      <div key={game.key} className="rounded-2xl border border-(--color-line) p-5 bg-(--color-surface-strong) space-y-3">
+                        <div className="flex items-center justify-between">
+                          <strong className="text-(--color-text-strong) text-sm font-semibold">{game.title}</strong>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: palette.bg, color: palette.color }}>{gameScore.best} en iyi</span>
+                            <span className="text-(--color-text-muted) text-xs">{gameScore.plays} oynama</span>
+                          </div>
                         </div>
-                        <div className={styles.scoreBar}>
-                          <div className={styles.scoreBarFill} style={{ width: `${Math.min(100, (gameScore.best / maxScore) * 100)}%` }} />
+                        <div className="h-2 rounded-full overflow-hidden" style={{ background: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)" }}>
+                          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${palette.color}, ${palette.border})` }} />
                         </div>
-                        {gameSessions.length === 0 ? (
-                          <p style={{ color: "#7a99b4", fontSize: "0.84rem", marginTop: "8px" }}>Henüz oyun skoru yok.</p>
-                        ) : (
-                          <div style={{ marginTop: "10px", display: "grid", gap: "6px" }}>
+                        {gameSessions.length > 0 && (
+                          <div className="grid gap-1.5">
                             {gameSessions.slice(0, 5).map((session) => (
-                              <div key={session.id} className={styles.activityCard} style={{ padding: "10px 14px" }}>
-                                <span style={{ color: "#567896", fontSize: "0.84rem" }}>{formatPlayedAt(session.playedAt)}</span>
-                                <strong style={{ color: "#0d2c44" }}>{session.score} puan</strong>
+                              <div key={session.id} className="flex items-center justify-between rounded-xl border border-(--color-line) px-3 py-2" style={{ background: isLight ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.02)" }}>
+                                <span className="text-(--color-text-soft) text-xs">{formatPlayedAt(session.playedAt)}{session.durationSeconds ? ` · ${formatDuration(session.durationSeconds)}` : ""}</span>
+                                <strong className="text-sm font-extrabold" style={{ color: palette.color }}>{session.score}</strong>
                               </div>
                             ))}
                           </div>
@@ -1592,144 +1945,207 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       </div>
                     );
                   })}
+                  {GAME_TABS.every((g) => scoreboard[g.key].plays === 0) && (
+                    <div className="rounded-2xl border border-(--color-line) p-8 text-center bg-(--color-surface-strong)">
+                      <p className="text-(--color-text-muted) text-sm m-0">Henüz oyun skoru yok.</p>
+                    </div>
+                  )}
                 </div>
               )}
+
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ── Games View ── */}
         {activeAppView === "games" && (
-          <div className={styles.gamesPage}>
-            <div className={styles.workspaceBar}>
-              <div className={styles.workspaceBarLeft}>
-                <span className={styles.workspaceCrumb}>Oyun Çalışma Alanı</span>
-                <span className={styles.workspaceSessionBadge}>
-                  {activeTherapist?.displayName ?? "Terapist seç"} · {activeClient?.displayName ?? "Danışan seç"}
-                </span>
-                <span className={`${styles.serverBadge} ${platformStatus === "online" ? styles.serverBadgeOnline : platformStatus === "schema_missing" ? styles.serverBadgeWarn : platformStatus === "error" ? styles.serverBadgeError : styles.serverBadgeIdle}`}>
+          <div className="flex flex-col h-full">
+            <div className="hidden lg:flex items-center justify-between px-6 h-14 border-b border-(--color-line) sticky top-0 z-10" style={{ background: "var(--color-chrome-header)", backdropFilter: "blur(20px)" }}>
+              <div className="flex items-center gap-4">
+                <span className="font-bold text-(--color-text-strong) text-sm">Oyun Alanı</span>
+                <span className="w-px h-4 bg-(--color-line) shrink-0" />
+                <div className="flex items-center gap-2 bg-(--color-primary)/8 border border-(--color-primary)/15 rounded-full px-3 py-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                  <span className="text-xs font-medium text-(--color-primary) max-w-52 truncate">
+                    {activeTherapist?.displayName ?? "—"} · {activeClient?.displayName ?? "Danışan seç"}
+                  </span>
+                </div>
+                <span className={`text-xs font-medium rounded-full px-2.5 py-0.5 border ${platformStatus === "online" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : platformStatus === "schema_missing" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" : platformStatus === "error" ? "bg-red-500/10 text-red-400 border-red-500/20" : "bg-white/5 text-(--color-text-muted) border-(--color-line)"}`}>
                   {getDatabaseStatusLabel(platformStatus)}
                 </span>
               </div>
-              <div className={styles.workspaceBarRight}>
-                <div className={styles.gameTimer}>
-                  <span className={styles.gameTimerIcon}>⏱</span>
-                  <span className={styles.gameTimerValue}>{formatElapsed(gameElapsed)}</span>
-                  <span className={styles.gameTimerLabel}>seans süresi</span>
-                  <button type="button" className={styles.gameTimerReset} onClick={resetSessionClock}>Sıfırla</button>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 bg-(--color-surface-strong) border border-(--color-line) rounded-xl px-3 py-1.5">
+                  <Clock size={13} className="text-(--color-primary)" />
+                  <span className="font-mono font-bold text-(--color-text-strong) text-sm">{formatElapsed(gameElapsed)}</span>
+                  <button type="button" className="text-(--color-primary) text-xs hover:underline bg-transparent border-none cursor-pointer ml-1" onClick={resetSessionClock}>Sıfırla</button>
                 </div>
-                <button type="button" className={styles.secondaryButton} onClick={() => setActiveAppView("dashboard")}>Panel</button>
+                <button type="button" className={btnSecondary} onClick={() => setActiveAppView("dashboard")}>← Panel</button>
               </div>
             </div>
 
-            {/* ── Mobile-first: compact session + game picker ── */}
-            <div className={styles.mobileGameNav}>
-              <div className={styles.mobileSessionRow}>
-                <select value={activeTherapist?.id ?? ""} onChange={(event) => setActiveTherapistId(event.target.value)} className={styles.mobileSelectCompact}>
+            {/* ── Mobile game nav ── */}
+            <div className="flex lg:hidden flex-col gap-2 px-4 py-3 border-b border-(--color-line)" style={{ background: "var(--color-chrome-header)" }}>
+              <div className="flex items-center gap-2">
+                <select value={activeTherapist?.id ?? ""} onChange={(event) => setActiveTherapistId(event.target.value)} className="flex-1 text-xs px-2 py-1.5 border border-(--color-line) rounded-lg bg-(--color-surface-strong) text-(--color-text-body)">
                   {therapistOptions.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}</option>)}
                 </select>
-                <select value={activeClient?.id ?? ""} onChange={(event) => setActiveClientId(event.target.value)} className={styles.mobileSelectCompact}>
+                <select value={activeClient?.id ?? ""} onChange={(event) => setActiveClientId(event.target.value)} className="flex-1 text-xs px-2 py-1.5 border border-(--color-line) rounded-lg bg-(--color-surface-strong) text-(--color-text-body)">
                   {clientOptions.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}</option>)}
                 </select>
-                <div className={styles.gameTimer}>
-                  <span className={styles.gameTimerIcon}>⏱</span>
-                  <span className={styles.gameTimerValue}>{formatElapsed(gameElapsed)}</span>
-                  <button type="button" className={styles.gameTimerReset} onClick={resetSessionClock}>↺</button>
+                <div className="flex items-center gap-1 text-xs bg-(--color-surface-strong) border border-(--color-line) rounded-lg px-2 py-1">
+                  <Clock size={11} className="text-(--color-text-muted)" />
+                  <span className="font-mono font-bold text-(--color-text-strong)">{formatElapsed(gameElapsed)}</span>
+                  <button type="button" className="text-(--color-primary) hover:underline bg-transparent border-none cursor-pointer ml-0.5" onClick={resetSessionClock}><RotateCcw size={10} /></button>
                 </div>
               </div>
-              <div className={styles.mobileCategoryStrip}>
+              <div className="flex gap-2 overflow-x-auto pb-1">
                 {GAME_CATEGORIES.map((category) => {
                   const isActive = activeTab.category === category.key;
                   return (
-                    <button key={category.key} type="button" className={`${styles.mobileCategoryChip} ${isActive ? styles.mobileCategoryChipActive : ""}`} onClick={() => openCategory(category.key)}>
-                      <span>{category.icon}</span> {category.title}
+                    <button key={category.key} type="button" className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border-none cursor-pointer ${isActive ? "bg-(--color-primary) text-white" : "bg-(--color-surface-elevated) text-(--color-text-body)"}`} onClick={() => openCategory(category.key)}>
+                      {(() => { const CI = CATEGORY_ICONS[category.key]; return <CI size={12} />; })()} {category.title}
                     </button>
                   );
                 })}
               </div>
-              <div className={styles.mobileGameStrip}>
+              <div className="flex gap-2 overflow-x-auto pb-1">
                 {visibleTabs.map((tab) => (
-                  <button key={tab.key} type="button" className={`${styles.mobileGameChip} ${activeGame === tab.key ? styles.mobileGameChipActive : ""}`} onClick={() => setActiveGame(tab.key)}>
+                  <button key={tab.key} type="button" className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border-none cursor-pointer ${activeGame === tab.key ? "bg-(--color-primary)/15 text-(--color-primary)" : "bg-(--color-surface-elevated) text-(--color-text-body)"}`} onClick={() => setActiveGame(tab.key)}>
                     {tab.title}
                   </button>
                 ))}
               </div>
             </div>
 
-            <div className={styles.gamesLayout}>
-              <aside className={styles.gamesSidebar}>
-                <div className={styles.sidebarBlock}>
-                  <span className={styles.sectionEyebrow}>Aktif seans</span>
-                  <div className={styles.sessionContextCard}>
-                    <label className={styles.fieldBlock}>
-                      <span>Terapist</span>
-                      <select value={activeTherapist?.id ?? ""} onChange={(event) => setActiveTherapistId(event.target.value)} className={styles.inputSurface}>
+            <div className="flex flex-1 overflow-hidden">
+              <aside className="hidden lg:flex flex-col w-64 shrink-0 border-r border-(--color-line) overflow-y-auto bg-(--color-sidebar)" style={{ backdropFilter: "blur(20px)" }}>
+                {/* Session setup */}
+                <div className="p-4 border-b border-(--color-line) space-y-4">
+
+                  {/* Active session status card */}
+                  <div className="rounded-xl p-3 flex items-center justify-between" style={{
+                    background: gameElapsed > 0 ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)",
+                    border: gameElapsed > 0 ? "1px solid rgba(16,185,129,0.2)" : "1px solid var(--color-line)",
+                  }}>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{
+                        background: gameElapsed > 0 ? "#10b981" : "#64748b",
+                        boxShadow: gameElapsed > 0 ? "0 0 6px rgba(16,185,129,0.6)" : "none",
+                      }} />
+                      <span className="text-xs font-semibold" style={{ color: gameElapsed > 0 ? "#10b981" : "var(--color-text-muted)" }}>
+                        {gameElapsed > 0 ? "Seans Aktif" : "Seans Bekliyor"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg" style={{
+                      background: gameElapsed > 0 ? "rgba(16,185,129,0.12)" : "rgba(255,255,255,0.04)",
+                    }}>
+                      <Clock size={11} style={{ color: gameElapsed > 0 ? "#10b981" : "var(--color-text-muted)" }} />
+                      <span className="font-mono font-bold text-xs" style={{ color: gameElapsed > 0 ? "#10b981" : "var(--color-text-muted)" }}>
+                        {formatElapsed(gameElapsed)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Selectors */}
+                  <div className="space-y-2.5">
+                    <label className="flex flex-col gap-1">
+                      <span className="text-[11px] text-(--color-text-muted) font-semibold uppercase tracking-wider">Terapist</span>
+                      <select value={activeTherapist?.id ?? ""} onChange={(event) => setActiveTherapistId(event.target.value)} className={inputCls}>
                         {therapistOptions.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}</option>)}
                       </select>
                     </label>
-                    <label className={styles.fieldBlock}>
-                      <span>Danışan</span>
-                      <select value={activeClient?.id ?? ""} onChange={(event) => setActiveClientId(event.target.value)} className={styles.inputSurface}>
+                    <label className="flex flex-col gap-1">
+                      <span className="text-[11px] text-(--color-text-muted) font-semibold uppercase tracking-wider">Danışan</span>
+                      <select value={activeClient?.id ?? ""} onChange={(event) => setActiveClientId(event.target.value)} className={inputCls}>
                         {clientOptions.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}</option>)}
                       </select>
                     </label>
-                    <button type="button" className={styles.secondaryButton} style={{ width: "100%" }} onClick={resetSessionClock}>Yeni Seans Başlat</button>
+                  </div>
+
+                  {/* CTA */}
+                  <div className="space-y-1.5">
+                    <button type="button" className={`${btnPrimary} w-full flex items-center justify-center gap-2`} onClick={resetSessionClock}>
+                      <span>▶</span>
+                      {gameElapsed > 0 ? "Yeni Seans Başlat" : "Seansı Başlat"}
+                    </button>
+                    <p className="text-[11px] text-(--color-text-muted) text-center leading-snug">
+                      {gameElapsed > 0
+                        ? "Süreyi sıfırlar ve yeni bir seans kaydı açar"
+                        : `${activeClient?.displayName ?? "Danışan"} ile seans süresini başlatır`}
+                    </p>
                   </div>
                 </div>
 
-                <div className={styles.sidebarBlock}>
-                  <span className={styles.sectionEyebrow}>Kategoriler</span>
-                  <div className={styles.categoryTabs}>
+                {/* Categories */}
+                <div className="p-4 border-b border-(--color-line)">
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-(--color-text-soft) block mb-3">Kategoriler</span>
+                  <div className="flex flex-col gap-1">
                     {GAME_CATEGORIES.map((category) => {
                       const isActive = activeTab.category === category.key;
+                      const CatIcon = CATEGORY_ICONS[category.key];
+                      const catCount = GAME_TABS.filter((g) => g.category === category.key).length;
                       return (
-                        <button key={category.key} type="button" aria-pressed={isActive} className={`${styles.categoryTab} ${isActive ? styles.categoryTabActive : ""}`} onClick={() => openCategory(category.key)}>
-                          <span className={styles.categoryTabIcon}>{category.icon}</span>
-                          {category.title}
+                        <button key={category.key} type="button" aria-pressed={isActive} className={`flex items-center gap-3 px-2 py-2 rounded-xl w-full text-left cursor-pointer border transition-all ${isActive ? "border-(--color-primary)/15 bg-(--color-primary)/5" : "border-transparent hover:bg-(--color-surface-elevated)"}`} onClick={() => openCategory(category.key)}>
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${isActive ? "bg-(--color-primary) text-white shadow-sm" : "bg-(--color-surface-elevated) text-(--color-text-muted)"}`}>
+                            <CatIcon size={14} />
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className={`text-sm font-semibold truncate leading-tight ${isActive ? "text-(--color-primary)" : "text-(--color-text-strong)"}`}>{category.title}</span>
+                            <span className={`text-[11px] ${isActive ? "text-(--color-primary)/70" : "text-(--color-text-muted)"}`}>{catCount} oyun</span>
+                          </div>
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                <div className={styles.sidebarBlock}>
-                  <span className={styles.sectionEyebrow}>Oyunlar</span>
-                  <div className={styles.gameTabList}>
+                {/* Games list */}
+                <div className="p-4 border-b border-(--color-line)">
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-(--color-text-soft) block mb-3">Oyunlar</span>
+                  <div className="flex flex-col gap-1">
                     {visibleTabs.map((tab) => (
-                      <button key={tab.key} type="button" aria-pressed={activeGame === tab.key} className={`${styles.gameTabItem} ${activeGame === tab.key ? styles.gameTabItemActive : ""}`} onClick={() => setActiveGame(tab.key)}>
-                        <span style={{ color: "#5f83a3", fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase" as const }}>{tab.kicker}</span>
-                        <span style={{ color: "#0e2e48", fontSize: "0.92rem", fontWeight: 700 }}>{tab.title}</span>
+                      <button key={tab.key} type="button" aria-pressed={activeGame === tab.key} className={`flex flex-col px-3 py-2.5 rounded-xl cursor-pointer w-full text-left transition-all ${activeGame === tab.key ? "bg-(--color-primary)/8 shadow-[inset_3px_0_0_var(--color-primary)]" : "hover:bg-(--color-surface-elevated)"}`} onClick={() => setActiveGame(tab.key)}>
+                        <span className={`text-[10px] font-bold uppercase tracking-wider ${activeGame === tab.key ? "text-(--color-primary)" : "text-(--color-text-muted)"}`}>{tab.kicker}</span>
+                        <span className={`text-sm font-semibold ${activeGame === tab.key ? "text-(--color-primary)" : "text-(--color-text-strong)"}`}>{tab.title}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <div className={`${styles.sidebarBlock} ${styles.sidebarBlockDesktopOnly}`}>
-                  <span className={styles.sectionEyebrow}>Skor özeti</span>
-                  <div className={styles.scoreSummaryList}>
+                {/* Score summary */}
+                <div className="p-4 border-b border-(--color-line)">
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-(--color-text-soft) block mb-3">Skor Özeti</span>
+                  <div className="flex flex-col gap-2">
                     {scoreCards.map((card) => (
-                      <div key={card.label} className={styles.scoreRow}>
-                        <span className={styles.scoreRowLabel}>{card.label}</span>
-                        <span className={styles.scoreRowBest}>{card.best}</span>
-                        <span className={styles.scoreRowPlays}>{card.plays}×</span>
+                      <div key={card.label} className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1 text-xs">
+                          <span className="flex-1 text-(--color-text-soft) truncate">{card.label}</span>
+                          <span className={`font-bold tabular-nums ${card.best > 0 ? "text-(--color-primary)" : "text-(--color-text-muted)"}`}>{card.best}</span>
+                          <span className="text-(--color-text-muted) text-[10px] w-5 text-right">{card.plays}×</span>
+                        </div>
+                        <div className="h-1 rounded-full bg-(--color-surface-elevated) overflow-hidden">
+                          <div className="h-full bg-(--color-primary) rounded-full transition-all" style={{ width: card.best > 0 ? `${Math.min(100, card.best)}%` : "0%" }} />
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
 
+                {/* Recent sessions */}
                 {recentSessionFeed.length > 0 && (
-                  <div className={`${styles.sidebarBlock} ${styles.sidebarBlockDesktopOnly}`}>
-                    <span className={styles.sectionEyebrow}>Son oturumlar</span>
-                    <div className={styles.recentSessionList}>
+                  <div className="p-4">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-(--color-text-soft) block mb-3">Son Oturumlar</span>
+                    <div className="flex flex-col gap-2">
                       {recentSessionFeed.slice(0, 3).map((session) => (
-                        <div key={session.id} className={styles.recentSessionCard}>
-                          <div>
-                            <strong>{session.gameLabel}</strong>
-                            <p>{session.therapistName} · {session.clientName}</p>
+                        <div key={session.id} className="flex justify-between bg-(--color-surface-elevated) rounded-xl px-3 py-2 text-xs border border-(--color-line)">
+                          <div className="min-w-0">
+                            <strong className="text-(--color-text-strong) block truncate">{session.gameLabel}</strong>
+                            <p className="text-(--color-text-muted) m-0 truncate">{session.clientName}</p>
                           </div>
-                          <div>
-                            <strong>{session.score}</strong>
-                            <p>{formatPlayedAt(session.playedAt)}</p>
+                          <div className="text-right shrink-0 ml-2">
+                            <strong className="text-(--color-primary) block">{session.score}</strong>
+                            <p className="text-(--color-text-muted) m-0">{formatPlayedAt(session.playedAt)}</p>
                           </div>
                         </div>
                       ))}
@@ -1738,221 +2154,254 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 )}
               </aside>
 
-              <section className={styles.gameWorkspace}>
+              <section className="flex-1 overflow-y-auto bg-(--color-page-bg)">
+              {(() => {
+                const gameBtn = "flex items-center gap-2 bg-(--color-primary) text-white text-sm font-semibold px-6 py-3 rounded-2xl hover:bg-(--color-primary-hover) transition-colors cursor-pointer border-none shadow-(--shadow-primary)";
+                const gameBtnSec = "flex items-center gap-2 bg-white/10 text-slate-200 text-sm font-medium px-6 py-3 rounded-2xl hover:bg-white/20 transition-colors cursor-pointer border border-white/20";
+                return (
+              <div className="p-3 lg:p-5 max-w-4xl mx-auto flex flex-col gap-4">
                 {activeGame === "memory" && (
-                  <section className={styles.gameCard}>
-                    <div className={styles.gameStatusRow}>
-                      <div><p className={styles.statusLabel}>Aktif seri</p><strong className={styles.statusValue}>{memoryState.score}</strong></div>
-                      <div><p className={styles.statusLabel}>Faz</p><strong className={styles.statusValue}>{getPhaseLabel(memoryState.phase)}</strong></div>
+                  <section className="relative rounded-3xl p-6 lg:p-8 flex flex-col gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(19,184,255,0.12)", boxShadow: "0 0 60px rgba(19,184,255,0.06)" }}>
+                    <div className="absolute top-0 right-0 w-80 h-40 rounded-full pointer-events-none" style={{ background: "#13b8ff", opacity: 0.05, filter: "blur(60px)", transform: "translate(20%,-30%)" }} />
+                    <div className="relative flex gap-6 pb-4 border-b border-white/10">
+                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Aktif seri</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{memoryState.score}</strong></div>
+                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Faz</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{getPhaseLabel(memoryState.phase)}</strong></div>
                     </div>
-                    <p className={styles.gameMessage}>{memoryState.message}</p>
-                    <p className={styles.shortcutHint}>Kısayollar: <strong>A/B</strong> oyun değiştirir, yön tuşları hücre seçer, <strong>Enter</strong> ve <strong>Boşluk</strong> aksiyonu tetikler.</p>
-                    <div className={styles.memoryGrid}>
+                    <p className="relative text-(--color-text-soft) text-sm leading-relaxed m-0">{memoryState.message}</p>
+                    <p className="relative text-(--color-text-muted) text-xs m-0">Kısayollar: <strong>A/B</strong> oyun değiştirir, yön tuşları hücre seçer, <strong>Enter</strong> ve <strong>Boşluk</strong> aksiyonu tetikler.</p>
+                    <div className="relative grid grid-cols-3 gap-3">
                       {MEMORY_TILES.map((label, index) => {
                         const isActive = memoryState.flashIndex === index;
                         const isLocked = memoryState.phase === "showing";
                         const isCursor = memoryCursor === index;
                         const symbol = SYMBOL_LIBRARY.find((s) => s.label === label);
                         return (
-                          <button key={label} type="button" className={`${styles.memoryTile} ${isActive ? styles.memoryTileActive : ""} ${isCursor ? styles.cursorTile : ""}`} disabled={isLocked} onClick={() => handleMemoryPick(index)} style={!isActive ? { "--tile-accent": symbol?.accent, background: symbol?.background } as CSSProperties : undefined}>
-                            <span className={styles.memoryTileIcon}>{symbol?.icon ?? label[0]}</span>
-                            <span className={styles.memoryTileLabel}>{label}</span>
+                          <button key={label} type="button" className={`relative flex flex-col items-center justify-center gap-1.5 h-28 rounded-2xl border cursor-pointer transition-all duration-150 select-none overflow-hidden ${isActive ? "game-tile-active border-transparent" : "border-white/10 hover:border-white/20"} ${isCursor ? "game-tile-cursor" : ""}`} disabled={isLocked} onClick={() => handleMemoryPick(index)} style={!isActive ? { background: symbol?.background } as CSSProperties : undefined}>
+                            {!isActive && <div className="absolute inset-0" style={symbol ? patternStyle(symbol) : undefined} />}
+                            <span className="relative text-2xl" style={!isActive ? { color: symbol?.accent } : undefined}>{symbol?.icon ?? label[0]}</span>
+                            <span className="relative text-xs font-medium text-white/70">{label}</span>
                           </button>
                         );
                       })}
                     </div>
-                    <div className={styles.controlRow}>
-                      <button type="button" className={styles.primaryButton} onClick={startMemoryGame}>Yeni Seri Başlat</button>
-                      <button type="button" className={styles.secondaryButton} onClick={replayMemorySequence} disabled={memoryState.sequence.length === 0}>Sırayı Tekrar Göster</button>
+                    <div className="relative flex gap-3 pt-2">
+                      <button type="button" className={gameBtn} onClick={startMemoryGame}>Yeni Seri Başlat</button>
+                      <button type="button" className={gameBtnSec} onClick={replayMemorySequence} disabled={memoryState.sequence.length === 0}>Sırayı Tekrar Göster</button>
                     </div>
                   </section>
                 )}
 
                 {activeGame === "pairs" && (
-                  <section className={styles.gameCard}>
-                    <div className={styles.gameStatusRow}>
-                      <div><p className={styles.statusLabel}>Eşleşen çift</p><strong className={styles.statusValue}>{pairsState.pairsFound}</strong></div>
-                      <div><p className={styles.statusLabel}>Hamle</p><strong className={styles.statusValue}>{pairsState.moves}</strong></div>
-                      <div><p className={styles.statusLabel}>Durum</p><strong className={styles.statusValue}>{getPhaseLabel(pairsState.phase)}</strong></div>
+                  <section className="relative rounded-3xl p-6 lg:p-8 flex flex-col gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(93,211,255,0.12)", boxShadow: "0 0 60px rgba(93,211,255,0.06)" }}>
+                    <div className="absolute top-0 left-0 w-72 h-48 rounded-full pointer-events-none" style={{ background: "#5dd3ff", opacity: 0.05, filter: "blur(60px)", transform: "translate(-20%,-30%)" }} />
+                    <div className="relative flex gap-6 pb-4 border-b border-white/10">
+                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Eşleşen çift</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{pairsState.pairsFound}</strong></div>
+                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Hamle</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{pairsState.moves}</strong></div>
+                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Durum</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{getPhaseLabel(pairsState.phase)}</strong></div>
                     </div>
-                    <p className={styles.gameMessage}>{pairsState.message}</p>
-                    <p className={styles.shortcutHint}>On iki kartı 4x3 düzende gezebilirsin; seçili kart parlak çerçeveyle görünür.</p>
-                    <div className={styles.pairsGrid}>
+                    <p className="relative text-(--color-text-soft) text-sm leading-relaxed m-0">{pairsState.message}</p>
+                    <p className="relative text-(--color-text-muted) text-xs m-0">On iki kartı 4x3 düzende gezebilirsin; seçili kart parlak çerçeveyle görünür.</p>
+                    <div className="relative grid grid-cols-4 gap-2">
                       {pairsState.tiles.map((tile, index) => {
                         const isCursor = pairsCursor === index;
                         const isVisible = tile.revealed || tile.matched;
                         return (
-                          <button key={tile.id} type="button" data-pairs-index={index} aria-label={isVisible ? `${tile.label} kartı` : `Kapalı kart ${index + 1}`} className={`${styles.pairsTile} ${tile.matched ? styles.pairsTileMatched : ""} ${isVisible ? styles.pairsTileRevealed : styles.pairsTileHidden} ${isCursor ? styles.cursorTile : ""}`} onClick={() => handlePairsPick(index)}>
-                            <div className={styles.pairsPattern} style={patternStyle(tile)} />
-                            <div className={styles.pairsInner}>
+                          <button key={tile.id} type="button" data-pairs-index={index} aria-label={isVisible ? `${tile.label} kartı` : `Kapalı kart ${index + 1}`} className={`relative flex flex-col items-center justify-center h-24 rounded-xl cursor-pointer transition-all overflow-hidden border ${tile.matched ? "game-tile-matched" : ""} ${isCursor ? "game-tile-cursor" : ""} ${isVisible ? "border-white/15 hover:border-white/25" : "border-white/6 hover:border-white/12"}`} onClick={() => handlePairsPick(index)} style={isVisible && !tile.matched ? { background: tile.background } : { background: "rgba(10,16,30,0.9)" }}>
+                            <div className="absolute inset-0 rounded-xl" style={patternStyle(isVisible ? tile : { pattern: "grid" } as typeof tile)} />
+                            <div className="relative flex flex-col items-center justify-center gap-1">
                               {isVisible ? (
-                                <><span className={styles.pairsIcon} style={{ color: tile.accent }}>{tile.icon}</span><span className={styles.pairsLabel}>{tile.label}</span></>
+                                <><span className="text-2xl" style={{ color: tile.accent }}>{tile.icon}</span><span className="text-xs font-medium text-white/60">{tile.label}</span></>
                               ) : (
-                                <><span className={styles.pairsPlaceholder}>?</span><span className={styles.pairsHint}>Kartı aç</span></>
+                                <><span className="text-2xl text-white/15">?</span><span className="text-xs text-white/20">aç</span></>
                               )}
                             </div>
                           </button>
                         );
                       })}
                     </div>
-                    <div className={styles.controlRow}>
-                      <button type="button" className={styles.primaryButton} onClick={startPairsGame}>Yeni Deste Aç</button>
+                    <div className="relative flex gap-3">
+                      <button type="button" className={gameBtn} onClick={startPairsGame}>Yeni Deste Aç</button>
                     </div>
                   </section>
                 )}
 
                 {activeGame === "pulse" && (
-                  <section className={styles.gameCard}>
-                    <div className={styles.gameStatusRow}>
-                      <div><p className={styles.statusLabel}>Puan</p><strong className={styles.statusValue}>{pulseState.points}</strong></div>
-                      <div><p className={styles.statusLabel}>Tur</p><strong className={styles.statusValue}>{pulseState.round}/{PULSE_TOTAL_ROUNDS}</strong></div>
-                      <div><p className={styles.statusLabel}>Seri</p><strong className={styles.statusValue}>{pulseState.combo}</strong></div>
+                  <section className="relative rounded-3xl p-6 lg:p-8 flex flex-col gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(57,198,255,0.12)", boxShadow: "0 0 60px rgba(57,198,255,0.06)" }}>
+                    <div className="absolute bottom-0 left-1/2 w-96 h-48 rounded-full pointer-events-none" style={{ background: "#39c6ff", opacity: 0.05, filter: "blur(80px)", transform: "translate(-50%,30%)" }} />
+                    <div className="relative flex gap-6 pb-4 border-b border-white/10">
+                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Puan</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{pulseState.points}</strong></div>
+                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Tur</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{pulseState.round}/{PULSE_TOTAL_ROUNDS}</strong></div>
+                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Seri</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{pulseState.combo}</strong></div>
                     </div>
-                    <p className={styles.gameMessage}>{pulseState.message}</p>
-                    <p className={styles.shortcutHint}>Klavyede merkezden başla: yön tuşları seçimi taşır, <strong>Enter</strong> aktif kareyi oynatır.</p>
-                    <div className={styles.pulseGrid}>
+                    <p className="relative text-(--color-text-soft) text-sm leading-relaxed m-0">{pulseState.message}</p>
+                    <p className="relative text-(--color-text-muted) text-xs m-0">Klavyede merkezden başla: yön tuşları seçimi taşır, <strong>Enter</strong> aktif kareyi oynatır.</p>
+                    <div className="relative grid grid-cols-3 gap-3">
                       {PULSE_LABELS.map((label, index) => {
                         const isActive = pulseState.activeIndex === index && pulseState.phase === "playing";
                         const isCursor = pulseCursor === index;
                         return (
-                          <button key={label} type="button" className={`${styles.pulseTile} ${isActive ? styles.pulseTileActive : ""} ${isCursor ? styles.cursorTile : ""}`} onClick={() => handlePulsePick(index)}>
-                            <span>{label}</span>
+                          <button key={label} type="button" className={`h-24 rounded-xl border flex items-center justify-center text-sm cursor-pointer transition-all ${isActive ? "game-tile-active border-transparent" : "border-white/8 hover:border-white/16"} ${isCursor ? "game-tile-cursor" : ""}`} style={!isActive ? { background: "rgba(10,18,34,0.9)", color: "rgba(148,163,184,0.8)" } : undefined} onClick={() => handlePulsePick(index)}>
+                            <span className="font-medium text-xs">{label}</span>
                           </button>
                         );
                       })}
                     </div>
-                    <div className={styles.controlRow}>
-                      <button type="button" className={styles.primaryButton} onClick={startPulseGame}>Seti Başlat</button>
+                    <div className="relative flex gap-3">
+                      <button type="button" className={gameBtn} onClick={startPulseGame}>Seti Başlat</button>
                     </div>
                   </section>
                 )}
 
                 {activeGame === "route" && (
-                  <section className={styles.gameCard}>
-                    <div className={styles.gameStatusRow}>
-                      <div><p className={styles.statusLabel}>Puan</p><strong className={styles.statusValue}>{routeState.score}</strong></div>
-                      <div><p className={styles.statusLabel}>Tur</p><strong className={styles.statusValue}>{routeState.round}/{ROUTE_TOTAL_ROUNDS}</strong></div>
-                      <div><p className={styles.statusLabel}>Seri</p><strong className={styles.statusValue}>{routeState.streak}</strong></div>
+                  <section className="relative rounded-3xl p-6 lg:p-8 flex flex-col gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(74,207,255,0.12)", boxShadow: "0 0 60px rgba(74,207,255,0.06)" }}>
+                    <div className="absolute top-1/2 right-0 w-64 h-64 rounded-full pointer-events-none" style={{ background: "#4acfff", opacity: 0.04, filter: "blur(60px)", transform: "translate(30%,-50%)" }} />
+                    <div className="relative flex gap-6 pb-4 border-b border-white/10">
+                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Puan</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{routeState.score}</strong></div>
+                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Tur</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{routeState.round}/{ROUTE_TOTAL_ROUNDS}</strong></div>
+                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Seri</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{routeState.streak}</strong></div>
                     </div>
-                    <p className={styles.gameMessage}>{routeState.message}</p>
-                    <div className={styles.routeStage}>
-                      <div className={styles.routeCommandCard}>
-                        <span className={styles.statusLabel}>Aktif komut</span>
-                        <strong>{routeCommandMeta?.label ?? "Hazır"}</strong>
-                        <span>{routeCommandMeta?.icon ?? "•"}</span>
+                    <p className="relative text-(--color-text-soft) text-sm leading-relaxed m-0">{routeState.message}</p>
+                    <div className="relative flex items-center gap-6">
+                      <div className="flex flex-col items-center rounded-2xl px-8 py-6 border" style={{ background: "rgba(10,18,34,0.9)", borderColor: "rgba(74,207,255,0.15)" }}>
+                        <span className="text-(--color-text-muted) text-xs uppercase tracking-wider">Aktif komut</span>
+                        <strong className="text-white text-lg mt-1">{routeCommandMeta?.label ?? "Hazır"}</strong>
+                        <span className="text-white text-3xl mt-1" style={{ color: "#4acfff" }}>{routeCommandMeta?.icon ?? "•"}</span>
                       </div>
-                      <div className={styles.routeHistory}>
+                      <div className="flex flex-wrap gap-2">
                         {routeState.history.slice(-5).map((item, index) => {
                           const meta = ROUTE_COMMANDS.find((command) => command.key === item);
-                          return <span key={`${item}-${index}`}>{meta?.label ?? item}</span>;
+                          return <span key={`${item}-${index}`} className="text-(--color-text-muted) text-sm">{meta?.label ?? item}</span>;
                         })}
                       </div>
                     </div>
-                    <div className={styles.routeGrid}>
+                    <div className="relative grid grid-cols-2 gap-3">
                       {ROUTE_COMMANDS.map((command, index) => {
                         const isCursor = routeCursor === index;
                         return (
-                          <button key={command.key} type="button" className={`${styles.routeTile} ${isCursor ? styles.cursorTile : ""}`} onClick={() => handleRoutePick(command.key)}>
-                            <span className={styles.routeIcon}>{command.icon}</span>
-                            <span className={styles.routeLabel}>{command.label}</span>
+                          <button key={command.key} type="button" className={`flex flex-col items-center justify-center gap-1.5 h-24 rounded-xl border cursor-pointer transition-all ${isCursor ? "game-tile-cursor border-transparent" : "border-white/8 hover:border-white/16"}`} style={{ background: "rgba(10,18,34,0.9)" }} onClick={() => handleRoutePick(command.key)}>
+                            <span className="text-2xl" style={{ color: "#4acfff" }}>{command.icon}</span>
+                            <span className="text-xs text-(--color-text-muted)">{command.label}</span>
                           </button>
                         );
                       })}
                     </div>
-                    <div className={styles.controlRow}>
-                      <button type="button" className={styles.primaryButton} onClick={startRouteGame}>Komutları Başlat</button>
+                    <div className="relative flex gap-3">
+                      <button type="button" className={gameBtn} onClick={startRouteGame}>Komutları Başlat</button>
                     </div>
                   </section>
                 )}
 
                 {activeGame === "difference" && (
-                  <section className={styles.gameCard}>
-                    <div className={styles.gameStatusRow}>
-                      <div><p className={styles.statusLabel}>Skor</p><strong className={styles.statusValue}>{differenceState.score}</strong></div>
-                      <div><p className={styles.statusLabel}>Tur</p><strong className={styles.statusValue}>{differenceState.round}/{DIFFERENCE_TOTAL_ROUNDS}</strong></div>
-                      <div><p className={styles.statusLabel}>Durum</p><strong className={styles.statusValue}>{getPhaseLabel(differenceState.phase)}</strong></div>
+                  <section className="relative rounded-3xl p-6 lg:p-8 flex flex-col gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(105,212,255,0.12)", boxShadow: "0 0 60px rgba(105,212,255,0.06)" }}>
+                    <div className="absolute top-0 left-1/2 w-96 h-48 rounded-full pointer-events-none" style={{ background: "#69d4ff", opacity: 0.05, filter: "blur(60px)", transform: "translate(-50%,-40%)" }} />
+                    <div className="relative flex gap-6 pb-4 border-b border-white/10">
+                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Skor</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{differenceState.score}</strong></div>
+                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Tur</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{differenceState.round}/{DIFFERENCE_TOTAL_ROUNDS}</strong></div>
+                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Durum</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{getPhaseLabel(differenceState.phase)}</strong></div>
                     </div>
-                    <p className={styles.gameMessage}>{differenceState.message}</p>
-                    <p className={styles.shortcutHint}>Aynı dizilim klavyede de çalışır; seçili kart parlak kontur ile gösterilir.</p>
-                    <div className={styles.differenceGrid}>
+                    <p className="relative text-(--color-text-soft) text-sm leading-relaxed m-0">{differenceState.message}</p>
+                    <p className="relative text-(--color-text-muted) text-xs m-0">Aynı dizilim klavyede de çalışır; seçili kart parlak kontur ile gösterilir.</p>
+                    <div className="relative grid grid-cols-3 gap-3">
                       {differenceState.tiles.map((tile, index) => {
                         const reveal = differenceState.revealId === tile.id;
                         const isCursor = differenceCursor === index;
                         return (
-                          <button key={tile.id} type="button" className={`${styles.differenceTile} ${reveal ? styles.differenceTileReveal : ""} ${isCursor ? styles.cursorTile : ""}`} onClick={() => handleDifferencePick(tile.id)} style={{ "--tile-accent": tile.accent, "--tile-background": tile.background, transform: `rotate(${tile.rotation}deg)` } as CSSProperties}>
-                            <div className={styles.differencePattern} style={patternStyle(tile)} />
-                            <div className={styles.differenceInner}>
-                              <span className={styles.differenceIcon}>{tile.icon}</span>
-                              <span className={styles.differenceLabel}>{tile.label}</span>
+                          <button key={tile.id} type="button" className={`relative flex flex-col items-center justify-center h-28 rounded-2xl border cursor-pointer overflow-hidden transition-all hover:border-white/20 ${reveal ? "game-tile-reveal" : "border-white/8"} ${isCursor ? "game-tile-cursor" : ""}`} onClick={() => handleDifferencePick(tile.id)} style={{ background: tile.background, transform: `rotate(${tile.rotation}deg)` } as CSSProperties}>
+                            <div className="absolute inset-0" style={patternStyle(tile)} />
+                            <div className="relative flex flex-col items-center justify-center gap-1.5">
+                              <span className="text-2xl" style={{ color: tile.accent }}>{tile.icon}</span>
+                              <span className="text-xs font-medium text-white/60">{tile.label}</span>
                             </div>
                           </button>
                         );
                       })}
                     </div>
-                    <div className={styles.controlRow}>
-                      <button type="button" className={styles.primaryButton} onClick={startDifferenceGame}>Turu Başlat</button>
+                    <div className="relative flex gap-3">
+                      <button type="button" className={gameBtn} onClick={startDifferenceGame}>Turu Başlat</button>
                     </div>
                   </section>
                 )}
 
                 {activeGame === "scan" && (
-                  <section className={styles.gameCard}>
-                    <div className={styles.gameStatusRow}>
-                      <div><p className={styles.statusLabel}>Skor</p><strong className={styles.statusValue}>{scanState.score}</strong></div>
-                      <div><p className={styles.statusLabel}>Tur</p><strong className={styles.statusValue}>{scanState.round}/{SCAN_TOTAL_ROUNDS}</strong></div>
-                      <div><p className={styles.statusLabel}>Hedef</p><strong className={styles.statusValue}>{scanState.targetLabel || "Hazır"}</strong></div>
+                  <section className="relative rounded-3xl p-6 lg:p-8 flex flex-col gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(139,226,255,0.12)", boxShadow: "0 0 60px rgba(139,226,255,0.06)" }}>
+                    <div className="absolute bottom-0 right-0 w-80 h-64 rounded-full pointer-events-none" style={{ background: "#8be2ff", opacity: 0.04, filter: "blur(70px)", transform: "translate(20%,20%)" }} />
+                    <div className="relative flex gap-6 pb-4 border-b border-white/10">
+                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Skor</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{scanState.score}</strong></div>
+                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Tur</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{scanState.round}/{SCAN_TOTAL_ROUNDS}</strong></div>
+                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Hedef</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{scanState.targetLabel || "Hazır"}</strong></div>
                     </div>
-                    <p className={styles.gameMessage}>{scanState.message}</p>
-                    <div className={styles.scanTargetPanel}>
-                      <span className={styles.statusLabel}>Bu simgeyi bul</span>
-                      <strong>{scanState.targetLabel || "Oyunu başlat"}</strong>
+                    <p className="relative text-(--color-text-soft) text-sm leading-relaxed m-0">{scanState.message}</p>
+                    <div className="relative rounded-xl px-6 py-3 flex items-center gap-4 border" style={{ background: "rgba(10,18,34,0.9)", borderColor: "rgba(139,226,255,0.15)" }}>
+                      <span className="text-(--color-text-muted) text-xs uppercase tracking-wider">Bu simgeyi bul</span>
+                      {scanState.targetLabel ? (() => {
+                        const targetSymbol = SYMBOL_LIBRARY.find((s) => s.label === scanState.targetLabel);
+                        return (
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl" style={{ color: targetSymbol?.accent }}>{targetSymbol?.icon ?? "?"}</span>
+                            <strong className="text-white">{scanState.targetLabel}</strong>
+                          </div>
+                        );
+                      })() : <span className="text-(--color-text-muted) text-sm">Oyunu başlat</span>}
                     </div>
-                    <div className={styles.scanGrid}>
+                    <div className="relative grid grid-cols-3 gap-3">
                       {scanState.tiles.map((tile, index) => {
                         const reveal = scanState.revealId === tile.id;
                         const isCursor = scanCursor === index;
                         return (
-                          <button key={tile.id} type="button" className={`${styles.scanTile} ${reveal ? styles.differenceTileReveal : ""} ${isCursor ? styles.cursorTile : ""}`} onClick={() => handleScanPick(tile.id)} style={{ "--tile-accent": tile.accent, "--tile-background": tile.background, transform: `rotate(${tile.rotation}deg)` } as CSSProperties}>
-                            <div className={styles.differencePattern} style={patternStyle(tile)} />
-                            <div className={styles.scanInner}>
-                              <span className={styles.scanIcon}>{tile.icon}</span>
-                              <span className={styles.differenceLabel}>{tile.label}</span>
+                          <button key={tile.id} type="button" className={`relative flex flex-col items-center justify-center h-28 rounded-2xl border cursor-pointer overflow-hidden transition-all hover:border-white/20 ${reveal ? "game-tile-reveal" : "border-white/8"} ${isCursor ? "game-tile-cursor" : ""}`} onClick={() => handleScanPick(tile.id)} style={{ background: tile.background, transform: `rotate(${tile.rotation}deg)` } as CSSProperties}>
+                            <div className="absolute inset-0" style={patternStyle(tile)} />
+                            <div className="relative flex flex-col items-center justify-center gap-1.5">
+                              <span className="text-2xl" style={{ color: tile.accent }}>{tile.icon}</span>
+                              <span className="text-xs font-medium text-white/60">{tile.label}</span>
                             </div>
                           </button>
                         );
                       })}
                     </div>
-                    <div className={styles.controlRow}>
-                      <button type="button" className={styles.primaryButton} onClick={startScanGame}>Taramayı Başlat</button>
+                    <div className="relative flex gap-3">
+                      <button type="button" className={gameBtn} onClick={startScanGame}>Taramayı Başlat</button>
                     </div>
                   </section>
                 )}
 
-                <details ref={gameDetailsRef} className={styles.workspaceTopDetails}>
-                  <summary className={styles.workspaceTopSummary}>
-                    <span className={styles.sectionEyebrow}>{activeCategory.title}</span>
-                    <h3>{activeTab.title}</h3>
-                    <span className={styles.workspaceTopToggle}>▾ Detaylar</span>
-                  </summary>
-                  <p>{activeTab.blurb}</p>
-                  <div className={styles.goalPills}>
-                    {activeTab.goals.map((goal) => <span key={goal}>{goal}</span>)}
-                  </div>
-                  <div className={styles.workspaceMeta}>
-                    <div className={styles.workspaceMetaCards}>
-                      <div className={styles.workspaceMetaCard}><span>En iyi</span><strong>{activeScoreCard.best}</strong></div>
-                      <div className={styles.workspaceMetaCard}><span>Son</span><strong>{activeScoreCard.last}</strong></div>
-                      <div className={styles.workspaceMetaCard}><span>Tekrar</span><strong>{activeScoreCard.plays}</strong></div>
+                <details ref={gameDetailsRef} className="bg-(--color-surface-strong) rounded-3xl border border-(--color-line) overflow-hidden w-full">
+                  <summary className="flex items-center justify-between px-5 py-4 cursor-pointer list-none group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-1 h-10 rounded-full bg-(--color-primary) shrink-0" />
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-(--color-primary) block">{activeCategory.title}</span>
+                        <h3 className="text-(--color-text-strong) font-semibold m-0">{activeTab.title}</h3>
+                      </div>
                     </div>
-                    {activeRemoteScore.best > 0 && (
-                      <span style={{ color: "#4e7494", fontSize: "0.86rem" }}>
-                        Sunucu en iyi: <strong style={{ color: "#071e30" }}>{activeRemoteScore.best}</strong>
-                        {activeRemoteScore.lastPlayedAt ? ` · ${formatPlayedAt(activeRemoteScore.lastPlayedAt)}` : ""}
-                      </span>
-                    )}
+                    <span className="flex items-center gap-1 text-(--color-text-muted) text-xs font-medium"><ChevronDown size={14} /> Detaylar</span>
+                  </summary>
+                  <div className="px-5 pb-5 space-y-4">
+                    <p className="text-(--color-text-soft) text-sm m-0">{activeTab.blurb}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {activeTab.goals.map((goal) => <span key={goal} className="bg-(--color-primary-light) text-(--color-primary) text-xs font-medium px-2.5 py-1 rounded-full">{goal}</span>)}
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex gap-3">
+                        {[{l: "En iyi", v: activeScoreCard.best}, {l: "Son", v: activeScoreCard.last}, {l: "Tekrar", v: activeScoreCard.plays}].map(({l, v}) => (
+                          <div key={l} className="flex flex-col bg-(--color-primary)/5 border border-(--color-primary)/10 rounded-xl px-4 py-3 min-w-[80px]">
+                            <span className="text-(--color-text-muted) text-xs mb-1">{l}</span>
+                            <strong className="text-(--color-primary) text-xl font-bold tabular-nums">{v}</strong>
+                          </div>
+                        ))}
+                      </div>
+                      {activeRemoteScore.best > 0 && (
+                        <span className="text-(--color-text-soft) text-sm">
+                          Sunucu en iyi: <strong className="text-(--color-text-strong)">{activeRemoteScore.best}</strong>
+                          {activeRemoteScore.lastPlayedAt ? ` · ${formatPlayedAt(activeRemoteScore.lastPlayedAt)}` : ""}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </details>
 
+              </div>
+                );
+              })()}
               </section>
             </div>
           </div>
@@ -1960,67 +2409,64 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
         {/* ── Therapy Program ── */}
         {activeAppView === "therapy-program" && (
-          <div className={styles.therapyProgramPage}>
-            {/* ── Header with client picker ── */}
-            <div className={styles.tpHeader}>
+          <div className="flex flex-col h-full overflow-hidden">
+            {/* ── Header ── */}
+            <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-(--color-line)" style={{ background: "var(--color-chrome-section)" }}>
               <div>
-                <h1 className={styles.tpTitle}>Terapi Programı</h1>
-                <p className={styles.tpLead}>Kanıta dayalı ergoterapi alanlarına göre kişiselleştirilmiş aktivite önerileri, oyun eşlemeleri, haftalık plan üreticisi ve ilerleme takibi.</p>
+                <h1 className="text-xl font-bold text-(--color-text-strong) m-0">Terapi Programı</h1>
+                <p className="text-(--color-text-soft) text-sm mt-1 m-0">Kanıta dayalı ergoterapi alanlarına göre kişiselleştirilmiş aktivite önerileri, oyun eşlemeleri, haftalık plan üreticisi ve ilerleme takibi.</p>
               </div>
               {clientOptions.length > 0 && (
-                <div className={styles.tpClientPicker}>
-                  <label className={styles.fieldBlock}>
-                    <span className={styles.tpPickerLabel}>Danışan Seç</span>
-                    <select value={tpSelectedClientId ?? ""} onChange={(e) => setTpSelectedClientId(e.target.value || null)} className={styles.inputSurface}>
-                      <option value="">Danışan seçin...</option>
-                      {clientOptions.map((c) => <option key={c.id} value={c.id}>{c.displayName}</option>)}
-                    </select>
-                  </label>
-                </div>
+                <label className="flex flex-col gap-1 shrink-0 min-w-[180px]">
+                  <span className="text-xs text-(--color-text-soft)">Danışan Seç</span>
+                  <select value={tpSelectedClientId ?? ""} onChange={(e) => setTpSelectedClientId(e.target.value || null)} className={inputCls}>
+                    <option value="">Danışan seçin...</option>
+                    {clientOptions.map((c) => <option key={c.id} value={c.id}>{c.displayName}</option>)}
+                  </select>
+                </label>
               )}
             </div>
 
-            {/* ── Scrollable Tabs ── */}
-            <div className={styles.tpTabStrip}>
-              <button type="button" className={`${styles.tpTab} ${tpActiveTab === "domains" ? styles.tpTabActive : ""}`} onClick={() => setTpActiveTab("domains")}>
-                <span className={styles.tpTabIcon}>🏥</span> Terapi Alanları
-              </button>
-              <button type="button" className={`${styles.tpTab} ${tpActiveTab === "activities" ? styles.tpTabActive : ""}`} onClick={() => setTpActiveTab("activities")} disabled={!tpSelectedDomain}>
-                <span className={styles.tpTabIcon}>📋</span> Aktiviteler
-              </button>
-              <button type="button" className={`${styles.tpTab} ${tpActiveTab === "games" ? styles.tpTabActive : ""}`} onClick={() => setTpActiveTab("games")} disabled={!tpSelectedDomain}>
-                <span className={styles.tpTabIcon}>🎮</span> Oyun Eşleme
-              </button>
-              <button type="button" className={`${styles.tpTab} ${tpActiveTab === "plan" ? styles.tpTabActive : ""}`} onClick={() => setTpActiveTab("plan")} disabled={!tpSelectedDomain}>
-                <span className={styles.tpTabIcon}>📅</span> Haftalık Plan
-              </button>
-              <button type="button" className={`${styles.tpTab} ${tpActiveTab === "progress" ? styles.tpTabActive : ""}`} onClick={() => setTpActiveTab("progress")} disabled={!tpSelectedClientId}>
-                <span className={styles.tpTabIcon}>📊</span> İlerleme
-              </button>
+            {/* ── Tabs ── */}
+            <div className="flex gap-1 px-4 py-2 border-b border-(--color-line) overflow-x-auto" style={{ background: "var(--color-chrome-section)" }}>
+              {([
+                {key: "domains" as const, label: "Terapi Alanları", Icon: Stethoscope, disabled: false},
+                {key: "activities" as const, label: "Aktiviteler", Icon: ClipboardList, disabled: !tpSelectedDomain},
+                {key: "games" as const, label: "Oyun Eşleme", Icon: Gamepad2, disabled: !tpSelectedDomain},
+                {key: "plan" as const, label: "Haftalık Plan", Icon: CalendarDays, disabled: !tpSelectedDomain},
+                {key: "progress" as const, label: "İlerleme", Icon: TrendingUp, disabled: !tpSelectedClientId},
+              ] as {key: "domains" | "activities" | "games" | "plan" | "progress"; label: string; Icon: LucideIcon; disabled: boolean}[]).map(({key, label, Icon, disabled}) => (
+                <button key={key} type="button" className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border-none cursor-pointer transition-colors ${tpActiveTab === key ? "bg-(--color-primary) text-white" : "bg-transparent text-(--color-text-soft) hover:bg-(--color-surface-elevated) hover:text-(--color-text-body)"} disabled:opacity-40 disabled:cursor-not-allowed`} onClick={() => setTpActiveTab(key)} disabled={disabled}>
+                  <Icon size={14} className="shrink-0" />
+                  {label}
+                </button>
+              ))}
             </div>
 
-            <div className={styles.tpContent}>
+            <div className="flex-1 overflow-y-auto p-6">
 
               {/* ── Domains Tab ── */}
               {tpActiveTab === "domains" && (
                 <div>
-                  <h2 className={styles.tpSectionTitle}>Ergoterapi Uygulama Alanları</h2>
-                  <p className={styles.tpSectionLead}>Danışanın ihtiyacına uygun terapi alanını seçin. Sistem, alan bazında hedefler, aktiviteler ve oyun önerileri üretecektir.</p>
-                  <div className={styles.tpDomainsGrid}>
+                  <h2 className="text-lg font-bold text-(--color-text-strong) mb-1">Ergoterapi Uygulama Alanları</h2>
+                  <p className="text-(--color-text-soft) text-sm mb-5">Danışanın ihtiyacına uygun terapi alanını seçin. Sistem, alan bazında hedefler, aktiviteler ve oyun önerileri üretecektir.</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {THERAPY_DOMAINS.map((domain) => {
                       const gameMappingCount = GAME_THERAPY_MAPPINGS.filter((m) => m.suitableDomains.includes(domain.key)).length;
                       return (
-                        <button key={domain.key} type="button" className={`${styles.tpDomainCard} ${tpSelectedDomain === domain.key ? styles.tpDomainCardActive : ""}`} onClick={() => handleSelectDomain(domain.key)} style={{ "--domain-color": domain.color } as CSSProperties}>
-                          <span className={styles.tpDomainIcon}>{domain.icon}</span>
-                          <strong className={styles.tpDomainLabel}>{domain.label}</strong>
-                          <p className={styles.tpDomainDesc}>{domain.description}</p>
-                          <div className={styles.tpDomainMeta}>
-                            <span>🎯 {domain.goals.length} hedef</span>
-                            <span>📋 {domain.activities.length} aktivite</span>
-                            <span>🎮 {gameMappingCount} oyun</span>
+                        <button key={domain.key} type="button" className={`flex flex-col gap-2 p-5 bg-(--color-surface-strong) rounded-2xl border text-left cursor-pointer transition-all hover:shadow-(--shadow-elevated) ${tpSelectedDomain === domain.key ? "border-(--color-primary) shadow-(--shadow-elevated)" : "border-(--color-line)"}`} onClick={() => handleSelectDomain(domain.key)}>
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${domain.color}20` }}>
+                            <DomainIcon iconKey={domain.icon} size={20} color={domain.color} />
                           </div>
-                          <div className={styles.tpDomainAges}>
-                            {domain.suitableAgeGroups.map((ag) => <span key={ag} className={styles.tpAgeBadge}>{ag}</span>)}
+                          <strong className="text-(--color-text-strong) text-sm">{domain.label}</strong>
+                          <p className="text-(--color-text-soft) text-xs leading-relaxed m-0">{domain.description}</p>
+                          <div className="flex flex-wrap gap-2 text-xs text-(--color-text-muted)">
+                            <span className="flex items-center gap-1"><Target size={11} />{domain.goals.length} hedef</span>
+                            <span className="flex items-center gap-1"><ClipboardList size={11} />{domain.activities.length} aktivite</span>
+                            <span className="flex items-center gap-1"><Gamepad2 size={11} />{gameMappingCount} oyun</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {domain.suitableAgeGroups.map((ag) => <span key={ag} className="text-[10px] px-2 py-0.5 rounded-full border border-(--color-line) text-(--color-text-muted)">{ag}</span>)}
                           </div>
                         </button>
                       );
@@ -2043,179 +2489,176 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   filteredActivities = filteredActivities.filter((a) => a.label.toLocaleLowerCase("tr-TR").includes(q) || a.description.toLocaleLowerCase("tr-TR").includes(q) || a.subSkill.toLocaleLowerCase("tr-TR").includes(q));
                 }
                 const favoriteActivities = domain.activities.filter((a) => tpFavoriteActivities.includes(a.id));
+                const diffColor = (d: string) => d === "kolay" ? "bg-emerald-500/10 text-emerald-400" : d === "orta" ? "bg-amber-500/10 text-amber-400" : "bg-red-500/10 text-red-400";
 
                 return (
-                  <div>
-                    <div className={styles.tpSectionHeader}>
+                  <div className="space-y-5">
+                    <div className="flex items-start justify-between gap-4">
                       <div>
-                        <span className={styles.tpDomainBadge} style={{ background: domain.color }}>{domain.icon} {domain.label}</span>
-                        <h2 className={styles.tpSectionTitle}>Terapi Hedefleri ve Aktiviteler</h2>
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-white mb-2" style={{ background: domain.color }}><DomainIcon iconKey={domain.icon} size={12} />{domain.label}</span>
+                        <h2 className="text-lg font-bold text-(--color-text-strong) m-0">Terapi Hedefleri ve Aktiviteler</h2>
                       </div>
-                      <div className={styles.tpHeaderActions}>
-                        <button type="button" className={styles.secondaryButton} onClick={() => setTpActiveTab("games")}>🎮 Oyun Eşleme</button>
-                        <button type="button" className={styles.primaryButton} onClick={handleGeneratePlan}>📅 Plan Üret →</button>
-                      </div>
-                    </div>
-
-                    {/* ── Quick stats ── */}
-                    <div className={styles.tpQuickStats}>
-                      <div className={styles.tpQuickStatCard}>
-                        <span className={styles.tpQuickStatValue}>{domain.goals.length}</span>
-                        <span className={styles.tpQuickStatLabel}>Hedef</span>
-                      </div>
-                      <div className={styles.tpQuickStatCard}>
-                        <span className={styles.tpQuickStatValue}>{domain.activities.length}</span>
-                        <span className={styles.tpQuickStatLabel}>Aktivite</span>
-                      </div>
-                      <div className={styles.tpQuickStatCard}>
-                        <span className={styles.tpQuickStatValue}>{domain.subSkills.length}</span>
-                        <span className={styles.tpQuickStatLabel}>Beceri Alanı</span>
-                      </div>
-                      <div className={styles.tpQuickStatCard}>
-                        <span className={styles.tpQuickStatValue}>{favoriteActivities.length}</span>
-                        <span className={styles.tpQuickStatLabel}>Favori</span>
+                      <div className="flex gap-2 shrink-0">
+                        <button type="button" className={`${btnSecondary} flex items-center gap-1.5`} onClick={() => setTpActiveTab("games")}><Gamepad2 size={14} />Oyun Eşleme</button>
+                        <button type="button" className={`${btnPrimary} flex items-center gap-1.5`} onClick={handleGeneratePlan}><CalendarDays size={14} />Plan Üret →</button>
                       </div>
                     </div>
 
-                    {/* ── Goals accordion ── */}
-                    <details className={styles.tpCollapsible}>
-                      <summary className={styles.tpCollapsibleSummary}>
-                        <span>🎯 Terapi Hedefleri</span>
-                        <span className={styles.tpCollapsibleCount}>{domain.goals.length}</span>
+                    <div className="grid grid-cols-4 gap-3">
+                      {[{v: domain.goals.length, l: "Hedef"}, {v: domain.activities.length, l: "Aktivite"}, {v: domain.subSkills.length, l: "Beceri Alanı"}, {v: favoriteActivities.length, l: "Favori"}].map(({v, l}) => (
+                        <div key={l} className="bg-(--color-surface-strong) rounded-xl border border-(--color-line) p-3 text-center">
+                          <span className="text-2xl font-bold text-(--color-primary) block">{v}</span>
+                          <span className="text-(--color-text-muted) text-xs">{l}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <details open className="bg-(--color-surface-strong) rounded-xl border border-(--color-line) overflow-hidden">
+                      <summary className="flex items-center justify-between px-4 py-3 cursor-pointer list-none font-medium text-sm text-(--color-text-strong)">
+                        <span className="flex items-center gap-1.5"><Target size={14} />Terapi Hedefleri</span>
+                        <span className="bg-(--color-surface-elevated) text-(--color-text-muted) text-xs px-2 py-0.5 rounded-full">{domain.goals.length}</span>
                       </summary>
-                      <div className={styles.tpGoalsGrid}>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 pt-0">
                         {domain.goals.map((goal) => (
-                          <div key={goal.id} className={styles.tpGoalCard}>
-                            <strong>{goal.label}</strong>
-                            <p>{goal.description}</p>
+                          <div key={goal.id} className="bg-(--color-surface-elevated) rounded-xl p-3">
+                            <strong className="text-(--color-text-strong) text-sm">{goal.label}</strong>
+                            <p className="text-(--color-text-soft) text-xs mt-1 m-0">{goal.description}</p>
                           </div>
                         ))}
                       </div>
                     </details>
 
-                    {/* ── Challenges chips ── */}
-                    <details className={styles.tpCollapsible}>
-                      <summary className={styles.tpCollapsibleSummary}>
+                    <details open className="bg-(--color-surface-strong) rounded-xl border border-(--color-line) overflow-hidden">
+                      <summary className="flex items-center justify-between px-4 py-3 cursor-pointer list-none font-medium text-sm text-(--color-text-strong)">
                         <span>⚠️ Fonksiyonel Zorluklar</span>
-                        <span className={styles.tpCollapsibleCount}>{domain.challenges.length}</span>
+                        <span className="bg-(--color-surface-elevated) text-(--color-text-muted) text-xs px-2 py-0.5 rounded-full">{domain.challenges.length}</span>
                       </summary>
-                      <div className={styles.tpChipList}>
-                        {domain.challenges.map((ch) => <span key={ch.id} className={styles.tpChip}>{ch.label}</span>)}
+                      <div className="flex flex-wrap gap-2 p-4 pt-0">
+                        {domain.challenges.map((ch) => <span key={ch.id} className="bg-(--color-primary-light) text-(--color-primary) text-xs px-2.5 py-1 rounded-full">{ch.label}</span>)}
                       </div>
                     </details>
 
-                    {/* ── Sub Skills ── */}
-                    <details className={styles.tpCollapsible}>
-                      <summary className={styles.tpCollapsibleSummary}>
+                    <details open className="bg-(--color-surface-strong) rounded-xl border border-(--color-line) overflow-hidden">
+                      <summary className="flex items-center justify-between px-4 py-3 cursor-pointer list-none font-medium text-sm text-(--color-text-strong)">
                         <span>🧩 Alt Beceriler</span>
-                        <span className={styles.tpCollapsibleCount}>{domain.subSkills.length}</span>
+                        <span className="bg-(--color-surface-elevated) text-(--color-text-muted) text-xs px-2 py-0.5 rounded-full">{domain.subSkills.length}</span>
                       </summary>
-                      <div className={styles.tpSkillsGrid}>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 pt-0">
                         {domain.subSkills.map((skill) => (
-                          <div key={skill.id} className={styles.tpSkillCard}>
-                            <strong>{skill.label}</strong>
-                            <p>{skill.description}</p>
+                          <div key={skill.id} className="bg-(--color-surface-elevated) rounded-xl p-3">
+                            <strong className="text-(--color-text-strong) text-sm">{skill.label}</strong>
+                            <p className="text-(--color-text-soft) text-xs mt-1 m-0">{skill.description}</p>
                           </div>
                         ))}
                       </div>
                     </details>
 
-                    {/* ── Favorites ── */}
                     {favoriteActivities.length > 0 && (
-                      <div className={styles.tpFavoritesSection}>
-                        <h3 className={styles.tpSubTitle}>⭐ Favori Aktiviteler</h3>
-                        <div className={styles.tpFavoritesStrip}>
+                      <div>
+                        <h3 className="text-sm font-semibold text-(--color-text-strong) mb-2">⭐ Favori Aktiviteler</h3>
+                        <div className="flex flex-wrap gap-2">
                           {favoriteActivities.map((act) => (
-                            <div key={act.id} className={styles.tpFavoriteChip}>
-                              <span>{act.label}</span>
-                              <span className={`${styles.tpDiffDot} ${styles[`tpDiff_${act.difficulty}`]}`} />
-                              <button type="button" className={styles.tpFavBtn} onClick={() => toggleFavoriteActivity(act.id)} title="Favoriden çıkar">✕</button>
+                            <div key={act.id} className="flex items-center gap-2 bg-(--color-surface-strong) border border-(--color-line) rounded-full px-3 py-1.5">
+                              <span className="text-xs text-(--color-text-body)">{act.label}</span>
+                              <span className={`w-2 h-2 rounded-full ${act.difficulty === "kolay" ? "bg-emerald-500" : act.difficulty === "orta" ? "bg-amber-500" : "bg-red-500"}`} />
+                              <button type="button" className="text-(--color-text-muted) hover:text-(--color-accent-red) bg-transparent border-none cursor-pointer text-xs" onClick={() => toggleFavoriteActivity(act.id)} title="Favoriden çıkar">✕</button>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    {/* ── Activity filters ── */}
-                    <div className={styles.tpActivitiesSection}>
-                      <div className={styles.tpActivitiesHeader}>
-                        <h3 className={styles.tpSubTitle}>Aktivite Önerileri</h3>
-                      </div>
-                      <div className={styles.tpFiltersBar}>
-                        <input type="search" placeholder="Aktivite ara..." value={tpActivitySearch} onChange={(e) => setTpActivitySearch(e.target.value)} className={styles.tpSearchInput} />
-                        <div className={styles.tpFilterRow}>
-                          {(["all", "kolay", "orta", "zor"] as const).map((level) => (
-                            <button key={level} type="button" className={`${styles.tpFilterBtn} ${tpDifficultyFilter === level ? styles.tpFilterBtnActive : ""}`} onClick={() => setTpDifficultyFilter(level)}>
-                              {level === "all" ? "Tümü" : level === "kolay" ? "Kolay" : level === "orta" ? "Orta" : "Zor"}
-                            </button>
-                          ))}
-                        </div>
-                        <select value={tpSubSkillFilter} onChange={(e) => setTpSubSkillFilter(e.target.value)} className={styles.tpFilterSelect}>
+                    <div>
+                      <h3 className="text-sm font-semibold text-(--color-text-strong) mb-3">Aktivite Önerileri</h3>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        <input type="search" placeholder="Aktivite ara..." value={tpActivitySearch} onChange={(e) => setTpActivitySearch(e.target.value)} className={`${inputCls} max-w-xs`} />
+                        {(["all", "kolay", "orta", "zor"] as const).map((level) => (
+                          <button key={level} type="button" className={`px-3 py-1.5 rounded-lg text-xs font-medium border-none cursor-pointer ${tpDifficultyFilter === level ? "bg-(--color-primary) text-white" : "bg-(--color-surface-elevated) text-(--color-text-body) hover:bg-(--color-surface)"}`} onClick={() => setTpDifficultyFilter(level)}>
+                            {level === "all" ? "Tümü" : level === "kolay" ? "Kolay" : level === "orta" ? "Orta" : "Zor"}
+                          </button>
+                        ))}
+                        <select value={tpSubSkillFilter} onChange={(e) => setTpSubSkillFilter(e.target.value)} className={`${inputCls} max-w-[180px]`}>
                           <option value="all">Tüm beceriler</option>
                           {subSkillNames.map((s) => <option key={s} value={s}>{s}</option>)}
                         </select>
-                        <label className={styles.tpToggleLabel}>
+                        <label className="flex items-center gap-2 text-sm text-(--color-text-body) cursor-pointer">
                           <input type="checkbox" checked={tpShowHomeOnly} onChange={(e) => setTpShowHomeOnly(e.target.checked)} />
-                          <span>🏠 Ev ödevi</span>
+                          <span className="flex items-center gap-1"><Home size={13} />Ev ödevi</span>
                         </label>
                       </div>
 
                       {filteredActivities.length === 0 ? (
-                        <div className={styles.tpEmptyState}>
-                          <span style={{ fontSize: "2rem" }}>🔍</span>
-                          <p>Seçili filtrelere uygun aktivite bulunamadı.</p>
+                        <div className="flex flex-col items-center gap-2 py-12 text-(--color-text-muted)">
+                          <Search size={40} strokeWidth={1.5} />
+                          <p className="text-sm">Seçili filtrelere uygun aktivite bulunamadı.</p>
                         </div>
                       ) : (
-                        <div className={styles.tpActivitiesGrid}>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {filteredActivities.map((activity) => {
                             const isFav = tpFavoriteActivities.includes(activity.id);
                             const isExpanded = tpExpandedActivity === activity.id;
                             const customNote = tpCustomNotes[activity.id] ?? "";
                             return (
-                              <div key={activity.id} className={`${styles.tpActivityCard} ${isExpanded ? styles.tpActivityCardExpanded : ""}`}>
-                                <div className={styles.tpActivityTop}>
-                                  <strong>{activity.label}</strong>
-                                  <div className={styles.tpActivityTopRight}>
-                                    <button type="button" className={`${styles.tpFavStar} ${isFav ? styles.tpFavStarActive : ""}`} onClick={() => toggleFavoriteActivity(activity.id)} title={isFav ? "Favoriden çıkar" : "Favorilere ekle"}>
+                              <div key={activity.id} className="bg-(--color-surface-strong) rounded-xl border border-(--color-line) p-4 flex flex-col gap-2">
+                                <div className="flex items-start justify-between gap-2">
+                                  <strong className="text-(--color-text-strong) text-sm">{activity.label}</strong>
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    <button type="button" className={`text-lg bg-transparent border-none cursor-pointer ${isFav ? "text-amber-400" : "text-slate-300 hover:text-amber-400"}`} onClick={() => toggleFavoriteActivity(activity.id)} title={isFav ? "Favoriden çıkar" : "Favorilere ekle"}>
                                       {isFav ? "★" : "☆"}
                                     </button>
-                                    <span className={`${styles.tpDiffBadge} ${styles[`tpDiff_${activity.difficulty}`]}`}>
+                                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${diffColor(activity.difficulty)}`}>
                                       {activity.difficulty === "kolay" ? "Kolay" : activity.difficulty === "orta" ? "Orta" : "Zor"}
                                     </span>
                                   </div>
                                 </div>
-                                <p className={styles.tpActivityDesc}>{activity.description}</p>
-                                <div className={styles.tpActivityMeta}>
-                                  <span className={styles.tpMetaItem}>📁 {activity.subSkill}</span>
-                                  <span className={styles.tpMetaItem}>🏷️ {activity.activityType}</span>
-                                  <span className={styles.tpMetaItem}>⏱️ {activity.sessionMinutes} dk</span>
-                                  {activity.homeExercise && <span className={styles.tpMetaItem}>🏠 Ev ödevi</span>}
+                                <p className="text-(--color-text-soft) text-xs leading-relaxed m-0">{activity.description}</p>
+                                <div className="flex flex-wrap gap-2 text-[10px] text-(--color-text-muted)">
+                                  <span className="flex items-center gap-1"><Layers size={10} />{activity.subSkill}</span>
+                                  <span className="flex items-center gap-1"><Tag size={10} />{activity.activityType}</span>
+                                  <span className="flex items-center gap-1"><Clock size={10} />{activity.sessionMinutes} dk</span>
+                                  {activity.homeExercise && <span className="flex items-center gap-1"><Home size={10} />Ev ödevi</span>}
                                 </div>
-                                <button type="button" className={styles.tpExpandBtn} onClick={() => setTpExpandedActivity(isExpanded ? null : activity.id)}>
+                                <button type="button" className="text-(--color-primary) text-xs hover:underline bg-transparent border-none cursor-pointer text-left" onClick={() => setTpExpandedActivity(isExpanded ? null : activity.id)}>
                                   {isExpanded ? "Kapat ▴" : "Detaylar ▾"}
                                 </button>
                                 {isExpanded && (
-                                  <div className={styles.tpActivityExpanded}>
+                                  <div className="space-y-3 pt-2 border-t border-(--color-line)">
                                     {activity.materials.length > 0 && (
-                                      <div className={styles.tpMaterials}>
-                                        <span className={styles.tpMaterialsLabel}>Materyaller:</span>
-                                        <div className={styles.tpMaterialChips}>
-                                          {activity.materials.map((m) => <span key={m} className={styles.tpMaterialChip}>{m}</span>)}
+                                      <div>
+                                        <span className="text-[10px] font-semibold uppercase tracking-wider text-(--color-text-muted) block mb-1">Materyaller:</span>
+                                        <div className="flex flex-wrap gap-1">
+                                          {activity.materials.map((m) => <span key={m} className="bg-(--color-surface-elevated) text-(--color-text-soft) text-xs px-2 py-0.5 rounded-full">{m}</span>)}
                                         </div>
                                       </div>
                                     )}
-                                    <div className={styles.tpRelatedGoals}>
-                                      <span className={styles.tpMaterialsLabel}>İlgili Hedefler:</span>
-                                      <div className={styles.tpChipList}>
+                                    <div>
+                                      <span className="text-[10px] font-semibold uppercase tracking-wider text-(--color-text-muted) block mb-1">İlgili Hedefler:</span>
+                                      <div className="flex flex-wrap gap-1">
                                         {activity.goals.map((gId) => {
                                           const goal = domain.goals.find((g) => g.id === gId);
-                                          return goal ? <span key={gId} className={styles.tpChip}>{goal.label}</span> : null;
+                                          return goal ? <span key={gId} className="bg-(--color-primary-light) text-(--color-primary) text-xs px-2 py-0.5 rounded-full">{goal.label}</span> : null;
                                         })}
                                       </div>
                                     </div>
-                                    <div className={styles.tpCustomNoteBox}>
-                                      <span className={styles.tpMaterialsLabel}>Terapist Notu:</span>
-                                      <textarea value={customNote} onChange={(e) => saveTpCustomNote(activity.id, e.target.value)} placeholder="Bu aktivite için notlarınızı yazın..." className={styles.tpCustomNoteInput} rows={2} />
+                                    {activity.evidenceBase && (
+                                      <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3">
+                                        <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-500 mb-1"><FlaskConical size={11} />Kanıt Temeli:</span>
+                                        <p className="text-xs text-(--color-text-soft) m-0 leading-relaxed">{activity.evidenceBase}</p>
+                                      </div>
+                                    )}
+                                    {activity.therapistTips && activity.therapistTips.length > 0 && (
+                                      <div className="bg-(--color-primary)/5 border border-(--color-primary)/20 rounded-lg p-3">
+                                        <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-(--color-primary) mb-2"><Lightbulb size={11} />Terapist İpuçları:</span>
+                                        <ul className="space-y-1 m-0 pl-0 list-none">
+                                          {activity.therapistTips.map((tip, ti) => (
+                                            <li key={ti} className="text-xs text-(--color-text-soft) flex gap-1.5"><span className="text-(--color-primary) shrink-0">·</span>{tip}</li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                    <div>
+                                      <span className="text-[10px] font-semibold uppercase tracking-wider text-(--color-text-muted) block mb-1">Terapist Notu:</span>
+                                      <textarea value={customNote} onChange={(e) => saveTpCustomNote(activity.id, e.target.value)} placeholder="Bu aktivite için notlarınızı yazın..." className={`${inputCls} resize-none`} rows={2} />
                                     </div>
                                   </div>
                                 )}
@@ -2234,79 +2677,141 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 const domain = THERAPY_DOMAINS.find((d) => d.key === tpSelectedDomain);
                 if (!domain) return null;
                 const gameMappings = getGameMappingsForDomain(tpSelectedDomain);
+                const diffColor = (d: string) => d === "kolay" ? "bg-emerald-500/10 text-emerald-400" : d === "orta" ? "bg-amber-500/10 text-amber-400" : "bg-red-500/10 text-red-400";
+                const gameIcon = (key: string) => { const Icon = GAME_ICON_MAP[key] ?? Gamepad2; return <Icon size={20} />; };
                 return (
-                  <div>
-                    <div className={styles.tpSectionHeader}>
-                      <div>
-                        <span className={styles.tpDomainBadge} style={{ background: domain.color }}>{domain.icon} {domain.label}</span>
-                        <h2 className={styles.tpSectionTitle}>Dijital Oyun Eşlemesi</h2>
-                      </div>
+                  <div className="space-y-6">
+                    {/* Header */}
+                    <div>
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-white mb-2" style={{ background: domain.color }}><DomainIcon iconKey={domain.icon} size={12} />{domain.label}</span>
+                      <h2 className="text-lg font-bold text-(--color-text-strong) m-0">Dijital Oyun Rehberi</h2>
+                      <p className="text-(--color-text-soft) text-sm mt-1">Her oyunun kanıt temeli, önerilen seans dozu ve seansta kullanım rehberi. Ergoterapist olarak doğru oyunu doğru danışana eşleştirin.</p>
                     </div>
-                    <p className={styles.tpSectionLead}>Bu terapi alanı için uygun dijital oyunlar ve terapötik amaçları. Doğrudan oyunu açabilirsiniz.</p>
 
-                    <div className={styles.tpGamesGrid}>
+                    {/* Game cards */}
+                    <div className="space-y-4">
                       {gameMappings.map((mapping) => {
                         const gameTab = GAME_TABS.find((g) => g.key === mapping.gameKey);
                         if (!gameTab) return null;
                         return (
-                          <div key={mapping.gameKey} className={styles.tpGameCard}>
-                            <div className={styles.tpGameCardHeader}>
-                              <div className={styles.tpGameCardIcon}>{gameTab.category === "memorySkills" ? "🧠" : gameTab.category === "motorSkills" ? "🎯" : "👁️"}</div>
-                              <div>
-                                <strong>{gameTab.title}</strong>
-                                <span className={styles.tpGameKicker}>{gameTab.kicker}</span>
+                          <div key={mapping.gameKey} className="bg-(--color-surface-strong) rounded-2xl border border-(--color-line) overflow-hidden">
+                            {/* Card header */}
+                            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-(--color-line)">
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-2xl bg-(--color-primary)/10 flex items-center justify-center text-(--color-primary) shrink-0">{gameIcon(mapping.gameKey)}</div>
+                                <div>
+                                  <strong className="text-(--color-text-strong) text-[15px] font-bold block leading-tight">{gameTab.title}</strong>
+                                  <span className="text-(--color-text-muted) text-[12px] mt-0.5 block">{gameTab.kicker}</span>
+                                  <div className="flex flex-wrap gap-1 mt-2">
+                                    {mapping.purposes.map((p) => (
+                                      <span key={p} className="bg-(--color-primary-light) text-(--color-primary) text-[11px] font-semibold px-2 py-0.5 rounded-md">{GAME_PURPOSE_LABELS[p]}</span>
+                                    ))}
+                                    {mapping.difficultyFit.map((d) => (
+                                      <span key={d} className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${diffColor(d)}`}>{d === "kolay" ? "Kolay" : d === "orta" ? "Orta" : "Zor"}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                              <button type="button" className={`${btnPrimary} shrink-0`} onClick={() => openGameView(mapping.gameKey)}>▶ Oyna</button>
+                            </div>
+
+                            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                              {/* Left column */}
+                              <div className="space-y-5">
+                                {/* Therapeutic rationale */}
+                                <div>
+                                  <p className="text-[11px] font-bold uppercase tracking-widest text-(--color-text-muted) mb-2">Terapötik Etki</p>
+                                  <p className="text-[13px] text-(--color-text-body) leading-relaxed m-0">{mapping.therapeuticRationale}</p>
+                                </div>
+
+                                {/* Seansta nasıl kullanılır */}
+                                <div>
+                                  <p className="text-[11px] font-bold uppercase tracking-widest text-(--color-text-muted) mb-2">Seansta Kullanım</p>
+                                  <p className="text-[13px] text-(--color-text-soft) leading-relaxed m-0">{mapping.howToUseInSession}</p>
+                                </div>
+
+                                {/* Research basis */}
+                                <div className="rounded-xl border border-amber-400/30 p-3.5" style={{ background: "color-mix(in srgb, #f59e0b 8%, transparent)" }}>
+                                  <p className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-amber-500 mb-2"><BookOpen size={12} />Bilimsel Referans</p>
+                                  <p className="text-[12px] text-(--color-text-soft) m-0 leading-relaxed">{mapping.researchBasis}</p>
+                                </div>
+                              </div>
+
+                              {/* Right column */}
+                              <div className="space-y-5">
+                                {/* Dosage */}
+                                <div className="rounded-xl border border-(--color-primary)/25 bg-(--color-primary)/5 p-4">
+                                  <p className="text-[11px] font-bold uppercase tracking-widest text-(--color-primary) mb-3">Önerilen Doz</p>
+                                  <div className="flex gap-4 mb-3">
+                                    <div className="flex-1 text-center bg-(--color-surface-strong) rounded-xl py-3">
+                                      <div className="text-[28px] font-bold text-(--color-text-strong) leading-none">{mapping.sessionDosage.minutesPerSession}</div>
+                                      <div className="text-[11px] text-(--color-text-muted) mt-1">dk / seans</div>
+                                    </div>
+                                    <div className="flex-1 text-center bg-(--color-surface-strong) rounded-xl py-3">
+                                      <div className="text-[28px] font-bold text-(--color-text-strong) leading-none">{mapping.sessionDosage.sessionsPerWeek}<span className="text-[16px]">×</span></div>
+                                      <div className="text-[11px] text-(--color-text-muted) mt-1">hafta / seans</div>
+                                    </div>
+                                  </div>
+                                  <p className="text-[11px] font-semibold text-(--color-primary) mb-1">İlerleme Rehberi</p>
+                                  <p className="text-[12px] text-(--color-text-soft) m-0 leading-relaxed">{mapping.sessionDosage.progressionNote}</p>
+                                </div>
+
+                                {/* Outcome indicators */}
+                                <div>
+                                  <p className="text-[11px] font-bold uppercase tracking-widest text-(--color-text-muted) mb-2">Ölçüm Göstergeleri</p>
+                                  <ul className="space-y-1.5 m-0 pl-0 list-none">
+                                    {mapping.outcomeIndicators.map((oi, i) => (
+                                      <li key={i} className="text-[13px] text-(--color-text-soft) flex gap-2 items-start leading-snug">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-(--color-primary)/50 shrink-0 mt-1.5" />{oi}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
                               </div>
                             </div>
-                            <p className={styles.tpGameRationale}>{mapping.therapeuticRationale}</p>
-                            <div className={styles.tpGamePurposes}>
-                              <span className={styles.tpMaterialsLabel}>Terapötik Amaçlar:</span>
-                              <div className={styles.tpChipList}>
-                                {mapping.purposes.map((p) => <span key={p} className={styles.tpPurposeChip}>{GAME_PURPOSE_LABELS[p]}</span>)}
-                              </div>
-                            </div>
-                            <div className={styles.tpGameDifficulty}>
-                              <span className={styles.tpMaterialsLabel}>Zorluk uyumu:</span>
-                              {mapping.difficultyFit.map((d) => (
-                                <span key={d} className={`${styles.tpDiffBadge} ${styles[`tpDiff_${d}`]}`}>{d === "kolay" ? "Kolay" : d === "orta" ? "Orta" : "Zor"}</span>
-                              ))}
-                            </div>
-                            <button type="button" className={styles.tpPlayGameBtn} onClick={() => openGameView(mapping.gameKey)}>
-                              ▶ Oyunu Aç
-                            </button>
                           </div>
                         );
                       })}
                     </div>
 
-                    {/* Full mapping table */}
-                    <details className={styles.tpCollapsible}>
-                      <summary className={styles.tpCollapsibleSummary}>
-                        <span>📊 Tüm Oyun–Amaç Eşleme Tablosu</span>
+                    {/* Quick reference table */}
+                    <details open className="bg-(--color-surface-strong) rounded-xl border border-(--color-line) overflow-hidden">
+                      <summary className="flex items-center justify-between px-4 py-3 cursor-pointer list-none font-medium text-sm text-(--color-text-strong)">
+                        <span className="flex items-center gap-1.5"><BarChart3 size={14} />Tüm Oyun–Amaç Eşleme Tablosu (Hızlı Referans)</span>
                       </summary>
-                      <div className={styles.tpTableWrap}>
-                        <table className={styles.tpTable}>
-                          <thead>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead className="bg-(--color-surface-elevated)">
                             <tr>
-                              <th>Oyun</th>
-                              <th>Terapötik Amaçlar</th>
-                              <th>Uygun Alanlar</th>
-                              <th>Zorluk</th>
+                              <th className="text-left px-4 py-2 font-semibold text-(--color-text-strong)">Oyun</th>
+                              <th className="text-left px-4 py-2 font-semibold text-(--color-text-strong)">Terapötik Amaçlar</th>
+                              <th className="text-left px-4 py-2 font-semibold text-(--color-text-strong)">Süre</th>
+                              <th className="text-left px-4 py-2 font-semibold text-(--color-text-strong)">Sıklık</th>
+                              <th className="text-left px-4 py-2 font-semibold text-(--color-text-strong)">Zorluk</th>
                             </tr>
                           </thead>
                           <tbody>
                             {GAME_THERAPY_MAPPINGS.map((m) => {
                               const gt = GAME_TABS.find((g) => g.key === m.gameKey);
+                              const inDomain = m.suitableDomains.includes(tpSelectedDomain!);
                               return (
-                                <tr key={m.gameKey}>
-                                  <td><strong>{gt?.title ?? m.gameKey}</strong></td>
-                                  <td>{m.purposes.map((p) => GAME_PURPOSE_LABELS[p]).join(", ")}</td>
-                                  <td>{m.suitableDomains.map((dk) => THERAPY_DOMAINS.find((d) => d.key === dk)?.label ?? dk).join(", ")}</td>
-                                  <td>{m.difficultyFit.map((d) => d === "kolay" ? "Kolay" : d === "orta" ? "Orta" : "Zor").join(", ")}</td>
+                                <tr key={m.gameKey} className={`border-t border-(--color-line) ${inDomain ? "" : "opacity-40"}`}>
+                                  <td className="px-4 py-2">
+                                    <div className="flex items-center gap-1.5">
+                                      {inDomain && <span className="w-1.5 h-1.5 rounded-full bg-(--color-primary) shrink-0" />}
+                                      <strong className="text-(--color-text-strong)">{gt?.title ?? m.gameKey}</strong>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-2 text-(--color-text-soft)">{m.purposes.map((p) => GAME_PURPOSE_LABELS[p]).join(", ")}</td>
+                                  <td className="px-4 py-2 text-(--color-text-soft)">{m.sessionDosage.minutesPerSession} dk</td>
+                                  <td className="px-4 py-2 text-(--color-text-soft)">{m.sessionDosage.sessionsPerWeek}x / hafta</td>
+                                  <td className="px-4 py-2 text-(--color-text-soft)">{m.difficultyFit.map((d) => d === "kolay" ? "Kolay" : d === "orta" ? "Orta" : "Zor").join(", ")}</td>
                                 </tr>
                               );
                             })}
                           </tbody>
                         </table>
+                        <p className="text-[10px] text-(--color-text-muted) px-4 py-2">· Mavi nokta: seçili terapi alanıyla uyumlu oyunlar</p>
                       </div>
                     </details>
                   </div>
@@ -2317,86 +2822,106 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               {tpActiveTab === "plan" && tpSelectedDomain && (() => {
                 const domain = THERAPY_DOMAINS.find((d) => d.key === tpSelectedDomain);
                 if (!domain) return null;
+                const ALL_DAYS = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+                const dayShort: Record<string, string> = { Pazartesi: "Pzt", Salı: "Sal", Çarşamba: "Çar", Perşembe: "Per", Cuma: "Cum", Cumartesi: "Cmt", Pazar: "Paz" };
                 return (
-                  <div>
-                    <div className={styles.tpSectionHeader}>
+                  <div className="space-y-5">
+                    <div className="flex items-start justify-between gap-4 flex-wrap">
                       <div>
-                        <span className={styles.tpDomainBadge} style={{ background: domain.color }}>{domain.icon} {domain.label}</span>
-                        <h2 className={styles.tpSectionTitle}>Haftalık Terapi Planı</h2>
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-white mb-2" style={{ background: domain.color }}><DomainIcon iconKey={domain.icon} size={12} />{domain.label}</span>
+                        <h2 className="text-lg font-bold text-(--color-text-strong) m-0">Haftalık Terapi Planı</h2>
                       </div>
-                      <button type="button" className={styles.primaryButton} onClick={handleGeneratePlan}>{tpGeneratedPlan ? "🔄 Yeniden Üret" : "📅 Plan Üret"}</button>
+                    </div>
+
+                    {/* Day selector */}
+                    <div className="bg-(--color-surface-strong) rounded-2xl border border-(--color-line) p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-semibold text-(--color-text-strong)">Seans günlerini seçin</span>
+                        <span className="text-[10px] text-(--color-text-muted)">{tpSelectedDays.length} gün seçili</span>
+                      </div>
+                      <div className="flex gap-2 flex-wrap">
+                        {ALL_DAYS.map((day) => {
+                          const isSelected = tpSelectedDays.includes(day);
+                          return (
+                            <button
+                              key={day}
+                              type="button"
+                              onClick={() => togglePlanDay(day)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                                isSelected
+                                  ? "bg-(--color-primary) text-white border-transparent"
+                                  : "bg-transparent text-(--color-text-muted) border-(--color-line) hover:border-(--color-primary)/50"
+                              }`}
+                            >
+                              {dayShort[day]}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {tpSelectedDays.length === 0 && (
+                        <p className="text-xs text-amber-500 mt-2">En az 1 gün seçin.</p>
+                      )}
+                      <div className="mt-3">
+                        <button
+                          type="button"
+                          className={`${btnPrimary} flex items-center gap-1.5`}
+                          onClick={handleGeneratePlan}
+                          disabled={tpSelectedDays.length === 0}
+                        >
+                          {tpGeneratedPlan ? <><RefreshCw size={14} />Planı Güncelle</> : <><CalendarDays size={14} />Plan Oluştur</>}
+                        </button>
+                      </div>
                     </div>
 
                     {!tpGeneratedPlan ? (
-                      <div className={styles.tpEmptyState}>
-                        <span style={{ fontSize: "3.5rem" }}>📋</span>
-                        <h3>Henüz plan oluşturulmadı</h3>
-                        <p>Seçili terapi alanına göre otomatik haftalık plan oluşturmak için "Plan Üret" butonuna tıklayın.</p>
-                        <p style={{ color: "#7a99b4", fontSize: "0.84rem", marginTop: 4 }}>Sistem, alanın hedeflerini, aktivitelerini ve uygun dijital oyunları kullanarak 3 günlük bir yapı önerecektir.</p>
-                        <button type="button" className={styles.primaryButton} style={{ marginTop: 16 }} onClick={handleGeneratePlan}>📅 Plan Üret</button>
+                      <div className="flex flex-col items-center gap-3 py-12 text-center">
+                        <ClipboardList size={48} strokeWidth={1.5} className="text-(--color-text-muted)" />
+                        <h3 className="text-(--color-text-strong) font-semibold m-0">Henüz plan oluşturulmadı</h3>
+                        <p className="text-(--color-text-soft) text-sm m-0">Günleri seçip "Plan Oluştur" butonuna tıklayın.</p>
+                        <p className="text-(--color-text-muted) text-xs m-0">Sistem, seçtiğiniz gün sayısına göre aktivite ve dijital oyun planı oluşturacaktır.</p>
                       </div>
                     ) : (
-                      <div>
-                        {/* Summary cards */}
-                        <div className={styles.tpPlanSummary}>
-                          <div className={styles.tpPlanSummaryCard}>
-                            <span className={styles.tpPlanLabel}>🎯 Ana Hedef</span>
-                            <strong>{tpGeneratedPlan.weeklyPlan.mainGoal}</strong>
-                          </div>
-                          <div className={styles.tpPlanSummaryCard}>
-                            <span className={styles.tpPlanLabel}>📋 Anahtar Aktiviteler</span>
-                            <ul className={styles.tpPlanList}>
-                              {tpGeneratedPlan.weeklyPlan.keyActivities.map((a, i) => <li key={i}>{a}</li>)}
-                            </ul>
-                          </div>
-                          <div className={styles.tpPlanSummaryCard}>
-                            <span className={styles.tpPlanLabel}>🎮 Dijital Oyunlar</span>
-                            <div className={styles.tpChipList}>
-                              {tpGeneratedPlan.weeklyPlan.digitalGames.map((gk) => {
-                                const gt = GAME_TABS.find((g) => g.key === gk);
-                                return <span key={gk} className={styles.tpChip}>{gt?.title ?? gk}</span>;
-                              })}
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {[
+                            {label: <span className="flex items-center gap-1"><Target size={11} />Ana Hedef</span>, content: <strong className="text-(--color-text-strong) text-sm">{tpGeneratedPlan.weeklyPlan.mainGoal}</strong>},
+                            {label: <span className="flex items-center gap-1"><ClipboardList size={11} />Anahtar Aktiviteler</span>, content: <ul className="list-disc pl-4 text-(--color-text-soft) text-xs space-y-1 m-0">{tpGeneratedPlan.weeklyPlan.keyActivities.map((a, i) => <li key={i}>{a}</li>)}</ul>},
+                            {label: <span className="flex items-center gap-1"><Gamepad2 size={11} />Dijital Oyunlar</span>, content: <div className="flex flex-wrap gap-1">{tpGeneratedPlan.weeklyPlan.digitalGames.map((gk) => { const gt = GAME_TABS.find((g) => g.key === gk); return <span key={gk} className="bg-(--color-primary-light) text-(--color-primary) text-xs px-2 py-0.5 rounded-full">{gt?.title ?? gk}</span>; })}</div>},
+                            {label: <span className="flex items-center gap-1"><Home size={11} />Ev Ödevi</span>, content: <strong className="text-(--color-text-strong) text-sm">{tpGeneratedPlan.weeklyPlan.homeExercise}</strong>},
+                          ].map(({label, content}) => (
+                            <div key={label} className="bg-(--color-surface-strong) rounded-xl border border-(--color-line) p-4 flex flex-col gap-2">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-(--color-text-muted)">{label}</span>
+                              {content}
                             </div>
-                          </div>
-                          <div className={styles.tpPlanSummaryCard}>
-                            <span className={styles.tpPlanLabel}>🏠 Ev Ödevi</span>
-                            <strong>{tpGeneratedPlan.weeklyPlan.homeExercise}</strong>
+                          ))}
+                        </div>
+
+                        <div>
+                          <h3 className="text-sm font-semibold text-(--color-text-strong) mb-3">Günlük Yapı — {tpGeneratedPlan.dailyStructure.length} Seans</h3>
+                          <div className={`grid gap-4 ${tpGeneratedPlan.dailyStructure.length <= 2 ? "grid-cols-1 sm:grid-cols-2" : tpGeneratedPlan.dailyStructure.length <= 4 ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`}>
+                            {tpGeneratedPlan.dailyStructure.map((day, i) => {
+                              const gameTab = GAME_TABS.find((g) => g.key === day.game);
+                              return (
+                                <div key={i} className="bg-(--color-surface-strong) rounded-2xl border border-(--color-line) overflow-hidden">
+                                  <div className="flex items-center gap-2 px-4 py-3 bg-(--color-primary)/5 border-b border-(--color-line)">
+                                    <span className="w-6 h-6 rounded-full bg-(--color-primary) text-white text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                                    <span className="text-(--color-text-strong) text-sm font-medium">{day.dayLabel}</span>
+                                  </div>
+                                  <div className="p-4 flex flex-col gap-3">
+                                    {[{l: "Aktivite", v: <span className="text-xs text-(--color-text-body)">{day.activity}</span>}, {l: "Dijital Oyun", v: <button type="button" className="text-(--color-primary) text-xs hover:underline bg-transparent border-none cursor-pointer text-left" onClick={() => openGameView(day.game)}>▶ {gameTab?.title ?? day.game}</button>}, {l: "Gözlem", v: <span className="text-xs text-(--color-text-soft)">{day.observation}</span>}].map(({l, v}) => (
+                                      <div key={l}>
+                                        <span className="text-[10px] font-semibold uppercase tracking-wider text-(--color-text-muted) block mb-0.5">{l}</span>
+                                        {v}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
 
-                        {/* Daily cards */}
-                        <h3 className={styles.tpSubTitle} style={{ marginTop: "32px" }}>Günlük Yapı</h3>
-                        <div className={styles.tpDailyGrid}>
-                          {tpGeneratedPlan.dailyStructure.map((day, i) => {
-                            const gameTab = GAME_TABS.find((g) => g.key === day.game);
-                            return (
-                              <div key={i} className={styles.tpDayCard}>
-                                <div className={styles.tpDayHeader}>
-                                  <span className={styles.tpDayNumber}>{i + 1}</span>
-                                  {day.dayLabel}
-                                </div>
-                                <div className={styles.tpDayBody}>
-                                  <div className={styles.tpDayRow}>
-                                    <span className={styles.tpDayRowLabel}>Aktivite</span>
-                                    <span>{day.activity}</span>
-                                  </div>
-                                  <div className={styles.tpDayRow}>
-                                    <span className={styles.tpDayRowLabel}>Dijital Oyun</span>
-                                    <button type="button" className={styles.tpDayGameBtn} onClick={() => openGameView(day.game)}>
-                                      ▶ {gameTab?.title ?? day.game}
-                                    </button>
-                                  </div>
-                                  <div className={styles.tpDayRow}>
-                                    <span className={styles.tpDayRowLabel}>Gözlem</span>
-                                    <span style={{ color: "#567896", fontSize: "0.86rem" }}>{day.observation}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        <p style={{ marginTop: "20px", color: "#7a99b4", fontSize: "0.86rem", fontStyle: "italic" }}>Not: {tpGeneratedPlan.weeklyPlan.sessionNotes}</p>
+                        <p className="text-(--color-text-muted) text-xs italic">Not: {tpGeneratedPlan.weeklyPlan.sessionNotes}</p>
                       </div>
                     )}
                   </div>
@@ -2407,10 +2932,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               {tpActiveTab === "progress" && (() => {
                 const selectedProgressClient = clientOptions.find((c) => c.id === tpSelectedClientId) ?? null;
                 if (!selectedProgressClient) return (
-                  <div className={styles.tpEmptyState}>
-                    <span style={{ fontSize: "3.5rem" }}>📊</span>
-                    <h3>Danışan seçilmedi</h3>
-                    <p>İlerleme takibi için üst kısımdan bir danışan seçin.</p>
+                  <div className="flex flex-col items-center gap-3 py-16 text-center">
+                    <BarChart3 size={48} strokeWidth={1.5} className="text-(--color-text-muted)" />
+                    <h3 className="text-(--color-text-strong) font-semibold m-0">Danışan seçilmedi</h3>
+                    <p className="text-(--color-text-soft) text-sm m-0">İlerleme takibi için üst kısımdan bir danışan seçin.</p>
                   </div>
                 );
                 const domain = tpSelectedDomain ? THERAPY_DOMAINS.find((d) => d.key === tpSelectedDomain) : null;
@@ -2426,112 +2951,108 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 const overallAvg = goalAverages.length > 0 ? Math.round(goalAverages.reduce((s, g) => s + g.average, 0) / goalAverages.length) : 0;
 
                 return (
-                  <div>
-                    <div className={styles.tpSectionHeader}>
+                  <div className="space-y-5">
+                    <div className="flex items-start justify-between gap-4">
                       <div>
-                        <h2 className={styles.tpSectionTitle}>İlerleme Takibi</h2>
-                        <div className={styles.tpProgressClientInfo}>
-                          <span className={styles.tpProgressClientName}>{selectedProgressClient.displayName}</span>
-                          {domain && <span className={styles.tpDomainBadge} style={{ background: domain.color }}>{domain.icon} {domain.label}</span>}
+                        <h2 className="text-lg font-bold text-(--color-text-strong) m-0">İlerleme Takibi</h2>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-(--color-text-strong) font-medium text-sm">{selectedProgressClient.displayName}</span>
+                          {domain && <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold text-white" style={{ background: domain.color }}>{domain.icon} {domain.label}</span>}
                         </div>
                       </div>
-                      <button type="button" className={styles.primaryButton} onClick={() => setTpShowProgressForm(!tpShowProgressForm)}>+ Kayıt Ekle</button>
+                      <button type="button" className={btnPrimary} onClick={() => setTpShowProgressForm(!tpShowProgressForm)}>+ Kayıt Ekle</button>
                     </div>
 
-                    {/* Overall score */}
-                    <div className={styles.tpOverallScore}>
-                      <div className={styles.tpOverallScoreRing}>
-                        <svg viewBox="0 0 36 36" className={styles.tpScoreRingSvg}>
+                    <div className="flex items-center gap-6 bg-(--color-surface-strong) rounded-2xl border border-(--color-line) p-5">
+                      <div className="relative w-20 h-20 shrink-0">
+                        <svg viewBox="0 0 36 36" className="w-20 h-20 -rotate-90">
                           <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(14,165,233,0.1)" strokeWidth="3" />
                           <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="url(#progressGrad)" strokeWidth="3" strokeDasharray={`${overallAvg}, 100`} strokeLinecap="round" />
                           <defs><linearGradient id="progressGrad"><stop offset="0%" stopColor="#2563eb" /><stop offset="100%" stopColor="#06b6d4" /></linearGradient></defs>
                         </svg>
-                        <span className={styles.tpOverallScoreValue}>{overallAvg}%</span>
+                        <span className="absolute inset-0 flex items-center justify-center text-lg font-bold text-(--color-text-strong)">{overallAvg}%</span>
                       </div>
-                      <div className={styles.tpOverallScoreMeta}>
-                        <strong>Genel İlerleme</strong>
-                        <span>{clientProgress.length} kayıt · {goalAverages.filter((g) => g.count > 0).length}/{goals.length} hedef takipte</span>
+                      <div>
+                        <strong className="text-(--color-text-strong) block">Genel İlerleme</strong>
+                        <span className="text-(--color-text-muted) text-sm">{clientProgress.length} kayıt · {goalAverages.filter((g) => g.count > 0).length}/{goals.length} hedef takipte</span>
                       </div>
                     </div>
 
-                    {/* Progress form */}
                     {tpShowProgressForm && domain && (
-                      <div className={styles.tpProgressForm}>
-                        <h4>Yeni İlerleme Kaydı</h4>
-                        <div className={styles.tpProgressFormFields}>
-                          <label className={styles.fieldBlock}>
-                            <span>Hedef</span>
-                            <select value={tpProgressForm.goalId} onChange={(e) => setTpProgressForm((c) => ({ ...c, goalId: e.target.value }))} className={styles.inputSurface}>
+                      <div className="bg-(--color-surface-strong) rounded-2xl border border-(--color-line) p-5">
+                        <h4 className="text-(--color-text-strong) font-semibold mb-4">Yeni İlerleme Kaydı</h4>
+                        <div className="flex flex-col gap-4">
+                          <label className="flex flex-col gap-1">
+                            <span className="text-xs text-(--color-text-soft)">Hedef</span>
+                            <select value={tpProgressForm.goalId} onChange={(e) => setTpProgressForm((c) => ({ ...c, goalId: e.target.value }))} className={inputCls}>
                               <option value="">Hedef seçin...</option>
                               {goals.map((g) => <option key={g.id} value={g.id}>{g.label}</option>)}
                             </select>
                           </label>
-                          <label className={styles.fieldBlock}>
-                            <span>Değer: <strong>{tpProgressForm.value}%</strong></span>
-                            <input type="range" min={0} max={100} step={5} value={tpProgressForm.value} onChange={(e) => setTpProgressForm((c) => ({ ...c, value: Number(e.target.value) }))} className={styles.tpRangeInput} />
-                            <div className={styles.tpRangeLabels}>
+                          <label className="flex flex-col gap-1">
+                            <span className="text-xs text-(--color-text-soft)">Değer: <strong>{tpProgressForm.value}%</strong></span>
+                            <input type="range" min={0} max={100} step={5} value={tpProgressForm.value} onChange={(e) => setTpProgressForm((c) => ({ ...c, value: Number(e.target.value) }))} className="w-full" />
+                            <div className="flex justify-between text-xs text-(--color-text-muted)">
                               {INDEPENDENCE_LEVELS.map((lvl) => <span key={lvl.key}>{lvl.label}</span>)}
                             </div>
                           </label>
-                          <label className={styles.fieldBlock}>
-                            <span>Not</span>
-                            <textarea value={tpProgressForm.note} onChange={(e) => setTpProgressForm((c) => ({ ...c, note: e.target.value }))} placeholder="Gözlem veya değerlendirme notu..." className={`${styles.inputSurface} ${styles.textareaSurface}`} rows={3} />
+                          <label className="flex flex-col gap-1">
+                            <span className="text-xs text-(--color-text-soft)">Not</span>
+                            <textarea value={tpProgressForm.note} onChange={(e) => setTpProgressForm((c) => ({ ...c, note: e.target.value }))} placeholder="Gözlem veya değerlendirme notu..." className={`${inputCls} resize-none`} rows={3} />
                           </label>
-                          <div className={styles.tpFormActions}>
-                            <button type="button" className={styles.primaryButton} onClick={handleAddProgressEntry}>Kaydet</button>
-                            <button type="button" className={styles.secondaryButton} onClick={() => setTpShowProgressForm(false)}>İptal</button>
+                          <div className="flex gap-2">
+                            <button type="button" className={btnPrimary} onClick={handleAddProgressEntry}>Kaydet</button>
+                            <button type="button" className={btnSecondary} onClick={() => setTpShowProgressForm(false)}>İptal</button>
                           </div>
                         </div>
                       </div>
                     )}
 
-                    {/* Goal bars */}
                     {goalAverages.length > 0 && (
-                      <div className={styles.tpProgressSummary}>
-                        <h3 className={styles.tpSubTitle}>Hedef Bazlı İlerleme</h3>
-                        <div className={styles.tpProgressBars}>
+                      <div>
+                        <h3 className="text-sm font-semibold text-(--color-text-strong) mb-3">Hedef Bazlı İlerleme</h3>
+                        <div className="space-y-3">
                           {goalAverages.map((ga) => (
-                            <div key={ga.id} className={styles.tpProgressBarRow}>
-                              <div className={styles.tpProgressBarLabel}>
-                                <span>{ga.label}</span>
-                                <span className={styles.tpBarValue}>{ga.average}%</span>
+                            <div key={ga.id} className="bg-(--color-surface-strong) rounded-xl border border-(--color-line) p-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-(--color-text-body) text-sm">{ga.label}</span>
+                                <span className="font-bold text-(--color-text-strong) text-sm">{ga.average}%</span>
                               </div>
-                              <div className={styles.tpProgressBarTrack}>
-                                <div className={styles.tpProgressBarFill} style={{ width: `${ga.average}%` }} />
+                              <div className="h-2 rounded-full bg-white/8 overflow-hidden">
+                                <div className="h-full rounded-full bg-(--color-primary) transition-all" style={{ width: `${ga.average}%` }} />
                               </div>
-                              <span className={styles.tpBarCount}>{ga.count} kayıt</span>
+                              <span className="text-(--color-text-muted) text-xs mt-1 block">{ga.count} kayıt</span>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    {/* History */}
-                    <div className={styles.tpProgressHistory}>
-                      <h3 className={styles.tpSubTitle}>İlerleme Geçmişi</h3>
+                    <div>
+                      <h3 className="text-sm font-semibold text-(--color-text-strong) mb-3">İlerleme Geçmişi</h3>
                       {clientProgress.length === 0 ? (
-                        <div className={styles.tpEmptyState}>
-                          <span style={{ fontSize: "2rem" }}>📝</span>
-                          <p>Henüz ilerleme kaydı eklenmedi. Yukarıdaki "Kayıt Ekle" butonunu kullanın.</p>
+                        <div className="flex flex-col items-center gap-2 py-8 text-(--color-text-muted)">
+                          <span className="text-3xl">📝</span>
+                          <p className="text-sm">Henüz ilerleme kaydı eklenmedi. Yukarıdaki "Kayıt Ekle" butonunu kullanın.</p>
                         </div>
                       ) : (
-                        <div className={styles.tpProgressList}>
+                        <div className="space-y-3">
                           {clientProgress.map((entry) => {
                             const goal = goals.find((g) => g.id === entry.goalId);
                             return (
-                              <div key={entry.id} className={styles.tpProgressCard}>
-                                <div className={styles.tpProgressCardTop}>
-                                  <strong>{goal?.label ?? entry.goalId}</strong>
-                                  <div className={styles.tpProgressCardScore}>
-                                    <div className={styles.tpProgressMiniBar}>
-                                      <div className={styles.tpProgressMiniBarFill} style={{ width: `${entry.value}%` }} />
+                              <div key={entry.id} className="bg-(--color-surface-strong) rounded-xl border border-(--color-line) p-4">
+                                <div className="flex items-center justify-between mb-1">
+                                  <strong className="text-(--color-text-strong) text-sm">{goal?.label ?? entry.goalId}</strong>
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-16 h-1.5 rounded-full bg-white/8 overflow-hidden">
+                                      <div className="h-full rounded-full bg-(--color-primary)" style={{ width: `${entry.value}%` }} />
                                     </div>
-                                    <span>{entry.value}%</span>
+                                    <span className="text-(--color-text-strong) text-sm font-bold">{entry.value}%</span>
                                   </div>
                                 </div>
-                                <span className={styles.tpProgressDate}>{formatDate(entry.date)}</span>
-                                {entry.note && <p className={styles.tpProgressNote}>{entry.note}</p>}
-                                <button type="button" className={styles.tpDeleteBtn} onClick={() => handleDeleteProgressEntry(entry.id)}>Sil</button>
+                                <span className="text-(--color-text-muted) text-xs">{formatDate(entry.date)}</span>
+                                {entry.note && <p className="text-(--color-text-soft) text-xs mt-1 m-0">{entry.note}</p>}
+                                <button type="button" className="text-(--color-accent-red) text-xs hover:underline bg-transparent border-none cursor-pointer mt-1" onClick={() => handleDeleteProgressEntry(entry.id)}>Sil</button>
                               </div>
                             );
                           })}
@@ -2547,10 +3068,35 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         )}
 
       </div>
+
+      {/* ── Mobile bottom navigation ── */}
+      <nav className="fixed bottom-0 left-0 right-0 z-30 lg:hidden border-t border-(--color-line)" style={{ background: "var(--color-chrome-nav)", backdropFilter: "blur(20px)", paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="flex items-stretch h-16">
+          {([
+            { view: "dashboard" as AppView, Icon: LayoutDashboard, label: "Panel" },
+            { view: "clients" as AppView, Icon: Users, label: "Danışanlar" },
+            { view: "games" as AppView, Icon: Gamepad2, label: "Oyunlar" },
+            { view: "therapy-program" as AppView, Icon: Stethoscope, label: "Terapi" },
+          ]).map(({ view, Icon, label }) => {
+            const isActive = activeAppView === view || (view === "clients" && activeAppView === "client-detail");
+            return (
+              <button
+                key={view}
+                type="button"
+                className={`flex-1 flex flex-col items-center justify-center gap-1 border-none cursor-pointer transition-colors ${isActive ? "text-(--color-primary)" : "text-(--color-text-muted) hover:text-(--color-text-soft)"}`}
+                style={{ background: "transparent" }}
+                onClick={() => setActiveAppView(view)}
+              >
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${isActive ? "bg-(--color-primary)/15" : ""}`}>
+                  <Icon size={18} />
+                </div>
+                <span className={`text-[10px] font-medium leading-none ${isActive ? "text-(--color-primary)" : ""}`}>{label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
     </main>
   );
 }
 
-// Suppress unused lint for legacy constants still present
-const _unusedRefs = { _formatDuration: typeof formatDuration };
-void _unusedRefs;

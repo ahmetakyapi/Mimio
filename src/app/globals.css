@@ -1,26 +1,113 @@
-:root {
-  color-scheme: light;
-  font-family: "Avenir Next", "SF Pro Display", "Segoe UI Variable", "Segoe UI", sans-serif;
-  --page-bg: #f4fbff;
-  --surface: rgba(255, 255, 255, 0.72);
-  --surface-strong: rgba(255, 255, 255, 0.9);
-  --surface-soft: rgba(236, 247, 255, 0.72);
-  --line: rgba(112, 168, 208, 0.18);
-  --text-strong: #11304d;
-  --text-body: #3f607f;
-  --text-soft: #5e7f9f;
-  --shadow-soft: 0 22px 45px rgba(96, 162, 214, 0.14);
-  --shadow-strong: 0 26px 60px rgba(66, 135, 195, 0.18);
+@import "tailwindcss";
+
+@theme {
+  /* ── Brand colors ── */
+  --color-primary: #6366f1;
+  --color-primary-hover: #4f46e5;
+  --color-primary-light: rgba(99, 102, 241, 0.12);
+
+  /* ── Surface / Background ── */
+  --color-page-bg: #04070d;
+  --color-surface: rgba(255, 255, 255, 0.035);
+  --color-surface-strong: rgba(10, 16, 28, 0.88);
+  --color-surface-elevated: rgba(255, 255, 255, 0.055);
+
+  /* ── Text ── */
+  --color-text-strong: #f1f5f9;
+  --color-text-body: #cbd5e1;
+  --color-text-soft: #94a3b8;
+  --color-text-muted: #64748b;
+
+  /* ── Border / Line ── */
+  --color-line: rgba(255, 255, 255, 0.07);
+  --color-line-soft: rgba(255, 255, 255, 0.04);
+
+  /* ── Accent ── */
+  --color-accent-green: #10b981;
+  --color-accent-amber: #f59e0b;
+  --color-accent-red: #ef4444;
+  --color-accent-teal: #06b6d4;
+
+  /* ── Sidebar ── */
+  --color-sidebar: rgba(4, 8, 16, 0.92);
+
+  /* ── Chrome overlays (nav bars, sticky headers) ── */
+  --color-chrome-nav: rgba(4, 7, 13, 0.92);
+  --color-chrome-header: rgba(4, 7, 13, 0.88);
+  --color-chrome-section: rgba(4, 7, 13, 0.72);
+
+  /* ── Font ── */
+  --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* ── Radius ── */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+
+  /* ── Shadow ── */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --shadow-primary: 0 8px 24px rgba(99, 102, 241, 0.4), 0 0 0 1px rgba(99, 102, 241, 0.15);
 }
 
-* {
+/* ── Base ── */
+*, *::before, *::after {
   box-sizing: border-box;
 }
 
 html {
+  font-family: var(--font-sans);
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  color-scheme: dark;
+}
+
+/* ── Light theme overrides ── */
+html[data-theme='light'] {
+  color-scheme: light;
+
+  /* Surface / Background */
+  --color-page-bg: #eef2ff;
+  --color-surface: rgba(255, 255, 255, 0.65);
+  --color-surface-strong: rgba(255, 255, 255, 0.92);
+  --color-surface-elevated: rgba(255, 255, 255, 0.85);
+
+  /* Text */
+  --color-text-strong: #1e293b;
+  --color-text-body: #334155;
+  --color-text-soft: #64748b;
+  --color-text-muted: #94a3b8;
+
+  /* Border */
+  --color-line: rgba(99, 102, 241, 0.10);
+  --color-line-soft: rgba(99, 102, 241, 0.05);
+
+  /* Primary accent */
+  --color-primary-light: rgba(99, 102, 241, 0.08);
+
+  /* Sidebar */
+  --color-sidebar: rgba(237, 241, 255, 0.94);
+
+  /* Chrome overlays */
+  --color-chrome-nav: rgba(238, 242, 255, 0.93);
+  --color-chrome-header: rgba(238, 242, 255, 0.88);
+  --color-chrome-section: rgba(238, 242, 255, 0.78);
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(99, 102, 241, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --shadow-elevated: 0 8px 32px rgba(99, 102, 241, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --shadow-primary: 0 8px 24px rgba(99, 102, 241, 0.25), 0 0 0 1px rgba(99, 102, 241, 0.1);
+}
+
+html[data-theme='light'] body {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(99, 102, 241, 0.08), transparent 32%),
+    radial-gradient(circle at 82% 10%, rgba(34, 211, 238, 0.05), transparent 26%),
+    radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.04), transparent 30%),
+    #eef2ff;
 }
 
 body {
@@ -28,12 +115,16 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   background:
-    radial-gradient(circle at top left, rgba(124, 210, 255, 0.45), transparent 32%),
-    radial-gradient(circle at 88% 10%, rgba(183, 232, 255, 0.7), transparent 28%),
-    linear-gradient(180deg, #eefaff 0%, #f7fcff 34%, #edf8ff 100%);
-  color: var(--text-strong);
+    radial-gradient(circle at 18% 12%, rgba(79, 70, 229, 0.12), transparent 32%),
+    radial-gradient(circle at 82% 10%, rgba(34, 211, 238, 0.07), transparent 26%),
+    radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.05), transparent 30%),
+    #04070d;
+  background-attachment: fixed;
+  color: var(--color-text-body);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  overflow-x: hidden;
 }
 
 a {
@@ -41,10 +132,7 @@ a {
   text-decoration: none;
 }
 
-button,
-input,
-textarea,
-select {
+button, input, textarea, select {
   font: inherit;
   -webkit-appearance: none;
   appearance: none;
@@ -61,41 +149,62 @@ img {
 }
 
 ::selection {
-  background: rgba(111, 208, 255, 0.3);
+  background: rgba(99, 102, 241, 0.25);
 }
 
-/* ── Mobile safe-area & overscroll ── */
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.28);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.5);
+}
+
+/* ── Safe area (mobile notch) ── */
 @supports (padding: env(safe-area-inset-bottom)) {
   body {
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
 
-/* Prevent horizontal overflow on mobile */
-body,
-main {
-  overflow-x: hidden;
-  max-width: 100vw;
-}
-
-/* Better touch targets globally */
+/* ── Touch targets ── */
 @media (pointer: coarse) {
-  button,
-  [role="button"],
-  select,
-  input[type="submit"] {
+  button, [role="button"], select, input[type="submit"] {
     min-height: 44px;
     min-width: 44px;
   }
-
-  select {
-    padding: 10px 14px;
-  }
 }
 
-/* Smooth scrolling disable for reduced motion */
+/* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ── Game tile states ── */
+.game-tile-active {
+  background: #4f46e5 !important;
+  color: white !important;
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.5), 0 8px 28px rgba(99,102,241,0.45);
+  transform: scale(1.04);
+  transition: all 0.12s ease;
+}
+.game-tile-matched {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.game-tile-reveal {
+  box-shadow: 0 0 0 2px #6366f1 !important;
+  background: rgba(99,102,241,0.18) !important;
+}
+.game-tile-cursor {
+  box-shadow: 0 0 0 2px #6366f1, 0 0 0 4px rgba(99,102,241,0.25) !important;
 }
