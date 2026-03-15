@@ -74,7 +74,7 @@ Platform **7 uzmanlık alanı** için kanıta dayalı aktivite önerileri ve oyu
 
 ---
 
-## Teknoloji Yığını
+## Kullanılan Teknolojiler
 
 ```
 Next.js 15 (App Router)      — Framework
