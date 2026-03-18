@@ -151,7 +151,7 @@ export function isPlatformGameKey(value: string): value is PlatformGameKey {
 
 // ── New multi-screen architecture types ──
 
-export type AppView = "login" | "register" | "dashboard" | "clients" | "client-detail" | "games" | "therapy-program";
+export type AppView = "login" | "register" | "dashboard" | "clients" | "client-detail" | "games" | "therapy-program" | "reports";
 
 export interface SessionNote {
   id: string;

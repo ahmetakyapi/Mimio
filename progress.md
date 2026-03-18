@@ -38,3 +38,28 @@ Original prompt: Ergoterapistler için interaktif oyunlar yapıp, onların kişi
 - 2026-03-14: Smoke coverage now fills the new seans masası, creates local therapist/client cards, carries the session note into the games workspace, and then exercises all six games end-to-end without console errors.
 - TODO: If this prototype moves toward production, add real therapist/user accounts, session notes, and configurable difficulty profiles per client.
 - TODO: The next visual step should push the premium direction further with custom iconography, longer editorial sections, and more distinctive game-specific art surfaces instead of only system-level abstract cards.
+
+## 2026-03-19 — BMAD Premium UI/UX Overhaul (Completed Stories)
+
+- **BMAD v6.2.0** kurulumu yapıldı, PRD.md oluşturuldu (6 epic, 16 story).
+- **LandingPage** tamamen yeniden yazıldı: animated orb BG, hero split, feature grid, game showcase, social proof.
+- **Premium Sidebar**: glassmorphism, gradient logo, animated left-bar, gradient avatar.
+- **Dashboard**: gradient header, stat cards (4 adet, useCountUp + sparkline), Quick Actions 2×2 grid.
+- **Premium Vertical Timeline** (Dashboard "Son Seanslar"): per-game accent renkler, connector dot, hover arrow, "Tam Raporu Gör" CTA.
+- **Sidebar Badge sistemi**: Danışanlar (count), Oyun Alanı (6 oyun), Raporlar (bu hafta↑) badge'leri.
+- **In-game Feedback Animasyonları** (globals.css):
+  - `correct-glow` — yeşil pulsing glow, doğru cevaplarda
+  - `wrong-shake` — kırmızı sarsıntı, yanlış cevaplarda
+  - `combo-flash` — altın/mor combo ring, seri≥3'te
+  - `combo-badge-enter` — combo sayacı bounce animasyonu
+  - `score-pop` — floating puan göstergesi
+  - `tile-active-pulse` — aktif hedef nefes alan glow
+- **Game HUD feedback entegrasyonu**: Memory, Pulse, Route, Difference, Scan oyunlarının HUD Puan paneli ve tile'larına `lastFeedback` state bağlandı.
+- **Route oyunu geçmiş**: icon'lar gösterilecek şekilde iyileştirildi, son komut highlight.
+- **Reports & Analytics**: KPI cards, bar chart, client table, activity timeline, donut grid.
+- **Toast bildirim sistemi**: showToast(), ToastContainer, useToasts() hook.
+- **Therapy Program** (5 tab): Domains/Activities/Games/Plan/Progress tam yeniden tasarım.
+- **Mobile Bottom Nav**: 5 ikon, Raporlar dahil.
+- **Client Detail**: 4 tab (Notlar/Plan/Skorlar/İlerleme), sparkline trend chart, donut chart, goal bars.
+- **Login/Register**: animated orb BG, gradient butonlar.
+- Build doğrulandı ✅ — sıfır hata.
