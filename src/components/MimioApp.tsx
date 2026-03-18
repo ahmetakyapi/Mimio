@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, FormEvent } from "react";
 import {
-  LayoutDashboard, Users, Gamepad2, Stethoscope, UserPlus, Brain, Hand, Eye, Settings, LogOut, Clock, ChevronDown, RotateCcw, Sun, Moon,
+  LayoutDashboard, Users, Gamepad2, Stethoscope, UserPlus, Brain, Hand, Eye, LogOut, Clock, ChevronDown, RotateCcw, Sun, Moon,
   Baby, Zap, Puzzle, PersonStanding, Briefcase, Handshake,
-  Target, ClipboardList, Home, Tag, FlaskConical, Lightbulb, BookOpen, BarChart3, Search, RefreshCw, Map, Layers, CalendarDays, TrendingUp, Grid3X3,
+  Target, ClipboardList, Home, Tag, FlaskConical, Lightbulb, BookOpen, BarChart3, Search, RefreshCw, Map, CalendarDays, TrendingUp, Grid3X3,
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
@@ -1102,30 +1102,37 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   // ── Register view ──
   if (activeAppView === "register") {
     return (
-      <div className="min-h-dvh flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(99,102,241,0.14),transparent)]" />
-        <div className="absolute bottom-0 left-0 right-0 h-64 -z-10 bg-[radial-gradient(ellipse_60%_60%_at_50%_100%,rgba(99,102,241,0.08),transparent)]" />
+      <div className="min-h-dvh flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden" style={{ background: "var(--color-page-bg)" }}>
+        {/* Animated background orbs */}
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute w-[600px] h-[600px] rounded-full" style={{ background: "radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)", top: "-20%", left: "50%", transform: "translateX(-50%)" }} />
+          <div className="absolute w-[400px] h-[400px] rounded-full" style={{ background: "radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%)", bottom: "-10%", right: "10%" }} />
+          <div className="absolute w-[300px] h-[300px] rounded-full" style={{ background: "radial-gradient(circle, rgba(236,72,153,0.06) 0%, transparent 70%)", bottom: "20%", left: "5%" }} />
+        </div>
 
         {/* Logo */}
-        <button type="button" onClick={onLogout} className="flex flex-col items-center gap-2 mb-8 bg-transparent border-none cursor-pointer group">
-          <div className="w-12 h-12 rounded-2xl bg-(--color-primary) flex items-center justify-center text-white font-bold text-lg shadow-(--shadow-primary) group-hover:scale-105 transition-transform">Mi</div>
-          <span className="font-bold text-(--color-text-strong) text-lg">Mimio</span>
+        <button type="button" onClick={onLogout} className="flex flex-col items-center gap-2.5 mb-8 bg-transparent border-none cursor-pointer group">
+          <div className="w-14 h-14 rounded-3xl flex items-center justify-center text-white font-black text-xl shadow-lg group-hover:scale-105 transition-transform" style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", boxShadow: "0 8px 24px rgba(99,102,241,0.4)" }}>Mi</div>
+          <span className="font-extrabold text-(--color-text-strong) text-xl tracking-tight">Mimio</span>
         </button>
 
         {/* Card */}
-        <div className="w-full max-w-md bg-(--color-surface-strong) rounded-3xl border border-(--color-line) shadow-(--shadow-elevated) p-8" style={{ backdropFilter: "blur(16px)" }}>
+        <div className="w-full max-w-md rounded-3xl border border-(--color-line) p-8 relative overflow-hidden" style={{ background: "var(--color-surface-strong)", backdropFilter: "blur(24px)", boxShadow: "0 24px 64px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.06)" }}>
+          <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899)" }} />
           {/* Badge */}
           <div className="flex justify-center mb-5">
-            <span className="inline-flex items-center gap-2 text-xs font-semibold text-(--color-primary) bg-(--color-primary-light) px-3 py-1.5 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-(--color-primary)" />
+            <span className="inline-flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-full" style={{ background: "var(--color-primary)/10", color: "var(--color-primary)", border: "1px solid var(--color-primary)/20" }}>
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--color-primary)" }} />
               Ücretsiz Hesap Oluştur
             </span>
           </div>
-          <h2 className="text-2xl font-extrabold text-(--color-text-strong) text-center mb-1">Hesabınızı Oluşturun</h2>
+          <h2 className="text-2xl font-extrabold text-(--color-text-strong) text-center mb-1 tracking-tight">Hesabınızı Oluşturun</h2>
           <p className="text-(--color-text-soft) text-sm text-center mb-6">Dakikalar içinde başlayın, danışanlarınızla çalışmaya başlayın.</p>
 
           {loginError && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4 text-red-400 text-sm">{loginError}</div>
+            <div className="rounded-2xl px-4 py-3 mb-4 text-sm flex items-center gap-2" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171" }}>
+              <span>⚠️</span>{loginError}
+            </div>
           )}
 
           <form className="flex flex-col gap-3" onSubmit={async (e) => {
@@ -1157,23 +1164,23 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             <input type="password" value={therapistDraft.password} onChange={(e) => { setLoginError(""); setTherapistDraft((c) => ({ ...c, password: e.target.value })); }} placeholder="Şifre (en az 4 karakter)" className={authInp} required autoComplete="new-password" />
             <input value={therapistDraft.displayName} onChange={(e) => setTherapistDraft((c) => ({ ...c, displayName: e.target.value }))} placeholder="Ad soyad — örn. Uzm. Erg. Elif Kara" className={authInp} required />
             <div className="grid grid-cols-2 gap-3">
-              <input value={therapistDraft.clinicName} onChange={(e) => setTherapistDraft((c) => ({ ...c, clinicName: e.target.value }))} placeholder="Kurum / klinik (isteğe bağlı)" className={authInp} />
-              <input value={therapistDraft.specialty} onChange={(e) => setTherapistDraft((c) => ({ ...c, specialty: e.target.value }))} placeholder="Uzmanlık (isteğe bağlı)" className={authInp} />
+              <input value={therapistDraft.clinicName} onChange={(e) => setTherapistDraft((c) => ({ ...c, clinicName: e.target.value }))} placeholder="Kurum / klinik" className={authInp} />
+              <input value={therapistDraft.specialty} onChange={(e) => setTherapistDraft((c) => ({ ...c, specialty: e.target.value }))} placeholder="Uzmanlık" className={authInp} />
             </div>
-            <button type="submit" className="w-full bg-(--color-primary) text-white font-semibold py-3.5 rounded-2xl hover:bg-(--color-primary-hover) transition-colors text-sm border-none cursor-pointer mt-1 shadow-(--shadow-primary)">
+            <button type="submit" className="relative w-full text-white font-bold py-3.5 rounded-2xl transition-all text-sm border-none cursor-pointer mt-1 overflow-hidden hover:opacity-90 active:scale-[0.98]" style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", boxShadow: "0 6px 20px rgba(99,102,241,0.4)" }}>
               Hesabı Oluştur ve Gir →
             </button>
           </form>
 
           <div className="flex items-center gap-3 my-5">
             <div className="flex-1 h-px bg-(--color-line)" />
-            <span className="text-(--color-text-muted) text-xs">veya</span>
+            <span className="text-(--color-text-muted) text-xs font-medium">veya</span>
             <div className="flex-1 h-px bg-(--color-line)" />
           </div>
 
           <p className="text-(--color-text-soft) text-sm text-center">
             Zaten hesabınız var mı?{" "}
-            <button type="button" className="text-(--color-primary) font-semibold hover:underline bg-transparent border-none cursor-pointer" onClick={() => { setActiveAppView("login"); setLoginError(""); }}>Giriş yapın</button>
+            <button type="button" className="font-bold hover:underline bg-transparent border-none cursor-pointer" style={{ color: "var(--color-primary)" }} onClick={() => { setActiveAppView("login"); setLoginError(""); }}>Giriş yapın</button>
           </p>
         </div>
 
@@ -1188,23 +1195,29 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
   if (activeAppView === "login") {
     return (
-      <div className="min-h-dvh flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(99,102,241,0.14),transparent)]" />
-        <div className="absolute bottom-0 left-0 right-0 h-64 -z-10 bg-[radial-gradient(ellipse_60%_60%_at_50%_100%,rgba(99,102,241,0.08),transparent)]" />
+      <div className="min-h-dvh flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden" style={{ background: "var(--color-page-bg)" }}>
+        {/* Animated background orbs */}
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute w-[700px] h-[700px] rounded-full" style={{ background: "radial-gradient(circle, rgba(99,102,241,0.10) 0%, transparent 70%)", top: "-30%", left: "50%", transform: "translateX(-50%)" }} />
+          <div className="absolute w-[400px] h-[400px] rounded-full" style={{ background: "radial-gradient(circle, rgba(139,92,246,0.07) 0%, transparent 70%)", bottom: "0%", right: "15%" }} />
+        </div>
 
         {/* Logo */}
-        <button type="button" onClick={onLogout} className="flex flex-col items-center gap-2 mb-8 bg-transparent border-none cursor-pointer group">
-          <div className="w-12 h-12 rounded-2xl bg-(--color-primary) flex items-center justify-center text-white font-bold text-lg shadow-(--shadow-primary) group-hover:scale-105 transition-transform">Mi</div>
-          <span className="font-bold text-(--color-text-strong) text-lg">Mimio</span>
+        <button type="button" onClick={onLogout} className="flex flex-col items-center gap-2.5 mb-8 bg-transparent border-none cursor-pointer group">
+          <div className="w-14 h-14 rounded-3xl flex items-center justify-center text-white font-black text-xl group-hover:scale-105 transition-transform" style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", boxShadow: "0 8px 24px rgba(99,102,241,0.4)" }}>Mi</div>
+          <span className="font-extrabold text-(--color-text-strong) text-xl tracking-tight">Mimio</span>
         </button>
 
         {/* Card */}
-        <div className="w-full max-w-sm bg-(--color-surface-strong) rounded-3xl border border-(--color-line) shadow-(--shadow-elevated) p-8" style={{ backdropFilter: "blur(16px)" }}>
-          <h2 className="text-2xl font-extrabold text-(--color-text-strong) text-center mb-1">Tekrar Hoş Geldiniz</h2>
-          <p className="text-(--color-text-soft) text-sm text-center mb-7">Hesabınıza giriş yapın.</p>
+        <div className="w-full max-w-sm rounded-3xl border border-(--color-line) p-8 relative overflow-hidden" style={{ background: "var(--color-surface-strong)", backdropFilter: "blur(24px)", boxShadow: "0 24px 64px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.06)" }}>
+          <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899)" }} />
+          <h2 className="text-2xl font-extrabold text-(--color-text-strong) text-center mb-1 tracking-tight">Tekrar Hoş Geldiniz</h2>
+          <p className="text-(--color-text-soft) text-sm text-center mb-7">Hesabınıza giriş yapın ve çalışmaya devam edin.</p>
 
           {loginError && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4 text-red-400 text-sm">{loginError}</div>
+            <div className="rounded-2xl px-4 py-3 mb-4 text-sm flex items-center gap-2" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171" }}>
+              <span>⚠️</span>{loginError}
+            </div>
           )}
 
           <form className="flex flex-col gap-3" onSubmit={async (e) => {
@@ -1231,25 +1244,25 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           }}>
             <input value={loginUsername} onChange={(e) => { setLoginError(""); setLoginUsername(e.target.value.replace(/\s/g, "").toLocaleLowerCase("tr-TR")); }} placeholder="Kullanıcı adı" className={authInp} required autoComplete="username" />
             <input type="password" value={loginPassword} onChange={(e) => { setLoginError(""); setLoginPassword(e.target.value); }} placeholder="Şifre" className={authInp} required autoComplete="current-password" />
-            <button type="submit" className="w-full bg-(--color-primary) text-white font-semibold py-3.5 rounded-2xl hover:bg-(--color-primary-hover) transition-colors text-sm border-none cursor-pointer mt-1 shadow-(--shadow-primary)">
-              Giriş Yap
+            <button type="submit" className="relative w-full text-white font-bold py-3.5 rounded-2xl transition-all text-sm border-none cursor-pointer mt-1 overflow-hidden hover:opacity-90 active:scale-[0.98]" style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", boxShadow: "0 6px 20px rgba(99,102,241,0.4)" }}>
+              Giriş Yap →
             </button>
           </form>
 
           <div className="flex items-center gap-3 my-5">
             <div className="flex-1 h-px bg-(--color-line)" />
-            <span className="text-(--color-text-muted) text-xs">veya</span>
+            <span className="text-(--color-text-muted) text-xs font-medium">veya</span>
             <div className="flex-1 h-px bg-(--color-line)" />
           </div>
 
           <p className="text-(--color-text-soft) text-sm text-center">
             Hesabınız yok mu?{" "}
-            <button type="button" className="text-(--color-primary) font-semibold hover:underline bg-transparent border-none cursor-pointer" onClick={() => { setActiveAppView("register"); setLoginError(""); }}>Ücretsiz kayıt olun</button>
+            <button type="button" className="font-bold hover:underline bg-transparent border-none cursor-pointer" style={{ color: "var(--color-primary)" }} onClick={() => { setActiveAppView("register"); setLoginError(""); }}>Ücretsiz kayıt olun</button>
           </p>
         </div>
 
         {onLogout && (
-          <button type="button" className="mt-6 text-(--color-text-muted) text-sm bg-transparent border-none cursor-pointer hover:text-(--color-text-body) transition-colors" onClick={onLogout}>
+          <button type="button" className="mt-5 text-(--color-text-muted) text-sm bg-transparent border-none cursor-pointer hover:text-(--color-text-body) transition-colors" onClick={onLogout}>
             ← Ana Sayfaya Dön
           </button>
         )}
@@ -1258,7 +1271,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         <div className="flex items-center gap-6 mt-8 text-xs text-(--color-text-muted)">
           {["Ücretsiz başla", "Kurulum yok", "Veri güvenliği"].map((t) => (
             <span key={t} className="flex items-center gap-1.5">
-              <span className="w-1 h-1 rounded-full bg-(--color-accent-green)" />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               {t}
             </span>
           ))}
@@ -1268,83 +1281,166 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   }
 
   // ── App shell (sidebar + content) ──
-  const navItem = "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-(--color-text-body) hover:bg-(--color-surface-elevated) transition-colors w-full text-left border-none bg-transparent cursor-pointer";
-  const navItemActive = "bg-(--color-primary-light) text-(--color-primary)";
-  const btnPrimary = "bg-(--color-primary) text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-(--color-primary-hover) transition-colors cursor-pointer border-none disabled:opacity-50";
-  const btnSecondary = "bg-(--color-surface-strong) text-(--color-text-body) text-sm font-medium px-4 py-2 rounded-xl border border-(--color-line) hover:bg-(--color-surface-elevated) transition-colors cursor-pointer disabled:opacity-50";
+  const navItem = "relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-(--color-text-soft) hover:text-(--color-text-body) hover:bg-(--color-surface-elevated) transition-all duration-150 w-full text-left border-none bg-transparent cursor-pointer group";
+  const navItemActive = "!text-(--color-primary) bg-(--color-primary)/8 hover:bg-(--color-primary)/10 hover:!text-(--color-primary)";
+  const btnPrimary = "bg-(--color-primary) text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-(--color-primary-hover) transition-colors cursor-pointer border-none disabled:opacity-50 shadow-(--shadow-primary)";
+  const btnSecondary = "bg-(--color-surface-strong) text-(--color-text-body) text-sm font-medium px-4 py-2 rounded-xl border border-(--color-line) hover:bg-(--color-surface-elevated) hover:border-(--color-line-strong) transition-all cursor-pointer disabled:opacity-50";
   const inputCls = "w-full px-3 py-2.5 border border-(--color-line) rounded-xl bg-(--color-surface-strong) text-(--color-text-strong) text-sm placeholder:text-(--color-text-muted) focus:outline-none focus:ring-2 focus:ring-(--color-primary)/25 focus:border-(--color-primary) transition-colors";
+
+  const navLinks: Array<{ view: AppView; icon: typeof LayoutDashboard; label: string; matchViews?: AppView[] }> = [
+    { view: "dashboard", icon: LayoutDashboard, label: "Panel" },
+    { view: "clients", icon: Users, label: "Danışanlar", matchViews: ["clients", "client-detail"] },
+    { view: "games", icon: Gamepad2, label: "Oyun Alanı" },
+    { view: "therapy-program", icon: Stethoscope, label: "Terapi" },
+  ];
+
   return (
     <main className="flex h-dvh overflow-hidden bg-(--color-page-bg)">
-      <nav className="hidden lg:flex flex-col w-64 bg-(--color-sidebar) border-r border-(--color-line) shrink-0 overflow-y-auto" style={{ backdropFilter: "blur(20px)" }}>
-        <button type="button" className="flex items-center gap-3 px-4 py-5 border-b border-(--color-line) w-full text-left cursor-pointer bg-transparent border-none" onClick={handleLogout} style={{ cursor: "pointer", background: "none", border: "none", borderBottom: "1px solid var(--color-line)", textAlign: "left" }}>
-          <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-(--color-primary) text-white font-bold text-sm shrink-0">Mi</span>
-          <div>
-            <p className="font-bold text-(--color-text-strong) text-sm leading-tight m-0">Mimio</p>
-            <p className="text-(--color-text-muted) text-xs m-0">Ergoterapi platformu</p>
-          </div>
-        </button>
+      {/* ── Premium Sidebar ── */}
+      <nav className="hidden lg:flex flex-col w-64 shrink-0 overflow-y-auto relative"
+        style={{
+          background: "var(--color-sidebar)",
+          borderRight: "1px solid var(--color-line)",
+          backdropFilter: "blur(24px)",
+        }}>
+        {/* Subtle gradient top glow */}
+        <div className="absolute top-0 left-0 right-0 h-32 pointer-events-none"
+          style={{ background: "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.12), transparent)" }} />
 
-        <div className="flex flex-col gap-1 p-3 flex-1">
-          <button type="button" className={`${navItem} ${activeAppView === "dashboard" ? navItemActive : ""}`} onClick={() => setActiveAppView("dashboard")}>
-            <LayoutDashboard size={16} />
-            <span>Panel</span>
-          </button>
-          <button type="button" className={`${navItem} ${(activeAppView === "clients" || activeAppView === "client-detail") ? navItemActive : ""}`} onClick={() => setActiveAppView("clients")}>
-            <Users size={16} />
-            <span>Danışanlar</span>
-          </button>
-          <button type="button" className={`${navItem} ${activeAppView === "games" ? navItemActive : ""}`} onClick={() => setActiveAppView("games")}>
-            <Gamepad2 size={16} />
-            <span>Oyun Alanı</span>
-          </button>
-          <button type="button" className={`${navItem} ${activeAppView === "therapy-program" ? navItemActive : ""}`} onClick={() => setActiveAppView("therapy-program")}>
-            <Stethoscope size={16} />
-            <span>Terapi</span>
-          </button>
+        {/* Logo area */}
+        <div className="relative flex items-center gap-3 px-5 py-5" style={{ borderBottom: "1px solid var(--color-line)" }}>
+          <div className="relative w-9 h-9 shrink-0">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-extrabold text-sm"
+              style={{ background: "linear-gradient(135deg, #6366f1 0%, #818cf8 100%)", boxShadow: "0 4px 14px rgba(99,102,241,0.45)" }}>
+              Mi
+            </div>
+          </div>
+          <div>
+            <p className="font-extrabold text-(--color-text-strong) text-sm leading-tight m-0 tracking-tight">Mimio</p>
+            <p className="text-(--color-text-muted) text-[11px] m-0 font-medium">Ergoterapi platformu</p>
+          </div>
+          <div className="ml-auto flex items-center gap-1 px-2 py-0.5 rounded-full"
+            style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)" }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" style={{ boxShadow: "0 0 6px rgba(16,185,129,0.7)" }} />
+            <span className="text-[10px] font-bold text-emerald-400">Aktif</span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3 p-4 border-t border-(--color-line) mt-auto">
-          <div className="w-8 h-8 rounded-full bg-(--color-primary)/10 flex items-center justify-center text-(--color-primary) font-bold text-sm shrink-0">
-            {activeTherapist?.displayName?.[0]?.toUpperCase() ?? "T"}
+        {/* Nav links */}
+        <div className="flex flex-col gap-0.5 p-3 flex-1 relative">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-(--color-text-muted) px-3 py-1 mt-1 mb-0.5">Ana Menü</p>
+          {navLinks.map(({ view, icon: Icon, label, matchViews }) => {
+            const isActive = matchViews ? matchViews.includes(activeAppView) : activeAppView === view;
+            return (
+              <button key={view} type="button"
+                className={`${navItem} ${isActive ? navItemActive : ""}`}
+                onClick={() => setActiveAppView(view)}>
+                {/* Active left bar */}
+                {isActive && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full bg-(--color-primary)"
+                    style={{ boxShadow: "0 0 8px rgba(99,102,241,0.6)" }} />
+                )}
+                <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all duration-150 ${isActive ? "bg-(--color-primary)/15" : "bg-transparent group-hover:bg-(--color-surface-elevated)"}`}>
+                  <Icon size={15} />
+                </span>
+                <span className="font-semibold text-sm">{label}</span>
+                {isActive && (
+                  <span className="ml-auto w-1.5 h-1.5 rounded-full bg-(--color-primary) shrink-0"
+                    style={{ boxShadow: "0 0 6px rgba(99,102,241,0.5)" }} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* User footer */}
+        <div className="relative p-3 mt-auto" style={{ borderTop: "1px solid var(--color-line)" }}>
+          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors"
+            style={{ background: "rgba(255,255,255,0.03)" }}>
+            {/* Avatar */}
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
+              style={{ background: "linear-gradient(135deg, #6366f1, #818cf8)", boxShadow: "0 2px 8px rgba(99,102,241,0.35)" }}>
+              {activeTherapist?.displayName?.[0]?.toUpperCase() ?? "T"}
+            </div>
+            <div className="flex flex-col flex-1 min-w-0">
+              <strong className="text-(--color-text-strong) text-xs font-semibold truncate leading-tight">
+                {activeTherapist?.displayName ?? "Terapist"}
+              </strong>
+              <span className="text-(--color-text-muted) text-[10px] truncate">
+                {activeTherapist?.clinicName || "Bağımsız terapist"}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button type="button" onClick={toggleTheme}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-(--color-text-muted) hover:text-(--color-primary) hover:bg-(--color-primary-light) bg-transparent border-none cursor-pointer transition-all"
+                aria-label="Tema değiştir">
+                {theme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
+              </button>
+              <button type="button"
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-(--color-text-muted) hover:text-red-400 hover:bg-red-500/10 bg-transparent border-none cursor-pointer transition-all"
+                onClick={handleLogout} aria-label="Çıkış yap">
+                <LogOut size={13} />
+              </button>
+            </div>
           </div>
-          <div className="flex flex-col flex-1 min-w-0">
-            <strong className="text-(--color-text-strong) text-xs font-semibold truncate">{activeTherapist?.displayName ?? "Terapist"}</strong>
-            <span className="text-(--color-text-muted) text-xs truncate">{activeTherapist?.clinicName || "Bağımsız terapist"}</span>
-          </div>
-          <button type="button" onClick={toggleTheme} className="w-7 h-7 rounded-lg flex items-center justify-center text-(--color-text-muted) hover:text-(--color-primary) hover:bg-(--color-primary-light) bg-transparent border-none cursor-pointer transition-colors shrink-0" aria-label="Tema değiştir">
-            {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-          </button>
-          <button type="button" className="text-xs text-(--color-text-muted) hover:text-(--color-accent-red) bg-transparent border-none cursor-pointer font-medium" onClick={handleLogout}>Çıkış</button>
         </div>
       </nav>
 
       {/* ── Mobile top bar ── */}
-      <header className="flex lg:hidden items-center justify-between px-4 py-3 border-b border-(--color-line) shrink-0 fixed top-0 left-0 right-0 z-30" style={{ background: "var(--color-chrome-nav)", backdropFilter: "blur(20px)" }}>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-(--color-primary) text-white font-bold text-xs">Mi</span>
-          <span className="font-bold text-(--color-text-strong) text-sm">Mimio</span>
+      <header className="flex lg:hidden items-center justify-between px-4 py-3 shrink-0 fixed top-0 left-0 right-0 z-30"
+        style={{ background: "var(--color-chrome-nav)", backdropFilter: "blur(24px)", borderBottom: "1px solid var(--color-line)" }}>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-extrabold text-xs"
+            style={{ background: "linear-gradient(135deg, #6366f1, #818cf8)", boxShadow: "0 2px 8px rgba(99,102,241,0.4)" }}>
+            Mi
+          </div>
+          <span className="font-extrabold text-(--color-text-strong) text-sm tracking-tight">Mimio</span>
         </div>
-        <div className="relative">
-          <button type="button" className="w-9 h-9 rounded-full bg-(--color-primary)/10 flex items-center justify-center border-none cursor-pointer" onClick={() => setShowUserMenu((v) => !v)}>
-            <span className="text-(--color-primary) font-bold text-sm">{activeTherapist?.displayName?.[0]?.toUpperCase() ?? "T"}</span>
+        {/* Mobile bottom nav */}
+        <div className="flex items-center gap-1">
+          {[
+            { view: "dashboard" as AppView, icon: LayoutDashboard },
+            { view: "clients" as AppView, icon: Users },
+            { view: "games" as AppView, icon: Gamepad2 },
+            { view: "therapy-program" as AppView, icon: Stethoscope },
+          ].map(({ view, icon: Icon }) => {
+            const isActive = view === "clients" ? (activeAppView === "clients" || activeAppView === "client-detail") : activeAppView === view;
+            return (
+              <button key={view} type="button"
+                className={`w-9 h-9 rounded-xl flex items-center justify-center border-none cursor-pointer transition-all ${isActive ? "bg-(--color-primary)/15 text-(--color-primary)" : "text-(--color-text-muted) hover:text-(--color-text-body) bg-transparent"}`}
+                onClick={() => setActiveAppView(view)}>
+                <Icon size={16} />
+              </button>
+            );
+          })}
+          <div className="w-px h-4 mx-1" style={{ background: "var(--color-line)" }} />
+          <button type="button" className="w-9 h-9 rounded-xl flex items-center justify-center border-none cursor-pointer text-(--color-text-muted) hover:text-(--color-text-body) bg-transparent" onClick={() => setShowUserMenu(v => !v)}>
+            <div className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-xs"
+              style={{ background: "linear-gradient(135deg, #6366f1, #818cf8)" }}>
+              {activeTherapist?.displayName?.[0]?.toUpperCase() ?? "T"}
+            </div>
           </button>
           {showUserMenu && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
-              <div className="absolute right-0 top-11 z-50 bg-(--color-surface-strong) rounded-2xl shadow-(--shadow-elevated) border border-(--color-line) p-2 min-w-[200px]" style={{ backdropFilter: "blur(16px)" }}>
-                <div className="px-3 py-2 flex flex-col">
-                  <strong className="text-(--color-text-strong) text-sm">{activeTherapist?.displayName ?? "Terapist"}</strong>
-                  <span className="text-(--color-text-muted) text-xs">{activeTherapist?.clinicName || "Bağımsız terapist"}</span>
+              <div className="absolute right-3 top-14 z-50 rounded-2xl shadow-(--shadow-elevated) border p-2 min-w-[220px]"
+                style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)", backdropFilter: "blur(20px)" }}>
+                <div className="px-3 py-2.5 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
+                    style={{ background: "linear-gradient(135deg, #6366f1, #818cf8)" }}>
+                    {activeTherapist?.displayName?.[0]?.toUpperCase() ?? "T"}
+                  </div>
+                  <div>
+                    <strong className="text-(--color-text-strong) text-sm block">{activeTherapist?.displayName ?? "Terapist"}</strong>
+                    <span className="text-(--color-text-muted) text-xs">{activeTherapist?.clinicName || "Bağımsız terapist"}</span>
+                  </div>
                 </div>
-                <div className="h-px bg-(--color-line) my-1" />
-                <button type="button" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-(--color-text-body) hover:bg-(--color-surface-elevated) w-full text-left bg-transparent border-none cursor-pointer" onClick={() => { setShowUserMenu(false); toggleTheme(); }}>
+                <div className="h-px my-1" style={{ background: "var(--color-line)" }} />
+                <button type="button" className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-(--color-text-body) hover:bg-(--color-surface-elevated) w-full text-left bg-transparent border-none cursor-pointer" onClick={() => { setShowUserMenu(false); toggleTheme(); }}>
                   {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
                   {theme === "dark" ? "Açık Tema" : "Koyu Tema"}
                 </button>
-                <button type="button" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-(--color-text-body) hover:bg-(--color-surface-elevated) w-full text-left bg-transparent border-none cursor-pointer" onClick={() => setShowUserMenu(false)}>
-                  <Settings size={14} /> Ayarlar
-                </button>
-                <button type="button" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-(--color-accent-red) hover:bg-red-500/10 w-full text-left bg-transparent border-none cursor-pointer" onClick={() => { setShowUserMenu(false); handleLogout(); }}>
+                <button type="button" className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-(--color-accent-red) hover:bg-red-500/10 w-full text-left bg-transparent border-none cursor-pointer" onClick={() => { setShowUserMenu(false); handleLogout(); }}>
                   <LogOut size={14} /> Çıkış Yap
                 </button>
               </div>
@@ -1362,16 +1458,32 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             {/* Header */}
             <div className="flex items-start justify-between pt-1">
               <div>
-                <p className="text-(--color-text-muted) text-xs font-semibold uppercase tracking-widest mb-2">{formatDate(getTodayString())}</p>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-(--color-text-muted)">{formatDate(getTodayString())}</span>
+                  <span className="w-1 h-1 rounded-full bg-(--color-text-muted)" />
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest"
+                    style={{ color: platformStatus === "online" ? "#10b981" : "#f59e0b" }}>
+                    <span className="w-1.5 h-1.5 rounded-full"
+                      style={{ background: platformStatus === "online" ? "#10b981" : "#f59e0b", boxShadow: `0 0 5px ${platformStatus === "online" ? "rgba(16,185,129,0.6)" : "rgba(245,158,11,0.6)"}` }} />
+                    {getDatabaseStatusLabel(platformStatus)}
+                  </span>
+                </div>
                 <h1 className="text-3xl lg:text-4xl font-extrabold m-0 leading-tight" style={{
                   background: "linear-gradient(135deg, var(--color-text-strong) 0%, #a5b4fc 55%, #818cf8 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
+                  WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
                 }}>
                   Merhaba, {activeTherapist?.displayName?.split(" ")[0] ?? "Terapist"} 👋
                 </h1>
+                <p className="text-(--color-text-soft) text-sm mt-2 m-0">
+                  Bugün {clientOptions.length} danışan, {effectiveSessionCount} toplam seans kaydın var.
+                </p>
               </div>
+              <button type="button"
+                className="hidden lg:flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white border-none cursor-pointer transition-all hover:scale-105"
+                style={{ background: "linear-gradient(135deg, #6366f1, #818cf8)", boxShadow: "0 4px 14px rgba(99,102,241,0.4)" }}
+                onClick={() => setActiveAppView("games")}>
+                <Gamepad2 size={15} /> Oyun Başlat
+              </button>
             </div>
 
             {/* Stats */}
@@ -1379,28 +1491,34 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               const isLight = theme === "light";
               const statItems = [
                 {
-                  v: effectiveSessionCount, l: "Toplam Seans", Icon: Gamepad2,
-                  gradient: isLight ? "linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(99,102,241,0.04) 100%)" : "linear-gradient(135deg, rgba(99,102,241,0.22) 0%, rgba(79,70,229,0.05) 100%)",
+                  v: effectiveSessionCount, l: "Toplam Seans", sub: "tüm zamanlar", Icon: Gamepad2,
+                  gradient: isLight
+                    ? "linear-gradient(135deg, rgba(99,102,241,0.14) 0%, rgba(99,102,241,0.04) 100%)"
+                    : "linear-gradient(135deg, rgba(99,102,241,0.22) 0%, rgba(79,70,229,0.05) 100%)",
                   border: isLight ? "rgba(99,102,241,0.28)" : "rgba(99,102,241,0.32)",
-                  glow: isLight ? "none" : "0 0 48px rgba(99,102,241,0.18)",
+                  glow: isLight ? "none" : "0 0 48px rgba(99,102,241,0.15), 0 2px 8px rgba(0,0,0,0.3)",
                   color: isLight ? "#3730a3" : "#a5b4fc",
                   iconBg: isLight ? "rgba(99,102,241,0.14)" : "rgba(99,102,241,0.2)",
                   iconColor: isLight ? "#4338ca" : "#818cf8",
                 },
                 {
-                  v: clientOptions.length, l: "Danışan", Icon: Users,
-                  gradient: isLight ? "linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0.04) 100%)" : "linear-gradient(135deg, rgba(16,185,129,0.22) 0%, rgba(5,150,105,0.05) 100%)",
+                  v: clientOptions.length, l: "Danışan", sub: "kayıtlı profil", Icon: Users,
+                  gradient: isLight
+                    ? "linear-gradient(135deg, rgba(16,185,129,0.14) 0%, rgba(16,185,129,0.04) 100%)"
+                    : "linear-gradient(135deg, rgba(16,185,129,0.22) 0%, rgba(5,150,105,0.05) 100%)",
                   border: isLight ? "rgba(16,185,129,0.28)" : "rgba(16,185,129,0.32)",
-                  glow: isLight ? "none" : "0 0 48px rgba(16,185,129,0.14)",
+                  glow: isLight ? "none" : "0 0 48px rgba(16,185,129,0.12), 0 2px 8px rgba(0,0,0,0.3)",
                   color: isLight ? "#065f46" : "#6ee7b7",
                   iconBg: isLight ? "rgba(16,185,129,0.14)" : "rgba(16,185,129,0.2)",
                   iconColor: isLight ? "#047857" : "#34d399",
                 },
                 {
-                  v: thisWeekCount, l: "Bu Hafta", Icon: LayoutDashboard,
-                  gradient: isLight ? "linear-gradient(135deg, rgba(245,158,11,0.12) 0%, rgba(245,158,11,0.04) 100%)" : "linear-gradient(135deg, rgba(245,158,11,0.22) 0%, rgba(217,119,6,0.05) 100%)",
+                  v: thisWeekCount, l: "Bu Hafta", sub: "son 7 gün", Icon: TrendingUp,
+                  gradient: isLight
+                    ? "linear-gradient(135deg, rgba(245,158,11,0.14) 0%, rgba(245,158,11,0.04) 100%)"
+                    : "linear-gradient(135deg, rgba(245,158,11,0.22) 0%, rgba(217,119,6,0.05) 100%)",
                   border: isLight ? "rgba(245,158,11,0.3)" : "rgba(245,158,11,0.32)",
-                  glow: isLight ? "none" : "0 0 48px rgba(245,158,11,0.14)",
+                  glow: isLight ? "none" : "0 0 48px rgba(245,158,11,0.12), 0 2px 8px rgba(0,0,0,0.3)",
                   color: isLight ? "#92400e" : "#fcd34d",
                   iconBg: isLight ? "rgba(245,158,11,0.14)" : "rgba(245,158,11,0.2)",
                   iconColor: isLight ? "#b45309" : "#f59e0b",
@@ -1408,13 +1526,20 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               ];
               return (
                 <div className="grid grid-cols-3 gap-4">
-                  {statItems.map(({ v, l, gradient, border, glow, color, Icon, iconBg, iconColor }) => (
-                    <div key={l} className="rounded-2xl p-5 relative overflow-hidden" style={{ background: gradient, border: `1px solid ${border}`, boxShadow: glow }}>
-                      <div className="absolute top-4 right-4 w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: iconBg }}>
+                  {statItems.map(({ v, l, sub, gradient, border, glow, color, Icon, iconBg, iconColor }) => (
+                    <div key={l} className="rounded-2xl p-5 relative overflow-hidden card-hover"
+                      style={{ background: gradient, border: `1px solid ${border}`, boxShadow: glow }}>
+                      {/* Icon top-right */}
+                      <div className="absolute top-4 right-4 w-9 h-9 rounded-xl flex items-center justify-center"
+                        style={{ background: iconBg }}>
                         <Icon size={15} style={{ color: iconColor }} />
                       </div>
-                      <strong className="text-4xl lg:text-5xl font-extrabold block mt-1 mb-2" style={{ color }}>{v}</strong>
-                      <span className="text-(--color-text-soft) text-sm font-medium">{l}</span>
+                      {/* Shimmer line */}
+                      <div className="absolute top-0 left-0 right-0 h-px"
+                        style={{ background: `linear-gradient(90deg, transparent, ${border}, transparent)` }} />
+                      <strong className="text-4xl lg:text-5xl font-extrabold block mt-1 mb-1 tabular-nums" style={{ color }}>{v}</strong>
+                      <span className="text-(--color-text-strong) text-sm font-semibold block">{l}</span>
+                      <span className="text-(--color-text-muted) text-xs">{sub}</span>
                     </div>
                   ))}
                 </div>
@@ -1454,9 +1579,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {actions.map(({ Icon, title, sub, action, gradient, border, iconBg, iconColor }) => (
                     <button key={title} type="button" onClick={action}
-                      className="flex flex-col gap-2 p-5 rounded-2xl border text-left cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-(--shadow-elevated) group shadow-(--shadow-card)"
+                      className="flex flex-col gap-2 p-5 rounded-2xl border text-left cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-(--shadow-elevated) group"
                       style={{ background: gradient, borderColor: border }}>
-                      <span className="w-11 h-11 rounded-xl flex items-center justify-center mb-1 transition-transform duration-200 group-hover:scale-110" style={{ background: iconBg }}>
+                      <span className="w-11 h-11 rounded-xl flex items-center justify-center mb-1 transition-transform duration-200 group-hover:scale-110"
+                        style={{ background: iconBg }}>
                         <Icon size={20} style={{ color: iconColor }} />
                       </span>
                       <strong className="text-(--color-text-strong) text-sm font-semibold">{title}</strong>
@@ -1469,7 +1595,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
             {/* Game Categories */}
             <div className="space-y-3">
-              <h2 className="text-xs font-semibold text-(--color-text-muted) uppercase tracking-widest m-0">Oyun Kategorileri</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-bold text-(--color-text-muted) uppercase tracking-widest m-0">Oyun Kategorileri</h2>
+                <button type="button" className="text-xs font-semibold text-(--color-primary) bg-transparent border-none cursor-pointer hover:underline" onClick={() => setActiveAppView("games")}>
+                  Tümünü gör →
+                </button>
+              </div>
               <div className="grid grid-cols-3 gap-4">
                 {GAME_CATEGORIES.map((cat, catIdx) => {
                   const count = GAME_TABS.filter((g) => g.category === cat.key).length;
@@ -1483,6 +1614,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       glow: isLight ? "none" : "0 0 32px rgba(139,92,246,0.1)",
                       labelBg: isLight ? "rgba(139,92,246,0.12)" : "rgba(139,92,246,0.18)",
                       labelColor: isLight ? "#5b21b6" : "#a78bfa",
+                      gradLine: "rgba(139,92,246,0.4)",
                     },
                     {
                       bg: isLight ? "rgba(245,158,11,0.12)" : "rgba(245,158,11,0.16)",
@@ -1491,6 +1623,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       glow: isLight ? "none" : "0 0 32px rgba(245,158,11,0.1)",
                       labelBg: isLight ? "rgba(245,158,11,0.12)" : "rgba(245,158,11,0.18)",
                       labelColor: isLight ? "#92400e" : "#f59e0b",
+                      gradLine: "rgba(245,158,11,0.4)",
                     },
                     {
                       bg: isLight ? "rgba(6,182,212,0.12)" : "rgba(6,182,212,0.16)",
@@ -1499,22 +1632,25 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       glow: isLight ? "none" : "0 0 32px rgba(6,182,212,0.1)",
                       labelBg: isLight ? "rgba(6,182,212,0.12)" : "rgba(6,182,212,0.18)",
                       labelColor: isLight ? "#155e75" : "#06b6d4",
+                      gradLine: "rgba(6,182,212,0.4)",
                     },
-                  ][catIdx] ?? {
-                    bg: "rgba(99,102,241,0.12)", color: isLight ? "#4338ca" : "#818cf8",
-                    border: "rgba(99,102,241,0.22)", glow: "none",
-                    labelBg: "rgba(99,102,241,0.12)", labelColor: isLight ? "#3730a3" : "#6366f1",
-                  };
+                  ][catIdx] ?? { bg: "rgba(99,102,241,0.12)", color: isLight ? "#4338ca" : "#818cf8", border: "rgba(99,102,241,0.22)", glow: "none", labelBg: "rgba(99,102,241,0.12)", labelColor: isLight ? "#3730a3" : "#6366f1", gradLine: "rgba(99,102,241,0.4)" };
                   return (
                     <button key={cat.key} type="button"
-                      className="flex flex-col gap-2 p-5 rounded-2xl border text-left cursor-pointer transition-all duration-200 hover:-translate-y-0.5 bg-(--color-surface-strong) group"
+                      className="flex flex-col gap-2 p-5 rounded-2xl border text-left cursor-pointer transition-all duration-200 hover:-translate-y-1 bg-(--color-surface-strong) group relative overflow-hidden"
                       style={{ borderColor: catStyles.border, boxShadow: catStyles.glow }}
                       onClick={() => { openCategory(cat.key); }}>
-                      <span className="w-11 h-11 rounded-xl flex items-center justify-center mb-1 transition-transform duration-200 group-hover:scale-110" style={{ background: catStyles.bg }}>
+                      {/* Top shimmer line */}
+                      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${catStyles.gradLine}, transparent)` }} />
+                      <span className="w-11 h-11 rounded-xl flex items-center justify-center mb-1 transition-transform duration-200 group-hover:scale-110"
+                        style={{ background: catStyles.bg }}>
                         <CatIcon size={20} style={{ color: catStyles.color }} />
                       </span>
                       <strong className="text-(--color-text-strong) text-sm font-semibold">{cat.title}</strong>
-                      <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full self-start" style={{ background: catStyles.labelBg, color: catStyles.labelColor }}>{count} oyun</span>
+                      <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full self-start"
+                        style={{ background: catStyles.labelBg, color: catStyles.labelColor }}>
+                        {count} oyun
+                      </span>
                     </button>
                   );
                 })}
@@ -1523,36 +1659,59 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
             {/* Recent Sessions */}
             <div className="space-y-3">
-              <h2 className="text-xs font-semibold text-(--color-text-muted) uppercase tracking-widest m-0">Son Seanslar</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-bold text-(--color-text-muted) uppercase tracking-widest m-0">Son Seanslar</h2>
+                {recentSessionFeed.length > 0 && (
+                  <span className="text-xs text-(--color-text-muted)">{recentSessionFeed.length} kayıt</span>
+                )}
+              </div>
               {recentSessionFeed.length === 0 ? (
-                <div className="bg-(--color-surface-strong) rounded-2xl border border-(--color-line) p-8 text-center flex flex-col items-center gap-3">
-                  <Gamepad2 size={36} strokeWidth={1.5} className="text-(--color-text-muted)" />
-                  <p className="text-(--color-text-soft) text-sm">Henüz seans kaydı yok. Oyun alanına geçerek ilk seansını başlatabilirsin.</p>
+                <div className="rounded-2xl border border-(--color-line) p-10 text-center flex flex-col items-center gap-4"
+                  style={{ background: "var(--color-surface-strong)" }}>
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                    style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)" }}>
+                    <Gamepad2 size={24} strokeWidth={1.5} style={{ color: "#818cf8" }} />
+                  </div>
+                  <div>
+                    <p className="text-(--color-text-strong) text-sm font-semibold m-0 mb-1">Henüz seans kaydı yok</p>
+                    <p className="text-(--color-text-muted) text-xs m-0">Oyun alanına geçerek ilk seansını başlatabilirsin.</p>
+                  </div>
                   <button type="button" className={btnPrimary} onClick={() => setActiveAppView("games")}>Oyun Alanını Aç</button>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {recentSessionFeed.map((session) => {
+                <div className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
+                  {recentSessionFeed.map((session, idx) => {
                     const isLight = theme === "light";
                     return (
-                      <div key={session.id} className="flex items-center justify-between rounded-2xl border border-(--color-line) px-5 py-4 transition-all duration-200 hover:border-[rgba(99,102,241,0.3)] bg-(--color-surface-strong) group">
+                      <div key={session.id}
+                        className="flex items-center justify-between px-5 py-4 transition-all duration-150 hover:bg-(--color-surface-elevated) group"
+                        style={{ borderBottom: idx < recentSessionFeed.length - 1 ? "1px solid var(--color-line)" : "none" }}>
                         <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-105" style={{ background: isLight ? "rgba(99,102,241,0.1)" : "rgba(99,102,241,0.14)" }}>
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                            style={{ background: isLight ? "rgba(99,102,241,0.1)" : "rgba(99,102,241,0.14)", border: "1px solid rgba(99,102,241,0.15)" }}>
                             <Gamepad2 size={16} style={{ color: isLight ? "#4338ca" : "#818cf8" }} />
                           </div>
                           <div className="flex flex-col gap-0.5">
                             <strong className="text-(--color-text-strong) text-sm font-semibold">{session.gameLabel}</strong>
-                            <span className="text-(--color-text-muted) text-xs">{session.clientName}</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full" style={{ background: isLight ? "#4338ca" : "#818cf8" }} />
+                              <span className="text-(--color-text-muted) text-xs">{session.clientName}</span>
+                            </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-5">
                           <div className="flex flex-col items-end gap-0.5">
                             <span className="text-(--color-text-muted) text-xs">{formatPlayedAt(session.playedAt)}</span>
-                            {session.durationSeconds && <span className="text-(--color-text-muted) text-xs">{formatDuration(session.durationSeconds)}</span>}
+                            {session.durationSeconds && (
+                              <span className="text-(--color-text-muted) text-xs flex items-center gap-1">
+                                <Clock size={10} />{formatDuration(session.durationSeconds)}
+                              </span>
+                            )}
                           </div>
-                          <div className="flex flex-col items-center justify-center min-w-[52px]">
-                            <strong className="text-2xl font-extrabold leading-none" style={{ color: isLight ? "#3730a3" : "#a5b4fc" }}>{session.score}</strong>
-                            <span className="text-(--color-text-muted) text-[10px] font-medium uppercase tracking-wide">puan</span>
+                          <div className="flex flex-col items-center justify-center min-w-[52px] px-3 py-1.5 rounded-xl"
+                            style={{ background: isLight ? "rgba(99,102,241,0.08)" : "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.15)" }}>
+                            <strong className="text-xl font-extrabold leading-none" style={{ color: isLight ? "#3730a3" : "#a5b4fc" }}>{session.score}</strong>
+                            <span className="text-[9px] font-bold text-(--color-text-muted) uppercase tracking-wide mt-0.5">puan</span>
                           </div>
                         </div>
                       </div>
@@ -1564,26 +1723,44 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           </div>
         )}
 
+
+
         {/* ── Clients List ── */}
         {activeAppView === "clients" && (
           <div className="p-6 max-w-5xl mx-auto space-y-6">
-            <div className="flex items-center justify-between">
+            {/* Header */}
+            <div className="flex items-center justify-between pt-1">
               <div>
-                <h1 className="text-2xl font-bold text-(--color-text-strong) m-0">Danışanlar</h1>
-                <span className="text-(--color-text-muted) text-sm">{clientOptions.length} danışan</span>
+                <h1 className="text-2xl font-extrabold text-(--color-text-strong) m-0" style={{
+                  background: "linear-gradient(135deg, var(--color-text-strong) 0%, #a5b4fc 100%)",
+                  WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+                }}>Danışanlar</h1>
+                <span className="text-(--color-text-muted) text-sm">{clientOptions.length} kayıtlı danışan</span>
               </div>
-              <button type="button" className={btnPrimary} onClick={() => setShowAddClient(!showAddClient)}>+ Yeni Danışan</button>
+              <button type="button"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white border-none cursor-pointer transition-all hover:scale-105"
+                style={{ background: "linear-gradient(135deg, #6366f1, #818cf8)", boxShadow: "0 4px 14px rgba(99,102,241,0.4)" }}
+                onClick={() => setShowAddClient(!showAddClient)}>
+                <UserPlus size={15} /> Yeni Danışan
+              </button>
             </div>
 
             {showAddClient && (
-              <div className="bg-(--color-surface-strong) rounded-2xl border border-(--color-line) p-5">
-                <h3 className="text-(--color-text-strong) font-semibold mb-3">Yeni Danışan Ekle</h3>
-                <form className="flex flex-col gap-3" onSubmit={handleAddClient}>
-                  <input value={addClientDraft.displayName} onChange={(e) => setAddClientDraft((c) => ({ ...c, displayName: e.target.value }))} placeholder="Danışan adı (örn. Ada Y.)" className={inputCls} required />
+              <div className="rounded-2xl border p-6 relative overflow-hidden"
+                style={{ background: "var(--color-surface-strong)", borderColor: "rgba(99,102,241,0.25)", boxShadow: "0 0 40px rgba(99,102,241,0.08)" }}>
+                <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(99,102,241,0.5), transparent)" }} />
+                <h3 className="text-(--color-text-strong) font-bold mb-4 flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(99,102,241,0.15)" }}>
+                    <UserPlus size={14} style={{ color: "#818cf8" }} />
+                  </span>
+                  Yeni Danışan Ekle
+                </h3>
+                <form className="grid grid-cols-1 sm:grid-cols-2 gap-3" onSubmit={handleAddClient}>
+                  <input value={addClientDraft.displayName} onChange={(e) => setAddClientDraft((c) => ({ ...c, displayName: e.target.value }))} placeholder="Danışan adı (örn. Ada Y.)" className={`${inputCls} sm:col-span-2`} required />
                   <input value={addClientDraft.ageGroup} onChange={(e) => setAddClientDraft((c) => ({ ...c, ageGroup: e.target.value }))} placeholder="Yaş grubu (örn. 7-9 yaş)" className={inputCls} />
                   <input value={addClientDraft.primaryGoal} onChange={(e) => setAddClientDraft((c) => ({ ...c, primaryGoal: e.target.value }))} placeholder="Birincil hedef (örn. Görsel tarama)" className={inputCls} />
-                  <input value={addClientDraft.supportLevel} onChange={(e) => setAddClientDraft((c) => ({ ...c, supportLevel: e.target.value }))} placeholder="Destek düzeyi (örn. Orta destek)" className={inputCls} />
-                  <div className="flex gap-2">
+                  <input value={addClientDraft.supportLevel} onChange={(e) => setAddClientDraft((c) => ({ ...c, supportLevel: e.target.value }))} placeholder="Destek düzeyi (örn. Orta destek)" className={`${inputCls} sm:col-span-2`} />
+                  <div className="flex gap-2 sm:col-span-2 mt-1">
                     <button type="submit" className={btnPrimary}>Kaydet</button>
                     <button type="button" className={btnSecondary} onClick={() => setShowAddClient(false)}>İptal</button>
                   </div>
@@ -1592,49 +1769,108 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             )}
 
             {clientOptions.length === 0 ? (
-              <div className="bg-(--color-surface-strong) rounded-2xl border border-(--color-line) p-12 text-center flex flex-col items-center gap-3">
-                <span className="text-4xl">◈</span>
-                <p className="text-(--color-text-soft) text-sm">Henüz danışan eklenmedi. Yukarıdaki butonu kullanarak ilk danışanı ekleyebilirsin.</p>
+              <div className="rounded-2xl border border-(--color-line) p-12 text-center flex flex-col items-center gap-4"
+                style={{ background: "var(--color-surface-strong)" }}>
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                  style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)" }}>
+                  <Users size={28} strokeWidth={1.5} style={{ color: "#818cf8" }} />
+                </div>
+                <div>
+                  <p className="text-(--color-text-strong) font-semibold m-0 mb-1">Henüz danışan eklenmedi</p>
+                  <p className="text-(--color-text-muted) text-sm m-0">Yukarıdaki butonu kullanarak ilk danışanı ekleyebilirsin.</p>
+                </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {clientOptions.map((client, clientIdx) => {
                   const sessionCount = platformOverview.recentSessions.filter((s) => s.clientId === client.id).length;
+                  const clientScores = platformOverview.recentSessions.filter((s) => s.clientId === client.id);
+                  const bestScore = clientScores.length > 0 ? Math.max(...clientScores.map(s => s.score)) : 0;
                   const avatarPalette = theme === "light" ? [
-                    { bg: "rgba(99,102,241,0.10)", color: "#4338ca", border: "rgba(99,102,241,0.22)" },
-                    { bg: "rgba(16,185,129,0.10)", color: "#047857", border: "rgba(16,185,129,0.22)" },
-                    { bg: "rgba(245,158,11,0.10)", color: "#b45309", border: "rgba(245,158,11,0.22)" },
-                    { bg: "rgba(6,182,212,0.10)", color: "#0e7490", border: "rgba(6,182,212,0.22)" },
-                    { bg: "rgba(168,85,247,0.10)", color: "#7c3aed", border: "rgba(168,85,247,0.22)" },
-                    { bg: "rgba(236,72,153,0.10)", color: "#be185d", border: "rgba(236,72,153,0.22)" },
+                    { bg: "rgba(99,102,241,0.10)", color: "#4338ca", border: "rgba(99,102,241,0.25)", glow: "rgba(99,102,241,0.1)", gradLine: "rgba(99,102,241,0.3)" },
+                    { bg: "rgba(16,185,129,0.10)", color: "#047857", border: "rgba(16,185,129,0.25)", glow: "rgba(16,185,129,0.08)", gradLine: "rgba(16,185,129,0.3)" },
+                    { bg: "rgba(245,158,11,0.10)", color: "#b45309", border: "rgba(245,158,11,0.25)", glow: "rgba(245,158,11,0.08)", gradLine: "rgba(245,158,11,0.3)" },
+                    { bg: "rgba(6,182,212,0.10)", color: "#0e7490", border: "rgba(6,182,212,0.25)", glow: "rgba(6,182,212,0.08)", gradLine: "rgba(6,182,212,0.3)" },
+                    { bg: "rgba(168,85,247,0.10)", color: "#7c3aed", border: "rgba(168,85,247,0.25)", glow: "rgba(168,85,247,0.08)", gradLine: "rgba(168,85,247,0.3)" },
+                    { bg: "rgba(236,72,153,0.10)", color: "#be185d", border: "rgba(236,72,153,0.25)", glow: "rgba(236,72,153,0.08)", gradLine: "rgba(236,72,153,0.3)" },
                   ] : [
-                    { bg: "rgba(99,102,241,0.18)", color: "#a5b4fc", border: "rgba(99,102,241,0.3)" },
-                    { bg: "rgba(16,185,129,0.18)", color: "#6ee7b7", border: "rgba(16,185,129,0.3)" },
-                    { bg: "rgba(245,158,11,0.18)", color: "#fcd34d", border: "rgba(245,158,11,0.3)" },
-                    { bg: "rgba(6,182,212,0.18)", color: "#67e8f9", border: "rgba(6,182,212,0.3)" },
-                    { bg: "rgba(168,85,247,0.18)", color: "#d8b4fe", border: "rgba(168,85,247,0.3)" },
-                    { bg: "rgba(236,72,153,0.18)", color: "#f9a8d4", border: "rgba(236,72,153,0.3)" },
+                    { bg: "rgba(99,102,241,0.18)", color: "#a5b4fc", border: "rgba(99,102,241,0.3)", glow: "rgba(99,102,241,0.12)", gradLine: "rgba(99,102,241,0.4)" },
+                    { bg: "rgba(16,185,129,0.18)", color: "#6ee7b7", border: "rgba(16,185,129,0.3)", glow: "rgba(16,185,129,0.1)", gradLine: "rgba(16,185,129,0.4)" },
+                    { bg: "rgba(245,158,11,0.18)", color: "#fcd34d", border: "rgba(245,158,11,0.3)", glow: "rgba(245,158,11,0.1)", gradLine: "rgba(245,158,11,0.4)" },
+                    { bg: "rgba(6,182,212,0.18)", color: "#67e8f9", border: "rgba(6,182,212,0.3)", glow: "rgba(6,182,212,0.1)", gradLine: "rgba(6,182,212,0.4)" },
+                    { bg: "rgba(168,85,247,0.18)", color: "#d8b4fe", border: "rgba(168,85,247,0.3)", glow: "rgba(168,85,247,0.1)", gradLine: "rgba(168,85,247,0.4)" },
+                    { bg: "rgba(236,72,153,0.18)", color: "#f9a8d4", border: "rgba(236,72,153,0.3)", glow: "rgba(236,72,153,0.1)", gradLine: "rgba(236,72,153,0.4)" },
                   ];
                   const palette = avatarPalette[clientIdx % avatarPalette.length];
                   return (
-                    <div key={client.id} className="bg-(--color-surface-strong) rounded-2xl border border-(--color-line) p-5 flex flex-col gap-3 shadow-(--shadow-card) hover:shadow-(--shadow-elevated) hover:border-(--color-primary)/20 transition-all group">
+                    <div key={client.id}
+                      className="rounded-2xl border flex flex-col gap-4 p-5 card-hover group relative overflow-hidden cursor-pointer"
+                      style={{ background: "var(--color-surface-strong)", borderColor: palette.border }}
+                      onClick={() => handleSelectClient(client.id)}>
+                      {/* Top shimmer line */}
+                      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${palette.gradLine}, transparent)` }} />
+                      {/* Header row */}
                       <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-xl font-bold flex items-center justify-center text-base shrink-0 transition-transform group-hover:scale-105" style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>
+                        <div className="w-12 h-12 rounded-xl font-extrabold flex items-center justify-center text-lg shrink-0"
+                          style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}`, boxShadow: `0 4px 12px ${palette.glow}` }}>
                           {client.displayName[0]?.toUpperCase()}
                         </div>
-                        <div className="flex flex-col min-w-0">
-                          <div className="font-semibold text-(--color-text-strong) text-sm truncate">{client.displayName}</div>
-                          <span className="text-(--color-text-muted) text-xs">{sessionCount} seans kaydı</span>
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <div className="font-bold text-(--color-text-strong) text-sm truncate">{client.displayName}</div>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ background: palette.color }} />
+                            <span className="text-(--color-text-muted) text-xs">{sessionCount} seans kaydı</span>
+                          </div>
                         </div>
+                        {bestScore > 0 && (
+                          <div className="flex flex-col items-center px-2.5 py-1.5 rounded-xl"
+                            style={{ background: palette.bg, border: `1px solid ${palette.border}` }}>
+                            <strong className="text-base font-extrabold leading-none" style={{ color: palette.color }}>{bestScore}</strong>
+                            <span className="text-[9px] font-bold uppercase tracking-wide mt-0.5" style={{ color: palette.color, opacity: 0.7 }}>en iyi</span>
+                          </div>
+                        )}
                       </div>
-                      <div className="flex flex-wrap gap-1">
-                        {client.ageGroup && <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: palette.bg, color: palette.color }}>{client.ageGroup}</span>}
-                        {client.supportLevel && <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: palette.bg, color: palette.color }}>{client.supportLevel}</span>}
+                      {/* Tags */}
+                      <div className="flex flex-wrap gap-1.5">
+                        {client.ageGroup && (
+                          <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
+                            style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>
+                            {client.ageGroup}
+                          </span>
+                        )}
+                        {client.supportLevel && (
+                          <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
+                            style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>
+                            {client.supportLevel}
+                          </span>
+                        )}
                       </div>
-                      {client.primaryGoal && <p className="text-(--color-text-soft) text-sm m-0">{client.primaryGoal}</p>}
-                      <div className="flex gap-2 mt-auto">
-                        <button type="button" className={btnSecondary} onClick={() => handleSelectClient(client.id)}>Detay</button>
-                        <button type="button" className={btnPrimary} onClick={() => { setSelectedClientId(client.id); setActiveClientId(client.id); setActiveAppView("games"); }}>Oyna</button>
+                      {client.primaryGoal && (
+                        <p className="text-(--color-text-soft) text-xs m-0 leading-relaxed line-clamp-2">{client.primaryGoal}</p>
+                      )}
+                      {/* Progress bar */}
+                      {sessionCount > 0 && (
+                        <div className="space-y-1">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-semibold text-(--color-text-muted) uppercase tracking-wider">Seans ilerleme</span>
+                            <span className="text-[10px] font-bold" style={{ color: palette.color }}>{sessionCount} / 10</span>
+                          </div>
+                          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--color-surface-elevated)" }}>
+                            <div className="h-full rounded-full transition-all duration-500"
+                              style={{ width: `${Math.min(100, (sessionCount / 10) * 100)}%`, background: `linear-gradient(90deg, ${palette.color}, ${palette.border})` }} />
+                          </div>
+                        </div>
+                      )}
+                      {/* Actions */}
+                      <div className="flex gap-2 mt-auto" onClick={(e) => e.stopPropagation()}>
+                        <button type="button" className={`${btnSecondary} flex-1 justify-center flex items-center gap-1.5`}
+                          onClick={() => handleSelectClient(client.id)}>
+                          Detay
+                        </button>
+                        <button type="button" className={`${btnPrimary} flex-1 justify-center flex items-center gap-1.5`}
+                          onClick={() => { setSelectedClientId(client.id); setActiveClientId(client.id); setActiveAppView("games"); }}>
+                          <Gamepad2 size={13} /> Oyna
+                        </button>
                       </div>
                     </div>
                   );
@@ -1643,7 +1879,6 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             )}
           </div>
         )}
-
         {/* ── Client Detail ── */}
         {activeAppView === "client-detail" && selectedClient && (() => {
           const isLight = theme === "light";
@@ -1664,59 +1899,76 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           const clientSessions = platformOverview.recentSessions.filter((s) => s.clientId === selectedClientId);
           const bestScore = clientSessions.length > 0 ? Math.max(...clientSessions.map((s) => s.score)) : 0;
           return (
-            <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
+            <div className="p-5 lg:p-8 max-w-3xl mx-auto space-y-6">
 
-              {/* Back */}
-              <button type="button" className="flex items-center gap-1.5 text-(--color-primary) text-sm font-semibold bg-transparent border-none cursor-pointer px-0 hover:opacity-75 transition-opacity" onClick={() => setActiveAppView("clients")}>
+              {/* ── Back button ── */}
+              <button type="button" className="flex items-center gap-2 text-sm font-bold px-3 py-1.5 rounded-xl border cursor-pointer transition-all hover:opacity-80" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)", color: "var(--color-primary)" }} onClick={() => setActiveAppView("clients")}>
                 ← Danışanlar
               </button>
 
-              {/* Hero card */}
-              <div className="rounded-2xl border p-6 overflow-hidden" style={{
-                background: `linear-gradient(135deg, ${palette.gradientFrom} 0%, transparent 55%)`,
+              {/* ── Hero card ── */}
+              <div className="rounded-3xl border overflow-hidden relative" style={{
                 borderColor: palette.border,
-                boxShadow: isLight ? `0 2px 16px ${palette.glow}` : `0 0 60px ${palette.glow}, inset 0 1px 0 rgba(255,255,255,0.04)`,
+                boxShadow: isLight ? `0 4px 24px ${palette.glow}` : `0 0 80px ${palette.glow}, inset 0 1px 0 rgba(255,255,255,0.05)`,
               }}>
-                <div className="flex items-start gap-5 mb-5">
-                  <div className="w-16 h-16 rounded-2xl font-extrabold flex items-center justify-center text-2xl shrink-0" style={{ background: palette.bg, color: palette.color, border: `2px solid ${palette.border}` }}>
-                    {selectedClient.displayName[0]?.toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0 pt-1">
-                    <h1 className="text-2xl font-extrabold m-0 mb-2.5 text-(--color-text-strong)">{selectedClient.displayName}</h1>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedClient.ageGroup && <span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>{selectedClient.ageGroup}</span>}
-                      {selectedClient.primaryGoal && <span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>{selectedClient.primaryGoal}</span>}
-                      {selectedClient.supportLevel && <span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>{selectedClient.supportLevel}</span>}
+                {/* Gradient top strip */}
+                <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${palette.color}, ${palette.border})` }} />
+                {/* Background glow blob */}
+                <div className="absolute top-0 right-0 w-64 h-48 rounded-full pointer-events-none" style={{ background: palette.color, opacity: 0.05, filter: "blur(60px)", transform: "translate(20%,-20%)" }} />
+                <div className="relative p-6">
+                  {/* Top row: avatar + name + badges */}
+                  <div className="flex items-start gap-5 mb-6">
+                    <div className="relative shrink-0">
+                      <div className="w-20 h-20 rounded-3xl font-extrabold flex items-center justify-center text-3xl" style={{ background: `linear-gradient(135deg, ${palette.bg}, ${palette.bg})`, color: palette.color, border: `2px solid ${palette.border}`, boxShadow: `0 8px 24px ${palette.glow}` }}>
+                        {selectedClient.displayName[0]?.toUpperCase()}
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${palette.color}, ${palette.border})`, boxShadow: `0 2px 8px ${palette.glow}` }}>
+                        <span className="text-white text-[10px] font-black">✓</span>
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0 pt-1">
+                      <h1 className="text-2xl font-extrabold m-0 mb-3 text-(--color-text-strong) tracking-tight">{selectedClient.displayName}</h1>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedClient.ageGroup && <span className="text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>{selectedClient.ageGroup}</span>}
+                        {selectedClient.primaryGoal && <span className="text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>{selectedClient.primaryGoal}</span>}
+                        {selectedClient.supportLevel && <span className="text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>{selectedClient.supportLevel}</span>}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Mini stats */}
-                <div className="grid grid-cols-3 gap-3 mb-5">
-                  {[
-                    { label: "Toplam Seans", value: clientSessions.length },
-                    { label: "En İyi Skor", value: bestScore || "—" },
-                    { label: "Not Sayısı", value: clientNotes.length },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="rounded-xl p-3 text-center" style={{ background: isLight ? "rgba(0,0,0,0.03)" : "rgba(0,0,0,0.25)", border: `1px solid ${palette.border}` }}>
-                      <strong className="text-xl font-extrabold block leading-none mb-1" style={{ color: palette.color }}>{value}</strong>
-                      <span className="text-(--color-text-muted) text-xs">{label}</span>
-                    </div>
-                  ))}
-                </div>
+                  {/* Mini stat row */}
+                  <div className="grid grid-cols-3 gap-3 mb-5">
+                    {[
+                      { label: "Toplam Seans", value: clientSessions.length, icon: "🎮" },
+                      { label: "En İyi Skor", value: bestScore || "—", icon: "⭐" },
+                      { label: "Not Sayısı", value: clientNotes.length, icon: "📋" },
+                    ].map(({ label, value, icon }) => (
+                      <div key={label} className="rounded-2xl p-4 text-center relative overflow-hidden" style={{ background: isLight ? "rgba(0,0,0,0.03)" : "rgba(0,0,0,0.3)", border: `1px solid ${palette.border}` }}>
+                        <span className="text-xl mb-1 block">{icon}</span>
+                        <strong className="text-2xl font-extrabold block leading-none mb-1" style={{ color: palette.color }}>{value}</strong>
+                        <span className="text-(--color-text-muted) text-[10px] font-semibold uppercase tracking-wider">{label}</span>
+                      </div>
+                    ))}
+                  </div>
 
-                <button type="button" className={`${btnPrimary} w-full justify-center flex items-center gap-2`} onClick={() => { setActiveClientId(selectedClient.id); setActiveAppView("games"); }}>
-                  <Gamepad2 size={16} /> Bu Danışanla Oyna
-                </button>
+                  <button type="button" className="w-full flex items-center justify-center gap-2 font-bold text-sm px-5 py-3 rounded-2xl text-white cursor-pointer border-none transition-all hover:opacity-90 active:scale-[0.98]" style={{ background: `linear-gradient(135deg, ${palette.color}, ${palette.border})`, boxShadow: `0 6px 20px ${palette.glow}` }} onClick={() => { setActiveClientId(selectedClient.id); setActiveAppView("games"); }}>
+                    <Gamepad2 size={16} /> Bu Danışanla Oyna
+                  </button>
+                </div>
               </div>
 
-              {/* Tabs */}
-              <div className="flex gap-1 p-1 rounded-xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
+              {/* ── Tabs ── */}
+              <div className="flex gap-1 p-1 rounded-2xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
                 {(["notes", "plan", "scores"] as const).map((tab) => (
                   <button key={tab} type="button"
-                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150 border-none cursor-pointer ${clientDetailTab === tab ? "bg-(--color-surface-strong) text-(--color-text-strong) shadow-sm" : "text-(--color-text-soft) hover:text-(--color-text-body) bg-transparent"}`}
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-150 border-none cursor-pointer"
+                    style={{
+                      background: clientDetailTab === tab ? "var(--color-surface-strong)" : "transparent",
+                      color: clientDetailTab === tab ? "var(--color-text-strong)" : "var(--color-text-soft)",
+                      boxShadow: clientDetailTab === tab ? "0 2px 8px rgba(0,0,0,0.12)" : "none",
+                    }}
                     onClick={() => setClientDetailTab(tab)}>
-                    {tab === "notes" ? "Notlar" : tab === "plan" ? "Haftalık Plan" : "Skor Geçmişi"}
+                    {tab === "notes" ? "📝 Notlar" : tab === "plan" ? "📅 Haftalık Plan" : "📊 Skor Geçmişi"}
                   </button>
                 ))}
               </div>
@@ -1724,35 +1976,39 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               {/* ── Notes ── */}
               {clientDetailTab === "notes" && (
                 <div className="space-y-4">
-                  <div className="flex justify-end">
-                    <button type="button" className={btnPrimary} onClick={() => setShowNoteForm(!showNoteForm)}>+ Not Ekle</button>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-extrabold uppercase tracking-wider text-(--color-text-muted) m-0">Seans Notları</h3>
+                    <button type="button" className="flex items-center gap-1.5 text-sm font-bold px-3 py-2 rounded-xl text-white cursor-pointer border-none transition-all hover:opacity-90 active:scale-95" style={{ background: `linear-gradient(135deg, ${palette.color}, ${palette.border})`, boxShadow: `0 3px 12px ${palette.glow}` }} onClick={() => setShowNoteForm(!showNoteForm)}>+ Not Ekle</button>
                   </div>
 
                   {showNoteForm && (
-                    <div className="rounded-2xl border border-(--color-line) p-5 bg-(--color-surface-strong) space-y-3">
-                      <h4 className="text-(--color-text-strong) font-semibold m-0">Yeni Not</h4>
+                    <div className="rounded-2xl border p-5 space-y-3 relative overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: palette.border }}>
+                      <div className="h-0.5 absolute top-0 left-0 right-0" style={{ background: `linear-gradient(90deg, ${palette.color}, ${palette.border})` }} />
+                      <h4 className="text-(--color-text-strong) font-bold m-0 pt-1">Yeni Not</h4>
                       <input type="date" value={noteForm.date} onChange={(e) => setNoteForm((c) => ({ ...c, date: e.target.value }))} className={inputCls} />
                       <textarea value={noteForm.content} onChange={(e) => setNoteForm((c) => ({ ...c, content: e.target.value }))} placeholder="Seans notu, gözlem veya hedef..." className={`${inputCls} resize-none`} rows={4} />
                       <div className="flex gap-2">
-                        <button type="button" className={btnPrimary} onClick={handleAddNote}>Kaydet</button>
+                        <button type="button" className="flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-xl text-white cursor-pointer border-none transition-all hover:opacity-90" style={{ background: `linear-gradient(135deg, ${palette.color}, ${palette.border})`, boxShadow: `0 3px 12px ${palette.glow}` }} onClick={handleAddNote}>Kaydet</button>
                         <button type="button" className={btnSecondary} onClick={() => setShowNoteForm(false)}>İptal</button>
                       </div>
                     </div>
                   )}
 
                   {clientNotes.length === 0 ? (
-                    <div className="rounded-2xl border border-(--color-line) p-8 text-center bg-(--color-surface-strong)">
-                      <p className="text-(--color-text-muted) text-sm m-0">Henüz not eklenmedi.</p>
+                    <div className="rounded-2xl border border-(--color-line) p-12 text-center" style={{ background: "var(--color-surface-strong)" }}>
+                      <div className="text-4xl mb-3">📋</div>
+                      <p className="text-(--color-text-muted) text-sm m-0 font-medium">Henüz not eklenmedi.</p>
+                      <p className="text-(--color-text-muted) text-xs mt-1 m-0">İlk seans notunu eklemek için yukarıdaki butona tıklayın.</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {clientNotes.map((note) => (
-                        <div key={note.id} className="rounded-2xl border border-(--color-line) overflow-hidden bg-(--color-surface-strong) flex">
-                          <div className="w-1 shrink-0" style={{ background: palette.color }} />
-                          <div className="flex-1 px-4 py-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: palette.bg, color: palette.color }}>{formatDate(note.date)}</span>
-                              <button type="button" className="text-xs font-medium px-2.5 py-1 rounded-lg border-none cursor-pointer transition-opacity hover:opacity-75" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }} onClick={() => handleDeleteNote(note.id)}>Sil</button>
+                        <div key={note.id} className="rounded-2xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: isLight ? palette.border : "var(--color-line)" }}>
+                          <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${palette.color}, ${palette.border})` }} />
+                          <div className="px-5 py-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>{formatDate(note.date)}</span>
+                              <button type="button" className="text-xs font-bold px-2.5 py-1.5 rounded-xl border-none cursor-pointer transition-all hover:opacity-70 active:scale-95" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }} onClick={() => handleDeleteNote(note.id)}>Sil</button>
                             </div>
                             <p className="text-(--color-text-body) text-sm m-0 leading-relaxed">{note.content}</p>
                           </div>
@@ -1914,6 +2170,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               {/* ── Score History ── */}
               {clientDetailTab === "scores" && (
                 <div className="space-y-4">
+                  <h3 className="text-sm font-extrabold uppercase tracking-wider text-(--color-text-muted) m-0">Oyun Skor Geçmişi</h3>
                   {GAME_TABS.map((game) => {
                     const gameSessions = platformOverview.recentSessions.filter((s) => s.gameKey === game.key && s.clientId === selectedClient.id);
                     const gameScore = scoreboard[game.key];
@@ -1921,33 +2178,48 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     const maxScore = Math.max(gameScore.best, 1);
                     const pct = Math.min(100, (gameScore.best / maxScore) * 100);
                     return (
-                      <div key={game.key} className="rounded-2xl border border-(--color-line) p-5 bg-(--color-surface-strong) space-y-3">
-                        <div className="flex items-center justify-between">
-                          <strong className="text-(--color-text-strong) text-sm font-semibold">{game.title}</strong>
-                          <div className="flex items-center gap-3">
-                            <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: palette.bg, color: palette.color }}>{gameScore.best} en iyi</span>
-                            <span className="text-(--color-text-muted) text-xs">{gameScore.plays} oynama</span>
+                      <div key={game.key} className="rounded-2xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: isLight ? palette.border : "var(--color-line)" }}>
+                        <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${palette.color}, ${palette.border})` }} />
+                        <div className="p-5 space-y-4">
+                          {/* Game header */}
+                          <div className="flex items-center justify-between">
+                            <strong className="text-(--color-text-strong) font-bold">{game.title}</strong>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-extrabold px-3 py-1.5 rounded-full" style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>⭐ {gameScore.best}</span>
+                              <span className="text-(--color-text-muted) text-xs font-semibold">{gameScore.plays}× oynadı</span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="h-2 rounded-full overflow-hidden" style={{ background: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)" }}>
-                          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${palette.color}, ${palette.border})` }} />
-                        </div>
-                        {gameSessions.length > 0 && (
-                          <div className="grid gap-1.5">
-                            {gameSessions.slice(0, 5).map((session) => (
-                              <div key={session.id} className="flex items-center justify-between rounded-xl border border-(--color-line) px-3 py-2" style={{ background: isLight ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.02)" }}>
-                                <span className="text-(--color-text-soft) text-xs">{formatPlayedAt(session.playedAt)}{session.durationSeconds ? ` · ${formatDuration(session.durationSeconds)}` : ""}</span>
-                                <strong className="text-sm font-extrabold" style={{ color: palette.color }}>{session.score}</strong>
-                              </div>
-                            ))}
+                          {/* Progress bar */}
+                          <div className="h-2 rounded-full overflow-hidden" style={{ background: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)" }}>
+                            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${palette.color}, ${palette.border})` }} />
                           </div>
-                        )}
+                          {/* Session rows */}
+                          {gameSessions.length > 0 && (
+                            <div className="grid gap-1.5">
+                              {gameSessions.slice(0, 5).map((session) => (
+                                <div key={session.id} className="flex items-center justify-between rounded-xl px-3 py-2.5 border" style={{ background: isLight ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.02)", borderColor: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)" }}>
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: palette.bg }}>
+                                      <span className="text-[10px] font-extrabold" style={{ color: palette.color }}>▶</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-(--color-text-soft) text-xs font-medium">{formatPlayedAt(session.playedAt)}</span>
+                                      {session.durationSeconds ? <span className="text-(--color-text-muted) text-[10px] ml-1.5">· {formatDuration(session.durationSeconds)}</span> : null}
+                                    </div>
+                                  </div>
+                                  <strong className="text-lg font-extrabold tabular-nums" style={{ color: palette.color }}>{session.score}</strong>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
                   {GAME_TABS.every((g) => scoreboard[g.key].plays === 0) && (
-                    <div className="rounded-2xl border border-(--color-line) p-8 text-center bg-(--color-surface-strong)">
-                      <p className="text-(--color-text-muted) text-sm m-0">Henüz oyun skoru yok.</p>
+                    <div className="rounded-2xl border border-(--color-line) p-12 text-center" style={{ background: "var(--color-surface-strong)" }}>
+                      <div className="text-4xl mb-3">🎮</div>
+                      <p className="text-(--color-text-muted) text-sm m-0 font-medium">Henüz oyun skoru yok.</p>
                     </div>
                   )}
                 </div>
@@ -1960,32 +2232,49 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         {/* ── Games View ── */}
         {activeAppView === "games" && (
           <div className="flex flex-col h-full">
-            <div className="hidden lg:flex items-center justify-between px-6 h-14 border-b border-(--color-line) sticky top-0 z-10" style={{ background: "var(--color-chrome-header)", backdropFilter: "blur(20px)" }}>
+            {/* ── Premium Desktop Game Header ── */}
+            <div className="hidden lg:flex items-center justify-between px-6 h-16 border-b border-(--color-line) sticky top-0 z-20" style={{
+              background: "var(--color-chrome-header)",
+              backdropFilter: "blur(24px)",
+              boxShadow: "0 1px 0 var(--color-line), 0 4px 24px rgba(0,0,0,0.08)",
+            }}>
+              {/* Left: title + session info */}
               <div className="flex items-center gap-4">
-                <span className="font-bold text-(--color-text-strong) text-sm">Oyun Alanı</span>
-                <span className="w-px h-4 bg-(--color-line) shrink-0" />
-                <div className="flex items-center gap-2 bg-(--color-primary)/8 border border-(--color-primary)/15 rounded-full px-3 py-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                  <span className="text-xs font-medium text-(--color-primary) max-w-52 truncate">
-                    {activeTherapist?.displayName ?? "—"} · {activeClient?.displayName ?? "Danışan seç"}
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, var(--color-primary), #8b5cf6)", boxShadow: "0 2px 8px var(--color-primary)/30" }}>
+                    <Gamepad2 size={15} className="text-white" />
+                  </div>
+                  <span className="font-bold text-(--color-text-strong) text-sm tracking-tight">Oyun Alanı</span>
+                </div>
+                <div className="w-px h-5 shrink-0" style={{ background: "var(--color-line)" }} />
+                <div className="flex items-center gap-2 rounded-full px-3 py-1.5" style={{ background: gameElapsed > 0 ? "rgba(16,185,129,0.08)" : "var(--color-primary)/8", border: gameElapsed > 0 ? "1px solid rgba(16,185,129,0.25)" : "1px solid var(--color-primary)/15" }}>
+                  <span className="w-2 h-2 rounded-full shrink-0 transition-all" style={{ background: gameElapsed > 0 ? "#10b981" : "var(--color-primary)", boxShadow: gameElapsed > 0 ? "0 0 6px rgba(16,185,129,0.7)" : "none" }} />
+                  <span className="text-xs font-semibold max-w-56 truncate" style={{ color: gameElapsed > 0 ? "#10b981" : "var(--color-primary)" }}>
+                    {activeTherapist?.displayName ?? "—"}&nbsp;·&nbsp;{activeClient?.displayName ?? "Danışan seç"}
                   </span>
                 </div>
-                <span className={`text-xs font-medium rounded-full px-2.5 py-0.5 border ${platformStatus === "online" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : platformStatus === "schema_missing" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" : platformStatus === "error" ? "bg-red-500/10 text-red-400 border-red-500/20" : "bg-white/5 text-(--color-text-muted) border-(--color-line)"}`}>
+                <span className={`text-xs font-semibold rounded-full px-2.5 py-1 border ${platformStatus === "online" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : platformStatus === "schema_missing" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" : platformStatus === "error" ? "bg-red-500/10 text-red-400 border-red-500/20" : "bg-white/5 text-(--color-text-muted) border-(--color-line)"}`}>
                   {getDatabaseStatusLabel(platformStatus)}
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 bg-(--color-surface-strong) border border-(--color-line) rounded-xl px-3 py-1.5">
-                  <Clock size={13} className="text-(--color-primary)" />
-                  <span className="font-mono font-bold text-(--color-text-strong) text-sm">{formatElapsed(gameElapsed)}</span>
-                  <button type="button" className="text-(--color-primary) text-xs hover:underline bg-transparent border-none cursor-pointer ml-1" onClick={resetSessionClock}>Sıfırla</button>
+              {/* Right: timer + back */}
+              <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2 rounded-2xl px-3 py-1.5 border" style={{
+                  background: gameElapsed > 0 ? "rgba(16,185,129,0.08)" : "var(--color-surface-strong)",
+                  borderColor: gameElapsed > 0 ? "rgba(16,185,129,0.25)" : "var(--color-line)",
+                }}>
+                  <Clock size={13} style={{ color: gameElapsed > 0 ? "#10b981" : "var(--color-primary)" }} />
+                  <span className="font-mono font-bold text-sm tabular-nums" style={{ color: gameElapsed > 0 ? "#10b981" : "var(--color-text-strong)", letterSpacing: "-0.02em" }}>{formatElapsed(gameElapsed)}</span>
+                  <button type="button" className="text-[11px] font-semibold hover:opacity-70 bg-transparent border-none cursor-pointer ml-0.5 transition-opacity" style={{ color: gameElapsed > 0 ? "#10b981" : "var(--color-primary)" }} onClick={resetSessionClock}>Sıfırla</button>
                 </div>
-                <button type="button" className={btnSecondary} onClick={() => setActiveAppView("dashboard")}>← Panel</button>
+                <button type="button" className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-xl border cursor-pointer transition-all hover:opacity-80" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)", color: "var(--color-text-soft)" }} onClick={() => setActiveAppView("dashboard")}>
+                  ← Panel
+                </button>
               </div>
             </div>
 
             {/* ── Mobile game nav ── */}
-            <div className="flex lg:hidden flex-col gap-2 px-4 py-3 border-b border-(--color-line)" style={{ background: "var(--color-chrome-header)" }}>
+            <div className="flex lg:hidden flex-col gap-2 px-4 py-3 border-b border-(--color-line)" style={{ background: "var(--color-chrome-header)", backdropFilter: "blur(20px)" }}>
               <div className="flex items-center gap-2">
                 <select value={activeTherapist?.id ?? ""} onChange={(event) => setActiveTherapistId(event.target.value)} className="flex-1 text-xs px-2 py-1.5 border border-(--color-line) rounded-lg bg-(--color-surface-strong) text-(--color-text-body)">
                   {therapistOptions.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}</option>)}
@@ -1993,17 +2282,17 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 <select value={activeClient?.id ?? ""} onChange={(event) => setActiveClientId(event.target.value)} className="flex-1 text-xs px-2 py-1.5 border border-(--color-line) rounded-lg bg-(--color-surface-strong) text-(--color-text-body)">
                   {clientOptions.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}</option>)}
                 </select>
-                <div className="flex items-center gap-1 text-xs bg-(--color-surface-strong) border border-(--color-line) rounded-lg px-2 py-1">
-                  <Clock size={11} className="text-(--color-text-muted)" />
-                  <span className="font-mono font-bold text-(--color-text-strong)">{formatElapsed(gameElapsed)}</span>
-                  <button type="button" className="text-(--color-primary) hover:underline bg-transparent border-none cursor-pointer ml-0.5" onClick={resetSessionClock}><RotateCcw size={10} /></button>
+                <div className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 border" style={{ background: gameElapsed > 0 ? "rgba(16,185,129,0.1)" : "var(--color-surface-strong)", borderColor: gameElapsed > 0 ? "rgba(16,185,129,0.3)" : "var(--color-line)" }}>
+                  <Clock size={11} style={{ color: gameElapsed > 0 ? "#10b981" : "var(--color-text-muted)" }} />
+                  <span className="font-mono font-bold text-xs tabular-nums" style={{ color: gameElapsed > 0 ? "#10b981" : "var(--color-text-strong)" }}>{formatElapsed(gameElapsed)}</span>
+                  <button type="button" className="hover:opacity-70 bg-transparent border-none cursor-pointer ml-0.5 transition-opacity" style={{ color: gameElapsed > 0 ? "#10b981" : "var(--color-primary)" }} onClick={resetSessionClock}><RotateCcw size={10} /></button>
                 </div>
               </div>
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {GAME_CATEGORIES.map((category) => {
                   const isActive = activeTab.category === category.key;
                   return (
-                    <button key={category.key} type="button" className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border-none cursor-pointer ${isActive ? "bg-(--color-primary) text-white" : "bg-(--color-surface-elevated) text-(--color-text-body)"}`} onClick={() => openCategory(category.key)}>
+                    <button key={category.key} type="button" className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border cursor-pointer transition-all ${isActive ? "bg-(--color-primary) text-white border-(--color-primary)" : "bg-(--color-surface-elevated) text-(--color-text-body) border-(--color-line)"}`} onClick={() => openCategory(category.key)}>
                       {(() => { const CI = CATEGORY_ICONS[category.key]; return <CI size={12} />; })()} {category.title}
                     </button>
                   );
@@ -2011,7 +2300,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               </div>
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {visibleTabs.map((tab) => (
-                  <button key={tab.key} type="button" className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border-none cursor-pointer ${activeGame === tab.key ? "bg-(--color-primary)/15 text-(--color-primary)" : "bg-(--color-surface-elevated) text-(--color-text-body)"}`} onClick={() => setActiveGame(tab.key)}>
+                  <button key={tab.key} type="button" className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border cursor-pointer transition-all ${activeGame === tab.key ? "bg-(--color-primary)/10 text-(--color-primary) border-(--color-primary)/30" : "bg-(--color-surface-elevated) text-(--color-text-body) border-(--color-line)"}`} onClick={() => setActiveGame(tab.key)}>
                     {tab.title}
                   </button>
                 ))}
@@ -2019,44 +2308,49 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             </div>
 
             <div className="flex flex-1 overflow-hidden">
-              <aside className="hidden lg:flex flex-col w-64 shrink-0 border-r border-(--color-line) overflow-y-auto bg-(--color-sidebar)" style={{ backdropFilter: "blur(20px)" }}>
-                {/* Session setup */}
-                <div className="p-4 border-b border-(--color-line) space-y-4">
+              {/* ── Premium Game Sidebar ── */}
+              <aside className="hidden lg:flex flex-col w-72 shrink-0 border-r border-(--color-line) overflow-y-auto" style={{ background: "var(--color-sidebar)", backdropFilter: "blur(24px)" }}>
 
-                  {/* Active session status card */}
-                  <div className="rounded-xl p-3 flex items-center justify-between" style={{
-                    background: gameElapsed > 0 ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)",
-                    border: gameElapsed > 0 ? "1px solid rgba(16,185,129,0.2)" : "1px solid var(--color-line)",
+                {/* Session card */}
+                <div className="p-4 border-b border-(--color-line) space-y-3">
+                  {/* Status indicator */}
+                  <div className="rounded-2xl p-3.5 relative overflow-hidden" style={{
+                    background: gameElapsed > 0 ? "linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0.04) 100%)" : "linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(99,102,241,0.02) 100%)",
+                    border: gameElapsed > 0 ? "1px solid rgba(16,185,129,0.25)" : "1px solid var(--color-primary)/15",
                   }}>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{
-                        background: gameElapsed > 0 ? "#10b981" : "#64748b",
-                        boxShadow: gameElapsed > 0 ? "0 0 6px rgba(16,185,129,0.6)" : "none",
-                      }} />
-                      <span className="text-xs font-semibold" style={{ color: gameElapsed > 0 ? "#10b981" : "var(--color-text-muted)" }}>
-                        {gameElapsed > 0 ? "Seans Aktif" : "Seans Bekliyor"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg" style={{
-                      background: gameElapsed > 0 ? "rgba(16,185,129,0.12)" : "rgba(255,255,255,0.04)",
-                    }}>
-                      <Clock size={11} style={{ color: gameElapsed > 0 ? "#10b981" : "var(--color-text-muted)" }} />
-                      <span className="font-mono font-bold text-xs" style={{ color: gameElapsed > 0 ? "#10b981" : "var(--color-text-muted)" }}>
+                    <div className="absolute top-0 right-0 w-20 h-20 rounded-full pointer-events-none" style={{ background: gameElapsed > 0 ? "#10b981" : "var(--color-primary)", opacity: 0.06, filter: "blur(20px)", transform: "translate(30%,-30%)" }} />
+                    <div className="relative flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: gameElapsed > 0 ? "#10b981" : "#64748b", boxShadow: gameElapsed > 0 ? "0 0 8px rgba(16,185,129,0.8)" : "none" }} />
+                        <span className="text-xs font-bold" style={{ color: gameElapsed > 0 ? "#10b981" : "var(--color-text-muted)" }}>
+                          {gameElapsed > 0 ? "Seans Aktif" : "Seans Bekliyor"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono font-bold text-xs tabular-nums" style={{ background: gameElapsed > 0 ? "rgba(16,185,129,0.15)" : "rgba(255,255,255,0.04)", color: gameElapsed > 0 ? "#10b981" : "var(--color-text-muted)" }}>
+                        <Clock size={10} />
                         {formatElapsed(gameElapsed)}
-                      </span>
+                      </div>
                     </div>
+                    {activeClient && (
+                      <div className="relative flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-extrabold shrink-0" style={{ background: gameElapsed > 0 ? "rgba(16,185,129,0.2)" : "var(--color-primary)/15", color: gameElapsed > 0 ? "#10b981" : "var(--color-primary)" }}>
+                          {activeClient.displayName[0]?.toUpperCase()}
+                        </div>
+                        <span className="text-xs font-semibold text-(--color-text-strong) truncate">{activeClient.displayName}</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Selectors */}
-                  <div className="space-y-2.5">
+                  <div className="space-y-2">
                     <label className="flex flex-col gap-1">
-                      <span className="text-[11px] text-(--color-text-muted) font-semibold uppercase tracking-wider">Terapist</span>
+                      <span className="text-[10px] text-(--color-text-muted) font-extrabold uppercase tracking-widest">Terapist</span>
                       <select value={activeTherapist?.id ?? ""} onChange={(event) => setActiveTherapistId(event.target.value)} className={inputCls}>
                         {therapistOptions.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}</option>)}
                       </select>
                     </label>
                     <label className="flex flex-col gap-1">
-                      <span className="text-[11px] text-(--color-text-muted) font-semibold uppercase tracking-wider">Danışan</span>
+                      <span className="text-[10px] text-(--color-text-muted) font-extrabold uppercase tracking-widest">Danışan</span>
                       <select value={activeClient?.id ?? ""} onChange={(event) => setActiveClientId(event.target.value)} className={inputCls}>
                         {clientOptions.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}</option>)}
                       </select>
@@ -2064,35 +2358,28 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   </div>
 
                   {/* CTA */}
-                  <div className="space-y-1.5">
-                    <button type="button" className={`${btnPrimary} w-full flex items-center justify-center gap-2`} onClick={resetSessionClock}>
-                      <span>▶</span>
-                      {gameElapsed > 0 ? "Yeni Seans Başlat" : "Seansı Başlat"}
-                    </button>
-                    <p className="text-[11px] text-(--color-text-muted) text-center leading-snug">
-                      {gameElapsed > 0
-                        ? "Süreyi sıfırlar ve yeni bir seans kaydı açar"
-                        : `${activeClient?.displayName ?? "Danışan"} ile seans süresini başlatır`}
-                    </p>
-                  </div>
+                  <button type="button" className="w-full flex items-center justify-center gap-2 font-bold text-sm px-4 py-2.5 rounded-2xl text-white cursor-pointer border-none transition-all hover:opacity-90 active:scale-[0.98]" style={{ background: gameElapsed > 0 ? "linear-gradient(135deg, #10b981, #059669)" : "linear-gradient(135deg, var(--color-primary), #8b5cf6)", boxShadow: gameElapsed > 0 ? "0 4px 16px rgba(16,185,129,0.35)" : "0 4px 16px var(--color-primary)/35" }} onClick={resetSessionClock}>
+                    <span>{gameElapsed > 0 ? "↺" : "▶"}</span>
+                    {gameElapsed > 0 ? "Yeni Seans" : "Seansı Başlat"}
+                  </button>
                 </div>
 
                 {/* Categories */}
                 <div className="p-4 border-b border-(--color-line)">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-(--color-text-soft) block mb-3">Kategoriler</span>
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-(--color-text-muted) block mb-3 px-1">Kategoriler</span>
                   <div className="flex flex-col gap-1">
                     {GAME_CATEGORIES.map((category) => {
                       const isActive = activeTab.category === category.key;
                       const CatIcon = CATEGORY_ICONS[category.key];
                       const catCount = GAME_TABS.filter((g) => g.category === category.key).length;
                       return (
-                        <button key={category.key} type="button" aria-pressed={isActive} className={`flex items-center gap-3 px-2 py-2 rounded-xl w-full text-left cursor-pointer border transition-all ${isActive ? "border-(--color-primary)/15 bg-(--color-primary)/5" : "border-transparent hover:bg-(--color-surface-elevated)"}`} onClick={() => openCategory(category.key)}>
-                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${isActive ? "bg-(--color-primary) text-white shadow-sm" : "bg-(--color-surface-elevated) text-(--color-text-muted)"}`}>
-                            <CatIcon size={14} />
+                        <button key={category.key} type="button" aria-pressed={isActive} className="flex items-center gap-3 px-3 py-2.5 rounded-2xl w-full text-left cursor-pointer border transition-all" style={{ background: isActive ? "var(--color-primary)/8" : "transparent", borderColor: isActive ? "var(--color-primary)/20" : "transparent" }} onClick={() => openCategory(category.key)}>
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all" style={{ background: isActive ? "linear-gradient(135deg, var(--color-primary), #8b5cf6)" : "var(--color-surface-elevated)", color: isActive ? "white" : "var(--color-text-muted)", boxShadow: isActive ? "0 4px 12px var(--color-primary)/30" : "none" }}>
+                            <CatIcon size={15} />
                           </div>
                           <div className="flex flex-col min-w-0">
-                            <span className={`text-sm font-semibold truncate leading-tight ${isActive ? "text-(--color-primary)" : "text-(--color-text-strong)"}`}>{category.title}</span>
-                            <span className={`text-[11px] ${isActive ? "text-(--color-primary)/70" : "text-(--color-text-muted)"}`}>{catCount} oyun</span>
+                            <span className="text-sm font-semibold truncate leading-tight" style={{ color: isActive ? "var(--color-primary)" : "var(--color-text-strong)" }}>{category.title}</span>
+                            <span className="text-[11px]" style={{ color: isActive ? "var(--color-primary)/70" : "var(--color-text-muted)" }}>{catCount} oyun</span>
                           </div>
                         </button>
                       );
@@ -2102,12 +2389,15 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
                 {/* Games list */}
                 <div className="p-4 border-b border-(--color-line)">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-(--color-text-soft) block mb-3">Oyunlar</span>
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-(--color-text-muted) block mb-3 px-1">Oyunlar</span>
                   <div className="flex flex-col gap-1">
                     {visibleTabs.map((tab) => (
-                      <button key={tab.key} type="button" aria-pressed={activeGame === tab.key} className={`flex flex-col px-3 py-2.5 rounded-xl cursor-pointer w-full text-left transition-all ${activeGame === tab.key ? "bg-(--color-primary)/8 shadow-[inset_3px_0_0_var(--color-primary)]" : "hover:bg-(--color-surface-elevated)"}`} onClick={() => setActiveGame(tab.key)}>
-                        <span className={`text-[10px] font-bold uppercase tracking-wider ${activeGame === tab.key ? "text-(--color-primary)" : "text-(--color-text-muted)"}`}>{tab.kicker}</span>
-                        <span className={`text-sm font-semibold ${activeGame === tab.key ? "text-(--color-primary)" : "text-(--color-text-strong)"}`}>{tab.title}</span>
+                      <button key={tab.key} type="button" aria-pressed={activeGame === tab.key} className="relative flex items-center gap-3 px-3 py-2.5 rounded-2xl cursor-pointer w-full text-left transition-all" style={{ background: activeGame === tab.key ? "var(--color-primary)/8" : "transparent" }} onClick={() => setActiveGame(tab.key)}>
+                        {activeGame === tab.key && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 rounded-full" style={{ background: "var(--color-primary)" }} />}
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider" style={{ color: activeGame === tab.key ? "var(--color-primary)" : "var(--color-text-muted)" }}>{tab.kicker}</span>
+                          <span className="text-sm font-semibold truncate" style={{ color: activeGame === tab.key ? "var(--color-primary)" : "var(--color-text-strong)" }}>{tab.title}</span>
+                        </div>
                       </button>
                     ))}
                   </div>
@@ -2115,17 +2405,17 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
                 {/* Score summary */}
                 <div className="p-4 border-b border-(--color-line)">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-(--color-text-soft) block mb-3">Skor Özeti</span>
-                  <div className="flex flex-col gap-2">
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-(--color-text-muted) block mb-3 px-1">Skor Özeti</span>
+                  <div className="flex flex-col gap-2.5">
                     {scoreCards.map((card) => (
-                      <div key={card.label} className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-1 text-xs">
-                          <span className="flex-1 text-(--color-text-soft) truncate">{card.label}</span>
-                          <span className={`font-bold tabular-nums ${card.best > 0 ? "text-(--color-primary)" : "text-(--color-text-muted)"}`}>{card.best}</span>
-                          <span className="text-(--color-text-muted) text-[10px] w-5 text-right">{card.plays}×</span>
+                      <div key={card.label} className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <span className="flex-1 text-(--color-text-soft) truncate font-medium">{card.label}</span>
+                          <span className="font-extrabold tabular-nums" style={{ color: card.best > 0 ? "var(--color-primary)" : "var(--color-text-muted)" }}>{card.best}</span>
+                          <span className="text-(--color-text-muted) text-[10px]">{card.plays}×</span>
                         </div>
-                        <div className="h-1 rounded-full bg-(--color-surface-elevated) overflow-hidden">
-                          <div className="h-full bg-(--color-primary) rounded-full transition-all" style={{ width: card.best > 0 ? `${Math.min(100, card.best)}%` : "0%" }} />
+                        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--color-surface-elevated)" }}>
+                          <div className="h-full rounded-full transition-all duration-500" style={{ width: card.best > 0 ? `${Math.min(100, card.best)}%` : "0%", background: "linear-gradient(90deg, var(--color-primary), #8b5cf6)" }} />
                         </div>
                       </div>
                     ))}
@@ -2135,17 +2425,16 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 {/* Recent sessions */}
                 {recentSessionFeed.length > 0 && (
                   <div className="p-4">
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-(--color-text-soft) block mb-3">Son Oturumlar</span>
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-(--color-text-muted) block mb-3 px-1">Son Oturumlar</span>
                     <div className="flex flex-col gap-2">
                       {recentSessionFeed.slice(0, 3).map((session) => (
-                        <div key={session.id} className="flex justify-between bg-(--color-surface-elevated) rounded-xl px-3 py-2 text-xs border border-(--color-line)">
-                          <div className="min-w-0">
-                            <strong className="text-(--color-text-strong) block truncate">{session.gameLabel}</strong>
-                            <p className="text-(--color-text-muted) m-0 truncate">{session.clientName}</p>
+                        <div key={session.id} className="flex items-center gap-3 rounded-2xl px-3 py-2.5 border border-(--color-line)" style={{ background: "var(--color-surface-elevated)" }}>
+                          <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xs font-extrabold" style={{ background: "var(--color-primary)/10", color: "var(--color-primary)" }}>
+                            {session.score}
                           </div>
-                          <div className="text-right shrink-0 ml-2">
-                            <strong className="text-(--color-primary) block">{session.score}</strong>
-                            <p className="text-(--color-text-muted) m-0">{formatPlayedAt(session.playedAt)}</p>
+                          <div className="flex-1 min-w-0">
+                            <strong className="text-(--color-text-strong) text-xs font-semibold block truncate">{session.gameLabel}</strong>
+                            <p className="text-(--color-text-muted) text-[11px] m-0 truncate">{session.clientName} · {formatPlayedAt(session.playedAt)}</p>
                           </div>
                         </div>
                       ))}
@@ -2154,21 +2443,49 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 )}
               </aside>
 
-              <section className="flex-1 overflow-y-auto bg-(--color-page-bg)">
+              <section className="flex-1 overflow-y-auto" style={{ background: "var(--color-page-bg)" }}>
               {(() => {
-                const gameBtn = "flex items-center gap-2 bg-(--color-primary) text-white text-sm font-semibold px-6 py-3 rounded-2xl hover:bg-(--color-primary-hover) transition-colors cursor-pointer border-none shadow-(--shadow-primary)";
-                const gameBtnSec = "flex items-center gap-2 bg-white/10 text-slate-200 text-sm font-medium px-6 py-3 rounded-2xl hover:bg-white/20 transition-colors cursor-pointer border border-white/20";
+                const gameBtn = "flex items-center gap-2 text-white text-sm font-bold px-6 py-3 rounded-2xl transition-all cursor-pointer border-none active:scale-95";
+                const gameBtnSec = "flex items-center gap-2 text-slate-300 text-sm font-semibold px-6 py-3 rounded-2xl transition-all cursor-pointer border border-white/15 hover:border-white/30 hover:text-white";
                 return (
-              <div className="p-3 lg:p-5 max-w-4xl mx-auto flex flex-col gap-4">
-                {activeGame === "memory" && (
-                  <section className="relative rounded-3xl p-6 lg:p-8 flex flex-col gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(19,184,255,0.12)", boxShadow: "0 0 60px rgba(19,184,255,0.06)" }}>
-                    <div className="absolute top-0 right-0 w-80 h-40 rounded-full pointer-events-none" style={{ background: "#13b8ff", opacity: 0.05, filter: "blur(60px)", transform: "translate(20%,-30%)" }} />
-                    <div className="relative flex gap-6 pb-4 border-b border-white/10">
-                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Aktif seri</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{memoryState.score}</strong></div>
-                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Faz</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{getPhaseLabel(memoryState.phase)}</strong></div>
+              <div className="p-4 lg:p-6 max-w-4xl mx-auto flex flex-col gap-5">
+
+                {/* ── Active Game: Top Info Bar ── */}
+                <div className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
+                  <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg, var(--color-primary), #8b5cf6, #ec4899)" }} />
+                  <div className="flex items-center gap-4 px-5 py-3.5">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-extrabold uppercase tracking-widest text-(--color-text-muted) m-0 mb-0.5">{activeCategory.title}</p>
+                      <h2 className="text-base font-extrabold text-(--color-text-strong) m-0 truncate">{activeTab.title}</h2>
                     </div>
-                    <p className="relative text-(--color-text-soft) text-sm leading-relaxed m-0">{memoryState.message}</p>
-                    <p className="relative text-(--color-text-muted) text-xs m-0">Kısayollar: <strong>A/B</strong> oyun değiştirir, yön tuşları hücre seçer, <strong>Enter</strong> ve <strong>Boşluk</strong> aksiyonu tetikler.</p>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {activeTab.goals.slice(0, 2).map((goal) => (
+                        <span key={goal} className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: "var(--color-primary)/10", color: "var(--color-primary)", border: "1px solid var(--color-primary)/20" }}>{goal}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                {activeGame === "memory" && (
+                  <section className="relative rounded-3xl p-6 lg:p-8 flex flex-col gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(19,184,255,0.18)", boxShadow: "0 0 80px rgba(19,184,255,0.08), 0 24px 48px rgba(0,0,0,0.4)" }}>
+                    <div className="absolute top-0 right-0 w-96 h-48 rounded-full pointer-events-none" style={{ background: "#13b8ff", opacity: 0.06, filter: "blur(70px)", transform: "translate(20%,-30%)" }} />
+                    <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full pointer-events-none" style={{ background: "#8b5cf6", opacity: 0.04, filter: "blur(60px)", transform: "translate(-30%,30%)" }} />
+                    {/* HUD */}
+                    <div className="relative flex gap-4 pb-5 border-b border-white/10">
+                      <div className="flex-1 rounded-2xl p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                        <p className="text-white/40 text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Aktif seri</p>
+                        <strong className="text-white text-4xl font-extrabold tabular-nums leading-none tracking-tight">{memoryState.score}</strong>
+                      </div>
+                      <div className="flex-1 rounded-2xl p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                        <p className="text-white/40 text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Faz</p>
+                        <strong className="text-white text-4xl font-extrabold tabular-nums leading-none tracking-tight">{getPhaseLabel(memoryState.phase)}</strong>
+                      </div>
+                      <div className="flex-1 rounded-2xl p-3.5" style={{ background: "rgba(19,184,255,0.08)", border: "1px solid rgba(19,184,255,0.15)" }}>
+                        <p className="text-[#13b8ff]/60 text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">En İyi</p>
+                        <strong className="text-4xl font-extrabold tabular-nums leading-none tracking-tight" style={{ color: "#13b8ff" }}>{scoreboard.memory.best || "—"}</strong>
+                      </div>
+                    </div>
+                    <p className="relative text-white/50 text-sm leading-relaxed m-0">{memoryState.message}</p>
+                    <p className="relative text-white/30 text-xs m-0">Kısayollar: <strong className="text-white/50">A/B</strong> oyun değiştirir, yön tuşları hücre seçer, <strong className="text-white/50">Enter</strong> ve <strong className="text-white/50">Boşluk</strong> aksiyonu tetikler.</p>
                     <div className="relative grid grid-cols-3 gap-3">
                       {MEMORY_TILES.map((label, index) => {
                         const isActive = memoryState.flashIndex === index;
@@ -2176,31 +2493,41 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         const isCursor = memoryCursor === index;
                         const symbol = SYMBOL_LIBRARY.find((s) => s.label === label);
                         return (
-                          <button key={label} type="button" className={`relative flex flex-col items-center justify-center gap-1.5 h-28 rounded-2xl border cursor-pointer transition-all duration-150 select-none overflow-hidden ${isActive ? "game-tile-active border-transparent" : "border-white/10 hover:border-white/20"} ${isCursor ? "game-tile-cursor" : ""}`} disabled={isLocked} onClick={() => handleMemoryPick(index)} style={!isActive ? { background: symbol?.background } as CSSProperties : undefined}>
+                          <button key={label} type="button" className={`relative flex flex-col items-center justify-center gap-1.5 h-28 rounded-2xl border cursor-pointer transition-all duration-150 select-none overflow-hidden ${isActive ? "game-tile-active border-transparent" : "border-white/8 hover:border-white/20"} ${isCursor ? "game-tile-cursor" : ""}`} disabled={isLocked} onClick={() => handleMemoryPick(index)} style={!isActive ? { background: symbol?.background } as CSSProperties : undefined}>
                             {!isActive && <div className="absolute inset-0" style={symbol ? patternStyle(symbol) : undefined} />}
                             <span className="relative text-2xl" style={!isActive ? { color: symbol?.accent } : undefined}>{symbol?.icon ?? label[0]}</span>
-                            <span className="relative text-xs font-medium text-white/70">{label}</span>
+                            <span className="relative text-xs font-semibold text-white/60">{label}</span>
                           </button>
                         );
                       })}
                     </div>
                     <div className="relative flex gap-3 pt-2">
-                      <button type="button" className={gameBtn} onClick={startMemoryGame}>Yeni Seri Başlat</button>
+                      <button type="button" className={gameBtn} style={{ background: "linear-gradient(135deg, #13b8ff, #8b5cf6)", boxShadow: "0 4px 20px rgba(19,184,255,0.4)" }} onClick={startMemoryGame}>Yeni Seri Başlat</button>
                       <button type="button" className={gameBtnSec} onClick={replayMemorySequence} disabled={memoryState.sequence.length === 0}>Sırayı Tekrar Göster</button>
                     </div>
                   </section>
                 )}
 
                 {activeGame === "pairs" && (
-                  <section className="relative rounded-3xl p-6 lg:p-8 flex flex-col gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(93,211,255,0.12)", boxShadow: "0 0 60px rgba(93,211,255,0.06)" }}>
-                    <div className="absolute top-0 left-0 w-72 h-48 rounded-full pointer-events-none" style={{ background: "#5dd3ff", opacity: 0.05, filter: "blur(60px)", transform: "translate(-20%,-30%)" }} />
-                    <div className="relative flex gap-6 pb-4 border-b border-white/10">
-                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Eşleşen çift</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{pairsState.pairsFound}</strong></div>
-                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Hamle</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{pairsState.moves}</strong></div>
-                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Durum</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{getPhaseLabel(pairsState.phase)}</strong></div>
+                  <section className="relative rounded-3xl p-6 lg:p-8 flex flex-col gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(93,211,255,0.18)", boxShadow: "0 0 80px rgba(93,211,255,0.08), 0 24px 48px rgba(0,0,0,0.4)" }}>
+                    <div className="absolute top-0 left-0 w-80 h-56 rounded-full pointer-events-none" style={{ background: "#5dd3ff", opacity: 0.06, filter: "blur(70px)", transform: "translate(-20%,-30%)" }} />
+                    {/* HUD */}
+                    <div className="relative flex gap-4 pb-5 border-b border-white/10">
+                      <div className="flex-1 rounded-2xl p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                        <p className="text-white/40 text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Eşleşen</p>
+                        <strong className="text-white text-4xl font-extrabold tabular-nums leading-none tracking-tight">{pairsState.pairsFound}</strong>
+                      </div>
+                      <div className="flex-1 rounded-2xl p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                        <p className="text-white/40 text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Hamle</p>
+                        <strong className="text-white text-4xl font-extrabold tabular-nums leading-none tracking-tight">{pairsState.moves}</strong>
+                      </div>
+                      <div className="flex-1 rounded-2xl p-3.5" style={{ background: "rgba(93,211,255,0.08)", border: "1px solid rgba(93,211,255,0.15)" }}>
+                        <p className="text-[#5dd3ff]/60 text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Durum</p>
+                        <strong className="text-2xl font-extrabold leading-tight" style={{ color: "#5dd3ff" }}>{getPhaseLabel(pairsState.phase)}</strong>
+                      </div>
                     </div>
-                    <p className="relative text-(--color-text-soft) text-sm leading-relaxed m-0">{pairsState.message}</p>
-                    <p className="relative text-(--color-text-muted) text-xs m-0">On iki kartı 4x3 düzende gezebilirsin; seçili kart parlak çerçeveyle görünür.</p>
+                    <p className="relative text-white/50 text-sm leading-relaxed m-0">{pairsState.message}</p>
+                    <p className="relative text-white/30 text-xs m-0">On iki kartı 4×3 düzende gezebilirsin; seçili kart parlak çerçeveyle görünür.</p>
                     <div className="relative grid grid-cols-4 gap-2">
                       {pairsState.tiles.map((tile, index) => {
                         const isCursor = pairsCursor === index;
@@ -2210,7 +2537,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                             <div className="absolute inset-0 rounded-xl" style={patternStyle(isVisible ? tile : { pattern: "grid" } as typeof tile)} />
                             <div className="relative flex flex-col items-center justify-center gap-1">
                               {isVisible ? (
-                                <><span className="text-2xl" style={{ color: tile.accent }}>{tile.icon}</span><span className="text-xs font-medium text-white/60">{tile.label}</span></>
+                                <><span className="text-2xl" style={{ color: tile.accent }}>{tile.icon}</span><span className="text-xs font-semibold text-white/60">{tile.label}</span></>
                               ) : (
                                 <><span className="text-2xl text-white/15">?</span><span className="text-xs text-white/20">aç</span></>
                               )}
@@ -2220,57 +2547,77 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       })}
                     </div>
                     <div className="relative flex gap-3">
-                      <button type="button" className={gameBtn} onClick={startPairsGame}>Yeni Deste Aç</button>
+                      <button type="button" className={gameBtn} style={{ background: "linear-gradient(135deg, #5dd3ff, #2dd4bf)", boxShadow: "0 4px 20px rgba(93,211,255,0.35)" }} onClick={startPairsGame}>Yeni Deste Aç</button>
                     </div>
                   </section>
                 )}
 
                 {activeGame === "pulse" && (
-                  <section className="relative rounded-3xl p-6 lg:p-8 flex flex-col gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(57,198,255,0.12)", boxShadow: "0 0 60px rgba(57,198,255,0.06)" }}>
-                    <div className="absolute bottom-0 left-1/2 w-96 h-48 rounded-full pointer-events-none" style={{ background: "#39c6ff", opacity: 0.05, filter: "blur(80px)", transform: "translate(-50%,30%)" }} />
-                    <div className="relative flex gap-6 pb-4 border-b border-white/10">
-                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Puan</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{pulseState.points}</strong></div>
-                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Tur</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{pulseState.round}/{PULSE_TOTAL_ROUNDS}</strong></div>
-                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Seri</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{pulseState.combo}</strong></div>
+                  <section className="relative rounded-3xl p-6 lg:p-8 flex flex-col gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(57,198,255,0.18)", boxShadow: "0 0 80px rgba(57,198,255,0.08), 0 24px 48px rgba(0,0,0,0.4)" }}>
+                    <div className="absolute bottom-0 left-1/2 w-96 h-64 rounded-full pointer-events-none" style={{ background: "#39c6ff", opacity: 0.06, filter: "blur(80px)", transform: "translate(-50%,30%)" }} />
+                    {/* HUD */}
+                    <div className="relative flex gap-4 pb-5 border-b border-white/10">
+                      <div className="flex-1 rounded-2xl p-3.5" style={{ background: "rgba(57,198,255,0.08)", border: "1px solid rgba(57,198,255,0.15)" }}>
+                        <p className="text-[#39c6ff]/60 text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Puan</p>
+                        <strong className="text-4xl font-extrabold tabular-nums leading-none tracking-tight" style={{ color: "#39c6ff" }}>{pulseState.points}</strong>
+                      </div>
+                      <div className="flex-1 rounded-2xl p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                        <p className="text-white/40 text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Tur</p>
+                        <strong className="text-white text-4xl font-extrabold tabular-nums leading-none tracking-tight">{pulseState.round}<span className="text-xl text-white/30">/{PULSE_TOTAL_ROUNDS}</span></strong>
+                      </div>
+                      <div className="flex-1 rounded-2xl p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                        <p className="text-white/40 text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Seri</p>
+                        <strong className="text-white text-4xl font-extrabold tabular-nums leading-none tracking-tight">{pulseState.combo}</strong>
+                      </div>
                     </div>
-                    <p className="relative text-(--color-text-soft) text-sm leading-relaxed m-0">{pulseState.message}</p>
-                    <p className="relative text-(--color-text-muted) text-xs m-0">Klavyede merkezden başla: yön tuşları seçimi taşır, <strong>Enter</strong> aktif kareyi oynatır.</p>
+                    <p className="relative text-white/50 text-sm leading-relaxed m-0">{pulseState.message}</p>
+                    <p className="relative text-white/30 text-xs m-0">Klavyede merkezden başla: yön tuşları seçimi taşır, <strong className="text-white/50">Enter</strong> aktif kareyi oynatır.</p>
                     <div className="relative grid grid-cols-3 gap-3">
                       {PULSE_LABELS.map((label, index) => {
                         const isActive = pulseState.activeIndex === index && pulseState.phase === "playing";
                         const isCursor = pulseCursor === index;
                         return (
                           <button key={label} type="button" className={`h-24 rounded-xl border flex items-center justify-center text-sm cursor-pointer transition-all ${isActive ? "game-tile-active border-transparent" : "border-white/8 hover:border-white/16"} ${isCursor ? "game-tile-cursor" : ""}`} style={!isActive ? { background: "rgba(10,18,34,0.9)", color: "rgba(148,163,184,0.8)" } : undefined} onClick={() => handlePulsePick(index)}>
-                            <span className="font-medium text-xs">{label}</span>
+                            <span className="font-semibold text-xs">{label}</span>
                           </button>
                         );
                       })}
                     </div>
                     <div className="relative flex gap-3">
-                      <button type="button" className={gameBtn} onClick={startPulseGame}>Seti Başlat</button>
+                      <button type="button" className={gameBtn} style={{ background: "linear-gradient(135deg, #39c6ff, #818cf8)", boxShadow: "0 4px 20px rgba(57,198,255,0.35)" }} onClick={startPulseGame}>Seti Başlat</button>
                     </div>
                   </section>
                 )}
 
                 {activeGame === "route" && (
-                  <section className="relative rounded-3xl p-6 lg:p-8 flex flex-col gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(74,207,255,0.12)", boxShadow: "0 0 60px rgba(74,207,255,0.06)" }}>
-                    <div className="absolute top-1/2 right-0 w-64 h-64 rounded-full pointer-events-none" style={{ background: "#4acfff", opacity: 0.04, filter: "blur(60px)", transform: "translate(30%,-50%)" }} />
-                    <div className="relative flex gap-6 pb-4 border-b border-white/10">
-                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Puan</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{routeState.score}</strong></div>
-                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Tur</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{routeState.round}/{ROUTE_TOTAL_ROUNDS}</strong></div>
-                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Seri</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{routeState.streak}</strong></div>
+                  <section className="relative rounded-3xl p-6 lg:p-8 flex flex-col gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(74,207,255,0.18)", boxShadow: "0 0 80px rgba(74,207,255,0.08), 0 24px 48px rgba(0,0,0,0.4)" }}>
+                    <div className="absolute top-1/2 right-0 w-72 h-72 rounded-full pointer-events-none" style={{ background: "#4acfff", opacity: 0.05, filter: "blur(70px)", transform: "translate(30%,-50%)" }} />
+                    {/* HUD */}
+                    <div className="relative flex gap-4 pb-5 border-b border-white/10">
+                      <div className="flex-1 rounded-2xl p-3.5" style={{ background: "rgba(74,207,255,0.08)", border: "1px solid rgba(74,207,255,0.15)" }}>
+                        <p className="text-[#4acfff]/60 text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Puan</p>
+                        <strong className="text-4xl font-extrabold tabular-nums leading-none tracking-tight" style={{ color: "#4acfff" }}>{routeState.score}</strong>
+                      </div>
+                      <div className="flex-1 rounded-2xl p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                        <p className="text-white/40 text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Tur</p>
+                        <strong className="text-white text-4xl font-extrabold tabular-nums leading-none tracking-tight">{routeState.round}<span className="text-xl text-white/30">/{ROUTE_TOTAL_ROUNDS}</span></strong>
+                      </div>
+                      <div className="flex-1 rounded-2xl p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                        <p className="text-white/40 text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Seri</p>
+                        <strong className="text-white text-4xl font-extrabold tabular-nums leading-none tracking-tight">{routeState.streak}</strong>
+                      </div>
                     </div>
-                    <p className="relative text-(--color-text-soft) text-sm leading-relaxed m-0">{routeState.message}</p>
-                    <div className="relative flex items-center gap-6">
-                      <div className="flex flex-col items-center rounded-2xl px-8 py-6 border" style={{ background: "rgba(10,18,34,0.9)", borderColor: "rgba(74,207,255,0.15)" }}>
-                        <span className="text-(--color-text-muted) text-xs uppercase tracking-wider">Aktif komut</span>
-                        <strong className="text-white text-lg mt-1">{routeCommandMeta?.label ?? "Hazır"}</strong>
-                        <span className="text-white text-3xl mt-1" style={{ color: "#4acfff" }}>{routeCommandMeta?.icon ?? "•"}</span>
+                    <p className="relative text-white/50 text-sm leading-relaxed m-0">{routeState.message}</p>
+                    <div className="relative flex items-center gap-4">
+                      <div className="flex flex-col items-center rounded-2xl px-8 py-5 border min-w-[140px]" style={{ background: "rgba(10,18,34,0.9)", borderColor: "rgba(74,207,255,0.2)" }}>
+                        <span className="text-white/40 text-[10px] uppercase tracking-wider mb-1 font-bold">Aktif komut</span>
+                        <strong className="text-white text-base font-bold mt-0.5">{routeCommandMeta?.label ?? "Hazır"}</strong>
+                        <span className="text-3xl mt-1.5" style={{ color: "#4acfff" }}>{routeCommandMeta?.icon ?? "•"}</span>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        {routeState.history.slice(-5).map((item, index) => {
+                        {routeState.history.slice(-6).map((item, index) => {
                           const meta = ROUTE_COMMANDS.find((command) => command.key === item);
-                          return <span key={`${item}-${index}`} className="text-(--color-text-muted) text-sm">{meta?.label ?? item}</span>;
+                          return <span key={`${item}-${index}`} className="text-white/30 text-sm">{meta?.label ?? item}</span>;
                         })}
                       </div>
                     </div>
@@ -2278,124 +2625,163 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       {ROUTE_COMMANDS.map((command, index) => {
                         const isCursor = routeCursor === index;
                         return (
-                          <button key={command.key} type="button" className={`flex flex-col items-center justify-center gap-1.5 h-24 rounded-xl border cursor-pointer transition-all ${isCursor ? "game-tile-cursor border-transparent" : "border-white/8 hover:border-white/16"}`} style={{ background: "rgba(10,18,34,0.9)" }} onClick={() => handleRoutePick(command.key)}>
+                          <button key={command.key} type="button" className={`flex flex-col items-center justify-center gap-2 h-24 rounded-xl border cursor-pointer transition-all ${isCursor ? "game-tile-cursor border-transparent" : "border-white/8 hover:border-white/20"}`} style={{ background: "rgba(10,18,34,0.9)" }} onClick={() => handleRoutePick(command.key)}>
                             <span className="text-2xl" style={{ color: "#4acfff" }}>{command.icon}</span>
-                            <span className="text-xs text-(--color-text-muted)">{command.label}</span>
+                            <span className="text-xs font-semibold text-white/50">{command.label}</span>
                           </button>
                         );
                       })}
                     </div>
                     <div className="relative flex gap-3">
-                      <button type="button" className={gameBtn} onClick={startRouteGame}>Komutları Başlat</button>
+                      <button type="button" className={gameBtn} style={{ background: "linear-gradient(135deg, #4acfff, #6366f1)", boxShadow: "0 4px 20px rgba(74,207,255,0.35)" }} onClick={startRouteGame}>Komutları Başlat</button>
                     </div>
                   </section>
                 )}
 
                 {activeGame === "difference" && (
-                  <section className="relative rounded-3xl p-6 lg:p-8 flex flex-col gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(105,212,255,0.12)", boxShadow: "0 0 60px rgba(105,212,255,0.06)" }}>
-                    <div className="absolute top-0 left-1/2 w-96 h-48 rounded-full pointer-events-none" style={{ background: "#69d4ff", opacity: 0.05, filter: "blur(60px)", transform: "translate(-50%,-40%)" }} />
-                    <div className="relative flex gap-6 pb-4 border-b border-white/10">
-                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Skor</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{differenceState.score}</strong></div>
-                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Tur</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{differenceState.round}/{DIFFERENCE_TOTAL_ROUNDS}</strong></div>
-                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Durum</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{getPhaseLabel(differenceState.phase)}</strong></div>
+                  <section className="relative rounded-3xl p-6 lg:p-8 flex flex-col gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(105,212,255,0.18)", boxShadow: "0 0 80px rgba(105,212,255,0.08), 0 24px 48px rgba(0,0,0,0.4)" }}>
+                    <div className="absolute top-0 left-1/2 w-96 h-56 rounded-full pointer-events-none" style={{ background: "#69d4ff", opacity: 0.06, filter: "blur(70px)", transform: "translate(-50%,-40%)" }} />
+                    {/* HUD */}
+                    <div className="relative flex gap-4 pb-5 border-b border-white/10">
+                      <div className="flex-1 rounded-2xl p-3.5" style={{ background: "rgba(105,212,255,0.08)", border: "1px solid rgba(105,212,255,0.15)" }}>
+                        <p className="text-[#69d4ff]/60 text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Skor</p>
+                        <strong className="text-4xl font-extrabold tabular-nums leading-none tracking-tight" style={{ color: "#69d4ff" }}>{differenceState.score}</strong>
+                      </div>
+                      <div className="flex-1 rounded-2xl p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                        <p className="text-white/40 text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Tur</p>
+                        <strong className="text-white text-4xl font-extrabold tabular-nums leading-none tracking-tight">{differenceState.round}<span className="text-xl text-white/30">/{DIFFERENCE_TOTAL_ROUNDS}</span></strong>
+                      </div>
+                      <div className="flex-1 rounded-2xl p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                        <p className="text-white/40 text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Durum</p>
+                        <strong className="text-white text-2xl font-extrabold leading-tight">{getPhaseLabel(differenceState.phase)}</strong>
+                      </div>
                     </div>
-                    <p className="relative text-(--color-text-soft) text-sm leading-relaxed m-0">{differenceState.message}</p>
-                    <p className="relative text-(--color-text-muted) text-xs m-0">Aynı dizilim klavyede de çalışır; seçili kart parlak kontur ile gösterilir.</p>
+                    <p className="relative text-white/50 text-sm leading-relaxed m-0">{differenceState.message}</p>
+                    <p className="relative text-white/30 text-xs m-0">Aynı dizilim klavyede de çalışır; seçili kart parlak kontur ile gösterilir.</p>
                     <div className="relative grid grid-cols-3 gap-3">
                       {differenceState.tiles.map((tile, index) => {
                         const reveal = differenceState.revealId === tile.id;
                         const isCursor = differenceCursor === index;
                         return (
-                          <button key={tile.id} type="button" className={`relative flex flex-col items-center justify-center h-28 rounded-2xl border cursor-pointer overflow-hidden transition-all hover:border-white/20 ${reveal ? "game-tile-reveal" : "border-white/8"} ${isCursor ? "game-tile-cursor" : ""}`} onClick={() => handleDifferencePick(tile.id)} style={{ background: tile.background, transform: `rotate(${tile.rotation}deg)` } as CSSProperties}>
+                          <button key={tile.id} type="button" className={`relative flex flex-col items-center justify-center h-28 rounded-2xl border cursor-pointer overflow-hidden transition-all hover:border-white/25 ${reveal ? "game-tile-reveal" : "border-white/8"} ${isCursor ? "game-tile-cursor" : ""}`} onClick={() => handleDifferencePick(tile.id)} style={{ background: tile.background, transform: `rotate(${tile.rotation}deg)` } as CSSProperties}>
                             <div className="absolute inset-0" style={patternStyle(tile)} />
                             <div className="relative flex flex-col items-center justify-center gap-1.5">
                               <span className="text-2xl" style={{ color: tile.accent }}>{tile.icon}</span>
-                              <span className="text-xs font-medium text-white/60">{tile.label}</span>
+                              <span className="text-xs font-semibold text-white/60">{tile.label}</span>
                             </div>
                           </button>
                         );
                       })}
                     </div>
                     <div className="relative flex gap-3">
-                      <button type="button" className={gameBtn} onClick={startDifferenceGame}>Turu Başlat</button>
+                      <button type="button" className={gameBtn} style={{ background: "linear-gradient(135deg, #69d4ff, #a78bfa)", boxShadow: "0 4px 20px rgba(105,212,255,0.35)" }} onClick={startDifferenceGame}>Turu Başlat</button>
                     </div>
                   </section>
                 )}
 
                 {activeGame === "scan" && (
-                  <section className="relative rounded-3xl p-6 lg:p-8 flex flex-col gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(139,226,255,0.12)", boxShadow: "0 0 60px rgba(139,226,255,0.06)" }}>
-                    <div className="absolute bottom-0 right-0 w-80 h-64 rounded-full pointer-events-none" style={{ background: "#8be2ff", opacity: 0.04, filter: "blur(70px)", transform: "translate(20%,20%)" }} />
-                    <div className="relative flex gap-6 pb-4 border-b border-white/10">
-                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Skor</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{scanState.score}</strong></div>
-                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Tur</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{scanState.round}/{SCAN_TOTAL_ROUNDS}</strong></div>
-                      <div><p className="text-(--color-text-muted) text-xs uppercase tracking-wider m-0 mb-0.5">Hedef</p><strong className="text-white text-3xl font-bold tabular-nums leading-none">{scanState.targetLabel || "Hazır"}</strong></div>
+                  <section className="relative rounded-3xl p-6 lg:p-8 flex flex-col gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(139,226,255,0.18)", boxShadow: "0 0 80px rgba(139,226,255,0.08), 0 24px 48px rgba(0,0,0,0.4)" }}>
+                    <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full pointer-events-none" style={{ background: "#8be2ff", opacity: 0.05, filter: "blur(70px)", transform: "translate(20%,20%)" }} />
+                    {/* HUD */}
+                    <div className="relative flex gap-4 pb-5 border-b border-white/10">
+                      <div className="flex-1 rounded-2xl p-3.5" style={{ background: "rgba(139,226,255,0.08)", border: "1px solid rgba(139,226,255,0.15)" }}>
+                        <p className="text-[#8be2ff]/60 text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Skor</p>
+                        <strong className="text-4xl font-extrabold tabular-nums leading-none tracking-tight" style={{ color: "#8be2ff" }}>{scanState.score}</strong>
+                      </div>
+                      <div className="flex-1 rounded-2xl p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                        <p className="text-white/40 text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Tur</p>
+                        <strong className="text-white text-4xl font-extrabold tabular-nums leading-none tracking-tight">{scanState.round}<span className="text-xl text-white/30">/{SCAN_TOTAL_ROUNDS}</span></strong>
+                      </div>
+                      <div className="flex-1 rounded-2xl p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                        <p className="text-white/40 text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Hedef</p>
+                        <strong className="text-white text-2xl font-extrabold leading-tight truncate">{scanState.targetLabel || "Hazır"}</strong>
+                      </div>
                     </div>
-                    <p className="relative text-(--color-text-soft) text-sm leading-relaxed m-0">{scanState.message}</p>
-                    <div className="relative rounded-xl px-6 py-3 flex items-center gap-4 border" style={{ background: "rgba(10,18,34,0.9)", borderColor: "rgba(139,226,255,0.15)" }}>
-                      <span className="text-(--color-text-muted) text-xs uppercase tracking-wider">Bu simgeyi bul</span>
-                      {scanState.targetLabel ? (() => {
-                        const targetSymbol = SYMBOL_LIBRARY.find((s) => s.label === scanState.targetLabel);
-                        return (
-                          <div className="flex items-center gap-2">
-                            <span className="text-2xl" style={{ color: targetSymbol?.accent }}>{targetSymbol?.icon ?? "?"}</span>
-                            <strong className="text-white">{scanState.targetLabel}</strong>
+                    <p className="relative text-white/50 text-sm leading-relaxed m-0">{scanState.message}</p>
+                    {/* Target highlight */}
+                    {scanState.targetLabel && (() => {
+                      const targetSymbol = SYMBOL_LIBRARY.find((s) => s.label === scanState.targetLabel);
+                      return (
+                        <div className="relative rounded-2xl px-5 py-4 flex items-center gap-4 border" style={{ background: "rgba(10,18,34,0.9)", borderColor: "rgba(139,226,255,0.2)" }}>
+                          <span className="text-white/40 text-xs uppercase tracking-wider font-bold">Bu simgeyi bul</span>
+                          <div className="flex items-center gap-3 ml-auto">
+                            <span className="text-3xl" style={{ color: targetSymbol?.accent }}>{targetSymbol?.icon ?? "?"}</span>
+                            <strong className="text-white text-sm font-bold">{scanState.targetLabel}</strong>
                           </div>
-                        );
-                      })() : <span className="text-(--color-text-muted) text-sm">Oyunu başlat</span>}
-                    </div>
+                        </div>
+                      );
+                    })()}
+                    {!scanState.targetLabel && (
+                      <div className="relative rounded-2xl px-5 py-4 flex items-center gap-3 border" style={{ background: "rgba(10,18,34,0.9)", borderColor: "rgba(139,226,255,0.1)" }}>
+                        <span className="text-white/30 text-xs uppercase tracking-wider font-bold">Bu simgeyi bul</span>
+                        <span className="text-white/20 text-sm ml-auto">Oyunu başlat</span>
+                      </div>
+                    )}
                     <div className="relative grid grid-cols-3 gap-3">
                       {scanState.tiles.map((tile, index) => {
                         const reveal = scanState.revealId === tile.id;
                         const isCursor = scanCursor === index;
                         return (
-                          <button key={tile.id} type="button" className={`relative flex flex-col items-center justify-center h-28 rounded-2xl border cursor-pointer overflow-hidden transition-all hover:border-white/20 ${reveal ? "game-tile-reveal" : "border-white/8"} ${isCursor ? "game-tile-cursor" : ""}`} onClick={() => handleScanPick(tile.id)} style={{ background: tile.background, transform: `rotate(${tile.rotation}deg)` } as CSSProperties}>
+                          <button key={tile.id} type="button" className={`relative flex flex-col items-center justify-center h-28 rounded-2xl border cursor-pointer overflow-hidden transition-all hover:border-white/25 ${reveal ? "game-tile-reveal" : "border-white/8"} ${isCursor ? "game-tile-cursor" : ""}`} onClick={() => handleScanPick(tile.id)} style={{ background: tile.background, transform: `rotate(${tile.rotation}deg)` } as CSSProperties}>
                             <div className="absolute inset-0" style={patternStyle(tile)} />
                             <div className="relative flex flex-col items-center justify-center gap-1.5">
                               <span className="text-2xl" style={{ color: tile.accent }}>{tile.icon}</span>
-                              <span className="text-xs font-medium text-white/60">{tile.label}</span>
+                              <span className="text-xs font-semibold text-white/60">{tile.label}</span>
                             </div>
                           </button>
                         );
                       })}
                     </div>
                     <div className="relative flex gap-3">
-                      <button type="button" className={gameBtn} onClick={startScanGame}>Taramayı Başlat</button>
+                      <button type="button" className={gameBtn} style={{ background: "linear-gradient(135deg, #8be2ff, #34d399)", boxShadow: "0 4px 20px rgba(139,226,255,0.35)" }} onClick={startScanGame}>Taramayı Başlat</button>
                     </div>
                   </section>
                 )}
 
-                <details ref={gameDetailsRef} className="bg-(--color-surface-strong) rounded-3xl border border-(--color-line) overflow-hidden w-full">
-                  <summary className="flex items-center justify-between px-5 py-4 cursor-pointer list-none group">
-                    <div className="flex items-center gap-3">
-                      <div className="w-1 h-10 rounded-full bg-(--color-primary) shrink-0" />
+                {/* ── Premium Game Details Card ── */}
+                <details ref={gameDetailsRef} className="rounded-3xl border border-(--color-line) overflow-hidden w-full" style={{ background: "var(--color-surface-strong)" }}>
+                  <summary className="flex items-center justify-between px-5 py-4 cursor-pointer list-none group select-none">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, var(--color-primary)/15, #8b5cf6/10)", border: "1px solid var(--color-primary)/20" }}>
+                        <div className="w-2 h-7 rounded-full shrink-0" style={{ background: "linear-gradient(180deg, var(--color-primary), #8b5cf6)" }} />
+                      </div>
                       <div>
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-(--color-primary) block">{activeCategory.title}</span>
-                        <h3 className="text-(--color-text-strong) font-semibold m-0">{activeTab.title}</h3>
+                        <span className="text-[10px] font-extrabold uppercase tracking-widest block mb-0.5" style={{ color: "var(--color-primary)" }}>{activeCategory.title}</span>
+                        <h3 className="text-(--color-text-strong) font-bold text-base m-0">{activeTab.title}</h3>
                       </div>
                     </div>
-                    <span className="flex items-center gap-1 text-(--color-text-muted) text-xs font-medium"><ChevronDown size={14} /> Detaylar</span>
+                    <div className="flex items-center gap-2">
+                      {[{l: "En iyi", v: activeScoreCard.best}, {l: "Tekrar", v: activeScoreCard.plays}].map(({l, v}) => (
+                        <div key={l} className="hidden sm:flex flex-col items-center px-3 py-1.5 rounded-xl" style={{ background: "var(--color-primary)/8", border: "1px solid var(--color-primary)/15" }}>
+                          <span className="text-[9px] uppercase tracking-wider font-bold text-(--color-text-muted)">{l}</span>
+                          <strong className="font-extrabold text-sm" style={{ color: "var(--color-primary)" }}>{v}</strong>
+                        </div>
+                      ))}
+                      <span className="flex items-center gap-1 text-(--color-text-muted) text-xs font-semibold ml-2"><ChevronDown size={14} /> Detaylar</span>
+                    </div>
                   </summary>
-                  <div className="px-5 pb-5 space-y-4">
-                    <p className="text-(--color-text-soft) text-sm m-0">{activeTab.blurb}</p>
+                  <div className="px-5 pb-6 space-y-4 border-t border-(--color-line) pt-4">
+                    <p className="text-(--color-text-soft) text-sm m-0 leading-relaxed">{activeTab.blurb}</p>
                     <div className="flex flex-wrap gap-2">
-                      {activeTab.goals.map((goal) => <span key={goal} className="bg-(--color-primary-light) text-(--color-primary) text-xs font-medium px-2.5 py-1 rounded-full">{goal}</span>)}
+                      {activeTab.goals.map((goal) => <span key={goal} className="text-xs font-bold px-3 py-1 rounded-full" style={{ background: "var(--color-primary)/10", color: "var(--color-primary)", border: "1px solid var(--color-primary)/20" }}>{goal}</span>)}
                     </div>
-                    <div className="space-y-3">
-                      <div className="flex gap-3">
-                        {[{l: "En iyi", v: activeScoreCard.best}, {l: "Son", v: activeScoreCard.last}, {l: "Tekrar", v: activeScoreCard.plays}].map(({l, v}) => (
-                          <div key={l} className="flex flex-col bg-(--color-primary)/5 border border-(--color-primary)/10 rounded-xl px-4 py-3 min-w-[80px]">
-                            <span className="text-(--color-text-muted) text-xs mb-1">{l}</span>
-                            <strong className="text-(--color-primary) text-xl font-bold tabular-nums">{v}</strong>
-                          </div>
-                        ))}
-                      </div>
-                      {activeRemoteScore.best > 0 && (
+                    <div className="grid grid-cols-3 gap-3">
+                      {[{l: "En iyi", v: activeScoreCard.best}, {l: "Son", v: activeScoreCard.last}, {l: "Tekrar", v: activeScoreCard.plays}].map(({l, v}) => (
+                        <div key={l} className="flex flex-col rounded-2xl px-4 py-3" style={{ background: "var(--color-primary)/5", border: "1px solid var(--color-primary)/10" }}>
+                          <span className="text-(--color-text-muted) text-[10px] uppercase tracking-wider font-bold mb-1">{l}</span>
+                          <strong className="text-2xl font-extrabold tabular-nums" style={{ color: "var(--color-primary)" }}>{v}</strong>
+                        </div>
+                      ))}
+                    </div>
+                    {activeRemoteScore.best > 0 && (
+                      <div className="flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.15)" }}>
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
                         <span className="text-(--color-text-soft) text-sm">
                           Sunucu en iyi: <strong className="text-(--color-text-strong)">{activeRemoteScore.best}</strong>
-                          {activeRemoteScore.lastPlayedAt ? ` · ${formatPlayedAt(activeRemoteScore.lastPlayedAt)}` : ""}
+                          {activeRemoteScore.lastPlayedAt ? <span className="text-(--color-text-muted)"> · {formatPlayedAt(activeRemoteScore.lastPlayedAt)}</span> : ""}
                         </span>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 </details>
 
@@ -2410,25 +2796,32 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         {/* ── Therapy Program ── */}
         {activeAppView === "therapy-program" && (
           <div className="flex flex-col h-full overflow-hidden">
-            {/* ── Header ── */}
-            <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-(--color-line)" style={{ background: "var(--color-chrome-section)" }}>
-              <div>
-                <h1 className="text-xl font-bold text-(--color-text-strong) m-0">Terapi Programı</h1>
-                <p className="text-(--color-text-soft) text-sm mt-1 m-0">Kanıta dayalı ergoterapi alanlarına göre kişiselleştirilmiş aktivite önerileri, oyun eşlemeleri, haftalık plan üreticisi ve ilerleme takibi.</p>
+            {/* ── Premium Header ── */}
+            <div className="relative flex items-start justify-between gap-4 px-6 py-5 border-b border-(--color-line) overflow-hidden" style={{ background: "var(--color-chrome-section)", backdropFilter: "blur(20px)" }}>
+              {/* Background glow */}
+              <div className="absolute top-0 left-0 w-64 h-32 rounded-full pointer-events-none" style={{ background: "var(--color-primary)", opacity: 0.04, filter: "blur(50px)", transform: "translate(-20%,-40%)" }} />
+              <div className="relative">
+                <div className="flex items-center gap-2.5 mb-1">
+                  <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, var(--color-primary), #8b5cf6)", boxShadow: "0 2px 8px var(--color-primary)/30" }}>
+                    <Stethoscope size={13} className="text-white" />
+                  </div>
+                  <h1 className="text-xl font-extrabold text-(--color-text-strong) m-0 tracking-tight">Terapi Programı</h1>
+                </div>
+                <p className="text-(--color-text-soft) text-sm m-0 max-w-lg leading-relaxed">Kanıta dayalı ergoterapi alanlarına göre kişiselleştirilmiş aktivite önerileri ve oyun eşlemeleri.</p>
               </div>
               {clientOptions.length > 0 && (
-                <label className="flex flex-col gap-1 shrink-0 min-w-[180px]">
-                  <span className="text-xs text-(--color-text-soft)">Danışan Seç</span>
+                <div className="relative flex flex-col gap-1 shrink-0 min-w-[200px]">
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-(--color-text-muted)">Danışan Seç</span>
                   <select value={tpSelectedClientId ?? ""} onChange={(e) => setTpSelectedClientId(e.target.value || null)} className={inputCls}>
                     <option value="">Danışan seçin...</option>
                     {clientOptions.map((c) => <option key={c.id} value={c.id}>{c.displayName}</option>)}
                   </select>
-                </label>
+                </div>
               )}
             </div>
 
-            {/* ── Tabs ── */}
-            <div className="flex gap-1 px-4 py-2 border-b border-(--color-line) overflow-x-auto" style={{ background: "var(--color-chrome-section)" }}>
+            {/* ── Premium Tabs ── */}
+            <div className="flex gap-1 px-4 py-2.5 border-b border-(--color-line) overflow-x-auto" style={{ background: "var(--color-chrome-section)" }}>
               {([
                 {key: "domains" as const, label: "Terapi Alanları", Icon: Stethoscope, disabled: false},
                 {key: "activities" as const, label: "Aktiviteler", Icon: ClipboardList, disabled: !tpSelectedDomain},
@@ -2436,7 +2829,14 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 {key: "plan" as const, label: "Haftalık Plan", Icon: CalendarDays, disabled: !tpSelectedDomain},
                 {key: "progress" as const, label: "İlerleme", Icon: TrendingUp, disabled: !tpSelectedClientId},
               ] as {key: "domains" | "activities" | "games" | "plan" | "progress"; label: string; Icon: LucideIcon; disabled: boolean}[]).map(({key, label, Icon, disabled}) => (
-                <button key={key} type="button" className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border-none cursor-pointer transition-colors ${tpActiveTab === key ? "bg-(--color-primary) text-white" : "bg-transparent text-(--color-text-soft) hover:bg-(--color-surface-elevated) hover:text-(--color-text-body)"} disabled:opacity-40 disabled:cursor-not-allowed`} onClick={() => setTpActiveTab(key)} disabled={disabled}>
+                <button key={key} type="button"
+                  className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold border-none cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{
+                    background: tpActiveTab === key ? "linear-gradient(135deg, var(--color-primary), #8b5cf6)" : "transparent",
+                    color: tpActiveTab === key ? "white" : "var(--color-text-soft)",
+                    boxShadow: tpActiveTab === key ? "0 4px 12px var(--color-primary)/30" : "none",
+                  }}
+                  onClick={() => setTpActiveTab(key)} disabled={disabled}>
                   <Icon size={14} className="shrink-0" />
                   {label}
                 </button>
@@ -2447,23 +2847,40 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
               {/* ── Domains Tab ── */}
               {tpActiveTab === "domains" && (
-                <div>
-                  <h2 className="text-lg font-bold text-(--color-text-strong) mb-1">Ergoterapi Uygulama Alanları</h2>
-                  <p className="text-(--color-text-soft) text-sm mb-5">Danışanın ihtiyacına uygun terapi alanını seçin. Sistem, alan bazında hedefler, aktiviteler ve oyun önerileri üretecektir.</p>
+                <div className="space-y-5">
+                  <div>
+                    <h2 className="text-lg font-extrabold text-(--color-text-strong) mb-1 tracking-tight">Ergoterapi Uygulama Alanları</h2>
+                    <p className="text-(--color-text-soft) text-sm">Danışanın ihtiyacına uygun terapi alanını seçin. Sistem alan bazında hedefler, aktiviteler ve oyun önerileri üretecektir.</p>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {THERAPY_DOMAINS.map((domain) => {
                       const gameMappingCount = GAME_THERAPY_MAPPINGS.filter((m) => m.suitableDomains.includes(domain.key)).length;
+                      const isSelected = tpSelectedDomain === domain.key;
                       return (
-                        <button key={domain.key} type="button" className={`flex flex-col gap-2 p-5 bg-(--color-surface-strong) rounded-2xl border text-left cursor-pointer transition-all hover:shadow-(--shadow-elevated) ${tpSelectedDomain === domain.key ? "border-(--color-primary) shadow-(--shadow-elevated)" : "border-(--color-line)"}`} onClick={() => handleSelectDomain(domain.key)}>
-                          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${domain.color}20` }}>
-                            <DomainIcon iconKey={domain.icon} size={20} color={domain.color} />
+                        <button key={domain.key} type="button" className="flex flex-col gap-3 p-5 rounded-3xl border text-left cursor-pointer transition-all card-hover relative overflow-hidden" style={{
+                          background: isSelected
+                            ? `linear-gradient(135deg, ${domain.color}18 0%, ${domain.color}08 100%)`
+                            : "var(--color-surface-strong)",
+                          borderColor: isSelected ? domain.color : "var(--color-line)",
+                          boxShadow: isSelected ? `0 0 24px ${domain.color}20, 0 8px 32px rgba(0,0,0,0.1)` : "none",
+                        }} onClick={() => handleSelectDomain(domain.key)}>
+                          {/* Top shimmer line when selected */}
+                          {isSelected && <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg, ${domain.color}, transparent)` }} />}
+                          <div className="flex items-start justify-between">
+                            <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ background: `${domain.color}20`, border: `1px solid ${domain.color}30` }}>
+                              <DomainIcon iconKey={domain.icon} size={20} color={domain.color} />
+                            </div>
+                            {isSelected && (
+                              <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ background: domain.color }}>
+                                <span className="text-white text-[10px] font-black">✓</span>
+                              </div>
+                            )}
                           </div>
-                          <strong className="text-(--color-text-strong) text-sm">{domain.label}</strong>
-                          <p className="text-(--color-text-soft) text-xs leading-relaxed m-0">{domain.description}</p>
+                          <strong className="text-(--color-text-strong) font-bold">{domain.label}</strong>
+                          <p className="text-(--color-text-soft) text-xs leading-relaxed m-0 line-clamp-2">{domain.description}</p>
                           <div className="flex flex-wrap gap-2 text-xs text-(--color-text-muted)">
-                            <span className="flex items-center gap-1"><Target size={11} />{domain.goals.length} hedef</span>
-                            <span className="flex items-center gap-1"><ClipboardList size={11} />{domain.activities.length} aktivite</span>
-                            <span className="flex items-center gap-1"><Gamepad2 size={11} />{gameMappingCount} oyun</span>
+                            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full" style={{ background: `${domain.color}12`, color: domain.color }}><Target size={10} />{domain.goals.length} hedef</span>
+                            <span className="flex items-center gap-1 text-(--color-text-muted)"><Gamepad2 size={10} />{gameMappingCount} oyun</span>
                           </div>
                           <div className="flex flex-wrap gap-1">
                             {domain.suitableAgeGroups.map((ag) => <span key={ag} className="text-[10px] px-2 py-0.5 rounded-full border border-(--color-line) text-(--color-text-muted)">{ag}</span>)}
@@ -2489,184 +2906,304 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   filteredActivities = filteredActivities.filter((a) => a.label.toLocaleLowerCase("tr-TR").includes(q) || a.description.toLocaleLowerCase("tr-TR").includes(q) || a.subSkill.toLocaleLowerCase("tr-TR").includes(q));
                 }
                 const favoriteActivities = domain.activities.filter((a) => tpFavoriteActivities.includes(a.id));
-                const diffColor = (d: string) => d === "kolay" ? "bg-emerald-500/10 text-emerald-400" : d === "orta" ? "bg-amber-500/10 text-amber-400" : "bg-red-500/10 text-red-400";
 
                 return (
                   <div className="space-y-5">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-white mb-2" style={{ background: domain.color }}><DomainIcon iconKey={domain.icon} size={12} />{domain.label}</span>
-                        <h2 className="text-lg font-bold text-(--color-text-strong) m-0">Terapi Hedefleri ve Aktiviteler</h2>
-                      </div>
-                      <div className="flex gap-2 shrink-0">
-                        <button type="button" className={`${btnSecondary} flex items-center gap-1.5`} onClick={() => setTpActiveTab("games")}><Gamepad2 size={14} />Oyun Eşleme</button>
-                        <button type="button" className={`${btnPrimary} flex items-center gap-1.5`} onClick={handleGeneratePlan}><CalendarDays size={14} />Plan Üret →</button>
+                    {/* ── Premium Section Header ── */}
+                    <div className="relative overflow-hidden rounded-3xl border border-(--color-line) p-5" style={{ background: `linear-gradient(135deg, ${domain.color}10 0%, var(--color-surface-strong) 100%)` }}>
+                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg, ${domain.color}, #8b5cf6, transparent)` }} />
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: domain.color, boxShadow: `0 4px 12px ${domain.color}50` }}>
+                              <DomainIcon iconKey={domain.icon} size={15} color="white" />
+                            </div>
+                            <span className="text-xs font-bold px-2.5 py-1 rounded-full text-white" style={{ background: domain.color }}>{domain.label}</span>
+                          </div>
+                          <h2 className="text-xl font-extrabold text-(--color-text-strong) m-0 tracking-tight">Terapi Hedefleri ve Aktiviteler</h2>
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                          <button type="button"
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border-none cursor-pointer transition-all text-(--color-text-body) hover:text-(--color-text-strong)"
+                            style={{ background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}
+                            onClick={() => setTpActiveTab("games")}>
+                            <Gamepad2 size={13} />Oyun Eşleme
+                          </button>
+                          <button type="button"
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border-none cursor-pointer text-white transition-all"
+                            style={{ background: "linear-gradient(135deg,var(--color-primary),#8b5cf6)", boxShadow: "0 4px 12px var(--color-primary)/40" }}
+                            onClick={handleGeneratePlan}>
+                            <CalendarDays size={13} />Plan Üret →
+                          </button>
+                        </div>
                       </div>
                     </div>
 
+                    {/* ── Premium stat strip ── */}
                     <div className="grid grid-cols-4 gap-3">
-                      {[{v: domain.goals.length, l: "Hedef"}, {v: domain.activities.length, l: "Aktivite"}, {v: domain.subSkills.length, l: "Beceri Alanı"}, {v: favoriteActivities.length, l: "Favori"}].map(({v, l}) => (
-                        <div key={l} className="bg-(--color-surface-strong) rounded-xl border border-(--color-line) p-3 text-center">
-                          <span className="text-2xl font-bold text-(--color-primary) block">{v}</span>
+                      {([
+                        {v: domain.goals.length, l: "Hedef", emoji: "🎯", color: "#2563eb"},
+                        {v: domain.activities.length, l: "Aktivite", emoji: "🧩", color: "#8b5cf6"},
+                        {v: domain.subSkills.length, l: "Beceri Alanı", emoji: "⚡", color: "#10b981"},
+                        {v: favoriteActivities.length, l: "Favori", emoji: "⭐", color: "#f59e0b"},
+                      ]).map(({v, l, emoji, color}) => (
+                        <div key={l} className="relative overflow-hidden rounded-2xl border border-(--color-line) p-4 text-center" style={{ background: "var(--color-surface-strong)" }}>
+                          <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg, ${color}, transparent)` }} />
+                          <span className="text-2xl block mb-1">{emoji}</span>
+                          <span className="text-2xl font-extrabold block" style={{ color }}>{v}</span>
                           <span className="text-(--color-text-muted) text-xs">{l}</span>
                         </div>
                       ))}
                     </div>
 
-                    <details open className="bg-(--color-surface-strong) rounded-xl border border-(--color-line) overflow-hidden">
-                      <summary className="flex items-center justify-between px-4 py-3 cursor-pointer list-none font-medium text-sm text-(--color-text-strong)">
-                        <span className="flex items-center gap-1.5"><Target size={14} />Terapi Hedefleri</span>
-                        <span className="bg-(--color-surface-elevated) text-(--color-text-muted) text-xs px-2 py-0.5 rounded-full">{domain.goals.length}</span>
+                    {/* ── Goals accordion ── */}
+                    <details open className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
+                      <summary className="flex items-center justify-between px-5 py-3.5 cursor-pointer list-none font-semibold text-sm text-(--color-text-strong)" style={{ background: "var(--color-surface-elevated)" }}>
+                        <span className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#2563eb,#06b6d4)", boxShadow: "0 2px 6px #2563eb40" }}>
+                            <Target size={12} className="text-white" />
+                          </span>
+                          Terapi Hedefleri
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold text-white" style={{ background: "#2563eb" }}>{domain.goals.length}</span>
                       </summary>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 pt-0">
-                        {domain.goals.map((goal) => (
-                          <div key={goal.id} className="bg-(--color-surface-elevated) rounded-xl p-3">
-                            <strong className="text-(--color-text-strong) text-sm">{goal.label}</strong>
-                            <p className="text-(--color-text-soft) text-xs mt-1 m-0">{goal.description}</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4">
+                        {domain.goals.map((goal, gi) => (
+                          <div key={goal.id} className="relative overflow-hidden rounded-xl border border-(--color-line) p-3.5" style={{ background: "var(--color-surface-elevated)" }}>
+                            <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg,#2563eb40,transparent)" }} />
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <span className="w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white shrink-0" style={{ background: "linear-gradient(135deg,#2563eb,#8b5cf6)" }}>{gi + 1}</span>
+                              <strong className="text-(--color-text-strong) text-sm leading-snug">{goal.label}</strong>
+                            </div>
+                            <p className="text-(--color-text-soft) text-xs mt-1 m-0 pl-7 leading-relaxed">{goal.description}</p>
                           </div>
                         ))}
                       </div>
                     </details>
 
-                    <details open className="bg-(--color-surface-strong) rounded-xl border border-(--color-line) overflow-hidden">
-                      <summary className="flex items-center justify-between px-4 py-3 cursor-pointer list-none font-medium text-sm text-(--color-text-strong)">
-                        <span>⚠️ Fonksiyonel Zorluklar</span>
-                        <span className="bg-(--color-surface-elevated) text-(--color-text-muted) text-xs px-2 py-0.5 rounded-full">{domain.challenges.length}</span>
-                      </summary>
-                      <div className="flex flex-wrap gap-2 p-4 pt-0">
-                        {domain.challenges.map((ch) => <span key={ch.id} className="bg-(--color-primary-light) text-(--color-primary) text-xs px-2.5 py-1 rounded-full">{ch.label}</span>)}
-                      </div>
-                    </details>
+                    {/* ── Challenges + SubSkills row ── */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <details open className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
+                        <summary className="flex items-center justify-between px-5 py-3.5 cursor-pointer list-none font-semibold text-sm text-(--color-text-strong)" style={{ background: "var(--color-surface-elevated)" }}>
+                          <span className="flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#f59e0b,#ef4444)", boxShadow: "0 2px 6px #f59e0b40" }}>
+                              <Zap size={12} className="text-white" />
+                            </span>
+                            Fonksiyonel Zorluklar
+                          </span>
+                          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold text-white" style={{ background: "#f59e0b" }}>{domain.challenges.length}</span>
+                        </summary>
+                        <div className="flex flex-wrap gap-2 p-4">
+                          {domain.challenges.map((ch) => (
+                            <span key={ch.id} className="text-xs px-3 py-1.5 rounded-full border font-medium" style={{ background: "#f59e0b10", borderColor: "#f59e0b30", color: "#f59e0b" }}>{ch.label}</span>
+                          ))}
+                        </div>
+                      </details>
 
-                    <details open className="bg-(--color-surface-strong) rounded-xl border border-(--color-line) overflow-hidden">
-                      <summary className="flex items-center justify-between px-4 py-3 cursor-pointer list-none font-medium text-sm text-(--color-text-strong)">
-                        <span>🧩 Alt Beceriler</span>
-                        <span className="bg-(--color-surface-elevated) text-(--color-text-muted) text-xs px-2 py-0.5 rounded-full">{domain.subSkills.length}</span>
-                      </summary>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 pt-0">
-                        {domain.subSkills.map((skill) => (
-                          <div key={skill.id} className="bg-(--color-surface-elevated) rounded-xl p-3">
-                            <strong className="text-(--color-text-strong) text-sm">{skill.label}</strong>
-                            <p className="text-(--color-text-soft) text-xs mt-1 m-0">{skill.description}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </details>
+                      <details open className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
+                        <summary className="flex items-center justify-between px-5 py-3.5 cursor-pointer list-none font-semibold text-sm text-(--color-text-strong)" style={{ background: "var(--color-surface-elevated)" }}>
+                          <span className="flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#10b981,#06b6d4)", boxShadow: "0 2px 6px #10b98140" }}>
+                              <Puzzle size={12} className="text-white" />
+                            </span>
+                            Alt Beceriler
+                          </span>
+                          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold text-white" style={{ background: "#10b981" }}>{domain.subSkills.length}</span>
+                        </summary>
+                        <div className="grid grid-cols-1 gap-2 p-4">
+                          {domain.subSkills.map((skill) => (
+                            <div key={skill.id} className="flex items-start gap-2.5 p-3 rounded-xl border border-(--color-line)" style={{ background: "var(--color-surface-elevated)" }}>
+                              <span className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: "#10b981" }} />
+                              <div>
+                                <strong className="text-(--color-text-strong) text-sm">{skill.label}</strong>
+                                <p className="text-(--color-text-soft) text-xs mt-0.5 m-0">{skill.description}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    </div>
 
+                    {/* ── Favorites strip ── */}
                     {favoriteActivities.length > 0 && (
-                      <div>
-                        <h3 className="text-sm font-semibold text-(--color-text-strong) mb-2">⭐ Favori Aktiviteler</h3>
+                      <div className="rounded-2xl border border-amber-500/30 p-4 overflow-hidden relative" style={{ background: "color-mix(in srgb,#f59e0b 6%,var(--color-surface-strong))" }}>
+                        <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,#f59e0b,transparent)" }} />
+                        <h3 className="text-sm font-bold text-amber-400 mb-3 flex items-center gap-1.5">⭐ Favori Aktiviteler <span className="text-xs font-semibold px-2 py-0.5 rounded-full text-white" style={{ background: "#f59e0b" }}>{favoriteActivities.length}</span></h3>
                         <div className="flex flex-wrap gap-2">
                           {favoriteActivities.map((act) => (
-                            <div key={act.id} className="flex items-center gap-2 bg-(--color-surface-strong) border border-(--color-line) rounded-full px-3 py-1.5">
-                              <span className="text-xs text-(--color-text-body)">{act.label}</span>
-                              <span className={`w-2 h-2 rounded-full ${act.difficulty === "kolay" ? "bg-emerald-500" : act.difficulty === "orta" ? "bg-amber-500" : "bg-red-500"}`} />
-                              <button type="button" className="text-(--color-text-muted) hover:text-(--color-accent-red) bg-transparent border-none cursor-pointer text-xs" onClick={() => toggleFavoriteActivity(act.id)} title="Favoriden çıkar">✕</button>
+                            <div key={act.id} className="flex items-center gap-2 rounded-full px-3 py-1.5 border" style={{ background: "#f59e0b12", borderColor: "#f59e0b30" }}>
+                              <span className="text-xs font-medium text-(--color-text-body)">{act.label}</span>
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${act.difficulty === "kolay" ? "bg-emerald-500" : act.difficulty === "orta" ? "bg-amber-500" : "bg-red-500"}`} />
+                              <button type="button" className="text-(--color-text-muted) hover:text-red-400 bg-transparent border-none cursor-pointer text-xs transition-colors" onClick={() => toggleFavoriteActivity(act.id)} title="Favoriden çıkar">✕</button>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    <div>
-                      <h3 className="text-sm font-semibold text-(--color-text-strong) mb-3">Aktivite Önerileri</h3>
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        <input type="search" placeholder="Aktivite ara..." value={tpActivitySearch} onChange={(e) => setTpActivitySearch(e.target.value)} className={`${inputCls} max-w-xs`} />
-                        {(["all", "kolay", "orta", "zor"] as const).map((level) => (
-                          <button key={level} type="button" className={`px-3 py-1.5 rounded-lg text-xs font-medium border-none cursor-pointer ${tpDifficultyFilter === level ? "bg-(--color-primary) text-white" : "bg-(--color-surface-elevated) text-(--color-text-body) hover:bg-(--color-surface)"}`} onClick={() => setTpDifficultyFilter(level)}>
-                            {level === "all" ? "Tümü" : level === "kolay" ? "Kolay" : level === "orta" ? "Orta" : "Zor"}
-                          </button>
-                        ))}
-                        <select value={tpSubSkillFilter} onChange={(e) => setTpSubSkillFilter(e.target.value)} className={`${inputCls} max-w-[180px]`}>
-                          <option value="all">Tüm beceriler</option>
-                          {subSkillNames.map((s) => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                        <label className="flex items-center gap-2 text-sm text-(--color-text-body) cursor-pointer">
-                          <input type="checkbox" checked={tpShowHomeOnly} onChange={(e) => setTpShowHomeOnly(e.target.checked)} />
-                          <span className="flex items-center gap-1"><Home size={13} />Ev ödevi</span>
-                        </label>
+                    {/* ── Activity cards section ── */}
+                    <div className="relative overflow-hidden rounded-3xl border border-(--color-line)" style={{ background: "var(--color-surface-strong)" }}>
+                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg, ${domain.color}, #8b5cf6, transparent)` }} />
+                      {/* Section header */}
+                      <div className="flex items-center justify-between px-5 py-4 border-b border-(--color-line)" style={{ background: "var(--color-surface-elevated)" }}>
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${domain.color}, #8b5cf6)` }}>
+                            <ClipboardList size={15} className="text-white" />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0">Aktivite Önerileri</h3>
+                            <span className="text-xs text-(--color-text-muted)">{filteredActivities.length} aktivite listeleniyor</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <label className="flex items-center gap-1.5 text-xs text-(--color-text-body) cursor-pointer px-3 py-1.5 rounded-xl border border-(--color-line) hover:border-(--color-primary)/50 transition-colors">
+                            <input type="checkbox" checked={tpShowHomeOnly} onChange={(e) => setTpShowHomeOnly(e.target.checked)} className="w-3.5 h-3.5" />
+                            <Home size={11} />Ev ödevi
+                          </label>
+                        </div>
                       </div>
 
-                      {filteredActivities.length === 0 ? (
-                        <div className="flex flex-col items-center gap-2 py-12 text-(--color-text-muted)">
-                          <Search size={40} strokeWidth={1.5} />
-                          <p className="text-sm">Seçili filtrelere uygun aktivite bulunamadı.</p>
+                      {/* Filter bar */}
+                      <div className="flex flex-wrap gap-2 px-5 py-3 border-b border-(--color-line)" style={{ background: "var(--color-chrome-section)" }}>
+                        <div className="relative">
+                          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-(--color-text-muted)" />
+                          <input type="search" placeholder="Aktivite ara..." value={tpActivitySearch} onChange={(e) => setTpActivitySearch(e.target.value)} className={`${inputCls} pl-8 max-w-52`} />
                         </div>
-                      ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {filteredActivities.map((activity) => {
-                            const isFav = tpFavoriteActivities.includes(activity.id);
-                            const isExpanded = tpExpandedActivity === activity.id;
-                            const customNote = tpCustomNotes[activity.id] ?? "";
+                        <div className="flex items-center gap-1 p-0.5 rounded-xl border border-(--color-line)" style={{ background: "var(--color-surface-elevated)" }}>
+                          {(["all", "kolay", "orta", "zor"] as const).map((level) => {
+                            const levelColor = level === "kolay" ? "#10b981" : level === "orta" ? "#f59e0b" : level === "zor" ? "#ef4444" : undefined;
+                            const isActive = tpDifficultyFilter === level;
                             return (
-                              <div key={activity.id} className="bg-(--color-surface-strong) rounded-xl border border-(--color-line) p-4 flex flex-col gap-2">
-                                <div className="flex items-start justify-between gap-2">
-                                  <strong className="text-(--color-text-strong) text-sm">{activity.label}</strong>
-                                  <div className="flex items-center gap-1.5 shrink-0">
-                                    <button type="button" className={`text-lg bg-transparent border-none cursor-pointer ${isFav ? "text-amber-400" : "text-slate-300 hover:text-amber-400"}`} onClick={() => toggleFavoriteActivity(activity.id)} title={isFav ? "Favoriden çıkar" : "Favorilere ekle"}>
-                                      {isFav ? "★" : "☆"}
-                                    </button>
-                                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${diffColor(activity.difficulty)}`}>
-                                      {activity.difficulty === "kolay" ? "Kolay" : activity.difficulty === "orta" ? "Orta" : "Zor"}
-                                    </span>
-                                  </div>
-                                </div>
-                                <p className="text-(--color-text-soft) text-xs leading-relaxed m-0">{activity.description}</p>
-                                <div className="flex flex-wrap gap-2 text-[10px] text-(--color-text-muted)">
-                                  <span className="flex items-center gap-1"><Layers size={10} />{activity.subSkill}</span>
-                                  <span className="flex items-center gap-1"><Tag size={10} />{activity.activityType}</span>
-                                  <span className="flex items-center gap-1"><Clock size={10} />{activity.sessionMinutes} dk</span>
-                                  {activity.homeExercise && <span className="flex items-center gap-1"><Home size={10} />Ev ödevi</span>}
-                                </div>
-                                <button type="button" className="text-(--color-primary) text-xs hover:underline bg-transparent border-none cursor-pointer text-left" onClick={() => setTpExpandedActivity(isExpanded ? null : activity.id)}>
-                                  {isExpanded ? "Kapat ▴" : "Detaylar ▾"}
-                                </button>
-                                {isExpanded && (
-                                  <div className="space-y-3 pt-2 border-t border-(--color-line)">
-                                    {activity.materials.length > 0 && (
-                                      <div>
-                                        <span className="text-[10px] font-semibold uppercase tracking-wider text-(--color-text-muted) block mb-1">Materyaller:</span>
-                                        <div className="flex flex-wrap gap-1">
-                                          {activity.materials.map((m) => <span key={m} className="bg-(--color-surface-elevated) text-(--color-text-soft) text-xs px-2 py-0.5 rounded-full">{m}</span>)}
-                                        </div>
-                                      </div>
-                                    )}
-                                    <div>
-                                      <span className="text-[10px] font-semibold uppercase tracking-wider text-(--color-text-muted) block mb-1">İlgili Hedefler:</span>
-                                      <div className="flex flex-wrap gap-1">
-                                        {activity.goals.map((gId) => {
-                                          const goal = domain.goals.find((g) => g.id === gId);
-                                          return goal ? <span key={gId} className="bg-(--color-primary-light) text-(--color-primary) text-xs px-2 py-0.5 rounded-full">{goal.label}</span> : null;
-                                        })}
-                                      </div>
-                                    </div>
-                                    {activity.evidenceBase && (
-                                      <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3">
-                                        <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-500 mb-1"><FlaskConical size={11} />Kanıt Temeli:</span>
-                                        <p className="text-xs text-(--color-text-soft) m-0 leading-relaxed">{activity.evidenceBase}</p>
-                                      </div>
-                                    )}
-                                    {activity.therapistTips && activity.therapistTips.length > 0 && (
-                                      <div className="bg-(--color-primary)/5 border border-(--color-primary)/20 rounded-lg p-3">
-                                        <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-(--color-primary) mb-2"><Lightbulb size={11} />Terapist İpuçları:</span>
-                                        <ul className="space-y-1 m-0 pl-0 list-none">
-                                          {activity.therapistTips.map((tip, ti) => (
-                                            <li key={ti} className="text-xs text-(--color-text-soft) flex gap-1.5"><span className="text-(--color-primary) shrink-0">·</span>{tip}</li>
-                                          ))}
-                                        </ul>
-                                      </div>
-                                    )}
-                                    <div>
-                                      <span className="text-[10px] font-semibold uppercase tracking-wider text-(--color-text-muted) block mb-1">Terapist Notu:</span>
-                                      <textarea value={customNote} onChange={(e) => saveTpCustomNote(activity.id, e.target.value)} placeholder="Bu aktivite için notlarınızı yazın..." className={`${inputCls} resize-none`} rows={2} />
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
+                              <button key={level} type="button"
+                                className="px-3 py-1.5 rounded-lg text-xs font-semibold border-none cursor-pointer transition-all"
+                                style={{
+                                  background: isActive ? (levelColor ?? "var(--color-primary)") : "transparent",
+                                  color: isActive ? "white" : "var(--color-text-soft)",
+                                  boxShadow: isActive ? `0 2px 8px ${levelColor ?? "var(--color-primary)"}50` : "none",
+                                }}
+                                onClick={() => setTpDifficultyFilter(level)}>
+                                {level === "all" ? "Tümü" : level === "kolay" ? "Kolay" : level === "orta" ? "Orta" : "Zor"}
+                              </button>
                             );
                           })}
                         </div>
-                      )}
+                        <select value={tpSubSkillFilter} onChange={(e) => setTpSubSkillFilter(e.target.value)} className={`${inputCls} max-w-[160px] text-xs`}>
+                          <option value="all">Tüm beceriler</option>
+                          {subSkillNames.map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+
+                      {/* Cards grid */}
+                      <div className="p-5">
+                        {filteredActivities.length === 0 ? (
+                          <div className="flex flex-col items-center gap-3 py-12 text-(--color-text-muted)">
+                            <Search size={40} strokeWidth={1.5} />
+                            <p className="text-sm">Seçili filtrelere uygun aktivite bulunamadı.</p>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {filteredActivities.map((activity) => {
+                              const isFav = tpFavoriteActivities.includes(activity.id);
+                              const isExpanded = tpExpandedActivity === activity.id;
+                              const customNote = tpCustomNotes[activity.id] ?? "";
+                              const diffBg = activity.difficulty === "kolay" ? "#10b981" : activity.difficulty === "orta" ? "#f59e0b" : "#ef4444";
+                              const diffBgLight = activity.difficulty === "kolay" ? "#10b98115" : activity.difficulty === "orta" ? "#f59e0b15" : "#ef444415";
+                              const diffBorder = activity.difficulty === "kolay" ? "#10b98130" : activity.difficulty === "orta" ? "#f59e0b30" : "#ef444430";
+                              return (
+                                <div key={activity.id} className="relative overflow-hidden rounded-2xl border transition-all card-hover flex flex-col" style={{ borderColor: isExpanded ? domain.color + "60" : "var(--color-line)", background: "var(--color-surface-elevated)", boxShadow: isExpanded ? `0 0 20px ${domain.color}15` : "none" }}>
+                                  {/* Difficulty color bar */}
+                                  <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${diffBg}, transparent)` }} />
+
+                                  <div className="p-4 flex flex-col gap-3 flex-1">
+                                    {/* Card header */}
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex-1">
+                                        <strong className="text-(--color-text-strong) text-sm leading-snug block">{activity.label}</strong>
+                                        <span className="text-[11px] mt-0.5 block" style={{ color: domain.color }}>{activity.subSkill}</span>
+                                      </div>
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        <button type="button"
+                                          className="w-7 h-7 rounded-lg flex items-center justify-center border-none cursor-pointer transition-all"
+                                          style={{ background: isFav ? "#f59e0b20" : "transparent", color: isFav ? "#f59e0b" : "var(--color-text-muted)" }}
+                                          onClick={() => toggleFavoriteActivity(activity.id)} title={isFav ? "Favoriden çıkar" : "Favorilere ekle"}>
+                                          {isFav ? "★" : "☆"}
+                                        </button>
+                                        <span className="text-[10px] font-bold px-2 py-1 rounded-lg" style={{ background: diffBgLight, color: diffBg, border: `1px solid ${diffBorder}` }}>
+                                          {activity.difficulty === "kolay" ? "Kolay" : activity.difficulty === "orta" ? "Orta" : "Zor"}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* Description */}
+                                    <p className="text-(--color-text-soft) text-xs leading-relaxed m-0">{activity.description}</p>
+
+                                    {/* Meta pills */}
+                                    <div className="flex flex-wrap gap-1.5">
+                                      <span className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg border border-(--color-line) text-(--color-text-muted)"><Tag size={9} />{activity.activityType}</span>
+                                      <span className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg border border-(--color-line) text-(--color-text-muted)"><Clock size={9} />{activity.sessionMinutes} dk</span>
+                                      {activity.homeExercise && <span className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg text-emerald-400 border border-emerald-500/20" style={{ background: "#10b98112" }}><Home size={9} />Ev ödevi</span>}
+                                    </div>
+
+                                    {/* Expand toggle */}
+                                    <button type="button"
+                                      className="flex items-center gap-1.5 text-xs font-semibold border-none cursor-pointer bg-transparent transition-all self-start py-1"
+                                      style={{ color: "var(--color-primary)" }}
+                                      onClick={() => setTpExpandedActivity(isExpanded ? null : activity.id)}>
+                                      {isExpanded ? "▴ Kapat" : "▾ Detaylar"}
+                                    </button>
+
+                                    {/* Expanded details */}
+                                    {isExpanded && (
+                                      <div className="space-y-3 pt-3 border-t border-(--color-line)">
+                                        {activity.materials.length > 0 && (
+                                          <div>
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-(--color-text-muted) block mb-1.5">🔧 Materyaller</span>
+                                            <div className="flex flex-wrap gap-1">
+                                              {activity.materials.map((m) => <span key={m} className="bg-(--color-surface-strong) border border-(--color-line) text-(--color-text-soft) text-xs px-2.5 py-1 rounded-full">{m}</span>)}
+                                            </div>
+                                          </div>
+                                        )}
+                                        <div>
+                                          <span className="text-[10px] font-bold uppercase tracking-wider text-(--color-text-muted) block mb-1.5">🎯 İlgili Hedefler</span>
+                                          <div className="flex flex-wrap gap-1">
+                                            {activity.goals.map((gId) => {
+                                              const goal = domain.goals.find((g) => g.id === gId);
+                                              return goal ? <span key={gId} className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ background: `${domain.color}15`, color: domain.color, border: `1px solid ${domain.color}30` }}>{goal.label}</span> : null;
+                                            })}
+                                          </div>
+                                        </div>
+                                        {activity.evidenceBase && (
+                                          <div className="rounded-xl border border-amber-500/25 p-3" style={{ background: "#f59e0b08" }}>
+                                            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-500 mb-1.5"><FlaskConical size={10} />Kanıt Temeli</span>
+                                            <p className="text-xs text-(--color-text-soft) m-0 leading-relaxed">{activity.evidenceBase}</p>
+                                          </div>
+                                        )}
+                                        {activity.therapistTips && activity.therapistTips.length > 0 && (
+                                          <div className="rounded-xl border p-3" style={{ background: "var(--color-primary)/5", borderColor: "var(--color-primary)/20" }}>
+                                            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-(--color-primary) mb-2"><Lightbulb size={10} />Terapist İpuçları</span>
+                                            <ul className="space-y-1.5 m-0 pl-0 list-none">
+                                              {activity.therapistTips.map((tip, ti) => (
+                                                <li key={ti} className="text-xs text-(--color-text-soft) flex gap-2 items-start leading-snug">
+                                                  <span className="w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center shrink-0 mt-0.5 text-white" style={{ background: "var(--color-primary)" }}>{ti + 1}</span>
+                                                  {tip}
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        )}
+                                        <div>
+                                          <span className="text-[10px] font-bold uppercase tracking-wider text-(--color-text-muted) block mb-1.5">📝 Terapist Notu</span>
+                                          <textarea value={customNote} onChange={(e) => saveTpCustomNote(activity.id, e.target.value)} placeholder="Bu aktivite için notlarınızı yazın..." className={`${inputCls} resize-none text-xs`} rows={2} />
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -2677,92 +3214,133 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 const domain = THERAPY_DOMAINS.find((d) => d.key === tpSelectedDomain);
                 if (!domain) return null;
                 const gameMappings = getGameMappingsForDomain(tpSelectedDomain);
-                const diffColor = (d: string) => d === "kolay" ? "bg-emerald-500/10 text-emerald-400" : d === "orta" ? "bg-amber-500/10 text-amber-400" : "bg-red-500/10 text-red-400";
-                const gameIcon = (key: string) => { const Icon = GAME_ICON_MAP[key] ?? Gamepad2; return <Icon size={20} />; };
+                const diffBadge = (d: string) => d === "kolay"
+                  ? { bg: "#10b98115", color: "#10b981", border: "#10b98130", label: "Kolay" }
+                  : d === "orta"
+                  ? { bg: "#f59e0b15", color: "#f59e0b", border: "#f59e0b30", label: "Orta" }
+                  : { bg: "#ef444415", color: "#ef4444", border: "#ef444430", label: "Zor" };
+                const gameIcon = (key: string) => { const Icon = GAME_ICON_MAP[key] ?? Gamepad2; return <Icon size={22} />; };
+                const gameAccent: Record<string, string> = {
+                  memory: "#2563eb", pairs: "#8b5cf6", pulse: "#10b981",
+                  route: "#f59e0b", difference: "#ec4899", scan: "#06b6d4",
+                };
                 return (
                   <div className="space-y-6">
-                    {/* Header */}
-                    <div>
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-white mb-2" style={{ background: domain.color }}><DomainIcon iconKey={domain.icon} size={12} />{domain.label}</span>
-                      <h2 className="text-lg font-bold text-(--color-text-strong) m-0">Dijital Oyun Rehberi</h2>
-                      <p className="text-(--color-text-soft) text-sm mt-1">Her oyunun kanıt temeli, önerilen seans dozu ve seansta kullanım rehberi. Ergoterapist olarak doğru oyunu doğru danışana eşleştirin.</p>
+                    {/* ── Premium Header ── */}
+                    <div className="relative overflow-hidden rounded-3xl border border-(--color-line) p-6" style={{ background: `linear-gradient(135deg, ${domain.color}10 0%, var(--color-surface-strong) 100%)` }}>
+                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg, ${domain.color}, #8b5cf6, transparent)` }} />
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: domain.color, boxShadow: `0 4px 12px ${domain.color}50` }}>
+                          <DomainIcon iconKey={domain.icon} size={18} color="white" />
+                        </div>
+                        <div>
+                          <span className="text-[11px] font-bold uppercase tracking-widest block" style={{ color: domain.color }}>{domain.label}</span>
+                          <h2 className="text-xl font-extrabold text-(--color-text-strong) m-0 tracking-tight">Dijital Oyun Rehberi</h2>
+                        </div>
+                      </div>
+                      <p className="text-(--color-text-soft) text-sm m-0 leading-relaxed max-w-2xl">Her oyunun kanıt temeli, önerilen seans dozu ve seansta kullanım rehberi. Ergoterapist olarak doğru oyunu doğru danışana eşleştirin.</p>
+                      <div className="flex items-center gap-3 mt-4">
+                        <span className="px-3 py-1.5 rounded-full text-xs font-bold text-white" style={{ background: domain.color }}>{gameMappings.length} Uyumlu Oyun</span>
+                        <span className="text-xs text-(--color-text-muted)">{GAME_THERAPY_MAPPINGS.length} oyunun tamamı değerlendirildi</span>
+                      </div>
                     </div>
 
-                    {/* Game cards */}
-                    <div className="space-y-4">
-                      {gameMappings.map((mapping) => {
+                    {/* ── Game cards ── */}
+                    <div className="space-y-5">
+                      {gameMappings.map((mapping, mi) => {
                         const gameTab = GAME_TABS.find((g) => g.key === mapping.gameKey);
                         if (!gameTab) return null;
+                        const accent = gameAccent[mapping.gameKey] ?? "var(--color-primary)";
                         return (
-                          <div key={mapping.gameKey} className="bg-(--color-surface-strong) rounded-2xl border border-(--color-line) overflow-hidden">
+                          <div key={mapping.gameKey} className="relative overflow-hidden rounded-3xl border transition-all card-hover" style={{ borderColor: `${accent}40`, background: "var(--color-surface-strong)" }}>
+                            {/* Top accent line */}
+                            <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${accent}, ${domain.color}, transparent)` }} />
+
                             {/* Card header */}
-                            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-(--color-line)">
-                              <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 rounded-2xl bg-(--color-primary)/10 flex items-center justify-center text-(--color-primary) shrink-0">{gameIcon(mapping.gameKey)}</div>
-                                <div>
-                                  <strong className="text-(--color-text-strong) text-[15px] font-bold block leading-tight">{gameTab.title}</strong>
-                                  <span className="text-(--color-text-muted) text-[12px] mt-0.5 block">{gameTab.kicker}</span>
-                                  <div className="flex flex-wrap gap-1 mt-2">
+                            <div className="flex items-center justify-between gap-4 px-6 py-5 border-b border-(--color-line)" style={{ background: `${accent}06` }}>
+                              <div className="flex items-center gap-4">
+                                {/* Game icon with glow */}
+                                <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{ background: `linear-gradient(135deg, ${accent}25, ${accent}10)`, border: `1px solid ${accent}30`, boxShadow: `0 4px 16px ${accent}25`, color: accent }}>
+                                  {gameIcon(mapping.gameKey)}
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{ background: accent }}>#{mi + 1}</span>
+                                    <strong className="text-(--color-text-strong) text-base font-extrabold">{gameTab.title}</strong>
+                                  </div>
+                                  <span className="text-(--color-text-muted) text-xs block mb-2">{gameTab.kicker}</span>
+                                  <div className="flex flex-wrap gap-1.5">
                                     {mapping.purposes.map((p) => (
-                                      <span key={p} className="bg-(--color-primary-light) text-(--color-primary) text-[11px] font-semibold px-2 py-0.5 rounded-md">{GAME_PURPOSE_LABELS[p]}</span>
+                                      <span key={p} className="text-[11px] font-semibold px-2.5 py-1 rounded-lg" style={{ background: `${accent}15`, color: accent, border: `1px solid ${accent}25` }}>{GAME_PURPOSE_LABELS[p]}</span>
                                     ))}
-                                    {mapping.difficultyFit.map((d) => (
-                                      <span key={d} className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${diffColor(d)}`}>{d === "kolay" ? "Kolay" : d === "orta" ? "Orta" : "Zor"}</span>
-                                    ))}
+                                    {mapping.difficultyFit.map((d) => {
+                                      const db = diffBadge(d);
+                                      return <span key={d} className="text-[11px] font-semibold px-2.5 py-1 rounded-lg" style={{ background: db.bg, color: db.color, border: `1px solid ${db.border}` }}>{db.label}</span>;
+                                    })}
                                   </div>
                                 </div>
                               </div>
-                              <button type="button" className={`${btnPrimary} shrink-0`} onClick={() => openGameView(mapping.gameKey)}>▶ Oyna</button>
+                              <button type="button" className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border-none cursor-pointer text-white transition-all" style={{ background: `linear-gradient(135deg, ${accent}, ${domain.color})`, boxShadow: `0 4px 14px ${accent}50` }} onClick={() => openGameView(mapping.gameKey)}>
+                                ▶ Oyna
+                              </button>
                             </div>
 
-                            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-                              {/* Left column */}
+                            {/* Card body: 2-col grid */}
+                            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                              {/* Left */}
                               <div className="space-y-5">
-                                {/* Therapeutic rationale */}
                                 <div>
-                                  <p className="text-[11px] font-bold uppercase tracking-widest text-(--color-text-muted) mb-2">Terapötik Etki</p>
-                                  <p className="text-[13px] text-(--color-text-body) leading-relaxed m-0">{mapping.therapeuticRationale}</p>
+                                  <p className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest mb-2" style={{ color: accent }}>
+                                    <span className="w-4 h-4 rounded flex items-center justify-center" style={{ background: `${accent}20` }}>⚡</span>
+                                    Terapötik Etki
+                                  </p>
+                                  <p className="text-sm text-(--color-text-body) leading-relaxed m-0">{mapping.therapeuticRationale}</p>
                                 </div>
-
-                                {/* Seansta nasıl kullanılır */}
                                 <div>
-                                  <p className="text-[11px] font-bold uppercase tracking-widest text-(--color-text-muted) mb-2">Seansta Kullanım</p>
-                                  <p className="text-[13px] text-(--color-text-soft) leading-relaxed m-0">{mapping.howToUseInSession}</p>
+                                  <p className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-(--color-text-muted) mb-2">
+                                    <span className="w-4 h-4 rounded flex items-center justify-center bg-(--color-surface-elevated)">🎮</span>
+                                    Seansta Kullanım
+                                  </p>
+                                  <p className="text-sm text-(--color-text-soft) leading-relaxed m-0">{mapping.howToUseInSession}</p>
                                 </div>
-
-                                {/* Research basis */}
-                                <div className="rounded-xl border border-amber-400/30 p-3.5" style={{ background: "color-mix(in srgb, #f59e0b 8%, transparent)" }}>
-                                  <p className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-amber-500 mb-2"><BookOpen size={12} />Bilimsel Referans</p>
-                                  <p className="text-[12px] text-(--color-text-soft) m-0 leading-relaxed">{mapping.researchBasis}</p>
+                                <div className="rounded-2xl border border-amber-500/25 p-4" style={{ background: "#f59e0b08" }}>
+                                  <p className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-amber-500 mb-2"><BookOpen size={12} />Bilimsel Referans</p>
+                                  <p className="text-xs text-(--color-text-soft) m-0 leading-relaxed italic">{mapping.researchBasis}</p>
                                 </div>
                               </div>
 
-                              {/* Right column */}
+                              {/* Right */}
                               <div className="space-y-5">
-                                {/* Dosage */}
-                                <div className="rounded-xl border border-(--color-primary)/25 bg-(--color-primary)/5 p-4">
-                                  <p className="text-[11px] font-bold uppercase tracking-widest text-(--color-primary) mb-3">Önerilen Doz</p>
-                                  <div className="flex gap-4 mb-3">
-                                    <div className="flex-1 text-center bg-(--color-surface-strong) rounded-xl py-3">
-                                      <div className="text-[28px] font-bold text-(--color-text-strong) leading-none">{mapping.sessionDosage.minutesPerSession}</div>
-                                      <div className="text-[11px] text-(--color-text-muted) mt-1">dk / seans</div>
+                                {/* Dosage HUD */}
+                                <div className="rounded-2xl border overflow-hidden" style={{ borderColor: `${accent}30` }}>
+                                  <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: `${accent}15` }}>
+                                    <Clock size={13} style={{ color: accent }} />
+                                    <span className="text-[11px] font-black uppercase tracking-widest" style={{ color: accent }}>Önerilen Doz</span>
+                                  </div>
+                                  <div className="flex" style={{ background: "var(--color-surface-elevated)" }}>
+                                    <div className="flex-1 text-center py-4 border-r border-(--color-line)">
+                                      <div className="text-3xl font-black leading-none" style={{ color: accent }}>{mapping.sessionDosage.minutesPerSession}</div>
+                                      <div className="text-[10px] text-(--color-text-muted) mt-1 font-semibold uppercase tracking-wide">dk / seans</div>
                                     </div>
-                                    <div className="flex-1 text-center bg-(--color-surface-strong) rounded-xl py-3">
-                                      <div className="text-[28px] font-bold text-(--color-text-strong) leading-none">{mapping.sessionDosage.sessionsPerWeek}<span className="text-[16px]">×</span></div>
-                                      <div className="text-[11px] text-(--color-text-muted) mt-1">hafta / seans</div>
+                                    <div className="flex-1 text-center py-4">
+                                      <div className="text-3xl font-black leading-none" style={{ color: accent }}>{mapping.sessionDosage.sessionsPerWeek}<span className="text-xl">×</span></div>
+                                      <div className="text-[10px] text-(--color-text-muted) mt-1 font-semibold uppercase tracking-wide">seans / hafta</div>
                                     </div>
                                   </div>
-                                  <p className="text-[11px] font-semibold text-(--color-primary) mb-1">İlerleme Rehberi</p>
-                                  <p className="text-[12px] text-(--color-text-soft) m-0 leading-relaxed">{mapping.sessionDosage.progressionNote}</p>
+                                  <div className="px-4 py-3 border-t border-(--color-line)" style={{ background: "var(--color-surface-strong)" }}>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-(--color-text-muted) mb-1">İlerleme Rehberi</p>
+                                    <p className="text-xs text-(--color-text-soft) m-0 leading-relaxed">{mapping.sessionDosage.progressionNote}</p>
+                                  </div>
                                 </div>
 
                                 {/* Outcome indicators */}
-                                <div>
-                                  <p className="text-[11px] font-bold uppercase tracking-widest text-(--color-text-muted) mb-2">Ölçüm Göstergeleri</p>
-                                  <ul className="space-y-1.5 m-0 pl-0 list-none">
+                                <div className="rounded-2xl border border-(--color-line) p-4" style={{ background: "var(--color-surface-elevated)" }}>
+                                  <p className="text-[11px] font-black uppercase tracking-widest text-(--color-text-muted) mb-3">📊 Ölçüm Göstergeleri</p>
+                                  <ul className="space-y-2 m-0 pl-0 list-none">
                                     {mapping.outcomeIndicators.map((oi, i) => (
-                                      <li key={i} className="text-[13px] text-(--color-text-soft) flex gap-2 items-start leading-snug">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-(--color-primary)/50 shrink-0 mt-1.5" />{oi}
+                                      <li key={i} className="text-xs text-(--color-text-soft) flex gap-2.5 items-start leading-snug">
+                                        <span className="w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center shrink-0 mt-0.5 text-white" style={{ background: accent }}>{i + 1}</span>
+                                        {oi}
                                       </li>
                                     ))}
                                   </ul>
@@ -2774,44 +3352,57 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       })}
                     </div>
 
-                    {/* Quick reference table */}
-                    <details open className="bg-(--color-surface-strong) rounded-xl border border-(--color-line) overflow-hidden">
-                      <summary className="flex items-center justify-between px-4 py-3 cursor-pointer list-none font-medium text-sm text-(--color-text-strong)">
-                        <span className="flex items-center gap-1.5"><BarChart3 size={14} />Tüm Oyun–Amaç Eşleme Tablosu (Hızlı Referans)</span>
+                    {/* ── Quick Reference Table ── */}
+                    <details open className="overflow-hidden rounded-3xl border border-(--color-line)" style={{ background: "var(--color-surface-strong)" }}>
+                      <summary className="flex items-center justify-between px-5 py-4 cursor-pointer list-none font-bold text-sm text-(--color-text-strong)" style={{ background: "var(--color-surface-elevated)" }}>
+                        <span className="flex items-center gap-2.5">
+                          <span className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,var(--color-primary),#8b5cf6)" }}>
+                            <BarChart3 size={12} className="text-white" />
+                          </span>
+                          Tüm Oyun–Amaç Eşleme Tablosu (Hızlı Referans)
+                        </span>
+                        <span className="text-xs text-(--color-text-muted)">· alan uyumlu oyunlar vurgulandı</span>
                       </summary>
                       <div className="overflow-x-auto">
                         <table className="w-full text-xs">
-                          <thead className="bg-(--color-surface-elevated)">
-                            <tr>
-                              <th className="text-left px-4 py-2 font-semibold text-(--color-text-strong)">Oyun</th>
-                              <th className="text-left px-4 py-2 font-semibold text-(--color-text-strong)">Terapötik Amaçlar</th>
-                              <th className="text-left px-4 py-2 font-semibold text-(--color-text-strong)">Süre</th>
-                              <th className="text-left px-4 py-2 font-semibold text-(--color-text-strong)">Sıklık</th>
-                              <th className="text-left px-4 py-2 font-semibold text-(--color-text-strong)">Zorluk</th>
+                          <thead>
+                            <tr style={{ background: "var(--color-surface-elevated)" }}>
+                              <th className="text-left px-5 py-3 font-black uppercase tracking-wider text-(--color-text-strong) text-[11px]">Oyun</th>
+                              <th className="text-left px-5 py-3 font-black uppercase tracking-wider text-(--color-text-strong) text-[11px]">Terapötik Amaçlar</th>
+                              <th className="text-left px-5 py-3 font-black uppercase tracking-wider text-(--color-text-strong) text-[11px]">Süre</th>
+                              <th className="text-left px-5 py-3 font-black uppercase tracking-wider text-(--color-text-strong) text-[11px]">Sıklık</th>
+                              <th className="text-left px-5 py-3 font-black uppercase tracking-wider text-(--color-text-strong) text-[11px]">Zorluk</th>
                             </tr>
                           </thead>
                           <tbody>
                             {GAME_THERAPY_MAPPINGS.map((m) => {
                               const gt = GAME_TABS.find((g) => g.key === m.gameKey);
                               const inDomain = m.suitableDomains.includes(tpSelectedDomain!);
+                              const acc = gameAccent[m.gameKey] ?? "var(--color-primary)";
                               return (
-                                <tr key={m.gameKey} className={`border-t border-(--color-line) ${inDomain ? "" : "opacity-40"}`}>
-                                  <td className="px-4 py-2">
-                                    <div className="flex items-center gap-1.5">
-                                      {inDomain && <span className="w-1.5 h-1.5 rounded-full bg-(--color-primary) shrink-0" />}
-                                      <strong className="text-(--color-text-strong)">{gt?.title ?? m.gameKey}</strong>
+                                <tr key={m.gameKey} className={`border-t border-(--color-line) transition-colors ${inDomain ? "hover:bg-(--color-surface-elevated)" : "opacity-35"}`}>
+                                  <td className="px-5 py-3">
+                                    <div className="flex items-center gap-2">
+                                      {inDomain && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: acc }} />}
+                                      <strong className="text-(--color-text-strong)" style={inDomain ? { color: acc } : {}}>{gt?.title ?? m.gameKey}</strong>
                                     </div>
                                   </td>
-                                  <td className="px-4 py-2 text-(--color-text-soft)">{m.purposes.map((p) => GAME_PURPOSE_LABELS[p]).join(", ")}</td>
-                                  <td className="px-4 py-2 text-(--color-text-soft)">{m.sessionDosage.minutesPerSession} dk</td>
-                                  <td className="px-4 py-2 text-(--color-text-soft)">{m.sessionDosage.sessionsPerWeek}x / hafta</td>
-                                  <td className="px-4 py-2 text-(--color-text-soft)">{m.difficultyFit.map((d) => d === "kolay" ? "Kolay" : d === "orta" ? "Orta" : "Zor").join(", ")}</td>
+                                  <td className="px-5 py-3 text-(--color-text-soft)">{m.purposes.map((p) => GAME_PURPOSE_LABELS[p]).join(", ")}</td>
+                                  <td className="px-5 py-3 font-semibold text-(--color-text-strong)">{m.sessionDosage.minutesPerSession} dk</td>
+                                  <td className="px-5 py-3 font-semibold text-(--color-text-strong)">{m.sessionDosage.sessionsPerWeek}×/hafta</td>
+                                  <td className="px-5 py-3">
+                                    <div className="flex flex-wrap gap-1">
+                                      {m.difficultyFit.map((d) => {
+                                        const db = diffBadge(d);
+                                        return <span key={d} className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: db.bg, color: db.color }}>{db.label}</span>;
+                                      })}
+                                    </div>
+                                  </td>
                                 </tr>
                               );
                             })}
                           </tbody>
                         </table>
-                        <p className="text-[10px] text-(--color-text-muted) px-4 py-2">· Mavi nokta: seçili terapi alanıyla uyumlu oyunlar</p>
                       </div>
                     </details>
                   </div>
@@ -2824,96 +3415,170 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 if (!domain) return null;
                 const ALL_DAYS = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
                 const dayShort: Record<string, string> = { Pazartesi: "Pzt", Salı: "Sal", Çarşamba: "Çar", Perşembe: "Per", Cuma: "Cum", Cumartesi: "Cmt", Pazar: "Paz" };
+                const dayColors = ["#2563eb","#8b5cf6","#10b981","#f59e0b","#ec4899","#06b6d4","#ef4444"];
                 return (
-                  <div className="space-y-5">
-                    <div className="flex items-start justify-between gap-4 flex-wrap">
-                      <div>
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-white mb-2" style={{ background: domain.color }}><DomainIcon iconKey={domain.icon} size={12} />{domain.label}</span>
-                        <h2 className="text-lg font-bold text-(--color-text-strong) m-0">Haftalık Terapi Planı</h2>
+                  <div className="space-y-6">
+                    {/* ── Header ── */}
+                    <div className="relative overflow-hidden rounded-3xl border border-(--color-line) p-6" style={{ background: `linear-gradient(135deg, ${domain.color}10 0%, var(--color-surface-strong) 100%)` }}>
+                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg, ${domain.color}, #06b6d4, transparent)` }} />
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: domain.color, boxShadow: `0 4px 12px ${domain.color}50` }}>
+                          <DomainIcon iconKey={domain.icon} size={18} color="white" />
+                        </div>
+                        <div>
+                          <span className="text-[11px] font-bold uppercase tracking-widest block" style={{ color: domain.color }}>{domain.label}</span>
+                          <h2 className="text-xl font-extrabold text-(--color-text-strong) m-0 tracking-tight">Haftalık Terapi Planı</h2>
+                        </div>
                       </div>
+                      <p className="text-(--color-text-soft) text-sm m-0">Seanslarınızı planlayın. Sistem, seçilen gün sayısına göre aktivite ve dijital oyun dağılımı oluşturur.</p>
                     </div>
 
-                    {/* Day selector */}
-                    <div className="bg-(--color-surface-strong) rounded-2xl border border-(--color-line) p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-semibold text-(--color-text-strong)">Seans günlerini seçin</span>
-                        <span className="text-[10px] text-(--color-text-muted)">{tpSelectedDays.length} gün seçili</span>
+                    {/* ── Day Selector ── */}
+                    <div className="relative overflow-hidden rounded-3xl border border-(--color-line) p-5" style={{ background: "var(--color-surface-strong)" }}>
+                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,var(--color-primary),#8b5cf6,transparent)" }} />
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,var(--color-primary),#8b5cf6)" }}>
+                            <CalendarDays size={13} className="text-white" />
+                          </div>
+                          <span className="text-sm font-bold text-(--color-text-strong)">Seans Günleri</span>
+                        </div>
+                        <span className="px-3 py-1 rounded-full text-xs font-bold text-white" style={{ background: tpSelectedDays.length > 0 ? "var(--color-primary)" : "var(--color-text-muted)" }}>
+                          {tpSelectedDays.length} / 7 gün
+                        </span>
                       </div>
                       <div className="flex gap-2 flex-wrap">
-                        {ALL_DAYS.map((day) => {
+                        {ALL_DAYS.map((day, di) => {
                           const isSelected = tpSelectedDays.includes(day);
+                          const dc = dayColors[di];
                           return (
-                            <button
-                              key={day}
-                              type="button"
-                              onClick={() => togglePlanDay(day)}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                                isSelected
-                                  ? "bg-(--color-primary) text-white border-transparent"
-                                  : "bg-transparent text-(--color-text-muted) border-(--color-line) hover:border-(--color-primary)/50"
-                              }`}
-                            >
+                            <button key={day} type="button" onClick={() => togglePlanDay(day)}
+                              className="px-4 py-2 rounded-xl text-xs font-bold border-none cursor-pointer transition-all"
+                              style={{
+                                background: isSelected ? dc : "var(--color-surface-elevated)",
+                                color: isSelected ? "white" : "var(--color-text-soft)",
+                                boxShadow: isSelected ? `0 4px 12px ${dc}50` : "none",
+                                transform: isSelected ? "scale(1.05)" : "scale(1)",
+                              }}>
                               {dayShort[day]}
                             </button>
                           );
                         })}
                       </div>
                       {tpSelectedDays.length === 0 && (
-                        <p className="text-xs text-amber-500 mt-2">En az 1 gün seçin.</p>
+                        <p className="text-xs text-amber-500 mt-3 flex items-center gap-1.5">⚠️ En az 1 gün seçin.</p>
                       )}
-                      <div className="mt-3">
-                        <button
-                          type="button"
-                          className={`${btnPrimary} flex items-center gap-1.5`}
-                          onClick={handleGeneratePlan}
-                          disabled={tpSelectedDays.length === 0}
-                        >
-                          {tpGeneratedPlan ? <><RefreshCw size={14} />Planı Güncelle</> : <><CalendarDays size={14} />Plan Oluştur</>}
+                      <div className="mt-4 flex gap-2">
+                        <button type="button"
+                          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white border-none cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          style={{ background: "linear-gradient(135deg,var(--color-primary),#8b5cf6)", boxShadow: "0 4px 14px var(--color-primary)/40" }}
+                          onClick={handleGeneratePlan} disabled={tpSelectedDays.length === 0}>
+                          {tpGeneratedPlan ? <><RefreshCw size={15} />Planı Güncelle</> : <><CalendarDays size={15} />Plan Oluştur</>}
                         </button>
                       </div>
                     </div>
 
                     {!tpGeneratedPlan ? (
-                      <div className="flex flex-col items-center gap-3 py-12 text-center">
-                        <ClipboardList size={48} strokeWidth={1.5} className="text-(--color-text-muted)" />
-                        <h3 className="text-(--color-text-strong) font-semibold m-0">Henüz plan oluşturulmadı</h3>
-                        <p className="text-(--color-text-soft) text-sm m-0">Günleri seçip "Plan Oluştur" butonuna tıklayın.</p>
-                        <p className="text-(--color-text-muted) text-xs m-0">Sistem, seçtiğiniz gün sayısına göre aktivite ve dijital oyun planı oluşturacaktır.</p>
+                      <div className="flex flex-col items-center gap-4 py-16 text-center rounded-3xl border border-(--color-line) border-dashed" style={{ background: "var(--color-surface-strong)" }}>
+                        <div className="w-16 h-16 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,var(--color-primary)/15,#8b5cf6/15)" }}>
+                          <CalendarDays size={28} className="text-(--color-primary)" />
+                        </div>
+                        <h3 className="text-(--color-text-strong) font-extrabold text-lg m-0">Henüz plan oluşturulmadı</h3>
+                        <p className="text-(--color-text-soft) text-sm m-0 max-w-sm">Yukarıdan gün seçin ve "Plan Oluştur" butonuna tıklayın. Sistem otomatik bir terapi planı oluşturacak.</p>
                       </div>
                     ) : (
                       <div className="space-y-6">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Weekly summary cards */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                           {[
-                            {label: <span className="flex items-center gap-1"><Target size={11} />Ana Hedef</span>, content: <strong className="text-(--color-text-strong) text-sm">{tpGeneratedPlan.weeklyPlan.mainGoal}</strong>},
-                            {label: <span className="flex items-center gap-1"><ClipboardList size={11} />Anahtar Aktiviteler</span>, content: <ul className="list-disc pl-4 text-(--color-text-soft) text-xs space-y-1 m-0">{tpGeneratedPlan.weeklyPlan.keyActivities.map((a, i) => <li key={i}>{a}</li>)}</ul>},
-                            {label: <span className="flex items-center gap-1"><Gamepad2 size={11} />Dijital Oyunlar</span>, content: <div className="flex flex-wrap gap-1">{tpGeneratedPlan.weeklyPlan.digitalGames.map((gk) => { const gt = GAME_TABS.find((g) => g.key === gk); return <span key={gk} className="bg-(--color-primary-light) text-(--color-primary) text-xs px-2 py-0.5 rounded-full">{gt?.title ?? gk}</span>; })}</div>},
-                            {label: <span className="flex items-center gap-1"><Home size={11} />Ev Ödevi</span>, content: <strong className="text-(--color-text-strong) text-sm">{tpGeneratedPlan.weeklyPlan.homeExercise}</strong>},
-                          ].map(({label, content}, i) => (
-                            <div key={i} className="bg-(--color-surface-strong) rounded-xl border border-(--color-line) p-4 flex flex-col gap-2">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-(--color-text-muted)">{label}</span>
-                              {content}
+                            { icon: "🎯", label: "Ana Hedef", content: tpGeneratedPlan.weeklyPlan.mainGoal, color: "#2563eb" },
+                            { icon: "🏠", label: "Ev Ödevi", content: tpGeneratedPlan.weeklyPlan.homeExercise, color: "#10b981" },
+                            { icon: "🧩", label: "Aktivite Sayısı", content: `${tpGeneratedPlan.weeklyPlan.keyActivities.length} aktivite`, color: "#8b5cf6" },
+                            { icon: "🎮", label: "Dijital Oyun", content: `${tpGeneratedPlan.weeklyPlan.digitalGames.length} oyun`, color: "#f59e0b" },
+                          ].map(({icon, label, content, color}) => (
+                            <div key={label} className="relative overflow-hidden rounded-2xl border border-(--color-line) p-4" style={{ background: "var(--color-surface-elevated)" }}>
+                              <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg, ${color}, transparent)` }} />
+                              <span className="text-2xl block mb-1.5">{icon}</span>
+                              <span className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) block mb-1">{label}</span>
+                              <strong className="text-(--color-text-strong) text-xs leading-snug">{content}</strong>
                             </div>
                           ))}
                         </div>
 
+                        {/* Key activities + digital games row */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
+                            <div className="px-5 py-3 border-b border-(--color-line) flex items-center gap-2" style={{ background: "#2563eb12" }}>
+                              <span className="w-5 h-5 rounded flex items-center justify-center text-xs" style={{ background: "#2563eb" }}>🧩</span>
+                              <span className="text-xs font-black uppercase tracking-wider" style={{ color: "#2563eb" }}>Anahtar Aktiviteler</span>
+                            </div>
+                            <ul className="p-4 space-y-2 m-0 pl-0 list-none">
+                              {tpGeneratedPlan.weeklyPlan.keyActivities.map((a, i) => (
+                                <li key={i} className="flex items-start gap-2.5 text-xs text-(--color-text-soft)">
+                                  <span className="w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center shrink-0 mt-0.5 text-white" style={{ background: "#2563eb" }}>{i + 1}</span>
+                                  {a}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
+                            <div className="px-5 py-3 border-b border-(--color-line) flex items-center gap-2" style={{ background: "#8b5cf612" }}>
+                              <span className="w-5 h-5 rounded flex items-center justify-center text-xs" style={{ background: "#8b5cf6" }}>🎮</span>
+                              <span className="text-xs font-black uppercase tracking-wider" style={{ color: "#8b5cf6" }}>Dijital Oyunlar</span>
+                            </div>
+                            <div className="p-4 flex flex-wrap gap-2">
+                              {tpGeneratedPlan.weeklyPlan.digitalGames.map((gk) => {
+                                const gt = GAME_TABS.find((g) => g.key === gk);
+                                return (
+                                  <button key={gk} type="button"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border-none cursor-pointer text-white transition-all hover:opacity-90"
+                                    style={{ background: "linear-gradient(135deg,#8b5cf6,#2563eb)", boxShadow: "0 2px 8px #8b5cf640" }}
+                                    onClick={() => openGameView(gk)}>
+                                    ▶ {gt?.title ?? gk}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Daily session cards */}
                         <div>
-                          <h3 className="text-sm font-semibold text-(--color-text-strong) mb-3">Günlük Yapı — {tpGeneratedPlan.dailyStructure.length} Seans</h3>
+                          <div className="flex items-center gap-2.5 mb-4">
+                            <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,var(--color-primary),#10b981)" }}>
+                              <CalendarDays size={13} className="text-white" />
+                            </div>
+                            <h3 className="text-base font-extrabold text-(--color-text-strong) m-0">Günlük Yapı — {tpGeneratedPlan.dailyStructure.length} Seans</h3>
+                          </div>
                           <div className={`grid gap-4 ${tpGeneratedPlan.dailyStructure.length <= 2 ? "grid-cols-1 sm:grid-cols-2" : tpGeneratedPlan.dailyStructure.length <= 4 ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`}>
                             {tpGeneratedPlan.dailyStructure.map((day, i) => {
                               const gameTab = GAME_TABS.find((g) => g.key === day.game);
+                              const dc = dayColors[i % dayColors.length];
                               return (
-                                <div key={i} className="bg-(--color-surface-strong) rounded-2xl border border-(--color-line) overflow-hidden">
-                                  <div className="flex items-center gap-2 px-4 py-3 bg-(--color-primary)/5 border-b border-(--color-line)">
-                                    <span className="w-6 h-6 rounded-full bg-(--color-primary) text-white text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
-                                    <span className="text-(--color-text-strong) text-sm font-medium">{day.dayLabel}</span>
+                                <div key={i} className="relative overflow-hidden rounded-2xl border transition-all card-hover" style={{ borderColor: `${dc}40`, background: "var(--color-surface-elevated)" }}>
+                                  <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${dc}, transparent)` }} />
+                                  <div className="flex items-center gap-2.5 px-4 py-3 border-b border-(--color-line)" style={{ background: `${dc}10` }}>
+                                    <span className="w-7 h-7 rounded-xl text-xs font-black flex items-center justify-center shrink-0 text-white" style={{ background: dc }}>{i + 1}</span>
+                                    <span className="text-(--color-text-strong) text-sm font-bold">{day.dayLabel}</span>
                                   </div>
                                   <div className="p-4 flex flex-col gap-3">
-                                    {[{l: "Aktivite", v: <span className="text-xs text-(--color-text-body)">{day.activity}</span>}, {l: "Dijital Oyun", v: <button type="button" className="text-(--color-primary) text-xs hover:underline bg-transparent border-none cursor-pointer text-left" onClick={() => openGameView(day.game)}>▶ {gameTab?.title ?? day.game}</button>}, {l: "Gözlem", v: <span className="text-xs text-(--color-text-soft)">{day.observation}</span>}].map(({l, v}) => (
-                                      <div key={l}>
-                                        <span className="text-[10px] font-semibold uppercase tracking-wider text-(--color-text-muted) block mb-0.5">{l}</span>
-                                        {v}
-                                      </div>
-                                    ))}
+                                    <div>
+                                      <span className="text-[9px] font-black uppercase tracking-widest text-(--color-text-muted) block mb-1">🧩 Aktivite</span>
+                                      <span className="text-xs text-(--color-text-body) leading-snug">{day.activity}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-[9px] font-black uppercase tracking-widest text-(--color-text-muted) block mb-1">🎮 Dijital Oyun</span>
+                                      <button type="button"
+                                        className="text-xs font-semibold border-none cursor-pointer flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors text-white"
+                                        style={{ background: dc, boxShadow: `0 2px 6px ${dc}50` }}
+                                        onClick={() => openGameView(day.game)}>
+                                        ▶ {gameTab?.title ?? day.game}
+                                      </button>
+                                    </div>
+                                    <div>
+                                      <span className="text-[9px] font-black uppercase tracking-widest text-(--color-text-muted) block mb-1">📝 Gözlem</span>
+                                      <span className="text-xs text-(--color-text-soft)">{day.observation}</span>
+                                    </div>
                                   </div>
                                 </div>
                               );
@@ -2921,7 +3586,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           </div>
                         </div>
 
-                        <p className="text-(--color-text-muted) text-xs italic">Not: {tpGeneratedPlan.weeklyPlan.sessionNotes}</p>
+                        <div className="rounded-2xl border border-amber-500/25 p-4 flex items-start gap-2.5" style={{ background: "#f59e0b08" }}>
+                          <span className="text-base shrink-0">📌</span>
+                          <p className="text-(--color-text-muted) text-xs m-0 italic leading-relaxed">{tpGeneratedPlan.weeklyPlan.sessionNotes}</p>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -2932,10 +3600,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               {tpActiveTab === "progress" && (() => {
                 const selectedProgressClient = clientOptions.find((c) => c.id === tpSelectedClientId) ?? null;
                 if (!selectedProgressClient) return (
-                  <div className="flex flex-col items-center gap-3 py-16 text-center">
-                    <BarChart3 size={48} strokeWidth={1.5} className="text-(--color-text-muted)" />
-                    <h3 className="text-(--color-text-strong) font-semibold m-0">Danışan seçilmedi</h3>
-                    <p className="text-(--color-text-soft) text-sm m-0">İlerleme takibi için üst kısımdan bir danışan seçin.</p>
+                  <div className="flex flex-col items-center gap-4 py-16 text-center rounded-3xl border border-(--color-line) border-dashed" style={{ background: "var(--color-surface-strong)" }}>
+                    <div className="w-16 h-16 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,var(--color-primary)/15,#8b5cf6/15)" }}>
+                      <BarChart3 size={28} className="text-(--color-primary)" />
+                    </div>
+                    <h3 className="text-(--color-text-strong) font-extrabold text-lg m-0">Danışan seçilmedi</h3>
+                    <p className="text-(--color-text-soft) text-sm m-0">İlerleme takibi için sağ üstten bir danışan seçin.</p>
                   </div>
                 );
                 const domain = tpSelectedDomain ? THERAPY_DOMAINS.find((d) => d.key === tpSelectedDomain) : null;
@@ -2951,108 +3621,174 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 const overallAvg = goalAverages.length > 0 ? Math.round(goalAverages.reduce((s, g) => s + g.average, 0) / goalAverages.length) : 0;
 
                 return (
-                  <div className="space-y-5">
+                  <div className="space-y-6">
+                    {/* ── Header row ── */}
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <h2 className="text-lg font-bold text-(--color-text-strong) m-0">İlerleme Takibi</h2>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-(--color-text-strong) font-medium text-sm">{selectedProgressClient.displayName}</span>
-                          {domain && <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold text-white" style={{ background: domain.color }}>{domain.icon} {domain.label}</span>}
+                        <h2 className="text-xl font-extrabold text-(--color-text-strong) m-0 tracking-tight">İlerleme Takibi</h2>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <span className="text-(--color-text-strong) font-semibold text-sm">{selectedProgressClient.displayName}</span>
+                          {domain && <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold text-white" style={{ background: domain.color }}><DomainIcon iconKey={domain.icon} size={10} />{domain.label}</span>}
                         </div>
                       </div>
-                      <button type="button" className={btnPrimary} onClick={() => setTpShowProgressForm(!tpShowProgressForm)}>+ Kayıt Ekle</button>
+                      <button type="button"
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white border-none cursor-pointer transition-all"
+                        style={{ background: "linear-gradient(135deg,var(--color-primary),#8b5cf6)", boxShadow: "0 4px 14px var(--color-primary)/40" }}
+                        onClick={() => setTpShowProgressForm(!tpShowProgressForm)}>
+                        + Kayıt Ekle
+                      </button>
                     </div>
 
-                    <div className="flex items-center gap-6 bg-(--color-surface-strong) rounded-2xl border border-(--color-line) p-5">
-                      <div className="relative w-20 h-20 shrink-0">
-                        <svg viewBox="0 0 36 36" className="w-20 h-20 -rotate-90">
-                          <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(14,165,233,0.1)" strokeWidth="3" />
-                          <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="url(#progressGrad)" strokeWidth="3" strokeDasharray={`${overallAvg}, 100`} strokeLinecap="round" />
-                          <defs><linearGradient id="progressGrad"><stop offset="0%" stopColor="#2563eb" /><stop offset="100%" stopColor="#06b6d4" /></linearGradient></defs>
-                        </svg>
-                        <span className="absolute inset-0 flex items-center justify-center text-lg font-bold text-(--color-text-strong)">{overallAvg}%</span>
-                      </div>
-                      <div>
-                        <strong className="text-(--color-text-strong) block">Genel İlerleme</strong>
-                        <span className="text-(--color-text-muted) text-sm">{clientProgress.length} kayıt · {goalAverages.filter((g) => g.count > 0).length}/{goals.length} hedef takipte</span>
+                    {/* ── Overall Progress Hero ── */}
+                    <div className="relative overflow-hidden rounded-3xl border border-(--color-line) p-6" style={{ background: "linear-gradient(135deg,var(--color-primary)/8 0%,#8b5cf6/5 100%)" }}>
+                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,var(--color-primary),#8b5cf6,transparent)" }} />
+                      <div className="flex items-center gap-6">
+                        {/* Donut chart */}
+                        <div className="relative w-24 h-24 shrink-0">
+                          <svg viewBox="0 0 36 36" className="w-24 h-24 -rotate-90">
+                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(14,165,233,0.1)" strokeWidth="3" />
+                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="url(#progressGrad)" strokeWidth="3" strokeDasharray={`${overallAvg}, 100`} strokeLinecap="round" />
+                            <defs><linearGradient id="progressGrad"><stop offset="0%" stopColor="#2563eb" /><stop offset="100%" stopColor="#8b5cf6" /></linearGradient></defs>
+                          </svg>
+                          <span className="absolute inset-0 flex items-center justify-center text-xl font-black text-(--color-text-strong)">{overallAvg}%</span>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-lg font-extrabold text-(--color-text-strong) m-0 mb-1">Genel İlerleme</h3>
+                          <p className="text-(--color-text-soft) text-sm m-0">{clientProgress.length} kayıt · {goalAverages.filter((g) => g.count > 0).length}/{goals.length} hedef takipte</p>
+                          {/* Mini bar */}
+                          <div className="mt-3 h-2 rounded-full overflow-hidden" style={{ background: "var(--color-line)" }}>
+                            <div className="h-full rounded-full transition-all" style={{ width: `${overallAvg}%`, background: "linear-gradient(90deg,var(--color-primary),#8b5cf6)" }} />
+                          </div>
+                        </div>
                       </div>
                     </div>
 
+                    {/* ── Add Progress Form ── */}
                     {tpShowProgressForm && domain && (
-                      <div className="bg-(--color-surface-strong) rounded-2xl border border-(--color-line) p-5">
-                        <h4 className="text-(--color-text-strong) font-semibold mb-4">Yeni İlerleme Kaydı</h4>
-                        <div className="flex flex-col gap-4">
-                          <label className="flex flex-col gap-1">
-                            <span className="text-xs text-(--color-text-soft)">Hedef</span>
+                      <div className="relative overflow-hidden rounded-3xl border border-(--color-line)" style={{ background: "var(--color-surface-strong)" }}>
+                        <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,var(--color-primary),#8b5cf6,transparent)" }} />
+                        <div className="flex items-center gap-3 px-6 py-4 border-b border-(--color-line)" style={{ background: "var(--color-primary)/5" }}>
+                          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,var(--color-primary),#8b5cf6)" }}>
+                            <TrendingUp size={15} className="text-white" />
+                          </div>
+                          <h4 className="text-(--color-text-strong) font-extrabold m-0">Yeni İlerleme Kaydı</h4>
+                        </div>
+                        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <label className="flex flex-col gap-1.5 sm:col-span-2">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-(--color-text-muted)">Hedef</span>
                             <select value={tpProgressForm.goalId} onChange={(e) => setTpProgressForm((c) => ({ ...c, goalId: e.target.value }))} className={inputCls}>
                               <option value="">Hedef seçin...</option>
                               {goals.map((g) => <option key={g.id} value={g.id}>{g.label}</option>)}
                             </select>
                           </label>
-                          <label className="flex flex-col gap-1">
-                            <span className="text-xs text-(--color-text-soft)">Değer: <strong>{tpProgressForm.value}%</strong></span>
-                            <input type="range" min={0} max={100} step={5} value={tpProgressForm.value} onChange={(e) => setTpProgressForm((c) => ({ ...c, value: Number(e.target.value) }))} className="w-full" />
-                            <div className="flex justify-between text-xs text-(--color-text-muted)">
+                          <label className="flex flex-col gap-2 sm:col-span-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-black uppercase tracking-wider text-(--color-text-muted)">Bağımsızlık Düzeyi</span>
+                              <span className="text-lg font-black text-(--color-primary)">{tpProgressForm.value}%</span>
+                            </div>
+                            <input type="range" min={0} max={100} step={5} value={tpProgressForm.value} onChange={(e) => setTpProgressForm((c) => ({ ...c, value: Number(e.target.value) }))} className="w-full accent-blue-600" />
+                            <div className="flex justify-between text-[10px] text-(--color-text-muted) font-semibold">
                               {INDEPENDENCE_LEVELS.map((lvl) => <span key={lvl.key}>{lvl.label}</span>)}
                             </div>
                           </label>
-                          <label className="flex flex-col gap-1">
-                            <span className="text-xs text-(--color-text-soft)">Not</span>
+                          <label className="flex flex-col gap-1.5 sm:col-span-2">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-(--color-text-muted)">Not</span>
                             <textarea value={tpProgressForm.note} onChange={(e) => setTpProgressForm((c) => ({ ...c, note: e.target.value }))} placeholder="Gözlem veya değerlendirme notu..." className={`${inputCls} resize-none`} rows={3} />
                           </label>
-                          <div className="flex gap-2">
-                            <button type="button" className={btnPrimary} onClick={handleAddProgressEntry}>Kaydet</button>
-                            <button type="button" className={btnSecondary} onClick={() => setTpShowProgressForm(false)}>İptal</button>
+                          <div className="flex gap-2 sm:col-span-2">
+                            <button type="button"
+                              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white border-none cursor-pointer transition-all"
+                              style={{ background: "linear-gradient(135deg,var(--color-primary),#8b5cf6)", boxShadow: "0 4px 14px var(--color-primary)/40" }}
+                              onClick={handleAddProgressEntry}>
+                              Kaydet
+                            </button>
+                            <button type="button"
+                              className="px-5 py-2.5 rounded-xl text-sm font-semibold border-none cursor-pointer transition-colors text-(--color-text-body) hover:text-(--color-text-strong)"
+                              style={{ background: "var(--color-surface-elevated)" }}
+                              onClick={() => setTpShowProgressForm(false)}>
+                              İptal
+                            </button>
                           </div>
                         </div>
                       </div>
                     )}
 
+                    {/* ── Goal Averages ── */}
                     {goalAverages.length > 0 && (
-                      <div>
-                        <h3 className="text-sm font-semibold text-(--color-text-strong) mb-3">Hedef Bazlı İlerleme</h3>
-                        <div className="space-y-3">
-                          {goalAverages.map((ga) => (
-                            <div key={ga.id} className="bg-(--color-surface-strong) rounded-xl border border-(--color-line) p-4">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-(--color-text-body) text-sm">{ga.label}</span>
-                                <span className="font-bold text-(--color-text-strong) text-sm">{ga.average}%</span>
+                      <div className="rounded-3xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
+                        <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,#10b981,transparent)" }} />
+                        <div className="flex items-center gap-3 px-5 py-4 border-b border-(--color-line)" style={{ background: "var(--color-surface-elevated)" }}>
+                          <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#10b981,#06b6d4)" }}>
+                            <Target size={13} className="text-white" />
+                          </div>
+                          <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0">Hedef Bazlı İlerleme</h3>
+                          <span className="ml-auto px-2.5 py-0.5 rounded-full text-xs font-bold text-white" style={{ background: "#10b981" }}>{goalAverages.filter(g => g.count > 0).length} hedef</span>
+                        </div>
+                        <div className="p-5 space-y-4">
+                          {goalAverages.map((ga, i) => {
+                            const barColor = ga.average >= 75 ? "#10b981" : ga.average >= 50 ? "#f59e0b" : ga.average >= 25 ? "#2563eb" : "#ef4444";
+                            return (
+                              <div key={ga.id}>
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-sm text-(--color-text-body) font-medium">{ga.label}</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-(--color-text-muted)">{ga.count} kayıt</span>
+                                    <span className="text-base font-black" style={{ color: barColor }}>{ga.average}%</span>
+                                  </div>
+                                </div>
+                                <div className="h-2.5 rounded-full overflow-hidden" style={{ background: "var(--color-line)" }}>
+                                  <div className="h-full rounded-full transition-all" style={{ width: `${ga.average}%`, background: `linear-gradient(90deg, ${barColor}, ${barColor}90)` }} />
+                                </div>
                               </div>
-                              <div className="h-2 rounded-full bg-white/8 overflow-hidden">
-                                <div className="h-full rounded-full bg-(--color-primary) transition-all" style={{ width: `${ga.average}%` }} />
-                              </div>
-                              <span className="text-(--color-text-muted) text-xs mt-1 block">{ga.count} kayıt</span>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     )}
 
-                    <div>
-                      <h3 className="text-sm font-semibold text-(--color-text-strong) mb-3">İlerleme Geçmişi</h3>
+                    {/* ── Progress History ── */}
+                    <div className="relative rounded-3xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
+                      <div className="flex items-center gap-3 px-5 py-4 border-b border-(--color-line)" style={{ background: "var(--color-surface-elevated)" }}>
+                        <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#f59e0b,#ef4444)" }}>
+                          <BarChart3 size={13} className="text-white" />
+                        </div>
+                        <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0">İlerleme Geçmişi</h3>
+                        <span className="ml-auto px-2.5 py-0.5 rounded-full text-xs font-bold text-white" style={{ background: "#f59e0b" }}>{clientProgress.length}</span>
+                      </div>
                       {clientProgress.length === 0 ? (
-                        <div className="flex flex-col items-center gap-2 py-8 text-(--color-text-muted)">
-                          <span className="text-3xl">📝</span>
-                          <p className="text-sm">Henüz ilerleme kaydı eklenmedi. Yukarıdaki "Kayıt Ekle" butonunu kullanın.</p>
+                        <div className="flex flex-col items-center gap-3 py-12 text-center">
+                          <span className="text-4xl">📝</span>
+                          <p className="text-sm text-(--color-text-muted)">Henüz ilerleme kaydı eklenmedi.<br />Yukarıdaki "Kayıt Ekle" butonunu kullanın.</p>
                         </div>
                       ) : (
-                        <div className="space-y-3">
+                        <div className="divide-y divide-(--color-line)">
                           {clientProgress.map((entry) => {
                             const goal = goals.find((g) => g.id === entry.goalId);
+                            const barColor = entry.value >= 75 ? "#10b981" : entry.value >= 50 ? "#f59e0b" : entry.value >= 25 ? "#2563eb" : "#ef4444";
                             return (
-                              <div key={entry.id} className="bg-(--color-surface-strong) rounded-xl border border-(--color-line) p-4">
-                                <div className="flex items-center justify-between mb-1">
-                                  <strong className="text-(--color-text-strong) text-sm">{goal?.label ?? entry.goalId}</strong>
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-16 h-1.5 rounded-full bg-white/8 overflow-hidden">
-                                      <div className="h-full rounded-full bg-(--color-primary)" style={{ width: `${entry.value}%` }} />
-                                    </div>
-                                    <span className="text-(--color-text-strong) text-sm font-bold">{entry.value}%</span>
-                                  </div>
+                              <div key={entry.id} className="px-5 py-4 flex items-center gap-4 hover:bg-(--color-surface-elevated) transition-colors">
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-base font-black text-white" style={{ background: `linear-gradient(135deg, ${barColor}, ${barColor}90)` }}>
+                                  {entry.value}
                                 </div>
-                                <span className="text-(--color-text-muted) text-xs">{formatDate(entry.date)}</span>
-                                {entry.note && <p className="text-(--color-text-soft) text-xs mt-1 m-0">{entry.note}</p>}
-                                <button type="button" className="text-(--color-accent-red) text-xs hover:underline bg-transparent border-none cursor-pointer mt-1" onClick={() => handleDeleteProgressEntry(entry.id)}>Sil</button>
+                                <div className="flex-1 min-w-0">
+                                  <strong className="text-(--color-text-strong) text-sm block truncate">{goal?.label ?? entry.goalId}</strong>
+                                  <span className="text-(--color-text-muted) text-xs">{formatDate(entry.date)}</span>
+                                  {entry.note && <p className="text-(--color-text-soft) text-xs mt-0.5 m-0 truncate">{entry.note}</p>}
+                                </div>
+                                <div className="flex items-center gap-3 shrink-0">
+                                  <div className="flex flex-col items-end gap-1">
+                                    <span className="text-xs text-(--color-text-muted)">%</span>
+                                    <div className="w-20 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--color-line)" }}>
+                                      <div className="h-full rounded-full transition-all" style={{ width: `${entry.value}%`, background: barColor }} />
+                                    </div>
+                                  </div>
+                                  <button type="button"
+                                    className="w-7 h-7 rounded-lg flex items-center justify-center text-xs border-none cursor-pointer transition-colors text-(--color-text-muted) hover:text-red-400 hover:bg-red-500/10"
+                                    style={{ background: "transparent" }}
+                                    onClick={() => handleDeleteProgressEntry(entry.id)}>
+                                    ✕
+                                  </button>
+                                </div>
                               </div>
                             );
                           })}
@@ -3070,27 +3806,34 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       </div>
 
       {/* ── Mobile bottom navigation ── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 lg:hidden border-t border-(--color-line)" style={{ background: "var(--color-chrome-nav)", backdropFilter: "blur(20px)", paddingBottom: "env(safe-area-inset-bottom)" }}>
-        <div className="flex items-stretch h-16">
+      {/* ── Premium Mobile Bottom Navigation ── */}
+      <nav className="fixed bottom-0 left-0 right-0 z-30 lg:hidden" style={{ background: "var(--color-chrome-nav)", backdropFilter: "blur(24px)", borderTop: "1px solid var(--color-line)", paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="flex items-stretch h-16 px-2">
           {([
-            { view: "dashboard" as AppView, Icon: LayoutDashboard, label: "Panel" },
-            { view: "clients" as AppView, Icon: Users, label: "Danışanlar" },
-            { view: "games" as AppView, Icon: Gamepad2, label: "Oyunlar" },
-            { view: "therapy-program" as AppView, Icon: Stethoscope, label: "Terapi" },
-          ]).map(({ view, Icon, label }) => {
+            { view: "dashboard" as AppView, Icon: LayoutDashboard, label: "Panel", gradient: "linear-gradient(135deg,#2563eb,#06b6d4)" },
+            { view: "clients" as AppView, Icon: Users, label: "Danışanlar", gradient: "linear-gradient(135deg,#8b5cf6,#ec4899)" },
+            { view: "games" as AppView, Icon: Gamepad2, label: "Oyunlar", gradient: "linear-gradient(135deg,#10b981,#2563eb)" },
+            { view: "therapy-program" as AppView, Icon: Stethoscope, label: "Terapi", gradient: "linear-gradient(135deg,#8b5cf6,#6366f1)" },
+          ]).map(({ view, Icon, label, gradient }) => {
             const isActive = activeAppView === view || (view === "clients" && activeAppView === "client-detail");
             return (
               <button
                 key={view}
                 type="button"
-                className={`flex-1 flex flex-col items-center justify-center gap-1 border-none cursor-pointer transition-colors ${isActive ? "text-(--color-primary)" : "text-(--color-text-muted) hover:text-(--color-text-soft)"}`}
+                className="flex-1 flex flex-col items-center justify-center gap-1 border-none cursor-pointer transition-all"
                 style={{ background: "transparent" }}
                 onClick={() => setActiveAppView(view)}
               >
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${isActive ? "bg-(--color-primary)/15" : ""}`}>
-                  <Icon size={18} />
+                <div
+                  className="w-9 h-9 rounded-2xl flex items-center justify-center transition-all"
+                  style={{
+                    background: isActive ? gradient : "transparent",
+                    boxShadow: isActive ? "0 4px 12px rgba(0,0,0,0.25)" : "none",
+                    transform: isActive ? "scale(1.1) translateY(-2px)" : "scale(1)",
+                  }}>
+                  <Icon size={18} className={isActive ? "text-white" : "text-(--color-text-muted)"} />
                 </div>
-                <span className={`text-[10px] font-medium leading-none ${isActive ? "text-(--color-primary)" : ""}`}>{label}</span>
+                <span className={`text-[9px] font-bold leading-none tracking-wide ${isActive ? "text-(--color-primary)" : "text-(--color-text-muted)"}`}>{label}</span>
               </button>
             );
           })}
