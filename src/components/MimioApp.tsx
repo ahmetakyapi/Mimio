@@ -7,7 +7,7 @@ import {
   Baby, Zap, Puzzle, PersonStanding, Briefcase, Handshake,
   Target, ClipboardList, Home, Tag, FlaskConical, Lightbulb, BookOpen, BarChart3, Search, RefreshCw, Map, CalendarDays, TrendingUp, Grid3X3,
   Bell, FileText, Award, Activity, ChevronRight, Star, Flame, Trophy, ArrowUpRight, ArrowDownRight,
-  Plus, Check, Archive, Edit2, Timer, X,
+  Plus, Check, Archive, Edit2, Timer, X, Download, Upload,
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
@@ -267,8 +267,31 @@ function createMemorySequence(length: number, previousLast?: number) {
   return next;
 }
 
-function createPairsDeck() {
-  const duplicated = SYMBOL_LIBRARY.flatMap((variant) => [
+function getDifficultyLevel(difficultyLevel: string | undefined): 1 | 2 | 3 {
+  if (!difficultyLevel) return 2;
+  const s = difficultyLevel.toLowerCase().trim();
+  if (["kolay", "low", "easy", "1", "başlangıç", "hafif", "düşük"].some(k => s.includes(k))) return 1;
+  if (["zor", "high", "hard", "3", "ileri", "expert", "yüksek", "ilerlemiş"].some(k => s.includes(k))) return 3;
+  return 2;
+}
+
+const DIFFICULTY_LABELS: Record<1 | 2 | 3, string> = { 1: "Kolay", 2: "Orta", 3: "Zor" };
+const DIFFICULTY_COLORS: Record<1 | 2 | 3, string> = { 1: "#10b981", 2: "#f59e0b", 3: "#ef4444" };
+
+// Per-game config by difficulty level index (0=easy, 1=medium, 2=hard)
+const GAME_DIFF_CONFIG = {
+  memory:     { startLength: [2, 3, 4] as const },
+  pairs:      { pairCount:   [5, 8, 8] as const, hideMs: [1000, 700, 450] as const },
+  pulse:      { rounds:      [14, 20, 26] as const },
+  route:      { rounds:      [12, 18, 24] as const },
+  difference: { rounds:      [8,  12, 16] as const },
+  scan:       { tileCount:   [9,  9,  16] as const, rounds: [10, 15, 20] as const },
+} as const;
+
+function createPairsDeck(pairCount = 8) {
+  const count = Math.min(pairCount, SYMBOL_LIBRARY.length);
+  const selected = SYMBOL_LIBRARY.slice(0, count);
+  const duplicated = selected.flatMap((variant) => [
     { ...variant, id: `${variant.label}-a`, matched: false, revealed: false },
     { ...variant, id: `${variant.label}-b`, matched: false, revealed: false },
   ]);
@@ -291,7 +314,7 @@ function createDifferenceRound(round: number) {
   return { tiles, oddId: tiles[oddTileIndex].id };
 }
 
-function createScanRound(round: number) {
+function createScanRound(round: number, tileCount = 9) {
   const targetIndex = randomIndex(SYMBOL_LIBRARY.length);
   const distractorOne = randomIndex(SYMBOL_LIBRARY.length, targetIndex);
   let distractorTwo = randomIndex(SYMBOL_LIBRARY.length, distractorOne);
@@ -299,7 +322,7 @@ function createScanRound(round: number) {
   const targetVariant = SYMBOL_LIBRARY[targetIndex];
   const distractors = [SYMBOL_LIBRARY[distractorOne], SYMBOL_LIBRARY[distractorTwo]];
   const tiles = shuffleArray(
-    Array.from({ length: 9 }, (_, index) => {
+    Array.from({ length: tileCount }, (_, index) => {
       if (index === 0) return { ...targetVariant, target: true, rotation: 4 };
       const variant = distractors[index % distractors.length];
       return { ...variant, target: false, rotation: index % 2 === 0 ? -2 : 2 };
@@ -781,6 +804,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const [noteForm, setNoteForm] = useState({ date: getTodayString(), content: "" });
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [showAddClient, setShowAddClient] = useState(false);
+  const [showCsvImport, setShowCsvImport] = useState(false);
+  const [csvImportText, setCsvImportText] = useState("");
+  const [csvImportError, setCsvImportError] = useState("");
   const [planEdits, setPlanEdits] = useState<Record<DayKey, WeeklyPlanEntry[]>>({ mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: [] });
   const [planWeekStart, setPlanWeekStart] = useState(getWeekStart());
   const [addClientDraft, setAddClientDraft] = useState<ClientDraftState>({ displayName: "", ageGroup: "", primaryGoal: "", supportLevel: "" });
@@ -841,6 +867,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
   // ── New feature states ──
   const [clientSearch, setClientSearch] = useState("");
+  const [clientFilterAge, setClientFilterAge] = useState("");
+  const [clientFilterSupport, setClientFilterSupport] = useState("");
+  const [clientFilterActivity, setClientFilterActivity] = useState<"all" | "inactive" | "new">("all");
   const [noteMode, setNoteMode] = useState<NoteMode>("free");
   const [soapDraft, setSoapDraft] = useState<SoapNoteContent>({ s: "", o: "", a: "", p: "" });
   const [clientGoals, setClientGoals] = useState<ClientGoal[]>([]);
@@ -1315,6 +1344,58 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     setShowAddClient(false);
   }
 
+  // ── CSV export ──
+  function handleExportClientsCsv() {
+    const headers = ["Ad", "Yaş Grubu", "Birincil Hedef", "Destek Düzeyi", "Zorluk Düzeyi", "Seans Sayısı", "Son Aktif"];
+    const rows = clientOptions.map(c => {
+      const sessions = platformOverview.recentSessions.filter(s => s.clientId === c.id);
+      return [
+        `"${c.displayName}"`,
+        `"${c.ageGroup ?? ""}"`,
+        `"${c.primaryGoal ?? ""}"`,
+        `"${c.supportLevel ?? ""}"`,
+        `"${c.difficultyLevel ?? ""}"`,
+        sessions.length,
+        `"${c.lastActiveAt?.slice(0, 10) ?? ""}"`,
+      ].join(",");
+    });
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `mimio-danisanlar-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast("CSV dışa aktarıldı", "success");
+  }
+
+  // ── CSV import ──
+  async function handleImportCsv() {
+    setCsvImportError("");
+    const lines = csvImportText.trim().split("\n").map(l => l.trim()).filter(Boolean);
+    if (lines.length < 2) { setCsvImportError("En az bir veri satırı gerekli (başlık + 1 danışan)."); return; }
+    const dataLines = lines.slice(1); // skip header
+    let importedCount = 0;
+    for (const line of dataLines) {
+      const cols = line.split(",").map(c => c.replace(/^"|"$/g, "").trim());
+      const [displayName, ageGroup, primaryGoal, supportLevel] = cols;
+      if (!displayName) continue;
+      await createProfileInBackend(
+        { kind: "client", displayName, ageGroup: ageGroup ?? "", primaryGoal: primaryGoal ?? "", supportLevel: supportLevel ?? "" },
+        ""
+      );
+      importedCount++;
+    }
+    if (importedCount > 0) {
+      await loadPlatformOverview();
+      showToast(`${importedCount} danışan içe aktarıldı`, "success");
+      setShowCsvImport(false);
+      setCsvImportText("");
+    } else {
+      setCsvImportError("Hiç geçerli danışan satırı bulunamadı.");
+    }
+  }
+
   // ── Therapy Program handlers ──
   function handleSelectDomain(domainKey: TherapyDomainKey) {
     setTpSelectedDomain(domainKey);
@@ -1547,7 +1628,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     memoryTimersRef.current.push(window.setTimeout(() => setMemoryState((current) => ({ ...current, flashIndex: null, phase: "ready", message: "Sırayı tekrar et. Yanlış seçimde tur kapanır." })), 360 + nextSequence.length * 720));
   }
 
-  function startMemoryGame() { setGameTimerKey(k => k + 1); setMemoryCursor(0); playMemorySequence(createMemorySequence(MEMORY_START_LENGTH), 0); }
+  function startMemoryGame() { setGameTimerKey(k => k + 1); setMemoryCursor(0); playMemorySequence(createMemorySequence(GAME_DIFF_CONFIG.memory.startLength[clientDiffLevel - 1]), 0); }
   function replayMemorySequence() { if (memoryState.sequence.length === 0) return; playMemorySequence(memoryState.sequence, memoryState.score); }
 
   function handleMemoryPick(index: number) {
@@ -1572,7 +1653,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     memoryTimersRef.current.push(window.setTimeout(() => setMemoryState((current) => ({ ...current, flashIndex: null })), 220));
   }
 
-  function startPairsGame() { setGameTimerKey(k => k + 1); clearPairTimers(); setPairsCursor(0); setPairsState({ tiles: createPairsDeck(), moves: 0, pairsFound: 0, locked: false, phase: "playing", message: "Kartları aç ve aynı simgeleri eşleştir." }); }
+  function startPairsGame() {
+    const cfg = GAME_DIFF_CONFIG.pairs;
+    const pairCount = cfg.pairCount[clientDiffLevel - 1];
+    setGameTimerKey(k => k + 1); clearPairTimers(); setPairsCursor(0);
+    setPairsState({ tiles: createPairsDeck(pairCount), moves: 0, pairsFound: 0, locked: false, phase: "playing", message: "Kartları aç ve aynı simgeleri eşleştir." });
+  }
 
   function hideMismatchedPairs() { setPairsState((current) => ({ ...current, locked: false, tiles: current.tiles.map((tile) => (tile.matched ? tile : { ...tile, revealed: false })), message: "Kartlar kapandı. Şimdi doğru çifti bul." })); }
 
@@ -1588,20 +1674,24 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     if (isMatch) {
       const matchedTiles = nextTiles.map((tile) => tile.revealed && !tile.matched ? { ...tile, matched: true } : tile);
       const nextPairsFound = pairsState.pairsFound + 1;
-      if (nextPairsFound >= TOTAL_PAIR_MATCHES) {
+      const totalPairs = pairsState.tiles.length / 2;
+      if (nextPairsFound >= totalPairs) {
         const finalScore = Math.max(50, 280 - nextMoves * 7);
         commitScore("pairs", finalScore, { phase: "finished", moves: nextMoves, pairsFound: nextPairsFound });
         setPairsState({ tiles: matchedTiles, moves: nextMoves, pairsFound: nextPairsFound, locked: false, phase: "finished", message: `Tüm çiftler bulundu. Final skor ${finalScore}.` });
         return;
       }
-      setPairsState({ tiles: matchedTiles, moves: nextMoves, pairsFound: nextPairsFound, locked: false, phase: "playing", message: `Doğru çift bulundu. ${nextPairsFound}/${TOTAL_PAIR_MATCHES} tamamlandı.` });
+      setPairsState({ tiles: matchedTiles, moves: nextMoves, pairsFound: nextPairsFound, locked: false, phase: "playing", message: `Doğru çift bulundu. ${nextPairsFound}/${totalPairs} tamamlandı.` });
       return;
     }
     setPairsState({ tiles: nextTiles, moves: nextMoves, pairsFound: pairsState.pairsFound, locked: true, phase: "playing", message: "Eşleşme olmadı. Kartlar birazdan kapanacak." });
-    pairTimersRef.current.push(window.setTimeout(() => hideMismatchedPairs(), 700));
+    pairTimersRef.current.push(window.setTimeout(() => hideMismatchedPairs(), GAME_DIFF_CONFIG.pairs.hideMs[clientDiffLevel - 1]));
   }
 
-  function startPulseGame() { setGameTimerKey(k => k + 1); setPulseCursor(4); setPulseState({ activeIndex: randomIndex(PULSE_LABELS.length), round: 1, hits: 0, misses: 0, combo: 0, points: 0, phase: "playing", message: "Işıklanan hedefe ritmi bozmadan dokun." }); }
+  function startPulseGame() {
+    setGameTimerKey(k => k + 1); setPulseCursor(4);
+    setPulseState({ activeIndex: randomIndex(PULSE_LABELS.length), round: 1, hits: 0, misses: 0, combo: 0, points: 0, phase: "playing", message: "Işıklanan hedefe ritmi bozmadan dokun." });
+  }
 
   function handlePulsePick(index: number) {
     if (pulseState.phase !== "playing" || pulseState.activeIndex === null) return;
@@ -1612,9 +1702,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     const nextCombo = isHit ? pulseState.combo + 1 : 0;
     const nextPoints = Math.max(0, pulseState.points + (isHit ? 12 + pulseState.combo * 2 : -4));
     triggerFeedback(isHit, nextCombo);
-    if (nextRound > PULSE_TOTAL_ROUNDS) {
-      commitScore("pulse", nextPoints, { phase: "finished", round: PULSE_TOTAL_ROUNDS, hits: nextHits, misses: nextMisses });
-      setPulseState({ activeIndex: pulseState.activeIndex, round: PULSE_TOTAL_ROUNDS, hits: nextHits, misses: nextMisses, combo: nextCombo, points: nextPoints, phase: "finished", message: `Set tamamlandı. ${nextHits} doğru hedef ve ${nextPoints} puan toplandı.` });
+    const pulseRounds = GAME_DIFF_CONFIG.pulse.rounds[clientDiffLevel - 1];
+    if (nextRound > pulseRounds) {
+      commitScore("pulse", nextPoints, { phase: "finished", round: pulseRounds, hits: nextHits, misses: nextMisses });
+      setPulseState({ activeIndex: pulseState.activeIndex, round: pulseRounds, hits: nextHits, misses: nextMisses, combo: nextCombo, points: nextPoints, phase: "finished", message: `Set tamamlandı. ${nextHits} doğru hedef ve ${nextPoints} puan toplandı.` });
       return;
     }
     setPulseState({ activeIndex: randomIndex(PULSE_LABELS.length, pulseState.activeIndex), round: nextRound, hits: nextHits, misses: nextMisses, combo: nextCombo, points: nextPoints, phase: "playing", message: isHit ? `Temiz vuruş. Seri ${nextCombo}, puan ${nextPoints}.` : `Hedef değişti. Hata sayısı ${nextMisses}, puan ${nextPoints}.` });
@@ -1630,9 +1721,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     const nextScore = Math.max(0, routeState.score + (isCorrect ? 14 + routeState.streak * 3 : -5));
     const nextHistory = [...routeState.history, routeState.command];
     triggerFeedback(isCorrect, nextStreak);
-    if (nextRound > ROUTE_TOTAL_ROUNDS) {
-      commitScore("route", nextScore, { phase: "finished", round: ROUTE_TOTAL_ROUNDS, streak: nextStreak, historyLength: nextHistory.length });
-      setRouteState({ command: routeState.command, round: ROUTE_TOTAL_ROUNDS, score: nextScore, streak: nextStreak, phase: "finished", history: nextHistory, message: `Komut seti tamamlandı. Final skor ${nextScore}.` });
+    const routeRounds = GAME_DIFF_CONFIG.route.rounds[clientDiffLevel - 1];
+    if (nextRound > routeRounds) {
+      commitScore("route", nextScore, { phase: "finished", round: routeRounds, streak: nextStreak, historyLength: nextHistory.length });
+      setRouteState({ command: routeState.command, round: routeRounds, score: nextScore, streak: nextStreak, phase: "finished", history: nextHistory, message: `Komut seti tamamlandı. Final skor ${nextScore}.` });
       return;
     }
     setRouteState({ command: createRouteCommand(routeState.command), round: nextRound, score: nextScore, streak: nextStreak, phase: "playing", history: nextHistory, message: isCorrect ? `Doğru yön. Seri ${nextStreak}, puan ${nextScore}.` : `Yanlış yön. Seri sıfırlandı, puan ${nextScore}.` });
@@ -1654,9 +1746,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       setDifferenceState((current) => ({ ...current, phase: "finished", revealId: current.oddId, message: `Tur bitti. Kaydedilen skor ${current.score}. İşaretlenen kart doğru değildi.` }));
       return;
     }
-    if (differenceState.round >= DIFFERENCE_TOTAL_ROUNDS) {
+    const diffRounds = GAME_DIFF_CONFIG.difference.rounds[clientDiffLevel - 1];
+    if (differenceState.round >= diffRounds) {
       const finalScore = differenceState.score + 1;
-      commitScore("difference", finalScore, { phase: "finished", round: DIFFERENCE_TOTAL_ROUNDS, revealId: differenceState.oddId });
+      commitScore("difference", finalScore, { phase: "finished", round: diffRounds, revealId: differenceState.oddId });
       setDifferenceState((current) => ({ ...current, score: finalScore, phase: "finished", revealId: current.oddId, message: `Tüm turları geçtin. Final skor ${finalScore}.` }));
       return;
     }
@@ -1667,7 +1760,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
   function startScanGame() {
     setGameTimerKey(k => k + 1);
-    const round = createScanRound(1);
+    const tileCount = GAME_DIFF_CONFIG.scan.tileCount[clientDiffLevel - 1];
+    const round = createScanRound(1, tileCount);
     setScanCursor(0);
     setScanState({ ...round, round: 1, score: 0, phase: "playing", revealId: null, message: "Üstteki hedef simgeyi ızgara içinde bul." });
   }
@@ -1676,19 +1770,21 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     if (scanState.phase !== "playing") return;
     const isCorrect = tileId === scanState.targetId;
     triggerFeedback(isCorrect, 0);
+    const scanRounds = GAME_DIFF_CONFIG.scan.rounds[clientDiffLevel - 1];
+    const tileCount = GAME_DIFF_CONFIG.scan.tileCount[clientDiffLevel - 1];
     if (!isCorrect) {
       commitScore("scan", scanState.score, { phase: "finished", round: scanState.round, targetLabel: scanState.targetLabel });
       setScanState((current) => ({ ...current, phase: "finished", revealId: current.targetId, message: `Tur bitti. Kaydedilen skor ${current.score}. Doğru hedef işaretlenemedi.` }));
       return;
     }
-    if (scanState.round >= SCAN_TOTAL_ROUNDS) {
+    if (scanState.round >= scanRounds) {
       const finalScore = scanState.score + 1;
-      commitScore("scan", finalScore, { phase: "finished", round: SCAN_TOTAL_ROUNDS, targetLabel: scanState.targetLabel });
+      commitScore("scan", finalScore, { phase: "finished", round: scanRounds, targetLabel: scanState.targetLabel });
       setScanState((current) => ({ ...current, score: finalScore, phase: "finished", revealId: current.targetId, message: `Tüm hedefler bulundu. Final skor ${finalScore}.` }));
       return;
     }
     const nextRoundNumber = scanState.round + 1;
-    const nextRound = createScanRound(nextRoundNumber);
+    const nextRound = createScanRound(nextRoundNumber, tileCount);
     setScanState({ ...nextRound, round: nextRoundNumber, score: scanState.score + 1, phase: "playing", revealId: null, message: `Doğru hedef bulundu. ${nextRoundNumber}. tura geçildi.` });
   }
 
@@ -1733,6 +1829,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const clientOptions = platformOverview.clients;
   const activeTherapist = therapistOptions.find((profile) => profile.id === activeTherapistId) ?? therapistOptions[0] ?? null;
   const activeClient = clientOptions.find((profile) => profile.id === activeClientId) ?? clientOptions[0] ?? null;
+  // ── Adaptive difficulty derived from active client ──
+  const clientDiffLevel = getDifficultyLevel(activeClient?.difficultyLevel);
   const visibleTabs = GAME_TABS.filter((tab) => tab.category === activeTab.category);
   const activeScoreCard = scoreboard[activeGame];
   const activeRemoteScore = platformOverview.remoteScores[activeGame];
@@ -2533,14 +2631,30 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 }}>Danışanlar</h1>
                 <span className="text-(--color-text-muted) text-xs lg:text-sm">{clientOptions.length} kayıtlı danışan</span>
               </div>
-              <button type="button"
-                className="flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl text-sm font-semibold text-white border-none cursor-pointer transition-all hover:scale-105 shrink-0"
-                style={{ background: "linear-gradient(135deg, #6366f1, #818cf8)", boxShadow: "0 4px 14px rgba(99,102,241,0.4)" }}
-                onClick={() => setShowAddClient(!showAddClient)}>
-                <UserPlus size={14} />
-                <span className="hidden sm:inline">Yeni Danışan</span>
-                <span className="sm:hidden">Ekle</span>
-              </button>
+              <div className="flex items-center gap-2">
+                {clientOptions.length > 0 && (
+                  <button type="button" title="CSV Dışa Aktar"
+                    className="w-9 h-9 rounded-xl flex items-center justify-center border cursor-pointer hover:opacity-80 transition-opacity"
+                    style={{ background: "rgba(52,211,153,0.1)", borderColor: "rgba(52,211,153,0.25)", color: "#34d399" }}
+                    onClick={handleExportClientsCsv}>
+                    <Download size={14} />
+                  </button>
+                )}
+                <button type="button" title="CSV İçe Aktar"
+                  className="w-9 h-9 rounded-xl flex items-center justify-center border cursor-pointer hover:opacity-80 transition-opacity"
+                  style={{ background: "rgba(99,102,241,0.1)", borderColor: "rgba(99,102,241,0.25)", color: "#818cf8" }}
+                  onClick={() => setShowCsvImport(true)}>
+                  <Upload size={14} />
+                </button>
+                <button type="button"
+                  className="flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl text-sm font-semibold text-white border-none cursor-pointer transition-all hover:scale-105 shrink-0"
+                  style={{ background: "linear-gradient(135deg, #6366f1, #818cf8)", boxShadow: "0 4px 14px rgba(99,102,241,0.4)" }}
+                  onClick={() => setShowAddClient(!showAddClient)}>
+                  <UserPlus size={14} />
+                  <span className="hidden sm:inline">Yeni Danışan</span>
+                  <span className="sm:hidden">Ekle</span>
+                </button>
+              </div>
             </div>
 
             {showAddClient && (
@@ -2581,6 +2695,48 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               </div>
             )}
 
+            {/* Filters */}
+            {clientOptions.length > 0 && (() => {
+              const ageOptions = Array.from(new Set(clientOptions.map(c => c.ageGroup).filter(Boolean)));
+              const supportOptions = Array.from(new Set(clientOptions.map(c => c.supportLevel).filter(Boolean)));
+              const hasFilters = clientFilterAge || clientFilterSupport || clientFilterActivity !== "all";
+              if (ageOptions.length === 0 && supportOptions.length === 0) return null;
+              return (
+                <div className="flex flex-wrap items-center gap-2">
+                  {ageOptions.length > 0 && (
+                    <select value={clientFilterAge} onChange={e => setClientFilterAge(e.target.value)}
+                      className="text-xs font-semibold px-2.5 py-1.5 rounded-xl border cursor-pointer"
+                      style={{ background: clientFilterAge ? "rgba(99,102,241,0.12)" : "var(--color-surface-strong)", borderColor: clientFilterAge ? "rgba(99,102,241,0.4)" : "var(--color-line)", color: clientFilterAge ? "#818cf8" : "var(--color-text-soft)", outline: "none" }}>
+                      <option value="">Tüm yaş grupları</option>
+                      {ageOptions.map(a => <option key={a} value={a}>{a}</option>)}
+                    </select>
+                  )}
+                  {supportOptions.length > 0 && (
+                    <select value={clientFilterSupport} onChange={e => setClientFilterSupport(e.target.value)}
+                      className="text-xs font-semibold px-2.5 py-1.5 rounded-xl border cursor-pointer"
+                      style={{ background: clientFilterSupport ? "rgba(99,102,241,0.12)" : "var(--color-surface-strong)", borderColor: clientFilterSupport ? "rgba(99,102,241,0.4)" : "var(--color-line)", color: clientFilterSupport ? "#818cf8" : "var(--color-text-soft)", outline: "none" }}>
+                      <option value="">Tüm destek düzeyleri</option>
+                      {supportOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  )}
+                  <select value={clientFilterActivity} onChange={e => setClientFilterActivity(e.target.value as "all" | "inactive" | "new")}
+                    className="text-xs font-semibold px-2.5 py-1.5 rounded-xl border cursor-pointer"
+                    style={{ background: clientFilterActivity !== "all" ? "rgba(99,102,241,0.12)" : "var(--color-surface-strong)", borderColor: clientFilterActivity !== "all" ? "rgba(99,102,241,0.4)" : "var(--color-line)", color: clientFilterActivity !== "all" ? "#818cf8" : "var(--color-text-soft)", outline: "none" }}>
+                    <option value="all">Tüm aktivite</option>
+                    <option value="inactive">14+ gün inaktif</option>
+                    <option value="new">Hiç oynanmadı</option>
+                  </select>
+                  {hasFilters && (
+                    <button type="button" onClick={() => { setClientFilterAge(""); setClientFilterSupport(""); setClientFilterActivity("all"); }}
+                      className="text-[10px] font-bold px-2.5 py-1.5 rounded-xl border cursor-pointer flex items-center gap-1 hover:opacity-80 transition-opacity"
+                      style={{ background: "rgba(239,68,68,0.1)", borderColor: "rgba(239,68,68,0.25)", color: "#ef4444" }}>
+                      <X size={9} /> Filtreleri temizle
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Archive confirm modal */}
             {archiveTargetId && (() => {
               const archiveTarget = clientOptions.find((c) => c.id === archiveTargetId);
@@ -2605,6 +2761,48 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 </div>
               );
             })()}
+
+            {/* CSV Import Modal */}
+            {showCsvImport && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
+                <div className="rounded-3xl border p-6 max-w-md w-full space-y-4" style={{ background: "var(--color-surface-strong)", borderColor: "rgba(99,102,241,0.25)" }}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(99,102,241,0.15)" }}>
+                        <Upload size={18} style={{ color: "#818cf8" }} />
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-(--color-text-strong) m-0">CSV İçe Aktar</h3>
+                        <p className="text-(--color-text-muted) text-xs m-0">Ad, Yaş Grubu, Birincil Hedef, Destek Düzeyi</p>
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => { setShowCsvImport(false); setCsvImportError(""); setCsvImportText(""); }}
+                      className="w-8 h-8 rounded-xl flex items-center justify-center border-none cursor-pointer hover:opacity-80 bg-transparent"
+                      style={{ color: "var(--color-text-muted)" }}>
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <div className="text-xs text-(--color-text-muted) p-3 rounded-xl" style={{ background: "var(--color-surface-elevated)", borderLeft: "3px solid rgba(99,102,241,0.5)" }}>
+                    <p className="m-0 font-bold mb-1">Format (başlık satırı zorunlu):</p>
+                    <code className="text-[10px]">Ad,Yaş Grubu,Birincil Hedef,Destek Düzeyi<br />Ada Y.,7-9 yaş,Görsel tarama,Orta destek</code>
+                  </div>
+                  <textarea value={csvImportText} onChange={e => setCsvImportText(e.target.value)}
+                    placeholder={"Ad,Yaş Grubu,Birincil Hedef,Destek Düzeyi\nAda Y.,7-9 yaş,Görsel tarama,Orta destek"}
+                    rows={6}
+                    className="w-full text-xs font-mono p-3 rounded-xl border resize-none outline-none"
+                    style={{ background: "var(--color-surface)", borderColor: "var(--color-line)", color: "var(--color-text-body)" }} />
+                  {csvImportError && (
+                    <p className="text-[11px] text-red-400 m-0 px-1">{csvImportError}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <button type="button" className={`${btnPrimary} flex-1 justify-center`} onClick={() => void handleImportCsv()}>
+                      <Upload size={13} /> İçe Aktar
+                    </button>
+                    <button type="button" className={`${btnSecondary} flex-1 justify-center`} onClick={() => { setShowCsvImport(false); setCsvImportError(""); setCsvImportText(""); }}>İptal</button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {showEditTherapist && activeTherapist && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
@@ -2660,9 +2858,21 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             )}
 
             {(() => {
-              const filtered = clientSearch.trim()
-                ? clientOptions.filter((c) => c.displayName.toLowerCase().includes(clientSearch.toLowerCase()) || c.primaryGoal?.toLowerCase().includes(clientSearch.toLowerCase()))
-                : clientOptions;
+              const filtered = clientOptions.filter((c) => {
+                if (clientSearch.trim()) {
+                  const q = clientSearch.toLowerCase();
+                  if (!c.displayName.toLowerCase().includes(q) && !c.primaryGoal?.toLowerCase().includes(q)) return false;
+                }
+                if (clientFilterAge && c.ageGroup !== clientFilterAge) return false;
+                if (clientFilterSupport && c.supportLevel !== clientFilterSupport) return false;
+                if (clientFilterActivity === "inactive") {
+                  if (!c.lastActiveAt) return false;
+                  const days = Math.floor((Date.now() - new Date(c.lastActiveAt).getTime()) / 86400000);
+                  if (days < 14) return false;
+                }
+                if (clientFilterActivity === "new" && c.lastActiveAt) return false;
+                return true;
+              });
               return clientOptions.length === 0 ? (
               <div className="rounded-2xl border border-(--color-line) p-12 text-center flex flex-col items-center gap-4"
                 style={{ background: "var(--color-surface-strong)" }}>
@@ -2744,6 +2954,22 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                             {client.supportLevel}
                           </span>
                         )}
+                        {client.lastActiveAt && (() => {
+                          const daysSince = Math.floor((Date.now() - new Date(client.lastActiveAt!).getTime()) / 86400000);
+                          if (daysSince < 14) return null;
+                          return (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                              style={{ background: "rgba(245,158,11,0.1)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.25)" }}>
+                              {daysSince}g inaktif
+                            </span>
+                          );
+                        })()}
+                        {!client.lastActiveAt && (() => (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                            style={{ background: "rgba(156,163,175,0.1)", color: "#9ca3af", border: "1px solid rgba(156,163,175,0.2)" }}>
+                            hiç oynanmadı
+                          </span>
+                        ))()}
                       </div>
                       {client.primaryGoal && (
                         <p className="text-(--color-text-soft) text-xs m-0 leading-relaxed line-clamp-2">{client.primaryGoal}</p>
@@ -2929,7 +3155,19 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                                 color: noteMode === m ? palette.color : "var(--color-text-muted)",
                                 boxShadow: noteMode === m ? "0 1px 4px rgba(0,0,0,0.15)" : "none",
                               }}
-                              onClick={() => setNoteMode(m)}>
+                              onClick={() => {
+                                setNoteMode(m);
+                                if (m === "soap" && !soapDraft.o) {
+                                  // Auto-populate O field with today's planned game goals
+                                  const todayKey = (["sun","mon","tue","wed","thu","fri","sat"] as DayKey[])[new Date().getDay()];
+                                  const thisWeekPlan = allWeeklyPlans.find(p => p.clientId === selectedClientId && p.weekStartDate === getWeekStart());
+                                  const todayEntries = thisWeekPlan?.days[todayKey] ?? [];
+                                  if (todayEntries.length > 0) {
+                                    const goalText = todayEntries.map(e => `${GAME_LABELS[e.gameKey as GameKey] ?? e.gameKey}${e.goal ? ` — ${e.goal}` : ""}`).join("; ");
+                                    setSoapDraft(d => ({ ...d, o: `Planlı seans: ${goalText}` }));
+                                  }
+                                }
+                              }}>
                               {m === "free" ? "Serbest" : "SOAP"}
                             </button>
                           ))}
@@ -2941,11 +3179,17 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       ) : (
                         <div className="space-y-2">
                           {(["s", "o", "a", "p"] as (keyof SoapNoteContent)[]).map((field) => {
-                            const labels = { s: "S — Subjektif (Danışan ifadesi)", o: "O — Objektif (Gözlem & ölçüm)", a: "A — Assessment (Değerlendirme)", p: "P — Plan (Sonraki adımlar)" };
+                            const labels = { s: "S — Subjektif", o: "O — Objektif", a: "A — Assessment", p: "P — Plan" };
+                            const hints = {
+                              s: "Danışan ne hissetti / söyledi? (ör. 'Yoruldum ama eğlendim')",
+                              o: "Skor, hata sayısı, süre, hedef başarı oranı (ör. 'Pairs: 245p / 12 hata')",
+                              a: "Bu sonuç terapötik amaca ulaşmada ne gösteriyor?",
+                              p: "Sonraki seans önerileri, zorluk ayarı veya ev ödevi",
+                            };
                             return (
                               <div key={field} className="space-y-0.5">
                                 <p className="text-[10px] font-extrabold uppercase tracking-wider m-0" style={{ color: palette.color }}>{labels[field]}</p>
-                                <textarea value={soapDraft[field]} onChange={(e) => setSoapDraft((c) => ({ ...c, [field]: e.target.value }))} placeholder={`${field.toUpperCase()} alanı...`} className={`${inputCls} resize-none`} rows={2} />
+                                <textarea value={soapDraft[field]} onChange={(e) => setSoapDraft((c) => ({ ...c, [field]: e.target.value }))} placeholder={hints[field]} className={`${inputCls} resize-none`} rows={2} />
                               </div>
                             );
                           })}
@@ -3210,36 +3454,110 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   {clientSessions.length >= 3 && (() => {
                     const sorted = [...clientSessions].sort((a, b) => (a.playedAt ?? "").localeCompare(b.playedAt ?? "")).slice(-20);
                     const maxV = Math.max(...sorted.map(s => s.score), 1);
-                    const W = 420; const H = 80; const PAD = 8;
-                    const xs = sorted.map((_, i) => PAD + (i / (sorted.length - 1)) * (W - PAD * 2));
+                    const W = 420; const H = 90; const PAD = 8;
+                    const xs = sorted.map((_, i) => PAD + (i / Math.max(sorted.length - 1, 1)) * (W - PAD * 2));
                     const ys = sorted.map(s => H - PAD - ((s.score / maxV) * (H - PAD * 2)));
                     const linePath = xs.map((x, i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(" ");
                     const areaPath = `${linePath} L${xs[xs.length-1].toFixed(1)},${H} L${xs[0].toFixed(1)},${H} Z`;
                     const gradId = `trend-${selectedClientId}`;
+                    // 3-session moving average
+                    const MA = 3;
+                    const maPoints = sorted.map((_, i) => {
+                      if (i < MA - 1) return null;
+                      const avg = sorted.slice(i - MA + 1, i + 1).reduce((s, x) => s + x.score, 0) / MA;
+                      return { x: xs[i], y: H - PAD - ((avg / maxV) * (H - PAD * 2)) };
+                    }).filter((p): p is { x: number; y: number } => p !== null);
+                    const maPath = maPoints.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+                    // Trend label: compare first half avg vs second half avg
+                    const half = Math.ceil(sorted.length / 2);
+                    const firstHalfAvg = sorted.slice(0, half).reduce((s, x) => s + x.score, 0) / half;
+                    const secondHalfAvg = sorted.slice(half).reduce((s, x) => s + x.score, 0) / Math.max(sorted.length - half, 1);
+                    const trendPct = firstHalfAvg > 0 ? ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100 : 0;
+                    const trendLabel = trendPct >= 8 ? "↑ Gelişiyor" : trendPct <= -8 ? "↓ Düşüş" : "→ Stabil";
+                    const trendColor = trendPct >= 8 ? "#10b981" : trendPct <= -8 ? "#ef4444" : "#f59e0b";
                     return (
                       <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}>
                         <div className="px-4 pt-4 pb-1 flex items-center justify-between">
                           <span className="text-xs font-extrabold uppercase tracking-wider text-(--color-text-muted)">Skor Trendi</span>
-                          <span className="text-[10px] text-(--color-text-muted)">Son {sorted.length} seans</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${trendColor}18`, color: trendColor, border: `1px solid ${trendColor}33` }}>{trendLabel}</span>
+                            <span className="text-[10px] text-(--color-text-muted)">Son {sorted.length} seans</span>
+                          </div>
                         </div>
-                        <div className="px-4 pb-4">
-                          <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: "80px" }}>
+                        <div className="px-4 pb-2">
+                          <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: "90px" }}>
                             <defs>
                               <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor={palette.color} stopOpacity="0.25" />
+                                <stop offset="0%" stopColor={palette.color} stopOpacity="0.2" />
                                 <stop offset="100%" stopColor={palette.color} stopOpacity="0" />
                               </linearGradient>
                             </defs>
                             <path d={areaPath} fill={`url(#${gradId})`} />
-                            <path d={linePath} fill="none" stroke={palette.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d={linePath} fill="none" stroke={palette.color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.6" />
+                            {maPoints.length >= 2 && (
+                              <path d={maPath} fill="none" stroke={palette.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="0" />
+                            )}
                             {xs.map((x, i) => (
-                              <circle key={i} cx={x} cy={ys[i]} r="3" fill={palette.color} fillOpacity="0.8" />
+                              <circle key={i} cx={x} cy={ys[i]} r="2.5" fill={palette.color} fillOpacity="0.7" />
+                            ))}
+                            {/* MA dots */}
+                            {maPoints.map((p, i) => (
+                              <circle key={`ma-${i}`} cx={p.x} cy={p.y} r="3.5" fill="none" stroke={palette.color} strokeWidth="1.5" />
                             ))}
                           </svg>
-                          <div className="flex justify-between mt-1">
-                            <span className="text-[9px] text-(--color-text-muted)">{sorted[0]?.playedAt?.slice(0, 10) ?? ""}</span>
-                            <span className="text-[9px] text-(--color-text-muted)">{sorted[sorted.length-1]?.playedAt?.slice(0, 10) ?? ""}</span>
+                        </div>
+                        <div className="px-4 pb-3 flex items-center justify-between">
+                          <span className="text-[9px] text-(--color-text-muted)">{sorted[0]?.playedAt?.slice(0, 10) ?? ""}</span>
+                          <div className="flex items-center gap-3 text-[9px] text-(--color-text-muted)">
+                            <span className="flex items-center gap-1"><span className="w-5 h-0.5 inline-block rounded opacity-60" style={{ background: palette.color }} /> ham skor</span>
+                            <span className="flex items-center gap-1"><span className="w-5 h-0.5 inline-block rounded" style={{ background: palette.color }} /> 3 seans ort.</span>
                           </div>
+                          <span className="text-[9px] text-(--color-text-muted)">{sorted[sorted.length-1]?.playedAt?.slice(0, 10) ?? ""}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* ── Session Duration Analysis ── */}
+                  {clientSessions.filter(s => s.durationSeconds).length >= 2 && (() => {
+                    const withDur = clientSessions.filter(s => s.durationSeconds).sort((a, b) => (a.playedAt ?? "").localeCompare(b.playedAt ?? ""));
+                    const avgDur = Math.round(withDur.reduce((s, x) => s + (x.durationSeconds ?? 0), 0) / withDur.length);
+                    const recent3Avg = withDur.length >= 3 ? Math.round(withDur.slice(-3).reduce((s, x) => s + (x.durationSeconds ?? 0), 0) / 3) : null;
+                    const isFatiguing = recent3Avg !== null && recent3Avg < avgDur * 0.75;
+                    const isImproving = recent3Avg !== null && recent3Avg > avgDur * 1.1;
+                    return (
+                      <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: isFatiguing ? "rgba(245,158,11,0.3)" : "var(--color-line)" }}>
+                        {isFatiguing && <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg,#f59e0b,transparent)" }} />}
+                        <div className="p-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-extrabold uppercase tracking-wider text-(--color-text-muted)">Seans Süresi</span>
+                            {isFatiguing && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(245,158,11,0.12)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.25)" }}>
+                                ⚠ Yorgunluk olabilir
+                              </span>
+                            )}
+                            {isImproving && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(16,185,129,0.12)", color: "#10b981", border: "1px solid rgba(16,185,129,0.25)" }}>
+                                ↗ Süre artıyor
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex gap-3">
+                            {[
+                              { label: "Ortalama", value: formatDuration(avgDur), icon: "⏱" },
+                              { label: "Son 3 Seans", value: recent3Avg ? formatDuration(recent3Avg) : "—", icon: "📊" },
+                              { label: "Toplam", value: formatDuration(withDur.reduce((s, x) => s + (x.durationSeconds ?? 0), 0)), icon: "🕐" },
+                            ].map(({ label, value, icon }) => (
+                              <div key={label} className="flex-1 text-center rounded-xl p-2.5" style={{ background: "var(--color-surface-elevated)" }}>
+                                <span className="text-base block">{icon}</span>
+                                <strong className="text-sm font-extrabold tabular-nums" style={{ color: palette.color }}>{value}</strong>
+                                <span className="text-[10px] text-(--color-text-muted) block">{label}</span>
+                              </div>
+                            ))}
+                          </div>
+                          {isFatiguing && recent3Avg !== null && (
+                            <p className="text-xs text-(--color-text-muted) m-0 italic">Son 3 seans ortalaması ({formatDuration(recent3Avg)}) genel ortalamanın %25+ altında — danışan yorulmuş olabilir.</p>
+                          )}
                         </div>
                       </div>
                     );
@@ -3525,6 +3843,24 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     {activeTherapist?.displayName ?? "—"}&nbsp;·&nbsp;{activeClient?.displayName ?? "Danışan seç"}
                   </span>
                 </div>
+                {activeClient && (
+                  <span className="text-[10px] font-bold px-2 py-1 rounded-full" style={{ background: `${DIFFICULTY_COLORS[clientDiffLevel]}18`, color: DIFFICULTY_COLORS[clientDiffLevel], border: `1px solid ${DIFFICULTY_COLORS[clientDiffLevel]}33` }}>
+                    {DIFFICULTY_LABELS[clientDiffLevel]}
+                  </span>
+                )}
+                {/* Active goal HUD */}
+                {activeClient && clientGoals.length > 0 && (() => {
+                  const topGoal = clientGoals.find(g => g.currentValue < g.targetValue) ?? clientGoals[0];
+                  const pct = topGoal.targetValue > 0 ? Math.round((topGoal.currentValue / topGoal.targetValue) * 100) : 0;
+                  return (
+                    <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 rounded-full border max-w-48"
+                      style={{ background: "rgba(99,102,241,0.08)", borderColor: "rgba(99,102,241,0.2)" }}>
+                      <Target size={10} style={{ color: "#818cf8", flexShrink: 0 }} />
+                      <span className="text-[10px] font-semibold truncate" style={{ color: "var(--color-text-soft)" }}>{topGoal.title}</span>
+                      <span className="text-[10px] font-extrabold shrink-0" style={{ color: "#818cf8" }}>{pct}%</span>
+                    </div>
+                  );
+                })()}
                 <span className={`text-xs font-semibold rounded-full px-2.5 py-1 border ${platformStatus === "online" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : platformStatus === "schema_missing" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" : platformStatus === "error" ? "bg-red-500/10 text-red-400 border-red-500/20" : "bg-white/5 text-(--color-text-muted) border-(--color-line)"}`}>
                   {getDatabaseStatusLabel(platformStatus)}
                 </span>
@@ -3666,17 +4002,33 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 {/* Games list */}
                 <div className="p-4 border-b border-(--color-line)">
                   <span className="text-[10px] font-extrabold uppercase tracking-widest text-(--color-text-muted) block mb-3 px-1">Oyunlar</span>
-                  <div className="flex flex-col gap-1">
-                    {visibleTabs.map((tab) => (
-                      <button key={tab.key} type="button" aria-pressed={activeGame === tab.key} className="relative flex items-center gap-3 px-3 py-2.5 rounded-2xl cursor-pointer w-full text-left transition-all" style={{ background: activeGame === tab.key ? "var(--color-primary)/8" : "transparent" }} onClick={() => setActiveGame(tab.key)}>
-                        {activeGame === tab.key && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 rounded-full" style={{ background: "var(--color-primary)" }} />}
-                        <div className="flex flex-col flex-1 min-w-0">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider" style={{ color: activeGame === tab.key ? "var(--color-primary)" : "var(--color-text-muted)" }}>{tab.kicker}</span>
-                          <span className="text-sm font-semibold truncate" style={{ color: activeGame === tab.key ? "var(--color-primary)" : "var(--color-text-strong)" }}>{tab.title}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+                  {(() => {
+                    const thisWeekPlan = allWeeklyPlans.find(p => p.clientId === (activeClient?.id ?? "") && p.weekStartDate === getWeekStart());
+                    const plannedGameKeys = new Set(
+                      thisWeekPlan ? Object.values(thisWeekPlan.days).flat().map(e => e.gameKey) : []
+                    );
+                    return (
+                      <div className="flex flex-col gap-1">
+                        {visibleTabs.map((tab) => {
+                          const isPlanned = plannedGameKeys.has(tab.key as PlatformGameKey);
+                          return (
+                            <button key={tab.key} type="button" aria-pressed={activeGame === tab.key} className="relative flex items-center gap-3 px-3 py-2.5 rounded-2xl cursor-pointer w-full text-left transition-all" style={{ background: activeGame === tab.key ? "var(--color-primary)/8" : "transparent" }} onClick={() => setActiveGame(tab.key)}>
+                              {activeGame === tab.key && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 rounded-full" style={{ background: "var(--color-primary)" }} />}
+                              <div className="flex flex-col flex-1 min-w-0">
+                                <span className="text-[10px] font-extrabold uppercase tracking-wider" style={{ color: activeGame === tab.key ? "var(--color-primary)" : "var(--color-text-muted)" }}>{tab.kicker}</span>
+                                <span className="text-sm font-semibold truncate" style={{ color: activeGame === tab.key ? "var(--color-primary)" : "var(--color-text-strong)" }}>{tab.title}</span>
+                              </div>
+                              {isPlanned && (
+                                <span className="shrink-0 text-[9px] font-extrabold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(99,102,241,0.15)", color: "var(--color-primary)", border: "1px solid var(--color-primary)/20" }}>
+                                  📅 Plan
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Score summary */}
@@ -3744,6 +4096,19 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       {activeTab.goals.slice(0, 2).map((goal) => (
                         <span key={goal} data-tooltip={`Terapi hedefi: ${goal}`} data-tooltip-dir="bottom" className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: "var(--color-primary)/10", color: "var(--color-primary)", border: "1px solid var(--color-primary)/20" }}>{goal}</span>
                       ))}
+                      {/* Active SMART goal mini HUD */}
+                      {activeClient && clientGoals.length > 0 && (() => {
+                        const topGoal = clientGoals.find(g => g.currentValue < g.targetValue) ?? clientGoals[0];
+                        const pct = topGoal.targetValue > 0 ? Math.round((topGoal.currentValue / topGoal.targetValue) * 100) : 0;
+                        return (
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border"
+                            style={{ background: "rgba(99,102,241,0.1)", borderColor: "rgba(99,102,241,0.25)" }}>
+                            <Target size={9} style={{ color: "#818cf8" }} />
+                            <span className="text-[10px] font-semibold max-w-28 truncate" style={{ color: "var(--color-text-soft)" }}>{topGoal.title}</span>
+                            <span className="text-[10px] font-extrabold" style={{ color: "#818cf8" }}>{pct}%</span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -4219,13 +4584,13 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         <span className="text-white/20 text-sm ml-auto">Oyunu başlat</span>
                       </div>
                     )}
-                    <div className="relative grid grid-cols-3 gap-3">
+                    <div className={`relative grid gap-3 ${scanState.tiles.length > 9 ? "grid-cols-4" : "grid-cols-3"}`}>
                       {scanState.tiles.map((tile, index) => {
                         const reveal = scanState.revealId === tile.id;
                         const isCursor = scanCursor === index;
                         return (
                           <button key={tile.id} type="button"
-                            className={`relative flex flex-col items-center justify-center h-24 lg:h-28 rounded-2xl border cursor-pointer overflow-hidden transition-all hover:border-white/25
+                            className={`relative flex flex-col items-center justify-center ${scanState.tiles.length > 9 ? "h-20 lg:h-24" : "h-24 lg:h-28"} rounded-2xl border cursor-pointer overflow-hidden transition-all hover:border-white/25
                               ${reveal ? "game-tile-reveal" : "border-white/8"}
                               ${isCursor ? "game-tile-cursor" : ""}`}
                             onClick={() => handleScanPick(tile.id)}
@@ -4552,6 +4917,98 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   </div>
 
                 </div>
+
+                {/* ── Domain Radar Chart ── */}
+                {(() => {
+                  const RADAR_DOMAINS = [
+                    { key: "memory",     label: "Hafıza",       angle: -90 },
+                    { key: "pairs",      label: "Görsel Eşl.",  angle: -30 },
+                    { key: "difference", label: "Görsel Algı",  angle: 30  },
+                    { key: "scan",       label: "Tarama",       angle: 90  },
+                    { key: "pulse",      label: "Reaksiyon",    angle: 150 },
+                    { key: "route",      label: "Planlama",     angle: 210 },
+                  ] as const;
+                  const cx = 130; const cy = 130; const R = 90;
+                  const toRad = (deg: number) => (deg * Math.PI) / 180;
+                  const axisPoint = (deg: number, r: number) => ({
+                    x: cx + r * Math.cos(toRad(deg)),
+                    y: cy + r * Math.sin(toRad(deg)),
+                  });
+                  const globalMax = Math.max(...scoreEntries.map(e => e.best), 1);
+                  const dataPoints = RADAR_DOMAINS.map(d => {
+                    const entry = scoreEntries.find(e => e.key === d.key);
+                    const pct = entry ? entry.best / globalMax : 0;
+                    const pt = axisPoint(d.angle, pct * R);
+                    return pt;
+                  });
+                  const polygonPath = dataPoints.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ") + " Z";
+                  const hasData = scoreEntries.some(e => e.best > 0);
+                  return (
+                    <div className="relative overflow-hidden rounded-3xl border border-(--color-line)" style={{ background: "var(--color-surface-strong)" }}>
+                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,#818cf8,#2dd4bf,transparent)" }} />
+                      <div className="flex items-center gap-3 px-6 py-4 border-b border-(--color-line)" style={{ background: "var(--color-surface-elevated)" }}>
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#818cf8,#2dd4bf)" }}>
+                          <Activity size={15} className="text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0">Alan Performans Radarı</h3>
+                          <span className="text-xs text-(--color-text-muted)">Terapi alanlarına göre en yüksek skor dağılımı</span>
+                        </div>
+                      </div>
+                      <div className="p-6 flex flex-col sm:flex-row items-center gap-6">
+                        {/* SVG radar */}
+                        <svg viewBox="0 0 260 260" className="w-52 h-52 shrink-0">
+                          {/* Grid rings */}
+                          {[0.25, 0.5, 0.75, 1].map(f => {
+                            const pts = RADAR_DOMAINS.map(d => {
+                              const p = axisPoint(d.angle, f * R);
+                              return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+                            }).join(" ");
+                            return <polygon key={f} points={pts} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />;
+                          })}
+                          {/* Axis lines */}
+                          {RADAR_DOMAINS.map(d => {
+                            const tip = axisPoint(d.angle, R);
+                            return <line key={d.key} x1={cx} y1={cy} x2={tip.x.toFixed(1)} y2={tip.y.toFixed(1)} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />;
+                          })}
+                          {/* Data polygon */}
+                          {hasData && (
+                            <>
+                              <path d={polygonPath} fill="rgba(99,102,241,0.2)" stroke="#818cf8" strokeWidth="2" strokeLinejoin="round" />
+                              {dataPoints.map((p, i) => (
+                                <circle key={i} cx={p.x.toFixed(1)} cy={p.y.toFixed(1)} r="3.5" fill="#818cf8" stroke="var(--color-surface-strong)" strokeWidth="1.5" />
+                              ))}
+                            </>
+                          )}
+                          {!hasData && (
+                            <text x={cx} y={cy + 5} textAnchor="middle" fill="rgba(255,255,255,0.3)" fontSize="9">veri yok</text>
+                          )}
+                          {/* Labels */}
+                          {RADAR_DOMAINS.map(d => {
+                            const p = axisPoint(d.angle, R + 18);
+                            return <text key={d.key} x={p.x.toFixed(1)} y={(p.y + 3).toFixed(1)} textAnchor="middle" fill="rgba(255,255,255,0.55)" fontSize="8.5" fontWeight="600">{d.label}</text>;
+                          })}
+                        </svg>
+                        {/* Legend */}
+                        <div className="flex-1 grid grid-cols-2 gap-2.5">
+                          {RADAR_DOMAINS.map(d => {
+                            const entry = scoreEntries.find(e => e.key === d.key);
+                            const pct = entry && globalMax > 0 ? Math.round((entry.best / globalMax) * 100) : 0;
+                            return (
+                              <div key={d.key} className="flex items-center gap-2.5 p-2.5 rounded-xl border" style={{ background: "var(--color-surface-elevated)", borderColor: "var(--color-line)" }}>
+                                <div className="w-1 h-8 rounded-full shrink-0" style={{ background: `${GAME_COLORS[d.key]}` }} />
+                                <div className="min-w-0">
+                                  <p className="text-[10px] font-bold text-(--color-text-muted) m-0 uppercase tracking-wide truncate">{d.label}</p>
+                                  <p className="text-sm font-extrabold m-0" style={{ color: GAME_COLORS[d.key] }}>{entry?.best ?? 0} <span className="text-[9px] font-normal text-(--color-text-muted)">({pct}%)</span></p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* ── Game distribution pie-style ── */}
                 <div className="relative overflow-hidden rounded-3xl border border-(--color-line)" style={{ background: "var(--color-surface-strong)" }}>

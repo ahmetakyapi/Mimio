@@ -207,15 +207,19 @@ export async function getPlatformOverviewFromDatabase(): Promise<PlatformOvervie
     const clientRows = (await sql.query(
       `SELECT
         id::text,
-        display_name,
-        COALESCE(age_group, '') AS age_group,
-        COALESCE(primary_goal, '') AS primary_goal,
-        COALESCE(support_level, '') AS support_level,
-        COALESCE(difficulty_level, '') AS difficulty_level,
-        archived_at::text AS archived_at
-      FROM client_profiles
-      WHERE archived_at IS NULL
-      ORDER BY display_name ASC`
+        cp.id::text,
+        cp.display_name,
+        COALESCE(cp.age_group, '') AS age_group,
+        COALESCE(cp.primary_goal, '') AS primary_goal,
+        COALESCE(cp.support_level, '') AS support_level,
+        COALESCE(cp.difficulty_level, '') AS difficulty_level,
+        cp.archived_at::text AS archived_at,
+        MAX(sr.played_at)::text AS last_active_at
+      FROM client_profiles cp
+      LEFT JOIN session_runs sr ON sr.client_id = cp.id
+      WHERE cp.archived_at IS NULL
+      GROUP BY cp.id, cp.display_name, cp.age_group, cp.primary_goal, cp.support_level, cp.difficulty_level, cp.archived_at
+      ORDER BY cp.display_name ASC`
     )) as Array<{
       id: string;
       display_name: string;
@@ -224,6 +228,7 @@ export async function getPlatformOverviewFromDatabase(): Promise<PlatformOvervie
       support_level: string;
       difficulty_level: string;
       archived_at: string | null;
+      last_active_at: string | null;
     }>;
 
     const recentRows = (await sql.query(
@@ -307,6 +312,7 @@ export async function getPlatformOverviewFromDatabase(): Promise<PlatformOvervie
         supportLevel: row.support_level,
         difficultyLevel: row.difficulty_level || undefined,
         archivedAt: row.archived_at ?? null,
+        lastActiveAt: row.last_active_at ?? null,
         source: "cloud",
       })),
       recentSessions: recentRows.map((row) => ({
