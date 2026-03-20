@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { isPlatformGameKey, type SessionCreatePayload } from "@/lib/platform-data";
-import { insertSessionRun } from "@/lib/server/platform-db";
+import { insertSessionRun, updateSessionSatisfaction } from "@/lib/server/platform-db";
 
 function parsePayload(body: unknown): SessionCreatePayload | null {
   if (!body || typeof body !== "object") {
@@ -35,6 +35,19 @@ function parsePayload(body: unknown): SessionCreatePayload | null {
         ? (candidate.metadata as Record<string, unknown>)
         : undefined,
   };
+}
+
+export async function PATCH(request: NextRequest) {
+  let body: unknown;
+  try { body = await request.json(); } catch { return NextResponse.json({ ok: false }, { status: 400 }); }
+  const candidate = body as Record<string, unknown>;
+  const sessionId = typeof candidate.sessionId === "string" ? candidate.sessionId : null;
+  const rating = typeof candidate.satisfactionRating === "number" ? candidate.satisfactionRating : null;
+  if (!sessionId || rating === null || rating < 1 || rating > 5) {
+    return NextResponse.json({ ok: false, message: "sessionId ve satisfactionRating (1-5) gerekli" }, { status: 400 });
+  }
+  const ok = await updateSessionSatisfaction(sessionId, rating);
+  return NextResponse.json({ ok });
 }
 
 export async function POST(request: Request) {

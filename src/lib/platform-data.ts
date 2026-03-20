@@ -80,6 +80,7 @@ export interface ClientProfile {
   archivedAt?: string | null;
   lastActiveAt?: string | null;
   tags?: string[];
+  birthDate?: string | null;
   source: ProfileSource;
 }
 

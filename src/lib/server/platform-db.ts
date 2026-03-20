@@ -112,6 +112,7 @@ const SCHEMA_QUERIES = [
   "ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS difficulty_level TEXT",
   "ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ",
   "ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}'",
+  "ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS birth_date TEXT",
 ];
 
 function getSqlClient(): SqlClient | null {
@@ -216,11 +217,12 @@ export async function getPlatformOverviewFromDatabase(): Promise<PlatformOvervie
         COALESCE(cp.difficulty_level, '') AS difficulty_level,
         cp.archived_at::text AS archived_at,
         MAX(sr.played_at)::text AS last_active_at,
-        COALESCE(cp.tags, '{}') AS tags
+        COALESCE(cp.tags, '{}') AS tags,
+        cp.birth_date
       FROM client_profiles cp
       LEFT JOIN session_runs sr ON sr.client_id = cp.id
       WHERE cp.archived_at IS NULL
-      GROUP BY cp.id, cp.display_name, cp.age_group, cp.primary_goal, cp.support_level, cp.difficulty_level, cp.archived_at, cp.tags
+      GROUP BY cp.id, cp.display_name, cp.age_group, cp.primary_goal, cp.support_level, cp.difficulty_level, cp.archived_at, cp.tags, cp.birth_date
       ORDER BY cp.display_name ASC`
     )) as Array<{
       id: string;
@@ -232,6 +234,7 @@ export async function getPlatformOverviewFromDatabase(): Promise<PlatformOvervie
       archived_at: string | null;
       last_active_at: string | null;
       tags: string[];
+      birth_date: string | null;
     }>;
 
     const recentRows = (await sql.query(
@@ -317,6 +320,7 @@ export async function getPlatformOverviewFromDatabase(): Promise<PlatformOvervie
         archivedAt: row.archived_at ?? null,
         lastActiveAt: row.last_active_at ?? null,
         tags: Array.isArray(row.tags) ? row.tags : [],
+        birthDate: row.birth_date ?? null,
         source: "cloud",
       })),
       recentSessions: recentRows.map((row) => ({
@@ -556,6 +560,19 @@ export async function insertSessionRun(payload: SessionCreatePayload) {
   }
 }
 
+// ── Update session satisfaction (merges into metadata) ──
+export async function updateSessionSatisfaction(sessionId: string, rating: number): Promise<boolean> {
+  const sql = getSqlClient();
+  if (!sql) return false;
+  try {
+    await sql.query(
+      `UPDATE session_runs SET metadata = metadata || $1::jsonb WHERE id = $2`,
+      [JSON.stringify({ satisfactionRating: rating }), sessionId]
+    );
+    return true;
+  } catch { return false; }
+}
+
 // ── Client Notes ──
 
 export async function getClientNotes(clientId: string): Promise<SessionNote[]> {
@@ -747,7 +764,7 @@ export async function updateTherapistProfile(therapistId: string, payload: { dis
 
 export async function updateClientProfile(
   clientId: string,
-  payload: { difficultyLevel?: string; displayName?: string; ageGroup?: string; primaryGoal?: string; supportLevel?: string; tags?: string[] }
+  payload: { difficultyLevel?: string; displayName?: string; ageGroup?: string; primaryGoal?: string; supportLevel?: string; tags?: string[]; birthDate?: string | null }
 ): Promise<{ id: string; difficultyLevel: string } | null> {
   const sql = getSqlClient();
   if (!sql) return null;
@@ -761,6 +778,7 @@ export async function updateClientProfile(
     if (payload.primaryGoal !== undefined) { sets.push(`primary_goal = $${idx++}`); values.push(payload.primaryGoal); }
     if (payload.supportLevel !== undefined) { sets.push(`support_level = $${idx++}`); values.push(payload.supportLevel); }
     if (payload.tags !== undefined) { sets.push(`tags = $${idx++}`); values.push(payload.tags); }
+    if (payload.birthDate !== undefined) { sets.push(`birth_date = $${idx++}`); values.push(payload.birthDate ?? null); }
     if (sets.length === 1) return null; // nothing to update
     values.push(clientId);
     const [row] = (await sql.query(

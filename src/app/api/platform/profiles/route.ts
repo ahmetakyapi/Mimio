@@ -85,6 +85,7 @@ function parsePayload(body: unknown):
         primaryGoal: typeof candidate.primaryGoal === "string" ? candidate.primaryGoal : undefined,
         supportLevel: typeof candidate.supportLevel === "string" ? candidate.supportLevel : undefined,
         tags: Array.isArray(candidate.tags) ? (candidate.tags as unknown[]).filter((t): t is string => typeof t === "string") : undefined,
+        birthDate: typeof candidate.birthDate === "string" ? candidate.birthDate || null : undefined,
       },
     } as { kind: "update-client"; payload: { clientId: string; difficultyLevel?: string } };
   }
