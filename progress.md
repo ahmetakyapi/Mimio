@@ -63,3 +63,21 @@ Original prompt: Ergoterapistler için interaktif oyunlar yapıp, onların kişi
 - **Client Detail**: 4 tab (Notlar/Plan/Skorlar/İlerleme), sparkline trend chart, donut chart, goal bars.
 - **Login/Register**: animated orb BG, gradient butonlar.
 - Build doğrulandı ✅ — sıfır hata.
+
+## 2026-03-20 — Mobile Responsive & Landing Hero Overhaul
+
+### Mobil Uyumluluk (MimioApp.tsx)
+- **Bottom Nav**: Aktif indicator bar eklendi (gradient üst çizgi + scale animasyonu).
+- **Clients grid**: `p-4 lg:p-5` compact card spacing, `gap-3 lg:gap-4` responsive.
+- **Dashboard "Oyun Kategorileri"**: `grid-cols-1 sm:grid-cols-3` — mobilde tek sütun yatay layout.
+- **Game tiles**: Memory/Difference/Scan `h-24 lg:h-28`, Pairs `h-20 lg:h-24`.
+- **Therapy Program header**: Mobilde `flex-col`, danışan select tam genişlik, açıklama `hidden sm:block`.
+
+### Landing Page Hero Görseli (LandingPage.tsx)
+- **Hero sağ taraf**: DOM skeleton dashboard → `hero-dashboard.png` gerçek glassmorphism görseli ile değiştirildi.
+- **Next.js Image** bileşeni kullanıldı (priority, quality=90, otomatik optimize).
+- **Platform Önizleme section** eklendi: Features ile How It Works arasına browser shell + dashboard skeleton konuldu.
+  - Mini sidebar (5 ikon), stat cards (4 adet), recent sessions (3 danışan).
+  - Glass-strong container, top accent line, browser bar (traffic lights + URL bar).
+- `public/hero-dashboard.png` oluşturuldu (~2.1MB).
+- Build doğrulandı ✅

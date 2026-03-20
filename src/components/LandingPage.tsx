@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import {
   Users,
   Gamepad2,
@@ -28,6 +29,8 @@ import {
   Shield,
   Clock,
   Award,
+  Stethoscope,
+  BarChart3,
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 
@@ -424,7 +427,8 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className="relative flex justify-center"
             >
-              <div className="absolute inset-0 m-auto w-[80%] h-[70%] bg-[radial-gradient(circle,rgba(99,102,241,0.15),transparent_70%)] blur-3xl" />
+              {/* Background glow */}
+              <div className="absolute inset-0 m-auto w-[90%] h-[80%] bg-[radial-gradient(circle,rgba(99,102,241,0.18),transparent_65%)] blur-3xl" />
 
               {/* Floating cards */}
               <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="absolute -top-4 -right-4 lg:-right-8 z-20 glass rounded-2xl px-4 py-3 flex items-center gap-3">
@@ -458,67 +462,21 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 </div>
               </motion.div>
 
-              {/* Main app preview card */}
-              <div className="w-full max-w-md glass-strong rounded-3xl overflow-hidden">
-                <div className="flex items-center gap-2 px-5 py-3.5 border-b border-(--color-line)" style={{ background: "var(--color-surface)" }}>
-                  <div className="flex gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-400/60" />
-                    <div className="w-3 h-3 rounded-full bg-amber-400/60" />
-                    <div className="w-3 h-3 rounded-full bg-emerald-400/60" />
-                  </div>
-                  <div className="flex-1 mx-4">
-                    <div className="h-6 rounded-lg bg-(--color-surface) border border-(--color-line) flex items-center justify-center">
-                      <span className="text-[10px] text-(--color-text-muted)">mimio.app</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex" style={{ height: 300 }}>
-                  <div className="w-14 border-r border-(--color-line) flex flex-col items-center py-4 gap-2 shrink-0" style={{ background: "var(--color-sidebar)" }}>
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-[10px] mb-3">M</div>
-                    {[
-                      { Icon: LayoutDashboard, active: true },
-                      { Icon: Users, active: false },
-                      { Icon: Gamepad2, active: false },
-                      { Icon: CalendarDays, active: false },
-                    ].map(({ Icon, active }, i) => (
-                      <div key={i} className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${active ? "bg-(--color-primary)/15 text-(--color-primary)" : "text-(--color-text-muted)"}`}>
-                        <Icon size={15} />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex-1 p-4 flex flex-col gap-3 overflow-hidden">
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-col gap-1.5">
-                        <div className="h-4 rounded-full w-32 bg-(--color-skeleton-hi)" />
-                        <div className="h-2.5 rounded-full w-20 bg-(--color-skeleton-lo)" />
-                      </div>
-                      <div className="w-20 h-8 rounded-lg bg-(--color-primary)/15" />
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { bg: "rgba(99,102,241,0.12)", bar: "rgba(99,102,241,0.4)" },
-                        { bg: "rgba(16,185,129,0.12)", bar: "rgba(16,185,129,0.4)" },
-                        { bg: "rgba(245,158,11,0.12)", bar: "rgba(245,158,11,0.4)" },
-                      ].map((s, i) => (
-                        <div key={i} className="rounded-xl p-2.5" style={{ background: s.bg }}>
-                          <div className="h-3 rounded-full w-8 mb-2" style={{ background: s.bar }} />
-                          <div className="h-2 rounded-full w-12 opacity-50" style={{ background: s.bar }} />
-                        </div>
-                      ))}
-                    </div>
-                    {[0, 1, 2].map((i) => (
-                      <div key={i} className="flex items-center gap-2.5 border border-(--color-line) rounded-xl px-3 py-2.5" style={{ background: "var(--color-surface)" }}>
-                        <div className="w-8 h-8 rounded-lg shrink-0" style={{ background: `linear-gradient(135deg, ${["#6366f1", "#8b5cf6", "#06b6d4"][i]}, ${["#8b5cf6", "#a78bfa", "#22d3ee"][i]})` }} />
-                        <div className="flex-1 flex flex-col gap-1 min-w-0">
-                          <div className="h-2.5 rounded-full w-3/4 bg-(--color-skeleton-hi)" />
-                          <div className="h-2 rounded-full w-1/2 bg-(--color-skeleton-lo)" />
-                        </div>
-                        <div className="w-12 h-2 bg-(--color-primary)/20 rounded-full overflow-hidden">
-                          <div className="h-full bg-(--color-primary)/60 rounded-full" style={{ width: `${[65, 80, 45][i]}%` }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              {/* Hero dashboard image */}
+              <div className="relative w-full max-w-lg">
+                <div className="relative rounded-3xl overflow-hidden" style={{ boxShadow: "0 25px 60px rgba(99,102,241,0.15), 0 8px 24px rgba(0,0,0,0.2)" }}>
+                  <Image
+                    src="/hero-dashboard.png"
+                    alt="Mimio Platform — Danışan yönetimi, haftalık plan, seans notları ve ilerleme takibi"
+                    width={1024}
+                    height={768}
+                    quality={90}
+                    priority
+                    className="w-full h-auto object-cover"
+                  />
+                  {/* Subtle overlay gradient at edges */}
+                  <div className="absolute inset-0 pointer-events-none rounded-3xl ring-1 ring-inset ring-white/10" />
+                  <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/8 via-transparent to-transparent" />
                 </div>
               </div>
             </motion.div>
@@ -583,6 +541,140 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 </motion.div>
               );
             })}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ══════════════════════ PLATFORM PREVIEW ══════════════════════ */}
+      <section className="py-20 md:py-28 px-6 relative overflow-hidden">
+        <div className="absolute inset-0 -z-10">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[600px] bg-[radial-gradient(ellipse,rgba(99,102,241,0.08),transparent_65%)]" />
+        </div>
+        <div className="max-w-6xl mx-auto">
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={stagger} className="text-center mb-14">
+            <motion.div variants={fadeUp} className="inline-flex items-center gap-2 text-xs font-bold tracking-widest text-(--color-primary) uppercase mb-4 bg-(--color-primary-light) px-4 py-2 rounded-full">
+              <LayoutDashboard size={12} />
+              Platform Arayüzü
+            </motion.div>
+            <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-(--color-text-strong) mb-4">
+              Güçlü Araçlar,{" "}
+              <span className="bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">Sade Arayüz</span>
+            </motion.h2>
+            <motion.p variants={fadeUp} className="text-(--color-text-soft) text-base md:text-lg max-w-xl mx-auto">
+              Danışan yönetimi, haftalık plan, seans kayıtları ve ilerleme takibi — hepsi tek ekranda.
+            </motion.p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            className="relative"
+          >
+            {/* Glow behind the browser frame */}
+            <div className="absolute -inset-8 bg-[radial-gradient(ellipse_60%_50%_at_50%_40%,rgba(99,102,241,0.12),transparent)] blur-2xl pointer-events-none" />
+
+            {/* Browser shell */}
+            <div className="relative glass-strong rounded-2xl md:rounded-3xl overflow-hidden" style={{ boxShadow: "0 25px 60px rgba(0,0,0,0.2), 0 0 80px rgba(99,102,241,0.08)" }}>
+              {/* Top accent line */}
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent" />
+
+              {/* Browser bar */}
+              <div className="flex items-center gap-2 px-5 py-3 border-b border-(--color-line)" style={{ background: "var(--color-surface)" }}>
+                <div className="flex gap-2">
+                  <div className="w-3 h-3 rounded-full bg-red-400/60" />
+                  <div className="w-3 h-3 rounded-full bg-amber-400/60" />
+                  <div className="w-3 h-3 rounded-full bg-emerald-400/60" />
+                </div>
+                <div className="flex-1 mx-4 max-w-sm">
+                  <div className="h-6 rounded-lg bg-(--color-surface-elevated) border border-(--color-line) flex items-center justify-center">
+                    <span className="text-[10px] text-(--color-text-muted) flex items-center gap-1.5">
+                      <Shield size={9} className="text-(--color-accent-green)" />
+                      mimio.app/dashboard
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dashboard content */}
+              <div className="flex" style={{ minHeight: 340 }}>
+                {/* Mini sidebar */}
+                <div className="hidden sm:flex w-14 border-r border-(--color-line) flex-col items-center py-4 gap-2 shrink-0" style={{ background: "var(--color-sidebar)" }}>
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-[10px] mb-3">M</div>
+                  {[
+                    { Icon: LayoutDashboard, active: true },
+                    { Icon: Users, active: false },
+                    { Icon: Gamepad2, active: false },
+                    { Icon: Stethoscope, active: false },
+                    { Icon: BarChart3, active: false },
+                  ].map(({ Icon, active }, i) => (
+                    <div key={i} className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${active ? "bg-(--color-primary)/15 text-(--color-primary)" : "text-(--color-text-muted)"}`}>
+                      <Icon size={15} />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Main area */}
+                <div className="flex-1 p-4 md:p-6 flex flex-col gap-4 overflow-hidden">
+                  {/* Header row */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-1.5">
+                      <div className="h-5 rounded-full w-40" style={{ background: "linear-gradient(90deg, var(--color-primary), rgba(139,92,246,0.6))", opacity: 0.7 }} />
+                      <div className="h-2.5 rounded-full w-24 bg-(--color-skeleton-lo)" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-20 h-8 rounded-lg bg-(--color-primary)/15 flex items-center justify-center">
+                        <Gamepad2 size={12} className="text-(--color-primary)" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stat cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {[
+                      { label: "Toplam Seans", value: "24", bg: "rgba(99,102,241,0.12)", color: "rgba(99,102,241,0.6)", icon: CalendarDays },
+                      { label: "Danışanlar", value: "8", bg: "rgba(16,185,129,0.12)", color: "rgba(16,185,129,0.6)", icon: Users },
+                      { label: "Ort. Skor", value: "84", bg: "rgba(245,158,11,0.12)", color: "rgba(245,158,11,0.6)", icon: TrendingUp },
+                      { label: "Bu Hafta", value: "6", bg: "rgba(6,182,212,0.12)", color: "rgba(6,182,212,0.6)", icon: Target },
+                    ].map((s) => (
+                      <div key={s.label} className="rounded-xl p-3" style={{ background: s.bg }}>
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <s.icon size={11} style={{ color: s.color }} />
+                          <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: s.color }}>{s.label}</span>
+                        </div>
+                        <strong className="text-xl font-extrabold text-(--color-text-strong) leading-none">{s.value}</strong>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Recent sessions */}
+                  <div className="space-y-2">
+                    {[
+                      { name: "Ela Selin", game: "Sıra Hafızası", score: 92, color: "#6366f1" },
+                      { name: "Tuna Akarsu", game: "Mavi Nabız", score: 78, color: "#8b5cf6" },
+                      { name: "Asya Demir", game: "Hedef Tarama", score: 85, color: "#06b6d4" },
+                    ].map((s) => (
+                      <div key={s.name} className="flex items-center gap-2.5 border border-(--color-line) rounded-xl px-3 py-2.5" style={{ background: "var(--color-surface)" }}>
+                        <div className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-white text-[10px] font-bold" style={{ background: `linear-gradient(135deg, ${s.color}, ${s.color}88)` }}>
+                          {s.name[0]}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-(--color-text-strong) m-0 truncate">{s.name}</p>
+                          <p className="text-[10px] text-(--color-text-muted) m-0">{s.game}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-extrabold tabular-nums" style={{ color: s.color }}>{s.score}</span>
+                          <div className="w-14 h-1.5 bg-(--color-surface-elevated) rounded-full overflow-hidden">
+                            <div className="h-full rounded-full" style={{ width: `${s.score}%`, background: s.color }} />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           </motion.div>
         </div>
       </section>
