@@ -7,6 +7,7 @@ import {
   Baby, Zap, Puzzle, PersonStanding, Briefcase, Handshake,
   Target, ClipboardList, Home, Tag, FlaskConical, Lightbulb, BookOpen, BarChart3, Search, RefreshCw, Map, CalendarDays, TrendingUp, Grid3X3,
   Bell, FileText, Award, Activity, ChevronRight, Star, Flame, Trophy, ArrowUpRight, ArrowDownRight,
+  Plus, Check, Archive, Edit2, Timer, X,
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
@@ -14,13 +15,16 @@ import {
   EMPTY_PLATFORM_OVERVIEW,
   GAME_LABELS,
   type AppView,
+  type ClientGoal,
   type ClientProfile,
   type DatabaseStatus,
   type DayKey,
+  type NoteMode,
   type PlatformGameKey,
   type PlatformOverviewPayload,
   type RecentSessionEntry,
   type SessionNote,
+  type SoapNoteContent,
   type TherapistProfile,
   type WeeklyPlan,
   type WeeklyPlanEntry,
@@ -446,8 +450,17 @@ interface GameResultOverlayProps {
   readonly stats: ReadonlyArray<{ label: string; value: string | number }>;
   readonly onReplay: () => void;
   readonly onBack: () => void;
+  readonly onSaveNote?: (note: string) => void;
+  readonly hasActiveClient?: boolean;
 }
-function GameResultOverlay({ accent, gradFrom, gradTo, gameName, score, bestScore, stars, stats, onReplay, onBack }: GameResultOverlayProps) {
+function GameResultOverlay({ accent, gradFrom, gradTo, gameName, score, bestScore, stars, stats, onReplay, onBack, onSaveNote, hasActiveClient }: GameResultOverlayProps) {
+  const [noteText, setNoteText] = useState("");
+  const [noteSaved, setNoteSaved] = useState(false);
+  function handleSaveNote() {
+    if (!noteText.trim() || !onSaveNote) return;
+    onSaveNote(noteText.trim());
+    setNoteSaved(true);
+  }
   const isNewBest = score >= bestScore && bestScore > 0 && score > 0;
   const prevBest = isNewBest && bestScore < score ? bestScore : 0;
   return (
@@ -527,6 +540,34 @@ function GameResultOverlay({ accent, gradFrom, gradTo, gameName, score, bestScor
             Oyunlar
           </button>
         </div>
+
+        {/* Post-game note */}
+        {hasActiveClient && onSaveNote && (
+          <div className="w-full rounded-2xl p-3 space-y-2" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <p className="text-white/40 text-[10px] uppercase tracking-widest font-bold m-0">Seans Notu</p>
+            {noteSaved ? (
+              <div className="flex items-center gap-2 text-xs" style={{ color: accent }}>
+                <Check size={12} /> Not kaydedildi
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  placeholder="Bu oyun için kısa not..."
+                  className="flex-1 bg-transparent border-none outline-none text-xs text-white/70 placeholder-white/25"
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSaveNote(); }}
+                />
+                <button type="button" onClick={handleSaveNote} disabled={!noteText.trim()}
+                  className="shrink-0 px-3 py-1 rounded-xl text-xs font-bold border-none cursor-pointer disabled:opacity-40"
+                  style={{ background: `${accent}30`, color: accent }}>
+                  Kaydet
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -797,6 +838,20 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const gameDetailsRef = useRef<HTMLDetailsElement>(null);
   const [gameElapsed, setGameElapsed] = useState(0);
   const [gameTimerKey, setGameTimerKey] = useState(0);
+
+  // ── New feature states ──
+  const [clientSearch, setClientSearch] = useState("");
+  const [noteMode, setNoteMode] = useState<NoteMode>("free");
+  const [soapDraft, setSoapDraft] = useState<SoapNoteContent>({ s: "", o: "", a: "", p: "" });
+  const [clientGoals, setClientGoals] = useState<ClientGoal[]>([]);
+  const [showGoalForm, setShowGoalForm] = useState(false);
+  const [goalDraft, setGoalDraft] = useState({ title: "", description: "", targetValue: 100, deadline: "" });
+  const [archiveTargetId, setArchiveTargetId] = useState<string | null>(null);
+  const [showEditTherapist, setShowEditTherapist] = useState(false);
+  const [therapistEditDraft, setTherapistEditDraft] = useState({ displayName: "", clinicName: "", specialty: "" });
+  const [postGameNote, setPostGameNote] = useState("");
+  const [isNotesLoading, setIsNotesLoading] = useState(false);
+
   // ── In-game feedback ──
   const [lastFeedback, setLastFeedback] = useState<{ correct: boolean; combo: number; timestamp: number } | null>(null);
   const feedbackTimerRef = useRef<number | null>(null);
@@ -830,6 +885,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         }
       }
 
+      // Legacy migration: notes/plans are now DB-backed; keep localStorage as offline fallback
       const storedNotes = window.localStorage.getItem(NOTES_KEY);
       if (storedNotes) setAllNotes(parseSessionNotes(JSON.parse(storedNotes)));
 
@@ -945,6 +1001,303 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     showToast("📅 Haftalık plan kaydedildi", "success");
   }
 
+  // ── DB-backed note handlers ──
+  async function handleAddNoteDB() {
+    if (!selectedClientId) return;
+    const content = noteMode === "soap"
+      ? `[S] ${soapDraft.s}\n[O] ${soapDraft.o}\n[A] ${soapDraft.a}\n[P] ${soapDraft.p}`
+      : noteForm.content.trim();
+    if (!content.trim()) return;
+    setIsNotesLoading(true);
+    try {
+      const res = await fetch("/api/platform/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId: selectedClientId,
+          therapistId: activeTherapistId || undefined,
+          date: noteForm.date || getTodayString(),
+          content,
+          noteMode,
+          soapContent: noteMode === "soap" ? soapDraft : undefined,
+        }),
+      });
+      if (res.ok) {
+        const { note } = (await res.json()) as { note: SessionNote };
+        setAllNotes((c) => [note, ...c.filter((n) => n.id !== note.id)]);
+        showToast("Not eklendi", "success");
+      } else {
+        // Fallback: add locally
+        const note: SessionNote = {
+          id: `note-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+          clientId: selectedClientId,
+          therapistId: activeTherapistId,
+          date: noteForm.date || getTodayString(),
+          content,
+          noteMode,
+          soapContent: noteMode === "soap" ? soapDraft : undefined,
+          createdAt: new Date().toISOString(),
+        };
+        setAllNotes((c) => [note, ...c]);
+        showToast("Not yerel olarak eklendi", "info");
+      }
+    } catch {
+      const note: SessionNote = {
+        id: `note-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+        clientId: selectedClientId, therapistId: activeTherapistId,
+        date: noteForm.date || getTodayString(), content, noteMode,
+        soapContent: noteMode === "soap" ? soapDraft : undefined,
+        createdAt: new Date().toISOString(),
+      };
+      setAllNotes((c) => [note, ...c]);
+    }
+    setNoteForm({ date: getTodayString(), content: "" });
+    setSoapDraft({ s: "", o: "", a: "", p: "" });
+    setNoteMode("free");
+    setShowNoteForm(false);
+    setIsNotesLoading(false);
+  }
+
+  async function handleDeleteNoteDB(noteId: string) {
+    setAllNotes((c) => c.filter((n) => n.id !== noteId));
+    try { await fetch(`/api/platform/notes?noteId=${noteId}`, { method: "DELETE" }); } catch { /* local already removed */ }
+  }
+
+  async function handleSaveWeeklyPlanDB() {
+    if (!selectedClientId) return;
+    const existingIndex = allWeeklyPlans.findIndex((p) => p.clientId === selectedClientId && p.weekStartDate === planWeekStart);
+    const plan: WeeklyPlan = {
+      id: existingIndex >= 0 ? allWeeklyPlans[existingIndex].id : `plan-${Date.now()}`,
+      clientId: selectedClientId,
+      therapistId: activeTherapistId,
+      weekStartDate: planWeekStart,
+      days: planEdits,
+      updatedAt: new Date().toISOString(),
+    };
+    if (existingIndex >= 0) {
+      setAllWeeklyPlans((c) => c.map((p, i) => i === existingIndex ? plan : p));
+    } else {
+      setAllWeeklyPlans((c) => [...c, plan]);
+    }
+    showToast("📅 Haftalık plan kaydedildi", "success");
+    try {
+      await fetch("/api/platform/plans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId: selectedClientId, therapistId: activeTherapistId || undefined, weekStartDate: planWeekStart, days: planEdits }),
+      });
+    } catch { /* already saved locally */ }
+  }
+
+  // ── Load notes from DB when client selected ──
+  async function loadClientNotesFromDB(clientId: string) {
+    try {
+      const res = await fetch(`/api/platform/notes?clientId=${clientId}`);
+      if (res.ok) {
+        const { notes } = (await res.json()) as { notes: SessionNote[] };
+        setAllNotes((c) => {
+          const ids = new Set(notes.map((n) => n.id));
+          const local = c.filter((n) => n.clientId !== clientId || !ids.has(n.id));
+          return [...notes, ...local].sort((a, b) => b.date.localeCompare(a.date));
+        });
+      }
+    } catch { /* keep local */ }
+  }
+
+  // ── Load plan from DB when client/week changes ──
+  async function loadWeeklyPlanFromDB(clientId: string, weekStartDate: string) {
+    try {
+      const res = await fetch(`/api/platform/plans?clientId=${clientId}&weekStartDate=${weekStartDate}`);
+      if (res.ok) {
+        const { plan } = (await res.json()) as { plan: WeeklyPlan | null };
+        if (plan) {
+          setAllWeeklyPlans((c) => {
+            const idx = c.findIndex((p) => p.clientId === clientId && p.weekStartDate === weekStartDate);
+            if (idx >= 0) return c.map((p, i) => i === idx ? plan : p);
+            return [...c, plan];
+          });
+          setPlanEdits(plan.days);
+        }
+      }
+    } catch { /* keep local */ }
+  }
+
+  // ── Goals handlers ──
+  async function loadClientGoals(clientId: string) {
+    try {
+      const res = await fetch(`/api/platform/goals?clientId=${clientId}`);
+      if (res.ok) {
+        const { goals } = (await res.json()) as { goals: ClientGoal[] };
+        setClientGoals(goals);
+      }
+    } catch { setClientGoals([]); }
+  }
+
+  async function handleAddGoal() {
+    if (!selectedClientId || !goalDraft.title.trim()) return;
+    try {
+      const res = await fetch("/api/platform/goals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId: selectedClientId,
+          therapistId: activeTherapistId || undefined,
+          title: goalDraft.title.trim(),
+          description: goalDraft.description.trim() || undefined,
+          targetValue: goalDraft.targetValue,
+          deadline: goalDraft.deadline || undefined,
+        }),
+      });
+      if (res.ok) {
+        const { goal } = (await res.json()) as { goal: ClientGoal };
+        setClientGoals((c) => [...c, goal]);
+        setGoalDraft({ title: "", description: "", targetValue: 100, deadline: "" });
+        setShowGoalForm(false);
+        showToast("🎯 Hedef eklendi", "success");
+      }
+    } catch { showToast("Hedef eklenemedi", "warning"); }
+  }
+
+  async function handleUpdateGoalProgress(goalId: string, currentValue: number) {
+    try {
+      const res = await fetch("/api/platform/goals", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goalId, currentValue }),
+      });
+      if (res.ok) {
+        const { goal } = (await res.json()) as { goal: ClientGoal };
+        setClientGoals((c) => c.map((g) => g.id === goalId ? goal : g));
+        showToast(`📈 İlerleme güncellendi — %${currentValue}`, "success");
+      }
+    } catch { /* ignore */ }
+  }
+
+  async function handleDeleteGoal(goalId: string) {
+    setClientGoals((c) => c.filter((g) => g.id !== goalId));
+    try { await fetch(`/api/platform/goals?goalId=${goalId}`, { method: "DELETE" }); } catch { /* local removed */ }
+  }
+
+  // ── Archive client ──
+  async function handleArchiveClient(clientId: string) {
+    setArchiveTargetId(null);
+    try {
+      await fetch("/api/platform/profiles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "archive-client", clientId }),
+      });
+      await loadPlatformOverview();
+      showToast("Danışan arşivlendi", "info");
+    } catch { showToast("Arşivleme başarısız", "warning"); }
+  }
+
+  // ── Update therapist profile ──
+  async function handleUpdateTherapist() {
+    if (!activeTherapistId) return;
+    try {
+      const res = await fetch("/api/platform/profiles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "update-therapist",
+          therapistId: activeTherapistId,
+          displayName: therapistEditDraft.displayName.trim() || undefined,
+          clinicName: therapistEditDraft.clinicName,
+          specialty: therapistEditDraft.specialty,
+        }),
+      });
+      if (res.ok) {
+        const { profile } = (await res.json()) as { profile: TherapistProfile };
+        await loadPlatformOverview();
+        setShowEditTherapist(false);
+        showToast(`✅ Profil güncellendi — ${profile.displayName}`, "success");
+      }
+    } catch { showToast("Profil güncellenemedi", "warning"); }
+  }
+
+  // ── Post-game note handler ──
+  async function handleSavePostGameNote(note: string, gameLabel: string) {
+    if (!note.trim() || !selectedClientId) return;
+    setNoteForm({ date: getTodayString(), content: `[${gameLabel}] ${note}` });
+    setNoteMode("free");
+    await handleAddNoteDB();
+  }
+
+  // ── PDF Export ──
+  function handlePrintReport(client: ClientProfile) {
+    const sessions = platformOverview.recentSessions.filter(s => s.clientId === client.id);
+    const notes = allNotes.filter(n => n.clientId === client.id).slice(0, 10);
+    const goals = clientGoals;
+    const therapistName = activeTherapist?.displayName ?? "Terapist";
+    const clinicName = activeTherapist?.clinicName ?? "";
+    const today = getTodayString();
+    const bestScore = sessions.length > 0 ? Math.max(...sessions.map(s => s.score)) : 0;
+    const avgScore = sessions.length > 0 ? Math.round(sessions.reduce((a, s) => a + s.score, 0) / sessions.length) : 0;
+    const gameMap: Record<string, { plays: number; best: number }> = {};
+    sessions.forEach(s => {
+      if (!gameMap[s.gameKey]) gameMap[s.gameKey] = { plays: 0, best: 0 };
+      gameMap[s.gameKey].plays++;
+      if (s.score > gameMap[s.gameKey].best) gameMap[s.gameKey].best = s.score;
+    });
+    const gameRows = Object.entries(gameMap).map(([key, v]) => {
+      const g = GAME_TABS.find(gt => gt.key === key);
+      return `<tr><td>${g?.title ?? key}</td><td>${v.plays}</td><td>${v.best}</td></tr>`;
+    }).join("");
+    const noteRows = notes.map(n => `<tr><td>${n.date}</td><td style="white-space:pre-wrap">${n.content}</td></tr>`).join("");
+    const goalRows = goals.map(g => {
+      const pct = Math.round((g.currentValue / Math.max(g.targetValue, 1)) * 100);
+      return `<tr><td>${g.title}</td><td>${g.currentValue}/${g.targetValue}</td><td>${pct}%</td><td>${g.deadline ?? "—"}</td></tr>`;
+    }).join("");
+
+    const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Mimio Rapor — ${client.displayName}</title><style>
+      body{font-family:'Segoe UI',Arial,sans-serif;color:#1a1a2e;margin:0;padding:24px;font-size:13px}
+      h1{font-size:22px;margin:0 0 4px}h2{font-size:14px;font-weight:700;margin:20px 0 8px;color:#6366f1;text-transform:uppercase;letter-spacing:.05em}
+      .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #6366f1;padding-bottom:12px;margin-bottom:20px}
+      .meta{font-size:11px;color:#666;line-height:1.6}.badge{display:inline-block;background:#ede9fe;color:#6366f1;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;margin-right:4px;margin-bottom:4px}
+      table{width:100%;border-collapse:collapse;margin-bottom:8px}td,th{padding:6px 10px;border:1px solid #e5e7eb;text-align:left;font-size:12px}th{background:#f5f3ff;font-weight:700;color:#4f46e5}
+      .stat-row{display:flex;gap:16px;margin-bottom:16px}.stat{background:#f5f3ff;border:1px solid #ede9fe;border-radius:12px;padding:12px 18px;text-align:center;flex:1}.stat-val{font-size:28px;font-weight:900;color:#6366f1}.stat-lbl{font-size:11px;color:#888;font-weight:600}
+      .no-data{color:#999;font-style:italic;font-size:12px}.footer{margin-top:24px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:10px;color:#aaa;text-align:center}
+      @media print{body{padding:0}button{display:none}}
+    </style></head><body>
+      <div class="header">
+        <div>
+          <h1>${client.displayName}</h1>
+          <div class="meta">
+            ${client.ageGroup ? `<span class="badge">${client.ageGroup}</span>` : ""}
+            ${client.primaryGoal ? `<span class="badge">${client.primaryGoal}</span>` : ""}
+            ${client.supportLevel ? `<span class="badge">${client.supportLevel}</span>` : ""}
+            ${client.difficultyLevel ? `<span class="badge">${client.difficultyLevel}</span>` : ""}
+          </div>
+        </div>
+        <div class="meta" style="text-align:right">
+          <strong>${therapistName}</strong>${clinicName ? `<br>${clinicName}` : ""}<br>Rapor tarihi: ${today}
+        </div>
+      </div>
+
+      <h2>Genel Performans</h2>
+      <div class="stat-row">
+        <div class="stat"><div class="stat-val">${sessions.length}</div><div class="stat-lbl">Toplam Seans</div></div>
+        <div class="stat"><div class="stat-val">${bestScore || "—"}</div><div class="stat-lbl">En Yüksek Skor</div></div>
+        <div class="stat"><div class="stat-val">${avgScore || "—"}</div><div class="stat-lbl">Ortalama Skor</div></div>
+      </div>
+
+      <h2>Oyun Bazlı Sonuçlar</h2>
+      ${gameRows ? `<table><thead><tr><th>Oyun</th><th>Oynama</th><th>En İyi Skor</th></tr></thead><tbody>${gameRows}</tbody></table>` : '<p class="no-data">Henüz oyun seansı yok.</p>'}
+
+      ${goalRows ? `<h2>SMART Hedefler</h2><table><thead><tr><th>Hedef</th><th>İlerleme</th><th>%</th><th>Son Tarih</th></tr></thead><tbody>${goalRows}</tbody></table>` : ""}
+
+      <h2>Seans Notları</h2>
+      ${noteRows ? `<table><thead><tr><th style="width:100px">Tarih</th><th>Not</th></tr></thead><tbody>${noteRows}</tbody></table>` : '<p class="no-data">Henüz seans notu yok.</p>'}
+
+      <div class="footer">Mimio Ergoterapi Platformu — ${today} tarihinde oluşturuldu</div>
+      <script>window.onload=function(){window.print();}</script>
+    </body></html>`;
+
+    const win = window.open("", "_blank", "width=800,height=900");
+    if (win) { win.document.write(html); win.document.close(); }
+  }
+
   async function handleAddClient(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const displayName = addClientDraft.displayName.trim();
@@ -1015,16 +1368,26 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     setTpCustomNotes((current) => ({ ...current, [activityId]: note }));
   }
 
-  // ── Load plan when client/week changes ──
+  // ── Load notes & goals from DB when client changes ──
   useEffect(() => {
     if (!selectedClientId) return;
+    void loadClientNotesFromDB(selectedClientId);
+    void loadClientGoals(selectedClientId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedClientId]);
+
+  // ── Load plan when client/week changes (DB first, then local fallback) ──
+  useEffect(() => {
+    if (!selectedClientId) return;
+    void loadWeeklyPlanFromDB(selectedClientId, planWeekStart);
     const existing = allWeeklyPlans.find((p) => p.clientId === selectedClientId && p.weekStartDate === planWeekStart);
     if (existing) {
       setPlanEdits(existing.days);
     } else {
       setPlanEdits({ mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: [] });
     }
-  }, [selectedClientId, planWeekStart, allWeeklyPlans]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedClientId, planWeekStart]);
 
   // ── Existing helpers ──
   function clearMemoryTimers() { memoryTimersRef.current.forEach((timer) => window.clearTimeout(timer)); memoryTimersRef.current = []; }
@@ -1120,6 +1483,11 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     }
   }
 
+  // Approximate high-score thresholds per game (≥ this = strong performance)
+  const ADAPTIVE_THRESHOLDS: Record<GameKey, number> = {
+    memory: 8, pairs: 10, pulse: 14, route: 12, difference: 9, scan: 10,
+  } as const;
+
   function commitScore(game: GameKey, nextScore: number, metadata: Record<string, unknown> = {}) {
     const playedAt = new Date().toISOString();
     const durationSeconds = Math.max(45, Math.round((Date.now() - sessionStartedAt) / 1000));
@@ -1142,6 +1510,17 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       }
       return { ...current, [game]: { ...entry, best: Math.max(entry.best, nextScore), last: nextScore, plays: entry.plays + 1 } };
     });
+    // ── Adaptive difficulty suggestion ──
+    if (activeClient && nextScore > 0) {
+      const threshold = ADAPTIVE_THRESHOLDS[game];
+      const recentForGame = platformOverview.recentSessions
+        .filter(s => s.clientId === activeClient.id && s.gameKey === game)
+        .slice(-2); // last 2 in history + this one = 3 total
+      const allHigh = recentForGame.length >= 2 && recentForGame.every(s => s.score >= threshold) && nextScore >= threshold;
+      if (allHigh) {
+        setTimeout(() => showToast(`📈 ${activeClient.displayName} son 3 seansta yüksek performans — zorluk artırılabilir!`, "info"), 2500);
+      }
+    }
     void syncScoreToBackend(game, nextScore, metadata, sessionEntry);
   }
 
@@ -1677,6 +2056,13 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 {theme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
               </button>
               <button type="button"
+                data-tooltip="Profil düzenle"
+                data-tooltip-dir="top"
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-(--color-text-muted) hover:text-indigo-400 hover:bg-indigo-500/10 bg-transparent border-none cursor-pointer transition-all"
+                onClick={() => { setTherapistEditDraft({ displayName: activeTherapist?.displayName ?? "", clinicName: activeTherapist?.clinicName ?? "", specialty: activeTherapist?.specialty ?? "" }); setShowEditTherapist(true); }} aria-label="Profil düzenle">
+                <Edit2 size={13} />
+              </button>
+              <button type="button"
                 data-tooltip="Raporlar & Analitik"
                 data-tooltip-dir="top"
                 className="w-7 h-7 rounded-lg flex items-center justify-center text-(--color-text-muted) hover:text-amber-400 hover:bg-amber-500/10 bg-transparent border-none cursor-pointer transition-all"
@@ -1766,6 +2152,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   </div>
                 </div>
                 <div className="h-px mx-2 my-1" style={{ background: "var(--color-line)" }} />
+                <button type="button" className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-(--color-text-body) hover:bg-(--color-surface-elevated) w-full text-left bg-transparent border-none cursor-pointer"
+                  onClick={() => { setShowUserMenu(false); setTherapistEditDraft({ displayName: activeTherapist?.displayName ?? "", clinicName: activeTherapist?.clinicName ?? "", specialty: activeTherapist?.specialty ?? "" }); setShowEditTherapist(true); }}>
+                  <Edit2 size={14} /> Profili Düzenle
+                </button>
                 <button type="button" className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-(--color-text-body) hover:bg-(--color-surface-elevated) w-full text-left bg-transparent border-none cursor-pointer" onClick={() => { setShowUserMenu(false); toggleTheme(); }}>
                   {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
                   {theme === "dark" ? "Açık Tema" : "Koyu Tema"}
@@ -2176,7 +2566,104 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               </div>
             )}
 
-            {clientOptions.length === 0 ? (
+            {/* Search */}
+            {clientOptions.length > 0 && (
+              <div className="relative">
+                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--color-text-muted)" }} />
+                <input type="text" value={clientSearch} onChange={(e) => setClientSearch(e.target.value)} placeholder="Danışan ara..."
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm border"
+                  style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)", color: "var(--color-text-body)", outline: "none" }} />
+                {clientSearch && (
+                  <button type="button" onClick={() => setClientSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer border-none bg-transparent p-0">
+                    <X size={13} style={{ color: "var(--color-text-muted)" }} />
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Archive confirm modal */}
+            {archiveTargetId && (() => {
+              const archiveTarget = clientOptions.find((c) => c.id === archiveTargetId);
+              return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
+                  <div className="rounded-3xl border p-6 max-w-sm w-full space-y-4" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(245,158,11,0.15)" }}>
+                        <Archive size={18} style={{ color: "#f59e0b" }} />
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-(--color-text-strong) m-0">Danışanı Arşivle</h3>
+                        <p className="text-(--color-text-muted) text-xs m-0">Bu işlem geri alınabilir</p>
+                      </div>
+                    </div>
+                    <p className="text-(--color-text-body) text-sm m-0"><strong>{archiveTarget?.displayName}</strong> arşive taşınacak. Seans verileri korunur.</p>
+                    <div className="flex gap-2">
+                      <button type="button" className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white border-none cursor-pointer" style={{ background: "linear-gradient(135deg,#f59e0b,#ef4444)" }} onClick={() => { void handleArchiveClient(archiveTargetId); }}>Arşivle</button>
+                      <button type="button" className="flex-1 py-2.5 rounded-xl text-sm font-bold border cursor-pointer" style={{ background: "var(--color-surface)", borderColor: "var(--color-line)", color: "var(--color-text-soft)" }} onClick={() => setArchiveTargetId(null)}>İptal</button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {showEditTherapist && activeTherapist && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
+                <div className="rounded-3xl border p-6 max-w-sm w-full space-y-4" style={{ background: "var(--color-surface-strong)", borderColor: "rgba(99,102,241,0.25)" }}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(99,102,241,0.15)" }}>
+                        <Edit2 size={18} style={{ color: "#818cf8" }} />
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-(--color-text-strong) m-0">Profili Düzenle</h3>
+                        <p className="text-(--color-text-muted) text-xs m-0">Terapist bilgilerini güncelle</p>
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => setShowEditTherapist(false)}
+                      className="w-8 h-8 rounded-xl flex items-center justify-center text-(--color-text-muted) hover:text-(--color-text-body) bg-transparent border-none cursor-pointer hover:bg-(--color-surface-elevated) transition-all">
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-[10px] text-(--color-text-muted) font-bold uppercase tracking-wider mb-1 block">Ad Soyad</label>
+                      <input value={therapistEditDraft.displayName} onChange={e => setTherapistEditDraft(d => ({ ...d, displayName: e.target.value }))}
+                        placeholder="Ad Soyad" className={inputCls} />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-(--color-text-muted) font-bold uppercase tracking-wider mb-1 block">Klinik / Kurum</label>
+                      <input value={therapistEditDraft.clinicName} onChange={e => setTherapistEditDraft(d => ({ ...d, clinicName: e.target.value }))}
+                        placeholder="Klinik adı (isteğe bağlı)" className={inputCls} />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-(--color-text-muted) font-bold uppercase tracking-wider mb-1 block">Uzmanlık Alanı</label>
+                      <input value={therapistEditDraft.specialty} onChange={e => setTherapistEditDraft(d => ({ ...d, specialty: e.target.value }))}
+                        placeholder="Uzmanlık alanı (isteğe bağlı)" className={inputCls} />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <button type="button"
+                      className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white border-none cursor-pointer transition-all hover:opacity-90"
+                      style={{ background: "linear-gradient(135deg, #6366f1, #818cf8)" }}
+                      onClick={() => void handleUpdateTherapist()}>
+                      Kaydet
+                    </button>
+                    <button type="button"
+                      className="flex-1 py-2.5 rounded-xl text-sm font-bold border cursor-pointer"
+                      style={{ background: "var(--color-surface)", borderColor: "var(--color-line)", color: "var(--color-text-soft)" }}
+                      onClick={() => setShowEditTherapist(false)}>
+                      İptal
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {(() => {
+              const filtered = clientSearch.trim()
+                ? clientOptions.filter((c) => c.displayName.toLowerCase().includes(clientSearch.toLowerCase()) || c.primaryGoal?.toLowerCase().includes(clientSearch.toLowerCase()))
+                : clientOptions;
+              return clientOptions.length === 0 ? (
               <div className="rounded-2xl border border-(--color-line) p-12 text-center flex flex-col items-center gap-4"
                 style={{ background: "var(--color-surface-strong)" }}>
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
@@ -2188,9 +2675,14 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   <p className="text-(--color-text-muted) text-sm m-0">Yukarıdaki butonu kullanarak ilk danışanı ekleyebilirsin.</p>
                 </div>
               </div>
+            ) : filtered.length === 0 ? (
+              <div className="rounded-2xl border border-(--color-line) p-8 text-center" style={{ background: "var(--color-surface-strong)" }}>
+                <Search size={28} strokeWidth={1.5} className="mx-auto mb-2" style={{ color: "var(--color-text-muted)" }} />
+                <p className="text-(--color-text-muted) text-sm m-0">"{clientSearch}" için sonuç bulunamadı.</p>
+              </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {clientOptions.map((client, clientIdx) => {
+                {filtered.map((client, clientIdx) => {
                   const sessionCount = platformOverview.recentSessions.filter((s) => s.clientId === client.id).length;
                   const clientScores = platformOverview.recentSessions.filter((s) => s.clientId === client.id);
                   const bestScore = clientScores.length > 0 ? Math.max(...clientScores.map(s => s.score)) : 0;
@@ -2279,12 +2771,20 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           onClick={() => { setSelectedClientId(client.id); setActiveClientId(client.id); setActiveAppView("games"); }}>
                           <Gamepad2 size={13} /> Oyna
                         </button>
+                        <button type="button"
+                          title="Arşivle"
+                          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border cursor-pointer transition-all hover:opacity-80"
+                          style={{ background: "rgba(245,158,11,0.1)", borderColor: "rgba(245,158,11,0.25)", color: "#f59e0b" }}
+                          onClick={() => setArchiveTargetId(client.id)}>
+                          <Archive size={13} />
+                        </button>
                       </div>
                     </div>
                   );
                 })}
               </div>
-            )}
+            );
+            })()}
           </div>
         )}
         {/* ── Client Detail ── */}
@@ -2340,11 +2840,17 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         {selectedClient.ageGroup && <span className="text-xs font-bold px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full" style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>{selectedClient.ageGroup}</span>}
                         {selectedClient.primaryGoal && <span className="text-xs font-bold px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full hidden sm:inline-flex" style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>{selectedClient.primaryGoal}</span>}
                         {selectedClient.supportLevel && <span className="text-xs font-bold px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full hidden sm:inline-flex" style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>{selectedClient.supportLevel}</span>}
+                        {selectedClient.difficultyLevel && (
+                          <span className="text-xs font-bold px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full hidden sm:inline-flex items-center gap-1"
+                            style={{ background: "rgba(245,158,11,0.1)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.25)" }}>
+                            🎯 {selectedClient.difficultyLevel}
+                          </span>
+                        )}
                       </div>
                       {/* Mobile-only: show goal/support as small text */}
                       {(selectedClient.primaryGoal || selectedClient.supportLevel) && (
                         <p className="sm:hidden text-xs text-(--color-text-muted) mt-1.5 m-0 truncate">
-                          {[selectedClient.primaryGoal, selectedClient.supportLevel].filter(Boolean).join(" · ")}
+                          {[selectedClient.primaryGoal, selectedClient.supportLevel, selectedClient.difficultyLevel].filter(Boolean).join(" · ")}
                         </p>
                       )}
                     </div>
@@ -2365,9 +2871,17 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     ))}
                   </div>
 
-                  <button type="button" className="w-full flex items-center justify-center gap-2 font-bold text-sm px-5 py-2.5 lg:py-3 rounded-xl lg:rounded-2xl text-white cursor-pointer border-none transition-all hover:opacity-90 active:scale-[0.98]" style={{ background: `linear-gradient(135deg, ${palette.color}, ${palette.border})`, boxShadow: `0 6px 20px ${palette.glow}` }} onClick={() => { setActiveClientId(selectedClient.id); setActiveAppView("games"); }}>
-                    <Gamepad2 size={15} /> Bu Danışanla Oyna
-                  </button>
+                  <div className="flex gap-2">
+                    <button type="button" className="flex-1 flex items-center justify-center gap-2 font-bold text-sm px-5 py-2.5 lg:py-3 rounded-xl lg:rounded-2xl text-white cursor-pointer border-none transition-all hover:opacity-90 active:scale-[0.98]" style={{ background: `linear-gradient(135deg, ${palette.color}, ${palette.border})`, boxShadow: `0 6px 20px ${palette.glow}` }} onClick={() => { setActiveClientId(selectedClient.id); setActiveAppView("games"); }}>
+                      <Gamepad2 size={15} /> Bu Danışanla Oyna
+                    </button>
+                    <button type="button" data-tooltip="PDF Rapor Al" data-tooltip-dir="top"
+                      className="flex items-center justify-center gap-1.5 font-bold text-sm px-4 py-2.5 lg:py-3 rounded-xl lg:rounded-2xl cursor-pointer border-none transition-all hover:opacity-90 active:scale-[0.98]"
+                      style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)", color: "var(--color-text-soft)" }}
+                      onClick={() => handlePrintReport(selectedClient)}>
+                      <FileText size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -2403,12 +2917,43 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   {showNoteForm && (
                     <div className="rounded-2xl border p-5 space-y-3 relative overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: palette.border }}>
                       <div className="h-0.5 absolute top-0 left-0 right-0" style={{ background: `linear-gradient(90deg, ${palette.color}, ${palette.border})` }} />
-                      <h4 className="text-(--color-text-strong) font-bold m-0 pt-1">Yeni Not</h4>
+                      <div className="flex items-center justify-between pt-1">
+                        <h4 className="text-(--color-text-strong) font-bold m-0">Yeni Not</h4>
+                        {/* Mode toggle */}
+                        <div className="flex gap-1 p-0.5 rounded-xl" style={{ background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}>
+                          {(["free", "soap"] as NoteMode[]).map((m) => (
+                            <button key={m} type="button"
+                              className="px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer border-none"
+                              style={{
+                                background: noteMode === m ? "var(--color-surface-strong)" : "transparent",
+                                color: noteMode === m ? palette.color : "var(--color-text-muted)",
+                                boxShadow: noteMode === m ? "0 1px 4px rgba(0,0,0,0.15)" : "none",
+                              }}
+                              onClick={() => setNoteMode(m)}>
+                              {m === "free" ? "Serbest" : "SOAP"}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                       <input type="date" value={noteForm.date} onChange={(e) => setNoteForm((c) => ({ ...c, date: e.target.value }))} className={inputCls} />
-                      <textarea value={noteForm.content} onChange={(e) => setNoteForm((c) => ({ ...c, content: e.target.value }))} placeholder="Seans notu, gözlem veya hedef..." className={`${inputCls} resize-none`} rows={4} />
+                      {noteMode === "free" ? (
+                        <textarea value={noteForm.content} onChange={(e) => setNoteForm((c) => ({ ...c, content: e.target.value }))} placeholder="Seans notu, gözlem veya hedef..." className={`${inputCls} resize-none`} rows={4} />
+                      ) : (
+                        <div className="space-y-2">
+                          {(["s", "o", "a", "p"] as (keyof SoapNoteContent)[]).map((field) => {
+                            const labels = { s: "S — Subjektif (Danışan ifadesi)", o: "O — Objektif (Gözlem & ölçüm)", a: "A — Assessment (Değerlendirme)", p: "P — Plan (Sonraki adımlar)" };
+                            return (
+                              <div key={field} className="space-y-0.5">
+                                <p className="text-[10px] font-extrabold uppercase tracking-wider m-0" style={{ color: palette.color }}>{labels[field]}</p>
+                                <textarea value={soapDraft[field]} onChange={(e) => setSoapDraft((c) => ({ ...c, [field]: e.target.value }))} placeholder={`${field.toUpperCase()} alanı...`} className={`${inputCls} resize-none`} rows={2} />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                       <div className="flex gap-2">
-                        <button type="button" className="flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-xl text-white cursor-pointer border-none transition-all hover:opacity-90" style={{ background: `linear-gradient(135deg, ${palette.color}, ${palette.border})`, boxShadow: `0 3px 12px ${palette.glow}` }} onClick={handleAddNote}>Kaydet</button>
-                        <button type="button" className={btnSecondary} onClick={() => setShowNoteForm(false)}>İptal</button>
+                        <button type="button" disabled={isNotesLoading} className="flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-xl text-white cursor-pointer border-none transition-all hover:opacity-90 disabled:opacity-50" style={{ background: `linear-gradient(135deg, ${palette.color}, ${palette.border})`, boxShadow: `0 3px 12px ${palette.glow}` }} onClick={() => { void handleAddNoteDB(); }}>Kaydet</button>
+                        <button type="button" className={btnSecondary} onClick={() => { setShowNoteForm(false); setNoteMode("free"); setSoapDraft({ s: "", o: "", a: "", p: "" }); }}>İptal</button>
                       </div>
                     </div>
                   )}
@@ -2427,7 +2972,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           <div className="px-5 py-4">
                             <div className="flex items-center justify-between mb-3">
                               <span className="text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>{formatDate(note.date)}</span>
-                              <button type="button" className="text-xs font-bold px-2.5 py-1.5 rounded-xl border-none cursor-pointer transition-all hover:opacity-70 active:scale-95" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }} onClick={() => handleDeleteNote(note.id)}>Sil</button>
+                              <button type="button" className="text-xs font-bold px-2.5 py-1.5 rounded-xl border-none cursor-pointer transition-all hover:opacity-70 active:scale-95" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }} onClick={() => { void handleDeleteNoteDB(note.id); }}>Sil</button>
                             </div>
                             <p className="text-(--color-text-body) text-sm m-0 leading-relaxed">{note.content}</p>
                           </div>
@@ -2535,10 +3080,23 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                                     background: isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)",
                                     border: `1px solid ${isToday ? palette.border : "var(--color-line)"}`,
                                   }}>
-                                    {/* Game number */}
-                                    <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-extrabold" style={{ background: palette.bg, color: palette.color }}>
-                                      {entryIndex + 1}
-                                    </div>
+                                    {/* Completed checkbox */}
+                                    <button type="button"
+                                      className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 border-none cursor-pointer transition-all"
+                                      style={{
+                                        background: entry.completed ? palette.color : palette.bg,
+                                        border: `1.5px solid ${palette.border}`,
+                                      }}
+                                      title={entry.completed ? "Tamamlandı" : "Tamamlandı işaretle"}
+                                      onClick={() => {
+                                        setPlanEdits((current) => {
+                                          const updated = [...current[day]];
+                                          updated[entryIndex] = { ...updated[entryIndex], completed: !updated[entryIndex].completed };
+                                          return { ...current, [day]: updated };
+                                        });
+                                      }}>
+                                      {entry.completed ? <Check size={10} className="text-white" /> : <span className="text-[8px] font-extrabold" style={{ color: palette.color }}>{entryIndex + 1}</span>}
+                                    </button>
 
                                     {/* Game select + goal input */}
                                     <div className="flex-1 min-w-0 space-y-1.5">
@@ -2580,7 +3138,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     })}
                   </div>
 
-                  <button type="button" className={btnPrimary} onClick={handleSaveWeeklyPlan}>
+                  <button type="button" className={btnPrimary} onClick={() => { void handleSaveWeeklyPlanDB(); }}>
                     Planı Kaydet
                   </button>
                 </div>
@@ -2642,6 +3200,45 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                                 <span className="text-[10px] text-(--color-text-muted) block">{l}</span>
                               </div>
                             ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* ── Score Trend Chart ── */}
+                  {clientSessions.length >= 3 && (() => {
+                    const sorted = [...clientSessions].sort((a, b) => (a.playedAt ?? "").localeCompare(b.playedAt ?? "")).slice(-20);
+                    const maxV = Math.max(...sorted.map(s => s.score), 1);
+                    const W = 420; const H = 80; const PAD = 8;
+                    const xs = sorted.map((_, i) => PAD + (i / (sorted.length - 1)) * (W - PAD * 2));
+                    const ys = sorted.map(s => H - PAD - ((s.score / maxV) * (H - PAD * 2)));
+                    const linePath = xs.map((x, i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(" ");
+                    const areaPath = `${linePath} L${xs[xs.length-1].toFixed(1)},${H} L${xs[0].toFixed(1)},${H} Z`;
+                    const gradId = `trend-${selectedClientId}`;
+                    return (
+                      <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}>
+                        <div className="px-4 pt-4 pb-1 flex items-center justify-between">
+                          <span className="text-xs font-extrabold uppercase tracking-wider text-(--color-text-muted)">Skor Trendi</span>
+                          <span className="text-[10px] text-(--color-text-muted)">Son {sorted.length} seans</span>
+                        </div>
+                        <div className="px-4 pb-4">
+                          <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: "80px" }}>
+                            <defs>
+                              <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor={palette.color} stopOpacity="0.25" />
+                                <stop offset="100%" stopColor={palette.color} stopOpacity="0" />
+                              </linearGradient>
+                            </defs>
+                            <path d={areaPath} fill={`url(#${gradId})`} />
+                            <path d={linePath} fill="none" stroke={palette.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            {xs.map((x, i) => (
+                              <circle key={i} cx={x} cy={ys[i]} r="3" fill={palette.color} fillOpacity="0.8" />
+                            ))}
+                          </svg>
+                          <div className="flex justify-between mt-1">
+                            <span className="text-[9px] text-(--color-text-muted)">{sorted[0]?.playedAt?.slice(0, 10) ?? ""}</span>
+                            <span className="text-[9px] text-(--color-text-muted)">{sorted[sorted.length-1]?.playedAt?.slice(0, 10) ?? ""}</span>
                           </div>
                         </div>
                       </div>
@@ -2804,6 +3401,98 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         })}
                       </div>
                     )}
+
+                    {/* ── SMART Goals ── */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-extrabold uppercase tracking-widest text-(--color-text-muted) m-0">SMART Hedefler</h4>
+                        <button type="button" onClick={() => setShowGoalForm(v => !v)}
+                          className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl text-white border-none cursor-pointer transition-all hover:opacity-80"
+                          style={{ background: `linear-gradient(135deg, ${palette.color}, ${palette.border})` }}>
+                          <Plus size={12} /> Hedef Ekle
+                        </button>
+                      </div>
+
+                      {showGoalForm && (
+                        <div className="rounded-2xl border border-(--color-line) p-4 space-y-3" style={{ background: "var(--color-surface-strong)" }}>
+                          <input value={goalDraft.title} onChange={e => setGoalDraft(d => ({ ...d, title: e.target.value }))}
+                            placeholder="Hedef başlığı (örn. Makas kullanımı)" className={inputCls} />
+                          <input value={goalDraft.description} onChange={e => setGoalDraft(d => ({ ...d, description: e.target.value }))}
+                            placeholder="Açıklama (isteğe bağlı)" className={inputCls} />
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <label className="text-[10px] text-(--color-text-muted) font-bold uppercase tracking-wider mb-1 block">Hedef Değer (%)</label>
+                              <input type="number" min={1} max={100} value={goalDraft.targetValue} onChange={e => setGoalDraft(d => ({ ...d, targetValue: Number(e.target.value) }))}
+                                className={inputCls} />
+                            </div>
+                            <div className="flex-1">
+                              <label className="text-[10px] text-(--color-text-muted) font-bold uppercase tracking-wider mb-1 block">Son Tarih</label>
+                              <input type="date" value={goalDraft.deadline} onChange={e => setGoalDraft(d => ({ ...d, deadline: e.target.value }))}
+                                className={inputCls} />
+                            </div>
+                          </div>
+                          <div className="flex gap-2 justify-end">
+                            <button type="button" onClick={() => setShowGoalForm(false)}
+                              className="text-xs font-bold px-3 py-1.5 rounded-xl cursor-pointer border border-(--color-line) text-(--color-text-muted) hover:opacity-80 transition-all" style={{ background: "transparent" }}>
+                              İptal
+                            </button>
+                            <button type="button" onClick={handleAddGoal} disabled={!goalDraft.title.trim()}
+                              className="text-xs font-bold px-4 py-1.5 rounded-xl text-white border-none cursor-pointer transition-all hover:opacity-80 disabled:opacity-40"
+                              style={{ background: `linear-gradient(135deg, ${palette.color}, ${palette.border})` }}>
+                              Kaydet
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {clientGoals.length === 0 && !showGoalForm && (
+                        <div className="rounded-2xl border border-dashed border-(--color-line) p-8 text-center" style={{ background: "var(--color-surface-strong)" }}>
+                          <div className="text-3xl mb-2">🎯</div>
+                          <p className="text-(--color-text-muted) text-sm m-0">Bu danışan için henüz SMART hedef tanımlanmadı.</p>
+                        </div>
+                      )}
+
+                      {clientGoals.map((g, i) => {
+                        const pct = Math.round((g.currentValue / Math.max(g.targetValue, 1)) * 100);
+                        const clampedPct = Math.min(pct, 100);
+                        const goalColor = clampedPct >= 100 ? "#10b981" : clampedPct >= 60 ? "#f59e0b" : palette.color;
+                        const isOverdue = g.deadline && g.deadline < getTodayString() && clampedPct < 100;
+                        return (
+                          <div key={g.id} className="rounded-2xl border border-(--color-line) p-4 space-y-3" style={{ background: "var(--color-surface-strong)", animation: `result-stat-in 0.3s ease ${i * 0.06}s both` }}>
+                            <div className="flex items-start gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-sm font-bold text-(--color-text-strong)">{g.title}</span>
+                                  {clampedPct >= 100 && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ background: "#10b981" }}>✓ Tamamlandı</span>}
+                                  {isOverdue && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ background: "#ef4444" }}>Gecikmiş</span>}
+                                </div>
+                                {g.description && <p className="text-xs text-(--color-text-muted) m-0 mt-0.5">{g.description}</p>}
+                                {g.deadline && <p className="text-[10px] text-(--color-text-muted) m-0 mt-0.5">Son tarih: {g.deadline}</p>}
+                              </div>
+                              <button type="button" onClick={() => handleDeleteGoal(g.id)}
+                                className="text-(--color-text-muted) hover:text-red-400 transition-colors cursor-pointer border-none bg-transparent p-1 shrink-0">
+                                <X size={14} />
+                              </button>
+                            </div>
+                            <div>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-[10px] text-(--color-text-muted) font-bold uppercase tracking-wider">İlerleme</span>
+                                <span className="text-sm font-extrabold tabular-nums" style={{ color: goalColor }}>{g.currentValue}/{g.targetValue} <span className="text-[10px] text-(--color-text-muted)">({clampedPct}%)</span></span>
+                              </div>
+                              <div className="h-2.5 rounded-full overflow-hidden" style={{ background: "var(--color-line)" }}>
+                                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${clampedPct}%`, background: `linear-gradient(90deg, ${goalColor}, ${goalColor}99)` }} />
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input type="range" min={0} max={g.targetValue} value={g.currentValue}
+                                onChange={e => handleUpdateGoalProgress(g.id, Number(e.target.value))}
+                                className="flex-1 h-1.5 rounded-full cursor-pointer accent-indigo-500" />
+                              <span className="text-[10px] text-(--color-text-muted) shrink-0 w-16 text-right tabular-nums">{g.currentValue}/{g.targetValue}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               })()}
@@ -3079,6 +3768,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           ]}
                           onReplay={startMemoryGame}
                           onBack={() => setActiveAppView("dashboard")}
+                          onSaveNote={async (note) => { setNoteForm({ date: getTodayString(), content: `[${GAME_LABELS[activeGame]}] ${note}` }); setNoteMode("free"); await handleAddNoteDB(); }}
+                          hasActiveClient={!!activeClient}
                         />
                       );
                     })()}
@@ -3101,6 +3792,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         <p className="text-[#13b8ff]/60 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">En İyi</p>
                         <strong className="text-3xl lg:text-4xl font-extrabold tabular-nums leading-none tracking-tight" style={{ color: "#13b8ff" }}>{scoreboard.memory.best || "—"}</strong>
                       </div>
+                      {gameTimerKey > 0 && (
+                        <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                          <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold flex items-center gap-1"><Timer size={8} /> Süre</p>
+                          <strong className="text-white text-xl lg:text-2xl font-extrabold tabular-nums leading-none">{Math.floor(gameElapsed / 60)}:{String(gameElapsed % 60).padStart(2, "0")}</strong>
+                        </div>
+                      )}
                     </div>
                     <p className="relative text-white/50 text-sm leading-relaxed m-0">{memoryState.message}</p>
                     <p className="relative text-white/30 text-xs m-0">Kısayollar: <strong className="text-white/50">A/B</strong> oyun değiştirir, yön tuşları hücre seçer, <strong className="text-white/50">Enter</strong> ve <strong className="text-white/50">Boşluk</strong> aksiyonu tetikler.</p>
@@ -3148,6 +3845,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           ]}
                           onReplay={startPairsGame}
                           onBack={() => setActiveAppView("dashboard")}
+                          onSaveNote={async (note) => { setNoteForm({ date: getTodayString(), content: `[${GAME_LABELS[activeGame]}] ${note}` }); setNoteMode("free"); await handleAddNoteDB(); }}
+                          hasActiveClient={!!activeClient}
                         />
                       );
                     })()}
@@ -3166,6 +3865,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         <p className="text-[#5dd3ff]/60 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Durum</p>
                         <strong className="text-xl lg:text-2xl font-extrabold leading-tight" style={{ color: "#5dd3ff" }}>{getPhaseLabel(pairsState.phase)}</strong>
                       </div>
+                      {gameTimerKey > 0 && (
+                        <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                          <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold flex items-center gap-1"><Timer size={8} /> Süre</p>
+                          <strong className="text-white text-xl lg:text-2xl font-extrabold tabular-nums leading-none">{Math.floor(gameElapsed / 60)}:{String(gameElapsed % 60).padStart(2, "0")}</strong>
+                        </div>
+                      )}
                     </div>
                     <p className="relative text-white/50 text-sm leading-relaxed m-0">{pairsState.message}</p>
                     <p className="relative text-white/30 text-xs m-0">On iki kartı 4×3 düzende gezebilirsin; seçili kart parlak çerçeveyle görünür.</p>
@@ -3214,6 +3919,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           ]}
                           onReplay={startPulseGame}
                           onBack={() => setActiveAppView("dashboard")}
+                          onSaveNote={async (note) => { setNoteForm({ date: getTodayString(), content: `[${GAME_LABELS[activeGame]}] ${note}` }); setNoteMode("free"); await handleAddNoteDB(); }}
+                          hasActiveClient={!!activeClient}
                         />
                       );
                     })()}
@@ -3237,6 +3944,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           {pulseState.combo >= 3 && <span className="ml-1 text-xs lg:text-sm text-amber-400">🔥</span>}
                         </strong>
                       </div>
+                      {gameTimerKey > 0 && (
+                        <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                          <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold flex items-center gap-1"><Timer size={8} /> Süre</p>
+                          <strong className="text-white text-xl lg:text-2xl font-extrabold tabular-nums leading-none">{Math.floor(gameElapsed / 60)}:{String(gameElapsed % 60).padStart(2, "0")}</strong>
+                        </div>
+                      )}
                     </div>
                     <p className="relative text-white/50 text-sm leading-relaxed m-0">{pulseState.message}</p>
                     <p className="relative text-white/30 text-xs m-0">Klavyede merkezden başla: yön tuşları seçimi taşır, <strong className="text-white/50">Enter</strong> aktif kareyi oynatır.</p>
@@ -3286,6 +3999,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           ]}
                           onReplay={startRouteGame}
                           onBack={() => setActiveAppView("dashboard")}
+                          onSaveNote={async (note) => { setNoteForm({ date: getTodayString(), content: `[${GAME_LABELS[activeGame]}] ${note}` }); setNoteMode("free"); await handleAddNoteDB(); }}
+                          hasActiveClient={!!activeClient}
                         />
                       );
                     })()}
@@ -3309,6 +4024,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           {routeState.streak >= 3 && <span className="ml-1 text-xs lg:text-sm text-amber-400">🔥</span>}
                         </strong>
                       </div>
+                      {gameTimerKey > 0 && (
+                        <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                          <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold flex items-center gap-1"><Timer size={8} /> Süre</p>
+                          <strong className="text-white text-xl lg:text-2xl font-extrabold tabular-nums leading-none">{Math.floor(gameElapsed / 60)}:{String(gameElapsed % 60).padStart(2, "0")}</strong>
+                        </div>
+                      )}
                     </div>
                     <p className="relative text-white/50 text-sm leading-relaxed m-0">{routeState.message}</p>
                     <div className="relative flex items-center gap-4">
@@ -3373,6 +4094,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           ]}
                           onReplay={startDifferenceGame}
                           onBack={() => setActiveAppView("dashboard")}
+                          onSaveNote={async (note) => { setNoteForm({ date: getTodayString(), content: `[${GAME_LABELS[activeGame]}] ${note}` }); setNoteMode("free"); await handleAddNoteDB(); }}
+                          hasActiveClient={!!activeClient}
                         />
                       );
                     })()}
@@ -3394,6 +4117,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           {lastFeedback && activeGame === "difference" ? (lastFeedback.correct ? "✓ Doğru" : "✗ Yanlış") : getPhaseLabel(differenceState.phase)}
                         </strong>
                       </div>
+                      {gameTimerKey > 0 && (
+                        <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                          <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold flex items-center gap-1"><Timer size={8} /> Süre</p>
+                          <strong className="text-white text-xl lg:text-2xl font-extrabold tabular-nums leading-none">{Math.floor(gameElapsed / 60)}:{String(gameElapsed % 60).padStart(2, "0")}</strong>
+                        </div>
+                      )}
                     </div>
                     <p className="relative text-white/50 text-sm leading-relaxed m-0">{differenceState.message}</p>
                     <p className="relative text-white/30 text-xs m-0">Aynı dizilim klavyede de çalışır; seçili kart parlak kontur ile gösterilir.</p>
@@ -3439,6 +4168,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           ]}
                           onReplay={startScanGame}
                           onBack={() => setActiveAppView("dashboard")}
+                          onSaveNote={async (note) => { setNoteForm({ date: getTodayString(), content: `[${GAME_LABELS[activeGame]}] ${note}` }); setNoteMode("free"); await handleAddNoteDB(); }}
+                          hasActiveClient={!!activeClient}
                         />
                       );
                     })()}
@@ -3460,6 +4191,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           {lastFeedback && activeGame === "scan" ? (lastFeedback.correct ? "✓ Bulundu!" : "✗ Yanlış") : (scanState.targetLabel || "Hazır")}
                         </strong>
                       </div>
+                      {gameTimerKey > 0 && (
+                        <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                          <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold flex items-center gap-1"><Timer size={8} /> Süre</p>
+                          <strong className="text-white text-xl lg:text-2xl font-extrabold tabular-nums leading-none">{Math.floor(gameElapsed / 60)}:{String(gameElapsed % 60).padStart(2, "0")}</strong>
+                        </div>
+                      )}
                     </div>
                     <p className="relative text-white/50 text-sm leading-relaxed m-0">{scanState.message}</p>
                     {/* Target highlight */}

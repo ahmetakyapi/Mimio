@@ -1,3 +1,45 @@
+// ── Note modes ──
+export type NoteMode = "free" | "soap";
+
+export interface SoapNoteContent {
+  s: string; // Subjektif
+  o: string; // Objektif
+  a: string; // Assessment
+  p: string; // Plan
+}
+
+// ── Client Goal ──
+export interface ClientGoal {
+  id: string;
+  clientId: string;
+  therapistId?: string;
+  title: string;
+  description?: string;
+  targetValue: number;
+  currentValue: number;
+  deadline?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ClientGoalCreatePayload {
+  clientId: string;
+  therapistId?: string;
+  title: string;
+  description?: string;
+  targetValue?: number;
+  deadline?: string;
+}
+
+export interface ClientGoalUpdatePayload {
+  goalId: string;
+  currentValue?: number;
+  title?: string;
+  description?: string;
+  targetValue?: number;
+  deadline?: string;
+}
+
 export const GAME_LABELS = {
   memory: "Sıra Hafızası",
   pairs: "Kart Eşle",
@@ -34,6 +76,8 @@ export interface ClientProfile {
   ageGroup: string;
   primaryGoal: string;
   supportLevel: string;
+  difficultyLevel?: string;
+  archivedAt?: string | null;
   source: ProfileSource;
 }
 
@@ -109,6 +153,7 @@ export interface ClientCreatePayload {
   ageGroup?: string;
   primaryGoal?: string;
   supportLevel?: string;
+  difficultyLevel?: string;
 }
 
 export function createEmptyRemoteScores(): Record<PlatformGameKey, RemoteScoreSummary> {
@@ -160,11 +205,14 @@ export interface SessionNote {
   date: string; // "2026-03-14"
   content: string;
   createdAt: string;
+  noteMode?: NoteMode;
+  soapContent?: SoapNoteContent;
 }
 
 export interface WeeklyPlanEntry {
   gameKey: PlatformGameKey;
   goal: string;
+  completed?: boolean;
 }
 
 export type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";

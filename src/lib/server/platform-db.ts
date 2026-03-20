@@ -4,10 +4,18 @@ import {
   GAME_LABELS,
   createEmptyRemoteScores,
   type ClientCreatePayload,
+  type ClientGoal,
+  type ClientGoalCreatePayload,
+  type ClientGoalUpdatePayload,
   type LoginPayload,
+  type NoteMode,
   type PlatformOverviewPayload,
   type SessionCreatePayload,
+  type SessionNote,
+  type SoapNoteContent,
   type TherapistCreatePayload,
+  type TherapistProfile,
+  type WeeklyPlan,
 } from "@/lib/platform-data";
 
 type SqlClient = ReturnType<typeof neon>;
@@ -59,6 +67,50 @@ const SCHEMA_QUERIES = [
   "CREATE INDEX IF NOT EXISTS session_runs_played_at_idx ON session_runs (played_at DESC)",
   "CREATE INDEX IF NOT EXISTS session_runs_therapist_name_idx ON session_runs (therapist_name, played_at DESC)",
   "CREATE INDEX IF NOT EXISTS session_runs_client_name_idx ON session_runs (client_name, played_at DESC)",
+
+  // ── client_notes ──
+  `CREATE TABLE IF NOT EXISTS client_notes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID NOT NULL,
+    therapist_id UUID,
+    date TEXT NOT NULL,
+    content TEXT NOT NULL,
+    note_mode TEXT NOT NULL DEFAULT 'free',
+    soap_content JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS client_notes_client_id_idx ON client_notes (client_id, created_at DESC)",
+
+  // ── weekly_plans ──
+  `CREATE TABLE IF NOT EXISTS weekly_plans (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID NOT NULL,
+    therapist_id UUID,
+    week_start_date TEXT NOT NULL,
+    days JSONB NOT NULL DEFAULT '{}'::jsonb,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(client_id, week_start_date)
+  )`,
+  "CREATE INDEX IF NOT EXISTS weekly_plans_lookup_idx ON weekly_plans (client_id, week_start_date)",
+
+  // ── client_goals ──
+  `CREATE TABLE IF NOT EXISTS client_goals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID NOT NULL,
+    therapist_id UUID,
+    title TEXT NOT NULL,
+    description TEXT,
+    target_value INTEGER NOT NULL DEFAULT 100,
+    current_value INTEGER NOT NULL DEFAULT 0,
+    deadline TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS client_goals_client_id_idx ON client_goals (client_id, created_at DESC)",
+
+  // ── New columns on existing tables ──
+  "ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS difficulty_level TEXT",
+  "ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ",
 ];
 
 function getSqlClient(): SqlClient | null {
@@ -158,8 +210,11 @@ export async function getPlatformOverviewFromDatabase(): Promise<PlatformOvervie
         display_name,
         COALESCE(age_group, '') AS age_group,
         COALESCE(primary_goal, '') AS primary_goal,
-        COALESCE(support_level, '') AS support_level
+        COALESCE(support_level, '') AS support_level,
+        COALESCE(difficulty_level, '') AS difficulty_level,
+        archived_at::text AS archived_at
       FROM client_profiles
+      WHERE archived_at IS NULL
       ORDER BY display_name ASC`
     )) as Array<{
       id: string;
@@ -167,6 +222,8 @@ export async function getPlatformOverviewFromDatabase(): Promise<PlatformOvervie
       age_group: string;
       primary_goal: string;
       support_level: string;
+      difficulty_level: string;
+      archived_at: string | null;
     }>;
 
     const recentRows = (await sql.query(
@@ -248,6 +305,8 @@ export async function getPlatformOverviewFromDatabase(): Promise<PlatformOvervie
         ageGroup: row.age_group,
         primaryGoal: row.primary_goal,
         supportLevel: row.support_level,
+        difficultyLevel: row.difficulty_level || undefined,
+        archivedAt: row.archived_at ?? null,
         source: "cloud",
       })),
       recentSessions: recentRows.map((row) => ({
@@ -363,21 +422,23 @@ export async function createClientProfile(payload: ClientCreatePayload) {
 
   try {
     const [row] = (await sql.query(
-      `INSERT INTO client_profiles (display_name, age_group, primary_goal, support_level)
-      VALUES ($1, $2, $3, $4)
+      `INSERT INTO client_profiles (display_name, age_group, primary_goal, support_level, difficulty_level)
+      VALUES ($1, $2, $3, $4, $5)
       ON CONFLICT (display_name)
-      DO UPDATE SET age_group = EXCLUDED.age_group, primary_goal = EXCLUDED.primary_goal, support_level = EXCLUDED.support_level, updated_at = NOW()
+      DO UPDATE SET age_group = EXCLUDED.age_group, primary_goal = EXCLUDED.primary_goal, support_level = EXCLUDED.support_level, difficulty_level = EXCLUDED.difficulty_level, updated_at = NOW()
       RETURNING
         id::text,
         display_name,
         COALESCE(age_group, '') AS age_group,
         COALESCE(primary_goal, '') AS primary_goal,
-        COALESCE(support_level, '') AS support_level`,
+        COALESCE(support_level, '') AS support_level,
+        COALESCE(difficulty_level, '') AS difficulty_level`,
       [
         payload.displayName.trim(),
         payload.ageGroup?.trim() ?? "",
         payload.primaryGoal?.trim() ?? "",
         payload.supportLevel?.trim() ?? "",
+        payload.difficultyLevel?.trim() ?? "",
       ]
     )) as Array<{
       id: string;
@@ -385,6 +446,7 @@ export async function createClientProfile(payload: ClientCreatePayload) {
       age_group: string;
       primary_goal: string;
       support_level: string;
+      difficulty_level: string;
     }>;
 
     return {
@@ -395,6 +457,7 @@ export async function createClientProfile(payload: ClientCreatePayload) {
         ageGroup: row.age_group,
         primaryGoal: row.primary_goal,
         supportLevel: row.support_level,
+        difficultyLevel: row.difficulty_level || undefined,
         source: "cloud" as const,
       },
     };
@@ -481,6 +544,193 @@ export async function insertSessionRun(payload: SessionCreatePayload) {
 
     throw error;
   }
+}
+
+// ── Client Notes ──
+
+export async function getClientNotes(clientId: string): Promise<SessionNote[]> {
+  const sql = getSqlClient();
+  if (!sql) return [];
+  try {
+    const rows = (await sql.query(
+      `SELECT id::text, client_id::text AS "clientId", COALESCE(therapist_id::text, '') AS "therapistId",
+        date, content, note_mode AS "noteMode", soap_content AS "soapContent", created_at::text AS "createdAt"
+      FROM client_notes WHERE client_id = $1 ORDER BY created_at DESC`,
+      [clientId]
+    )) as Array<{ id: string; clientId: string; therapistId: string; date: string; content: string; noteMode: NoteMode; soapContent: SoapNoteContent | null; createdAt: string }>;
+    return rows.map((r) => ({ ...r, soapContent: r.soapContent ?? undefined }));
+  } catch { return []; }
+}
+
+export async function createClientNote(payload: {
+  clientId: string;
+  therapistId?: string;
+  date: string;
+  content: string;
+  noteMode?: NoteMode;
+  soapContent?: SoapNoteContent;
+}): Promise<SessionNote | null> {
+  const sql = getSqlClient();
+  if (!sql) return null;
+  try {
+    const [row] = (await sql.query(
+      `INSERT INTO client_notes (client_id, therapist_id, date, content, note_mode, soap_content)
+      VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+      RETURNING id::text, client_id::text AS "clientId", COALESCE(therapist_id::text,'') AS "therapistId",
+        date, content, note_mode AS "noteMode", soap_content AS "soapContent", created_at::text AS "createdAt"`,
+      [
+        payload.clientId,
+        payload.therapistId ?? null,
+        payload.date,
+        payload.content,
+        payload.noteMode ?? "free",
+        payload.soapContent ? JSON.stringify(payload.soapContent) : null,
+      ]
+    )) as Array<{ id: string; clientId: string; therapistId: string; date: string; content: string; noteMode: NoteMode; soapContent: SoapNoteContent | null; createdAt: string }>;
+    return { ...row, soapContent: row.soapContent ?? undefined };
+  } catch { return null; }
+}
+
+export async function deleteClientNote(noteId: string): Promise<void> {
+  const sql = getSqlClient();
+  if (!sql) return;
+  try { await sql.query(`DELETE FROM client_notes WHERE id = $1`, [noteId]); } catch { /* ignore */ }
+}
+
+// ── Weekly Plans ──
+
+export async function getWeeklyPlan(clientId: string, weekStartDate: string): Promise<WeeklyPlan | null> {
+  const sql = getSqlClient();
+  if (!sql) return null;
+  try {
+    const rows = (await sql.query(
+      `SELECT id::text, client_id::text AS "clientId", COALESCE(therapist_id::text,'') AS "therapistId",
+        week_start_date AS "weekStartDate", days, updated_at::text AS "updatedAt"
+      FROM weekly_plans WHERE client_id = $1 AND week_start_date = $2 LIMIT 1`,
+      [clientId, weekStartDate]
+    )) as Array<{ id: string; clientId: string; therapistId: string; weekStartDate: string; days: WeeklyPlan["days"]; updatedAt: string }>;
+    if (rows.length === 0) return null;
+    return rows[0];
+  } catch { return null; }
+}
+
+export async function saveWeeklyPlan(payload: {
+  clientId: string;
+  therapistId?: string;
+  weekStartDate: string;
+  days: WeeklyPlan["days"];
+}): Promise<WeeklyPlan | null> {
+  const sql = getSqlClient();
+  if (!sql) return null;
+  try {
+    const [row] = (await sql.query(
+      `INSERT INTO weekly_plans (client_id, therapist_id, week_start_date, days, updated_at)
+      VALUES ($1, $2, $3, $4::jsonb, NOW())
+      ON CONFLICT (client_id, week_start_date)
+      DO UPDATE SET days = EXCLUDED.days, updated_at = NOW()
+      RETURNING id::text, client_id::text AS "clientId", COALESCE(therapist_id::text,'') AS "therapistId",
+        week_start_date AS "weekStartDate", days, updated_at::text AS "updatedAt"`,
+      [payload.clientId, payload.therapistId ?? null, payload.weekStartDate, JSON.stringify(payload.days)]
+    )) as Array<{ id: string; clientId: string; therapistId: string; weekStartDate: string; days: WeeklyPlan["days"]; updatedAt: string }>;
+    return row;
+  } catch { return null; }
+}
+
+// ── Client Goals ──
+
+export async function getClientGoals(clientId: string): Promise<ClientGoal[]> {
+  const sql = getSqlClient();
+  if (!sql) return [];
+  try {
+    const rows = (await sql.query(
+      `SELECT id::text, client_id::text AS "clientId", COALESCE(therapist_id::text,'') AS "therapistId",
+        title, COALESCE(description,'') AS description, target_value AS "targetValue",
+        current_value AS "currentValue", COALESCE(deadline,'') AS deadline,
+        created_at::text AS "createdAt", updated_at::text AS "updatedAt"
+      FROM client_goals WHERE client_id = $1 ORDER BY created_at ASC`,
+      [clientId]
+    )) as ClientGoal[];
+    return rows;
+  } catch { return []; }
+}
+
+export async function createClientGoal(payload: ClientGoalCreatePayload): Promise<ClientGoal | null> {
+  const sql = getSqlClient();
+  if (!sql) return null;
+  try {
+    const [row] = (await sql.query(
+      `INSERT INTO client_goals (client_id, therapist_id, title, description, target_value, deadline)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id::text, client_id::text AS "clientId", COALESCE(therapist_id::text,'') AS "therapistId",
+        title, COALESCE(description,'') AS description, target_value AS "targetValue",
+        current_value AS "currentValue", COALESCE(deadline,'') AS deadline,
+        created_at::text AS "createdAt", updated_at::text AS "updatedAt"`,
+      [payload.clientId, payload.therapistId ?? null, payload.title.trim(), payload.description?.trim() ?? null, payload.targetValue ?? 100, payload.deadline?.trim() || null]
+    )) as ClientGoal[];
+    return row;
+  } catch { return null; }
+}
+
+export async function updateClientGoal(payload: ClientGoalUpdatePayload): Promise<ClientGoal | null> {
+  const sql = getSqlClient();
+  if (!sql) return null;
+  try {
+    const sets: string[] = ["updated_at = NOW()"];
+    const values: unknown[] = [];
+    let idx = 1;
+    if (payload.currentValue !== undefined) { sets.push(`current_value = $${idx++}`); values.push(payload.currentValue); }
+    if (payload.title !== undefined) { sets.push(`title = $${idx++}`); values.push(payload.title.trim()); }
+    if (payload.description !== undefined) { sets.push(`description = $${idx++}`); values.push(payload.description.trim() || null); }
+    if (payload.targetValue !== undefined) { sets.push(`target_value = $${idx++}`); values.push(payload.targetValue); }
+    if (payload.deadline !== undefined) { sets.push(`deadline = $${idx++}`); values.push(payload.deadline.trim() || null); }
+    values.push(payload.goalId);
+    const [row] = (await sql.query(
+      `UPDATE client_goals SET ${sets.join(", ")} WHERE id = $${idx}
+      RETURNING id::text, client_id::text AS "clientId", COALESCE(therapist_id::text,'') AS "therapistId",
+        title, COALESCE(description,'') AS description, target_value AS "targetValue",
+        current_value AS "currentValue", COALESCE(deadline,'') AS deadline,
+        created_at::text AS "createdAt", updated_at::text AS "updatedAt"`,
+      values
+    )) as ClientGoal[];
+    return row ?? null;
+  } catch { return null; }
+}
+
+export async function deleteClientGoal(goalId: string): Promise<void> {
+  const sql = getSqlClient();
+  if (!sql) return;
+  try { await sql.query(`DELETE FROM client_goals WHERE id = $1`, [goalId]); } catch { /* ignore */ }
+}
+
+// ── Archive Client ──
+
+export async function archiveClient(clientId: string): Promise<void> {
+  const sql = getSqlClient();
+  if (!sql) return;
+  try { await sql.query(`UPDATE client_profiles SET archived_at = NOW() WHERE id = $1`, [clientId]); } catch { /* ignore */ }
+}
+
+// ── Update Therapist Profile ──
+
+export async function updateTherapistProfile(therapistId: string, payload: { displayName?: string; clinicName?: string; specialty?: string }): Promise<TherapistProfile | null> {
+  const sql = getSqlClient();
+  if (!sql) return null;
+  try {
+    const sets: string[] = ["updated_at = NOW()"];
+    const values: unknown[] = [];
+    let idx = 1;
+    if (payload.displayName?.trim()) { sets.push(`display_name = $${idx++}`); values.push(payload.displayName.trim()); }
+    if (payload.clinicName !== undefined) { sets.push(`clinic_name = $${idx++}`); values.push(payload.clinicName.trim()); }
+    if (payload.specialty !== undefined) { sets.push(`specialty = $${idx++}`); values.push(payload.specialty.trim()); }
+    values.push(therapistId);
+    const [row] = (await sql.query(
+      `UPDATE therapist_profiles SET ${sets.join(", ")} WHERE id = $${idx}
+      RETURNING id::text, COALESCE(username,'') AS username, display_name, COALESCE(clinic_name,'') AS clinic_name, COALESCE(specialty,'') AS specialty`,
+      values
+    )) as Array<{ id: string; username: string; display_name: string; clinic_name: string; specialty: string }>;
+    if (!row) return null;
+    return { id: row.id, username: row.username, displayName: row.display_name, clinicName: row.clinic_name, specialty: row.specialty, source: "cloud" };
+  } catch { return null; }
 }
 
 export async function authenticateTherapist(payload: LoginPayload) {
