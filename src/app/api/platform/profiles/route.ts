@@ -7,6 +7,7 @@ import {
   createTherapistProfile,
   getPlatformOverviewFromDatabase,
   updateTherapistProfile,
+  updateClientProfile,
 } from "@/lib/server/platform-db";
 
 function normalizeText(value: unknown) {
@@ -19,6 +20,7 @@ function parsePayload(body: unknown):
   | { kind: "login"; payload: LoginPayload }
   | { kind: "archive-client"; payload: { clientId: string } }
   | { kind: "update-therapist"; payload: { therapistId: string; displayName?: string; clinicName?: string; specialty?: string } }
+  | { kind: "update-client"; payload: { clientId: string; difficultyLevel?: string; displayName?: string; ageGroup?: string; primaryGoal?: string; supportLevel?: string } }
   | null {
   if (!body || typeof body !== "object") {
     return null;
@@ -68,6 +70,22 @@ function parsePayload(body: unknown):
     const clientId = normalizeText(candidate.clientId);
     if (!clientId) return null;
     return { kind, payload: { clientId } } as { kind: "archive-client"; payload: { clientId: string } };
+  }
+
+  if (kind === "update-client") {
+    const clientId = normalizeText(candidate.clientId);
+    if (!clientId) return null;
+    return {
+      kind,
+      payload: {
+        clientId,
+        difficultyLevel: typeof candidate.difficultyLevel === "string" ? candidate.difficultyLevel : undefined,
+        displayName: typeof candidate.displayName === "string" ? normalizeText(candidate.displayName) : undefined,
+        ageGroup: typeof candidate.ageGroup === "string" ? candidate.ageGroup : undefined,
+        primaryGoal: typeof candidate.primaryGoal === "string" ? candidate.primaryGoal : undefined,
+        supportLevel: typeof candidate.supportLevel === "string" ? candidate.supportLevel : undefined,
+      },
+    } as { kind: "update-client"; payload: { clientId: string; difficultyLevel?: string } };
   }
 
   if (kind === "update-therapist") {
@@ -178,6 +196,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
+  if (parsed.kind === "update-client") {
+    const { clientId, ...fields } = parsed.payload as { clientId: string; difficultyLevel?: string; displayName?: string; ageGroup?: string; primaryGoal?: string; supportLevel?: string };
+    const result = await updateClientProfile(clientId, fields);
+    if (!result) return NextResponse.json({ ok: false, message: "Danışan güncellenemedi." }, { status: 503 });
+    return NextResponse.json({ ok: true, result });
+  }
+
   if (parsed.kind === "update-therapist") {
     const { therapistId, ...fields } = parsed.payload as { therapistId: string; displayName?: string; clinicName?: string; specialty?: string };
     const profile = await updateTherapistProfile(therapistId, fields);
@@ -185,8 +210,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, profile });
   }
 
-  return handleProfileCreate(
-    parsed.kind as "therapist" | "client",
-    parsed.payload as TherapistCreatePayload | ClientCreatePayload
-  );
+  return handleProfileCreate(parsed.kind, parsed.payload);
 }

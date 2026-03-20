@@ -475,8 +475,10 @@ interface GameResultOverlayProps {
   readonly onBack: () => void;
   readonly onSaveNote?: (note: string) => void;
   readonly hasActiveClient?: boolean;
+  readonly durationSeconds?: number;
+  readonly sessionAvg?: number;
 }
-function GameResultOverlay({ accent, gradFrom, gradTo, gameName, score, bestScore, stars, stats, onReplay, onBack, onSaveNote, hasActiveClient }: GameResultOverlayProps) {
+function GameResultOverlay({ accent, gradFrom, gradTo, gameName, score, bestScore, stars, stats, onReplay, onBack, onSaveNote, hasActiveClient, durationSeconds, sessionAvg }: GameResultOverlayProps) {
   const [noteText, setNoteText] = useState("");
   const [noteSaved, setNoteSaved] = useState(false);
   function handleSaveNote() {
@@ -543,6 +545,32 @@ function GameResultOverlay({ accent, gradFrom, gradTo, gameName, score, bestScor
             </div>
           ))}
         </div>
+
+        {/* Replay summary strip */}
+        {(durationSeconds || sessionAvg) && (
+          <div className="w-full flex gap-2">
+            {durationSeconds && (
+              <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                <Timer size={11} style={{ color: accent, opacity: 0.8 }} />
+                <div>
+                  <p className="text-white/35 text-[9px] uppercase tracking-wider font-bold m-0">Süre</p>
+                  <p className="text-white/70 text-xs font-bold m-0">{Math.floor(durationSeconds / 60)}:{String(durationSeconds % 60).padStart(2, "0")}</p>
+                </div>
+              </div>
+            )}
+            {sessionAvg !== undefined && sessionAvg > 0 && (
+              <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                <TrendingUp size={11} style={{ color: score >= sessionAvg ? "#10b981" : "#f87171", opacity: 0.8 }} />
+                <div>
+                  <p className="text-white/35 text-[9px] uppercase tracking-wider font-bold m-0">Geçmiş Ort.</p>
+                  <p className="text-xs font-bold m-0" style={{ color: score >= sessionAvg ? "#10b981" : "#f87171" }}>
+                    {score >= sessionAvg ? "↑" : "↓"} {Math.abs(score - sessionAvg)}p fark
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Action buttons */}
         <div className="result-btn-in w-full flex gap-3">
@@ -866,6 +894,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const [gameTimerKey, setGameTimerKey] = useState(0);
 
   // ── New feature states ──
+  const [difficultyPrompt, setDifficultyPrompt] = useState<{ clientId: string; clientName: string; suggestedLevel: string } | null>(null);
   const [clientSearch, setClientSearch] = useState("");
   const [clientFilterAge, setClientFilterAge] = useState("");
   const [clientFilterSupport, setClientFilterSupport] = useState("");
@@ -1344,6 +1373,20 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     setShowAddClient(false);
   }
 
+  // ── Update client difficulty ──
+  async function handleUpdateClientDifficulty(clientId: string, difficultyLevel: string) {
+    try {
+      await fetch("/api/platform/profiles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "update-client", clientId, difficultyLevel }),
+      });
+      await loadPlatformOverview();
+      showToast(`Zorluk düzeyi "${difficultyLevel}" olarak güncellendi`, "success");
+    } catch { /* ignore */ }
+    setDifficultyPrompt(null);
+  }
+
   // ── CSV export ──
   function handleExportClientsCsv() {
     const headers = ["Ad", "Yaş Grubu", "Birincil Hedef", "Destek Düzeyi", "Zorluk Düzeyi", "Seans Sayısı", "Son Aktif"];
@@ -1596,10 +1639,14 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       const threshold = ADAPTIVE_THRESHOLDS[game];
       const recentForGame = platformOverview.recentSessions
         .filter(s => s.clientId === activeClient.id && s.gameKey === game)
-        .slice(-2); // last 2 in history + this one = 3 total
+        .slice(-2);
       const allHigh = recentForGame.length >= 2 && recentForGame.every(s => s.score >= threshold) && nextScore >= threshold;
       if (allHigh) {
-        setTimeout(() => showToast(`📈 ${activeClient.displayName} son 3 seansta yüksek performans — zorluk artırılabilir!`, "info"), 2500);
+        const currentLevel = getDifficultyLevel(activeClient.difficultyLevel);
+        if (currentLevel < 3) {
+          const nextLabel = DIFFICULTY_LABELS[(currentLevel + 1) as 1 | 2 | 3];
+          setTimeout(() => setDifficultyPrompt({ clientId: activeClient.id, clientName: activeClient.displayName, suggestedLevel: nextLabel }), 2200);
+        }
       }
     }
     void syncScoreToBackend(game, nextScore, metadata, sessionEntry);
@@ -2503,6 +2550,56 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               </div>
             </div>
 
+            {/* ── Weekly comparison widget ── */}
+            {effectiveSessionCount > 0 && (() => {
+              const now = Date.now();
+              const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+              const thisWeekSessions = platformOverview.recentSessions.filter(s => now - new Date(s.playedAt).getTime() < oneWeekMs);
+              const lastWeekSessions = platformOverview.recentSessions.filter(s => {
+                const age = now - new Date(s.playedAt).getTime();
+                return age >= oneWeekMs && age < 2 * oneWeekMs;
+              });
+              const thisAvg = thisWeekSessions.length > 0 ? Math.round(thisWeekSessions.reduce((a, s) => a + s.score, 0) / thisWeekSessions.length) : 0;
+              const lastAvg = lastWeekSessions.length > 0 ? Math.round(lastWeekSessions.reduce((a, s) => a + s.score, 0) / lastWeekSessions.length) : 0;
+              const countDelta = thisWeekSessions.length - lastWeekSessions.length;
+              const avgDelta = thisAvg - lastAvg;
+              const cols = [
+                { label: "Bu Hafta Seans", this: thisWeekSessions.length, last: lastWeekSessions.length, delta: countDelta, unit: "seans", color: "#818cf8" },
+                { label: "Bu Hafta Ort. Skor", this: thisAvg, last: lastAvg, delta: avgDelta, unit: "puan", color: "#34d399" },
+              ];
+              return (
+                <div className="relative overflow-hidden rounded-2xl border" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}>
+                  <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg,#818cf8,#34d399,transparent)" }} />
+                  <div className="px-4 py-3 flex items-center justify-between border-b" style={{ borderColor: "var(--color-line)" }}>
+                    <div className="flex items-center gap-2">
+                      <CalendarDays size={13} style={{ color: "#818cf8" }} />
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-(--color-text-muted)">Haftalık Karşılaştırma</span>
+                    </div>
+                    <span className="text-[10px] text-(--color-text-muted)">Bu hafta vs geçen hafta</span>
+                  </div>
+                  <div className="grid grid-cols-2 divide-x" style={{ borderColor: "var(--color-line)" }}>
+                    {cols.map(col => (
+                      <div key={col.label} className="p-4 space-y-1">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-(--color-text-muted) m-0">{col.label}</p>
+                        <div className="flex items-end gap-2">
+                          <strong className="text-2xl font-extrabold tabular-nums" style={{ color: col.color }}>{col.this}</strong>
+                          <div className="flex items-center gap-1 pb-0.5">
+                            {col.delta !== 0 && (
+                              <span className="text-[10px] font-bold" style={{ color: col.delta > 0 ? "#10b981" : "#ef4444" }}>
+                                {col.delta > 0 ? "▲" : "▼"} {Math.abs(col.delta)} {col.unit}
+                              </span>
+                            )}
+                            {col.delta === 0 && col.last > 0 && <span className="text-[10px] text-(--color-text-muted)">→ aynı</span>}
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-(--color-text-muted) m-0">Geçen hafta: {col.last} {col.unit}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Recent Sessions */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -3097,6 +3194,30 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     ))}
                   </div>
 
+                  {/* ── Achievement badges ── */}
+                  {(() => {
+                    const badges: { emoji: string; label: string; color: string }[] = [];
+                    if (clientSessions.length >= 1)  badges.push({ emoji: "🎯", label: "İlk Seans", color: "#818cf8" });
+                    if (clientSessions.length >= 5)  badges.push({ emoji: "🔥", label: "5 Seans", color: "#f59e0b" });
+                    if (clientSessions.length >= 10) badges.push({ emoji: "⭐", label: "10 Seans", color: "#fbbf24" });
+                    if (clientSessions.length >= 25) badges.push({ emoji: "🏆", label: "25 Seans", color: "#34d399" });
+                    if (bestScore >= 10)  badges.push({ emoji: "💡", label: "Yüksek Skor", color: "#38bdf8" });
+                    if (bestScore >= 20)  badges.push({ emoji: "🚀", label: "Üst Düzey", color: "#a78bfa" });
+                    if (clientGoals.some(g => g.currentValue >= g.targetValue)) badges.push({ emoji: "✅", label: "Hedef Tamamlandı", color: "#10b981" });
+                    if (clientNotes.length >= 5) badges.push({ emoji: "📋", label: "Notlu Terapist", color: "#ec4899" });
+                    if (badges.length === 0) return null;
+                    return (
+                      <div className="flex flex-wrap gap-1.5 mb-4">
+                        {badges.map(b => (
+                          <span key={b.label} title={b.label} className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full border"
+                            style={{ background: `${b.color}12`, color: b.color, borderColor: `${b.color}30` }}>
+                            {b.emoji} {b.label}
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  })()}
+
                   <div className="flex gap-2">
                     <button type="button" className="flex-1 flex items-center justify-center gap-2 font-bold text-sm px-5 py-2.5 lg:py-3 rounded-xl lg:rounded-2xl text-white cursor-pointer border-none transition-all hover:opacity-90 active:scale-[0.98]" style={{ background: `linear-gradient(135deg, ${palette.color}, ${palette.border})`, boxShadow: `0 6px 20px ${palette.glow}` }} onClick={() => { setActiveClientId(selectedClient.id); setActiveAppView("games"); }}>
                       <Gamepad2 size={15} /> Bu Danışanla Oyna
@@ -3186,10 +3307,26 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                               a: "Bu sonuç terapötik amaca ulaşmada ne gösteriyor?",
                               p: "Sonraki seans önerileri, zorluk ayarı veya ev ödevi",
                             };
+                            const snippets: Record<keyof SoapNoteContent, string[]> = {
+                              s: ["Yoruldum ama eğlendim", "Çok beğendim, tekrar oynayalım", "Zor geldi", "Dikkatim dağıldı", "Heyecanlandım"],
+                              o: ["Hedef %100 tamamlandı", "Hata sayısı azaldı", "Süre kısaldı", "İlk denemede başarılı", "3 tekrar gerekti"],
+                              a: ["Dikkat süresi gelişiyor", "Motor koordinasyon iyileşiyor", "Görsel tarama hızlandı", "Zorluk artırılabilir", "Mevcut seviye uygun"],
+                              p: ["Sonraki seans zorluk artır", "Aynı aktiviteye devam", "Ev ödevi: günlük 10 dk", "Aile bilgilendirildi", "Bir sonraki seans planlandı"],
+                            };
                             return (
-                              <div key={field} className="space-y-0.5">
+                              <div key={field} className="space-y-1">
                                 <p className="text-[10px] font-extrabold uppercase tracking-wider m-0" style={{ color: palette.color }}>{labels[field]}</p>
                                 <textarea value={soapDraft[field]} onChange={(e) => setSoapDraft((c) => ({ ...c, [field]: e.target.value }))} placeholder={hints[field]} className={`${inputCls} resize-none`} rows={2} />
+                                <div className="flex flex-wrap gap-1">
+                                  {snippets[field].map(s => (
+                                    <button key={s} type="button"
+                                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer hover:opacity-80 transition-opacity"
+                                      style={{ background: "var(--color-surface-elevated)", borderColor: "var(--color-line)", color: "var(--color-text-muted)" }}
+                                      onClick={() => setSoapDraft(d => ({ ...d, [field]: d[field] ? `${d[field]}. ${s}` : s }))}>
+                                      + {s}
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
                             );
                           })}
@@ -3209,19 +3346,46 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       <p className="text-(--color-text-muted) text-xs mt-1 m-0">İlk seans notunu eklemek için yukarıdaki butona tıklayın.</p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
-                      {clientNotes.map((note) => (
-                        <div key={note.id} className="rounded-2xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: isLight ? palette.border : "var(--color-line)" }}>
-                          <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${palette.color}, ${palette.border})` }} />
-                          <div className="px-5 py-4">
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>{formatDate(note.date)}</span>
-                              <button type="button" className="text-xs font-bold px-2.5 py-1.5 rounded-xl border-none cursor-pointer transition-all hover:opacity-70 active:scale-95" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }} onClick={() => { void handleDeleteNoteDB(note.id); }}>Sil</button>
+                    <div className="relative">
+                      {/* Timeline vertical line */}
+                      <div className="absolute left-5 top-0 bottom-0 w-px" style={{ background: "var(--color-line)" }} />
+                      <div className="space-y-3">
+                        {clientNotes.map((note) => {
+                          // Find sessions on the same date
+                          const sameDaySessions = clientSessions.filter(s => s.playedAt?.slice(0, 10) === note.date);
+                          const noteTypeLabel = note.noteMode === "soap" ? "SOAP" : null;
+                          return (
+                            <div key={note.id} className="flex gap-4">
+                              {/* Timeline dot */}
+                              <div className="relative shrink-0 mt-3.5">
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center z-10 relative" style={{ background: palette.bg, border: `1px solid ${palette.border}` }}>
+                                  <FileText size={14} style={{ color: palette.color }} />
+                                </div>
+                              </div>
+                              <div className="flex-1 min-w-0 rounded-2xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: isLight ? palette.border : "var(--color-line)" }}>
+                                <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${palette.color}, ${palette.border})` }} />
+                                <div className="px-4 py-3.5">
+                                  <div className="flex items-center justify-between mb-2 gap-2">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>{formatDate(note.date)}</span>
+                                      {noteTypeLabel && (
+                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(99,102,241,0.1)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.2)" }}>{noteTypeLabel}</span>
+                                      )}
+                                      {sameDaySessions.length > 0 && sameDaySessions.map(s => (
+                                        <span key={s.id} className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(52,211,153,0.08)", color: "#34d399", border: "1px solid rgba(52,211,153,0.2)" }}>
+                                          {s.gameLabel} · {s.score}p{s.durationSeconds ? ` · ${Math.round(s.durationSeconds / 60)}dk` : ""}
+                                        </span>
+                                      ))}
+                                    </div>
+                                    <button type="button" className="text-[10px] font-bold px-2 py-1 rounded-lg border-none cursor-pointer shrink-0 hover:opacity-70 transition-opacity" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }} onClick={() => { void handleDeleteNoteDB(note.id); }}>Sil</button>
+                                  </div>
+                                  <p className="text-(--color-text-body) text-sm m-0 leading-relaxed">{note.content}</p>
+                                </div>
+                              </div>
                             </div>
-                            <p className="text-(--color-text-body) text-sm m-0 leading-relaxed">{note.content}</p>
-                          </div>
-                        </div>
-                      ))}
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -3961,12 +4125,35 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         {therapistOptions.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}</option>)}
                       </select>
                     </label>
-                    <label className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-1">
                       <span className="text-[10px] text-(--color-text-muted) font-extrabold uppercase tracking-widest">Danışan</span>
+                      {/* Quick client avatar row */}
+                      {clientOptions.length > 1 && (
+                        <div className="flex flex-wrap gap-1.5 mb-1">
+                          {clientOptions.slice(0, 6).map((c, i) => {
+                            const isActive = c.id === (activeClient?.id ?? "");
+                            const colors = ["#818cf8","#34d399","#f59e0b","#38bdf8","#a78bfa","#ec4899"];
+                            const col = colors[i % colors.length];
+                            return (
+                              <button key={c.id} type="button" title={c.displayName}
+                                className="w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-extrabold text-white cursor-pointer border-2 transition-all hover:scale-110"
+                                style={{ background: isActive ? col : `${col}30`, borderColor: isActive ? col : "transparent", color: isActive ? "#fff" : col }}
+                                onClick={() => setActiveClientId(c.id)}>
+                                {c.displayName[0]?.toUpperCase()}
+                              </button>
+                            );
+                          })}
+                          {clientOptions.length > 6 && (
+                            <span className="w-8 h-8 rounded-xl flex items-center justify-center text-[9px] font-bold" style={{ background: "var(--color-surface-elevated)", color: "var(--color-text-muted)" }}>
+                              +{clientOptions.length - 6}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       <select value={activeClient?.id ?? ""} onChange={(event) => setActiveClientId(event.target.value)} className={inputCls}>
                         {clientOptions.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}</option>)}
                       </select>
-                    </label>
+                    </div>
                   </div>
 
                   {/* CTA */}
@@ -4135,6 +4322,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           onBack={() => setActiveAppView("dashboard")}
                           onSaveNote={async (note) => { setNoteForm({ date: getTodayString(), content: `[${GAME_LABELS[activeGame]}] ${note}` }); setNoteMode("free"); await handleAddNoteDB(); }}
                           hasActiveClient={!!activeClient}
+                          durationSeconds={Math.max(30, Math.round((Date.now() - sessionStartedAt) / 1000))}
+                          sessionAvg={(() => { const gs = platformOverview.recentSessions.filter(s => s.gameKey === activeGame && s.clientId === (activeClient?.id ?? "")); return gs.length > 0 ? Math.round(gs.reduce((a, s) => a + s.score, 0) / gs.length) : 0; })()}
                         />
                       );
                     })()}
@@ -4212,6 +4401,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           onBack={() => setActiveAppView("dashboard")}
                           onSaveNote={async (note) => { setNoteForm({ date: getTodayString(), content: `[${GAME_LABELS[activeGame]}] ${note}` }); setNoteMode("free"); await handleAddNoteDB(); }}
                           hasActiveClient={!!activeClient}
+                          durationSeconds={Math.max(30, Math.round((Date.now() - sessionStartedAt) / 1000))}
+                          sessionAvg={(() => { const gs = platformOverview.recentSessions.filter(s => s.gameKey === activeGame && s.clientId === (activeClient?.id ?? "")); return gs.length > 0 ? Math.round(gs.reduce((a, s) => a + s.score, 0) / gs.length) : 0; })()}
                         />
                       );
                     })()}
@@ -4286,6 +4477,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           onBack={() => setActiveAppView("dashboard")}
                           onSaveNote={async (note) => { setNoteForm({ date: getTodayString(), content: `[${GAME_LABELS[activeGame]}] ${note}` }); setNoteMode("free"); await handleAddNoteDB(); }}
                           hasActiveClient={!!activeClient}
+                          durationSeconds={Math.max(30, Math.round((Date.now() - sessionStartedAt) / 1000))}
+                          sessionAvg={(() => { const gs = platformOverview.recentSessions.filter(s => s.gameKey === activeGame && s.clientId === (activeClient?.id ?? "")); return gs.length > 0 ? Math.round(gs.reduce((a, s) => a + s.score, 0) / gs.length) : 0; })()}
                         />
                       );
                     })()}
@@ -4366,6 +4559,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           onBack={() => setActiveAppView("dashboard")}
                           onSaveNote={async (note) => { setNoteForm({ date: getTodayString(), content: `[${GAME_LABELS[activeGame]}] ${note}` }); setNoteMode("free"); await handleAddNoteDB(); }}
                           hasActiveClient={!!activeClient}
+                          durationSeconds={Math.max(30, Math.round((Date.now() - sessionStartedAt) / 1000))}
+                          sessionAvg={(() => { const gs = platformOverview.recentSessions.filter(s => s.gameKey === activeGame && s.clientId === (activeClient?.id ?? "")); return gs.length > 0 ? Math.round(gs.reduce((a, s) => a + s.score, 0) / gs.length) : 0; })()}
                         />
                       );
                     })()}
@@ -4461,6 +4656,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           onBack={() => setActiveAppView("dashboard")}
                           onSaveNote={async (note) => { setNoteForm({ date: getTodayString(), content: `[${GAME_LABELS[activeGame]}] ${note}` }); setNoteMode("free"); await handleAddNoteDB(); }}
                           hasActiveClient={!!activeClient}
+                          durationSeconds={Math.max(30, Math.round((Date.now() - sessionStartedAt) / 1000))}
+                          sessionAvg={(() => { const gs = platformOverview.recentSessions.filter(s => s.gameKey === activeGame && s.clientId === (activeClient?.id ?? "")); return gs.length > 0 ? Math.round(gs.reduce((a, s) => a + s.score, 0) / gs.length) : 0; })()}
                         />
                       );
                     })()}
@@ -4535,6 +4732,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           onBack={() => setActiveAppView("dashboard")}
                           onSaveNote={async (note) => { setNoteForm({ date: getTodayString(), content: `[${GAME_LABELS[activeGame]}] ${note}` }); setNoteMode("free"); await handleAddNoteDB(); }}
                           hasActiveClient={!!activeClient}
+                          durationSeconds={Math.max(30, Math.round((Date.now() - sessionStartedAt) / 1000))}
+                          sessionAvg={(() => { const gs = platformOverview.recentSessions.filter(s => s.gameKey === activeGame && s.clientId === (activeClient?.id ?? "")); return gs.length > 0 ? Math.round(gs.reduce((a, s) => a + s.score, 0) / gs.length) : 0; })()}
                         />
                       );
                     })()}
@@ -6121,6 +6320,51 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         </div>
       </nav>
       <ToastContainer />
+
+      {/* ── Difficulty upgrade prompt ── */}
+      {difficultyPrompt && (
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4 sm:p-6" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
+          <div className="w-full max-w-sm rounded-3xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "rgba(99,102,241,0.35)", boxShadow: "0 0 60px rgba(99,102,241,0.2)" }}>
+            <div className="h-1 w-full" style={{ background: "linear-gradient(90deg,#6366f1,#8b5cf6,#06b6d4)" }} />
+            <div className="p-5 space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "rgba(99,102,241,0.15)" }}>
+                  <TrendingUp size={20} style={{ color: "#818cf8" }} />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-(--color-text-strong) m-0 mb-1">Zorluk Artışı Önerisi</h3>
+                  <p className="text-(--color-text-muted) text-sm m-0">
+                    <strong className="text-(--color-text-body)">{difficultyPrompt.clientName}</strong> son 3 seansta tutarlı yüksek performans gösterdi.
+                  </p>
+                </div>
+              </div>
+              <div className="rounded-2xl p-3.5 flex items-center gap-3" style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}>
+                <span className="text-2xl">📈</span>
+                <div>
+                  <p className="m-0 text-sm font-bold text-(--color-text-strong)">
+                    Seviyeyi <span style={{ color: "#818cf8" }}>{difficultyPrompt.suggestedLevel}</span>'a yükselt
+                  </p>
+                  <p className="m-0 text-xs text-(--color-text-muted)">Danışan profili güncellenecek, oyunlar buna göre ayarlanacak.</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button type="button"
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white border-none cursor-pointer hover:opacity-90 transition-opacity"
+                  style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}
+                  onClick={() => void handleUpdateClientDifficulty(difficultyPrompt.clientId, difficultyPrompt.suggestedLevel)}>
+                  Evet, güncelle
+                </button>
+                <button type="button"
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold border cursor-pointer hover:opacity-80 transition-opacity"
+                  style={{ background: "transparent", borderColor: "var(--color-line)", color: "var(--color-text-soft)" }}
+                  onClick={() => setDifficultyPrompt(null)}>
+                  Şimdi değil
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

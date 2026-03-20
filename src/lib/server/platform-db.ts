@@ -739,6 +739,35 @@ export async function updateTherapistProfile(therapistId: string, payload: { dis
   } catch { return null; }
 }
 
+// ── Update Client Profile ──
+
+export async function updateClientProfile(
+  clientId: string,
+  payload: { difficultyLevel?: string; displayName?: string; ageGroup?: string; primaryGoal?: string; supportLevel?: string }
+): Promise<{ id: string; difficultyLevel: string } | null> {
+  const sql = getSqlClient();
+  if (!sql) return null;
+  try {
+    const sets: string[] = ["updated_at = NOW()"];
+    const values: unknown[] = [];
+    let idx = 1;
+    if (payload.difficultyLevel !== undefined) { sets.push(`difficulty_level = $${idx++}`); values.push(payload.difficultyLevel); }
+    if (payload.displayName?.trim()) { sets.push(`display_name = $${idx++}`); values.push(payload.displayName.trim()); }
+    if (payload.ageGroup !== undefined) { sets.push(`age_group = $${idx++}`); values.push(payload.ageGroup); }
+    if (payload.primaryGoal !== undefined) { sets.push(`primary_goal = $${idx++}`); values.push(payload.primaryGoal); }
+    if (payload.supportLevel !== undefined) { sets.push(`support_level = $${idx++}`); values.push(payload.supportLevel); }
+    if (sets.length === 1) return null; // nothing to update
+    values.push(clientId);
+    const [row] = (await sql.query(
+      `UPDATE client_profiles SET ${sets.join(", ")} WHERE id = $${idx}
+       RETURNING id::text, COALESCE(difficulty_level,'') AS difficulty_level`,
+      values
+    )) as Array<{ id: string; difficulty_level: string }>;
+    if (!row) return null;
+    return { id: row.id, difficultyLevel: row.difficulty_level };
+  } catch { return null; }
+}
+
 export async function authenticateTherapist(payload: LoginPayload) {
   const sql = getSqlClient();
 
