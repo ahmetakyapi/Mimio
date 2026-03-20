@@ -111,6 +111,7 @@ const SCHEMA_QUERIES = [
   // ── New columns on existing tables ──
   "ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS difficulty_level TEXT",
   "ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ",
+  "ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}'",
 ];
 
 function getSqlClient(): SqlClient | null {
@@ -214,11 +215,12 @@ export async function getPlatformOverviewFromDatabase(): Promise<PlatformOvervie
         COALESCE(cp.support_level, '') AS support_level,
         COALESCE(cp.difficulty_level, '') AS difficulty_level,
         cp.archived_at::text AS archived_at,
-        MAX(sr.played_at)::text AS last_active_at
+        MAX(sr.played_at)::text AS last_active_at,
+        COALESCE(cp.tags, '{}') AS tags
       FROM client_profiles cp
       LEFT JOIN session_runs sr ON sr.client_id = cp.id
       WHERE cp.archived_at IS NULL
-      GROUP BY cp.id, cp.display_name, cp.age_group, cp.primary_goal, cp.support_level, cp.difficulty_level, cp.archived_at
+      GROUP BY cp.id, cp.display_name, cp.age_group, cp.primary_goal, cp.support_level, cp.difficulty_level, cp.archived_at, cp.tags
       ORDER BY cp.display_name ASC`
     )) as Array<{
       id: string;
@@ -229,6 +231,7 @@ export async function getPlatformOverviewFromDatabase(): Promise<PlatformOvervie
       difficulty_level: string;
       archived_at: string | null;
       last_active_at: string | null;
+      tags: string[];
     }>;
 
     const recentRows = (await sql.query(
@@ -313,6 +316,7 @@ export async function getPlatformOverviewFromDatabase(): Promise<PlatformOvervie
         difficultyLevel: row.difficulty_level || undefined,
         archivedAt: row.archived_at ?? null,
         lastActiveAt: row.last_active_at ?? null,
+        tags: Array.isArray(row.tags) ? row.tags : [],
         source: "cloud",
       })),
       recentSessions: recentRows.map((row) => ({
@@ -743,7 +747,7 @@ export async function updateTherapistProfile(therapistId: string, payload: { dis
 
 export async function updateClientProfile(
   clientId: string,
-  payload: { difficultyLevel?: string; displayName?: string; ageGroup?: string; primaryGoal?: string; supportLevel?: string }
+  payload: { difficultyLevel?: string; displayName?: string; ageGroup?: string; primaryGoal?: string; supportLevel?: string; tags?: string[] }
 ): Promise<{ id: string; difficultyLevel: string } | null> {
   const sql = getSqlClient();
   if (!sql) return null;
@@ -756,6 +760,7 @@ export async function updateClientProfile(
     if (payload.ageGroup !== undefined) { sets.push(`age_group = $${idx++}`); values.push(payload.ageGroup); }
     if (payload.primaryGoal !== undefined) { sets.push(`primary_goal = $${idx++}`); values.push(payload.primaryGoal); }
     if (payload.supportLevel !== undefined) { sets.push(`support_level = $${idx++}`); values.push(payload.supportLevel); }
+    if (payload.tags !== undefined) { sets.push(`tags = $${idx++}`); values.push(payload.tags); }
     if (sets.length === 1) return null; // nothing to update
     values.push(clientId);
     const [row] = (await sql.query(

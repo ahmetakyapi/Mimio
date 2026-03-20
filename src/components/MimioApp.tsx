@@ -7,7 +7,7 @@ import {
   Baby, Zap, Puzzle, PersonStanding, Briefcase, Handshake,
   Target, ClipboardList, Home, Tag, FlaskConical, Lightbulb, BookOpen, BarChart3, Search, RefreshCw, Map, CalendarDays, TrendingUp, Grid3X3,
   Bell, FileText, Award, Activity, ChevronRight, Star, Flame, Trophy, ArrowUpRight, ArrowDownRight,
-  Plus, Check, Archive, Edit2, Timer, X, Download, Upload,
+  Plus, Check, Archive, Edit2, Timer, X, Download, Upload, CreditCard,
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
@@ -822,7 +822,7 @@ interface MimioAppProps {
 }
 
 export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps = {}) {
-  const { theme, toggle: toggleTheme } = useTheme();
+  const { theme, toggle: toggleTheme, setTheme } = useTheme();
   // ── New multi-screen state ──
   const [activeAppView, setActiveAppView] = useState<AppView>(initialAppView);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
@@ -835,6 +835,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const [showCsvImport, setShowCsvImport] = useState(false);
   const [csvImportText, setCsvImportText] = useState("");
   const [csvImportError, setCsvImportError] = useState("");
+  const [noteSearch, setNoteSearch] = useState("");
+  const [noteFilterFrom, setNoteFilterFrom] = useState("");
+  const [noteFilterTo, setNoteFilterTo] = useState("");
+  const [tagInput, setTagInput] = useState("");
+  const [showTagInput, setShowTagInput] = useState(false);
+  const [showShortcutGuide, setShowShortcutGuide] = useState(false);
   const [planEdits, setPlanEdits] = useState<Record<DayKey, WeeklyPlanEntry[]>>({ mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: [] });
   const [planWeekStart, setPlanWeekStart] = useState(getWeekStart());
   const [addClientDraft, setAddClientDraft] = useState<ClientDraftState>({ displayName: "", ageGroup: "", primaryGoal: "", supportLevel: "" });
@@ -895,6 +901,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
   // ── New feature states ──
   const [difficultyPrompt, setDifficultyPrompt] = useState<{ clientId: string; clientName: string; suggestedLevel: string } | null>(null);
+  const [compareClientA, setCompareClientA] = useState("");
+  const [compareClientB, setCompareClientB] = useState("");
+  const [sessionWarningDismissed, setSessionWarningDismissed] = useState(false);
+  const [sessionWarnThreshold, setSessionWarnThreshold] = useState<number>(() => {
+    try { return Number(localStorage.getItem("mimio-session-warn-min") ?? "45"); } catch { return 45; }
+  });
   const [clientSearch, setClientSearch] = useState("");
   const [clientFilterAge, setClientFilterAge] = useState("");
   const [clientFilterSupport, setClientFilterSupport] = useState("");
@@ -1356,6 +1368,77 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     if (win) { win.document.write(html); win.document.close(); }
   }
 
+  function handlePrintSummaryCard(client: ClientProfile) {
+    const sessions = platformOverview.recentSessions.filter(s => s.clientId === client.id);
+    const bestScore = sessions.length > 0 ? Math.max(...sessions.map(s => s.score)) : 0;
+    const avgScore = sessions.length > 0 ? Math.round(sessions.reduce((a, s) => a + s.score, 0) / sessions.length) : 0;
+    const favGame = (() => {
+      const counts: Record<string, number> = {};
+      sessions.forEach(s => { counts[s.gameKey] = (counts[s.gameKey] ?? 0) + 1; });
+      const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+      return top ? (GAME_LABELS[top[0] as PlatformGameKey] ?? top[0]) : "—";
+    })();
+    const completedGoals = clientGoals.filter(g => g.currentValue >= g.targetValue).length;
+    const therapistName = activeTherapist?.displayName ?? "Terapist";
+    const today = getTodayString();
+    const tagBadges = (client.tags ?? []).map(t => `<span class="tag">${t}</span>`).join("");
+
+    const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Mimio Özet Kart — ${client.displayName}</title><style>
+      @page{size:105mm 148mm;margin:0}
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:'Segoe UI',Arial,sans-serif;width:105mm;height:148mm;background:#fff;color:#1a1a2e;padding:6mm;display:flex;flex-direction:column;gap:3mm}
+      .top-bar{height:2mm;background:linear-gradient(90deg,#6366f1,#8b5cf6,#06b6d4);border-radius:1mm;flex-shrink:0}
+      .header{display:flex;align-items:flex-start;gap:3mm}
+      .avatar{width:11mm;height:11mm;border-radius:3mm;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-weight:900;font-size:5mm;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+      .name{font-size:5.5mm;font-weight:900;color:#1a1a2e;line-height:1.1}
+      .sub{font-size:2.8mm;color:#666;margin-top:0.5mm}
+      .tags{display:flex;flex-wrap:wrap;gap:1mm;margin-top:1.5mm}
+      .tag{background:#ede9fe;color:#6366f1;font-size:2.5mm;font-weight:700;padding:0.5mm 2mm;border-radius:10mm}
+      .divider{height:0.3mm;background:#e5e7eb;flex-shrink:0}
+      .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:2mm}
+      .stat{background:#f5f3ff;border-radius:2mm;padding:2mm;text-align:center}
+      .stat-val{font-size:5mm;font-weight:900;color:#6366f1;line-height:1}
+      .stat-lbl{font-size:2.3mm;color:#888;font-weight:600;margin-top:0.5mm}
+      .row{display:flex;gap:2mm}
+      .info-box{flex:1;background:#f9fafb;border:0.3mm solid #e5e7eb;border-radius:2mm;padding:2mm}
+      .info-label{font-size:2.3mm;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em}
+      .info-val{font-size:3mm;font-weight:700;color:#1a1a2e;margin-top:0.5mm}
+      .footer{margin-top:auto;padding-top:1.5mm;border-top:0.3mm solid #e5e7eb;display:flex;justify-content:space-between;font-size:2.3mm;color:#aaa}
+      @media print{html,body{width:105mm;height:148mm}button{display:none}}
+    </style></head><body>
+      <div class="top-bar"></div>
+      <div class="header">
+        <div class="avatar">${client.displayName[0]?.toUpperCase() ?? "?"}</div>
+        <div>
+          <div class="name">${client.displayName}</div>
+          <div class="sub">${[client.ageGroup, client.primaryGoal].filter(Boolean).join(" · ") || "—"}</div>
+          ${tagBadges ? `<div class="tags">${tagBadges}</div>` : ""}
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="stats">
+        <div class="stat"><div class="stat-val">${sessions.length}</div><div class="stat-lbl">Seans</div></div>
+        <div class="stat"><div class="stat-val">${bestScore || "—"}</div><div class="stat-lbl">En İyi</div></div>
+        <div class="stat"><div class="stat-val">${avgScore || "—"}</div><div class="stat-lbl">Ortalama</div></div>
+      </div>
+      <div class="row">
+        <div class="info-box"><div class="info-label">Favori Oyun</div><div class="info-val">${favGame}</div></div>
+        <div class="info-box"><div class="info-label">Tamamlanan Hedef</div><div class="info-val">${completedGoals}/${clientGoals.length || 0}</div></div>
+        <div class="info-box"><div class="info-label">Destek</div><div class="info-val">${client.supportLevel || "—"}</div></div>
+      </div>
+      ${client.difficultyLevel ? `<div class="info-box" style="background:#fffbeb;border-color:#fde68a"><div class="info-label" style="color:#92400e">Zorluk Seviyesi</div><div class="info-val" style="color:#d97706">${client.difficultyLevel}</div></div>` : ""}
+      <div class="footer">
+        <span>Mimio Ergoterapi</span>
+        <span>${therapistName}</span>
+        <span>${today}</span>
+      </div>
+      <script>window.onload=function(){window.print();}</script>
+    </body></html>`;
+
+    const win = window.open("", "_blank", "width=420,height=600");
+    if (win) { win.document.write(html); win.document.close(); }
+  }
+
   async function handleAddClient(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const displayName = addClientDraft.displayName.trim();
@@ -1371,6 +1454,18 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     }
     setAddClientDraft({ displayName: "", ageGroup: "", primaryGoal: "", supportLevel: "" });
     setShowAddClient(false);
+  }
+
+  // ── Update client tags ──
+  async function handleUpdateClientTags(clientId: string, tags: string[]) {
+    try {
+      await fetch("/api/platform/profiles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "update-client", clientId, tags }),
+      });
+      await loadPlatformOverview();
+    } catch { /* ignore */ }
   }
 
   // ── Update client difficulty ──
@@ -1587,7 +1682,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     setClientDraft({ displayName: "", ageGroup: "", primaryGoal: "", supportLevel: "" });
   }
 
-  function resetSessionClock() { setSessionStartedAt(Date.now()); setGameTimerKey(0); setGameElapsed(0); setProfileFeedback("Seans süresi sıfırlandı."); }
+  function resetSessionClock() { setSessionStartedAt(Date.now()); setGameTimerKey(0); setGameElapsed(0); setSessionWarningDismissed(false); setProfileFeedback("Seans süresi sıfırlandı."); }
 
   async function syncScoreToBackend(game: GameKey, nextScore: number, metadata: Record<string, unknown>, sessionEntry: RecentSessionEntry) {
     const nextPlatformStatus = await resolvePlatformStatus();
@@ -1857,6 +1952,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       if (activeTile) handleScanPick(activeTile.id);
     }
     function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "?" && !["INPUT", "TEXTAREA"].includes((event.target as HTMLElement)?.tagName ?? "")) {
+        event.preventDefault();
+        setShowShortcutGuide(v => !v);
+        return;
+      }
+      if (event.key === "Escape") { setShowShortcutGuide(false); }
       if (activeAppView !== "games") return;
       const normalizedKey = event.key.toLowerCase();
       const currentIndex = GAME_TABS.findIndex((tab) => tab.key === activeGame);
@@ -1896,6 +1997,22 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     return sessionDate >= weekAgo;
   }).length;
+
+  const sessionStreak = (() => {
+    const days = new Set(
+      platformOverview.recentSessions.map(s => new Date(s.playedAt).toISOString().slice(0, 10))
+    );
+    let streak = 0;
+    const d = new Date();
+    // start from today; if today has no session, start from yesterday
+    const todayStr = d.toISOString().slice(0, 10);
+    if (!days.has(todayStr)) { d.setDate(d.getDate() - 1); }
+    while (days.has(d.toISOString().slice(0, 10))) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+    }
+    return streak;
+  })();
 
   useEffect(() => {
     if (!activeTherapist && therapistOptions.length > 0) setActiveTherapistId(therapistOptions[0].id);
@@ -2201,6 +2318,15 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 {theme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
               </button>
               <button type="button"
+                data-tooltip={theme === "high-contrast" ? "Normal temaya dön" : "Yüksek kontrast modu"}
+                data-tooltip-dir="top"
+                className="w-7 h-7 rounded-lg flex items-center justify-center bg-transparent border-none cursor-pointer transition-all text-xs font-black"
+                style={{ color: theme === "high-contrast" ? "#ffff00" : "var(--color-text-muted)" }}
+                onClick={() => setTheme(theme === "high-contrast" ? "dark" : "high-contrast")}
+                aria-label="Yüksek kontrast">
+                ⊙
+              </button>
+              <button type="button"
                 data-tooltip="Profil düzenle"
                 data-tooltip-dir="top"
                 className="w-7 h-7 rounded-lg flex items-center justify-center text-(--color-text-muted) hover:text-indigo-400 hover:bg-indigo-500/10 bg-transparent border-none cursor-pointer transition-all"
@@ -2213,6 +2339,13 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 className="w-7 h-7 rounded-lg flex items-center justify-center text-(--color-text-muted) hover:text-amber-400 hover:bg-amber-500/10 bg-transparent border-none cursor-pointer transition-all"
                 onClick={() => setActiveAppView("reports")} aria-label="Raporlar">
                 <BarChart3 size={13} />
+              </button>
+              <button type="button"
+                data-tooltip="Klavye kısayolları (?)"
+                data-tooltip-dir="top"
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-(--color-text-muted) hover:text-indigo-400 hover:bg-indigo-500/10 bg-transparent border-none cursor-pointer transition-all text-xs font-black"
+                onClick={() => setShowShortcutGuide(v => !v)} aria-label="Kısayol rehberi">
+                ?
               </button>
               <button type="button"
                 data-tooltip="Çıkış yap"
@@ -2267,7 +2400,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           <button type="button"
             className="w-8 h-8 rounded-xl flex items-center justify-center border-none cursor-pointer bg-transparent text-(--color-text-muted) hover:text-(--color-text-body) transition-colors"
             onClick={toggleTheme}>
-            {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+            {theme === "dark" || theme === "high-contrast" ? <Sun size={15} /> : <Moon size={15} />}
           </button>
           {/* Avatar / menu */}
           <button type="button"
@@ -2302,8 +2435,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   <Edit2 size={14} /> Profili Düzenle
                 </button>
                 <button type="button" className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-(--color-text-body) hover:bg-(--color-surface-elevated) w-full text-left bg-transparent border-none cursor-pointer" onClick={() => { setShowUserMenu(false); toggleTheme(); }}>
-                  {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-                  {theme === "dark" ? "Açık Tema" : "Koyu Tema"}
+                  {theme === "dark" || theme === "high-contrast" ? <Sun size={14} /> : <Moon size={14} />}
+                  {theme === "dark" || theme === "high-contrast" ? "Açık Tema" : "Koyu Tema"}
+                </button>
+                <button type="button" className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-(--color-text-body) hover:bg-(--color-surface-elevated) w-full text-left bg-transparent border-none cursor-pointer" onClick={() => { setShowUserMenu(false); setTheme(theme === "high-contrast" ? "dark" : "high-contrast"); }}>
+                  <span className="text-sm font-black" style={{ color: theme === "high-contrast" ? "#ffff00" : "inherit" }}>⊙</span>
+                  {theme === "high-contrast" ? "Normal Mod" : "Yüksek Kontrast"}
                 </button>
                 <button type="button" className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-(--color-accent-red) hover:bg-red-500/10 w-full text-left bg-transparent border-none cursor-pointer" onClick={() => { setShowUserMenu(false); handleLogout(); }}>
                   <LogOut size={14} /> Çıkış Yap
@@ -2599,6 +2736,26 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 </div>
               );
             })()}
+
+            {/* ── Streak widget ── */}
+            {sessionStreak > 0 && (
+              <div className="relative overflow-hidden rounded-2xl border flex items-center gap-4 px-4 py-3" style={{ background: sessionStreak >= 7 ? "rgba(251,191,36,0.08)" : "rgba(99,102,241,0.07)", borderColor: sessionStreak >= 7 ? "rgba(251,191,36,0.25)" : "rgba(99,102,241,0.2)" }}>
+                <span className="text-3xl select-none">{sessionStreak >= 14 ? "🏆" : sessionStreak >= 7 ? "🔥" : "⚡"}</span>
+                <div className="flex-1">
+                  <p className="m-0 text-sm font-extrabold" style={{ color: sessionStreak >= 7 ? "#fbbf24" : "#818cf8" }}>
+                    {sessionStreak} günlük seans serisi
+                  </p>
+                  <p className="m-0 text-[11px] text-(--color-text-muted)">
+                    {sessionStreak >= 14 ? "İnanılmaz! Ritim mükemmel." : sessionStreak >= 7 ? "Harika tempo, devam et!" : "İyi başlangıç, ritmi koru!"}
+                  </p>
+                </div>
+                <div className="flex gap-0.5 shrink-0">
+                  {Array.from({ length: Math.min(sessionStreak, 7) }).map((_, i) => (
+                    <div key={i} className="w-2 h-2 rounded-full" style={{ background: sessionStreak >= 7 ? "#fbbf24" : "#818cf8", opacity: 1 - (Math.min(sessionStreak, 7) - 1 - i) * 0.12 }} />
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Recent Sessions */}
             <div className="space-y-3">
@@ -3218,11 +3375,75 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     );
                   })()}
 
+                  {/* ── Tags ── */}
+                  <div className="mb-4">
+                    <div className="flex flex-wrap gap-1.5 items-center">
+                      {(selectedClient.tags ?? []).map(tag => (
+                        <span key={tag} className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full border"
+                          style={{ background: "rgba(99,102,241,0.1)", color: "#818cf8", borderColor: "rgba(99,102,241,0.25)" }}>
+                          {tag}
+                          <button type="button" className="cursor-pointer bg-transparent border-none p-0 leading-none opacity-60 hover:opacity-100 transition-opacity"
+                            style={{ color: "#818cf8" }}
+                            onClick={() => {
+                              const newTags = (selectedClient.tags ?? []).filter(t => t !== tag);
+                              void handleUpdateClientTags(selectedClient.id, newTags);
+                            }}>×</button>
+                        </span>
+                      ))}
+                      {showTagInput ? (
+                        <input
+                          autoFocus
+                          value={tagInput}
+                          onChange={e => setTagInput(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === "Enter" || e.key === ",") {
+                              e.preventDefault();
+                              const val = tagInput.trim().replace(/,$/, "");
+                              if (val && !(selectedClient.tags ?? []).includes(val)) {
+                                const newTags = [...(selectedClient.tags ?? []), val];
+                                void handleUpdateClientTags(selectedClient.id, newTags);
+                              }
+                              setTagInput("");
+                              setShowTagInput(false);
+                            } else if (e.key === "Escape") {
+                              setTagInput("");
+                              setShowTagInput(false);
+                            }
+                          }}
+                          onBlur={() => {
+                            const val = tagInput.trim();
+                            if (val && !(selectedClient.tags ?? []).includes(val)) {
+                              void handleUpdateClientTags(selectedClient.id, [...(selectedClient.tags ?? []), val]);
+                            }
+                            setTagInput("");
+                            setShowTagInput(false);
+                          }}
+                          placeholder="Etiket yaz, Enter ile ekle"
+                          className="text-[11px] font-semibold px-2.5 py-1 rounded-full outline-none w-36"
+                          style={{ background: "rgba(99,102,241,0.1)", color: "#818cf8", border: "1px dashed rgba(99,102,241,0.4)" }}
+                        />
+                      ) : (
+                        <button type="button"
+                          className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full cursor-pointer border-none transition-opacity hover:opacity-100 opacity-50"
+                          style={{ background: "rgba(99,102,241,0.08)", color: "#818cf8", border: "1px dashed rgba(99,102,241,0.3)" }}
+                          onClick={() => setShowTagInput(true)}>
+                          + Etiket
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="flex gap-2">
                     <button type="button" className="flex-1 flex items-center justify-center gap-2 font-bold text-sm px-5 py-2.5 lg:py-3 rounded-xl lg:rounded-2xl text-white cursor-pointer border-none transition-all hover:opacity-90 active:scale-[0.98]" style={{ background: `linear-gradient(135deg, ${palette.color}, ${palette.border})`, boxShadow: `0 6px 20px ${palette.glow}` }} onClick={() => { setActiveClientId(selectedClient.id); setActiveAppView("games"); }}>
                       <Gamepad2 size={15} /> Bu Danışanla Oyna
                     </button>
-                    <button type="button" data-tooltip="PDF Rapor Al" data-tooltip-dir="top"
+                    <button type="button" data-tooltip="Özet Kart (A6)" data-tooltip-dir="top"
+                      className="flex items-center justify-center gap-1.5 font-bold text-sm px-4 py-2.5 lg:py-3 rounded-xl lg:rounded-2xl cursor-pointer border-none transition-all hover:opacity-90 active:scale-[0.98]"
+                      style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)", color: "var(--color-text-soft)" }}
+                      onClick={() => handlePrintSummaryCard(selectedClient)}>
+                      <CreditCard size={14} />
+                    </button>
+                    <button type="button" data-tooltip="Tam Rapor Al" data-tooltip-dir="top"
                       className="flex items-center justify-center gap-1.5 font-bold text-sm px-4 py-2.5 lg:py-3 rounded-xl lg:rounded-2xl cursor-pointer border-none transition-all hover:opacity-90 active:scale-[0.98]"
                       style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)", color: "var(--color-text-soft)" }}
                       onClick={() => handlePrintReport(selectedClient)}>
@@ -3260,6 +3481,32 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     <h3 className="text-sm font-extrabold uppercase tracking-wider text-(--color-text-muted) m-0">Seans Notları</h3>
                     <button type="button" className="flex items-center gap-1.5 text-sm font-bold px-3 py-2 rounded-xl text-white cursor-pointer border-none transition-all hover:opacity-90 active:scale-95" style={{ background: `linear-gradient(135deg, ${palette.color}, ${palette.border})`, boxShadow: `0 3px 12px ${palette.glow}` }} onClick={() => setShowNoteForm(!showNoteForm)}>+ Not Ekle</button>
                   </div>
+
+                  {/* Note search + date filter */}
+                  {clientNotes.length > 2 && (
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <div className="relative flex-1">
+                        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--color-text-muted)" }} />
+                        <input type="text" value={noteSearch} onChange={e => setNoteSearch(e.target.value)} placeholder="Notlarda ara…"
+                          className="w-full pl-8 pr-3 py-2 rounded-xl text-sm border outline-none"
+                          style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)", color: "var(--color-text-body)" }} />
+                        {noteSearch && <button type="button" onClick={() => setNoteSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 border-none bg-transparent cursor-pointer p-0"><X size={12} style={{ color: "var(--color-text-muted)" }} /></button>}
+                      </div>
+                      <input type="date" value={noteFilterFrom} onChange={e => setNoteFilterFrom(e.target.value)} title="Başlangıç tarihi"
+                        className="px-3 py-2 rounded-xl text-xs border outline-none"
+                        style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)", color: "var(--color-text-body)" }} />
+                      <input type="date" value={noteFilterTo} onChange={e => setNoteFilterTo(e.target.value)} title="Bitiş tarihi"
+                        className="px-3 py-2 rounded-xl text-xs border outline-none"
+                        style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)", color: "var(--color-text-body)" }} />
+                      {(noteSearch || noteFilterFrom || noteFilterTo) && (
+                        <button type="button" onClick={() => { setNoteSearch(""); setNoteFilterFrom(""); setNoteFilterTo(""); }}
+                          className="px-3 py-2 rounded-xl text-xs font-bold border cursor-pointer hover:opacity-80"
+                          style={{ background: "rgba(239,68,68,0.1)", borderColor: "rgba(239,68,68,0.25)", color: "#ef4444" }}>
+                          Temizle
+                        </button>
+                      )}
+                    </div>
+                  )}
 
                   {showNoteForm && (
                     <div className="rounded-2xl border p-5 space-y-3 relative overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: palette.border }}>
@@ -3350,7 +3597,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       {/* Timeline vertical line */}
                       <div className="absolute left-5 top-0 bottom-0 w-px" style={{ background: "var(--color-line)" }} />
                       <div className="space-y-3">
-                        {clientNotes.map((note) => {
+                        {clientNotes.filter(note => {
+                          if (noteSearch && !note.content.toLowerCase().includes(noteSearch.toLowerCase())) return false;
+                          if (noteFilterFrom && note.date < noteFilterFrom) return false;
+                          if (noteFilterTo && note.date > noteFilterTo) return false;
+                          return true;
+                        }).map((note) => {
                           // Find sessions on the same date
                           const sameDaySessions = clientSessions.filter(s => s.playedAt?.slice(0, 10) === note.date);
                           const noteTypeLabel = note.noteMode === "soap" ? "SOAP" : null;
@@ -4044,6 +4296,29 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 </button>
               </div>
             </div>
+
+            {/* ── Session duration warning banner ── */}
+            {gameElapsed > 0 && !sessionWarningDismissed && gameElapsed >= sessionWarnThreshold * 60 && (
+              <div className="flex items-center gap-3 px-4 py-2.5 shrink-0 border-b" style={{ background: "rgba(245,158,11,0.1)", borderColor: "rgba(245,158,11,0.25)" }}>
+                <Timer size={14} style={{ color: "#f59e0b", flexShrink: 0 }} />
+                <p className="flex-1 text-xs font-semibold m-0" style={{ color: "#f59e0b" }}>
+                  ⏱ {sessionWarnThreshold} dakika geçti — seans sona yaklaşıyor
+                </p>
+                <div className="flex items-center gap-2 shrink-0">
+                  {([30, 45, 60] as const).map(t => (
+                    <button key={t} type="button"
+                      className="text-[10px] font-bold px-2 py-0.5 rounded-full border cursor-pointer hover:opacity-80"
+                      style={{ background: t === sessionWarnThreshold ? "rgba(245,158,11,0.2)" : "transparent", borderColor: "rgba(245,158,11,0.3)", color: "#f59e0b" }}
+                      onClick={() => { setSessionWarnThreshold(t); try { localStorage.setItem("mimio-session-warn-min", String(t)); } catch { /* ignore */ } }}>
+                      {t}dk
+                    </button>
+                  ))}
+                  <button type="button" className="text-[10px] font-bold px-2 py-0.5 rounded-full border cursor-pointer hover:opacity-80" style={{ borderColor: "rgba(245,158,11,0.3)", color: "#f59e0b" }} onClick={() => setSessionWarningDismissed(true)}>
+                    Kapat
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* ── Mobile game nav ── */}
             <div className="flex lg:hidden flex-col gap-1.5 px-3 py-2.5 border-b border-(--color-line) shrink-0" style={{ background: "var(--color-chrome-header)", backdropFilter: "blur(20px)" }}>
@@ -5255,6 +5530,87 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   </div>
                 </div>
 
+                {/* ── Client Comparison ── */}
+                {clientOptions.length >= 2 && (() => {
+                  const cA = clientOptions.find(c => c.id === compareClientA) ?? null;
+                  const cB = clientOptions.find(c => c.id === compareClientB) ?? null;
+                  const sessA = cA ? platformOverview.recentSessions.filter(s => s.clientId === cA.id) : [];
+                  const sessB = cB ? platformOverview.recentSessions.filter(s => s.clientId === cB.id) : [];
+                  const avgA = sessA.length ? Math.round(sessA.reduce((s, x) => s + x.score, 0) / sessA.length) : 0;
+                  const avgB = sessB.length ? Math.round(sessB.reduce((s, x) => s + x.score, 0) / sessB.length) : 0;
+                  const bestA = sessA.length ? Math.max(...sessA.map(s => s.score)) : 0;
+                  const bestB = sessB.length ? Math.max(...sessB.map(s => s.score)) : 0;
+                  const favA = sessA.length ? (Object.entries(sessA.reduce((acc: Record<string, number>, s) => { acc[s.gameLabel] = (acc[s.gameLabel] ?? 0) + 1; return acc; }, {})).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—") : "—";
+                  const favB = sessB.length ? (Object.entries(sessB.reduce((acc: Record<string, number>, s) => { acc[s.gameLabel] = (acc[s.gameLabel] ?? 0) + 1; return acc; }, {})).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—") : "—";
+                  const metrics = [
+                    { label: "Toplam Seans", a: sessA.length, b: sessB.length, fmt: (v: number) => String(v) },
+                    { label: "En Yüksek Skor", a: bestA, b: bestB, fmt: (v: number) => String(v) },
+                    { label: "Ortalama Skor", a: avgA, b: avgB, fmt: (v: number) => String(v) },
+                    { label: "Favori Oyun", a: -1, b: -1, labelA: favA, labelB: favB, fmt: (v: number) => String(v) },
+                  ];
+                  return (
+                    <div className="relative overflow-hidden rounded-3xl border border-(--color-line)" style={{ background: "var(--color-surface-strong)" }}>
+                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,#818cf8,#f472b6,transparent)" }} />
+                      <div className="flex items-center gap-3 px-6 py-4 border-b border-(--color-line)" style={{ background: "var(--color-surface-elevated)" }}>
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#818cf8,#f472b6)" }}>
+                          <Users size={15} className="text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0">Danışan Karşılaştırma</h3>
+                          <span className="text-xs text-(--color-text-muted)">İki danışanı yan yana karşılaştır</span>
+                        </div>
+                      </div>
+                      <div className="p-5 space-y-4">
+                        {/* Selector row */}
+                        <div className="grid grid-cols-2 gap-3">
+                          {([{ val: compareClientA, set: setCompareClientA, color: "#818cf8", label: "Danışan A" }, { val: compareClientB, set: setCompareClientB, color: "#f472b6", label: "Danışan B" }] as const).map(col => (
+                            <div key={col.label}>
+                              <p className="text-[10px] font-extrabold uppercase tracking-wider mb-1" style={{ color: col.color }}>{col.label}</p>
+                              <select value={col.val} onChange={e => col.set(e.target.value)}
+                                className="w-full text-sm px-3 py-2 rounded-xl border outline-none cursor-pointer"
+                                style={{ background: "var(--color-surface)", borderColor: col.val ? col.color + "55" : "var(--color-line)", color: "var(--color-text-body)" }}>
+                                <option value="">Danışan seç…</option>
+                                {clientOptions.map(c => <option key={c.id} value={c.id}>{c.displayName}</option>)}
+                              </select>
+                            </div>
+                          ))}
+                        </div>
+                        {/* Comparison table */}
+                        {cA && cB && (
+                          <div className="rounded-2xl overflow-hidden border border-(--color-line)">
+                            <div className="grid grid-cols-3 text-[10px] font-extrabold uppercase tracking-wider" style={{ background: "var(--color-surface-elevated)" }}>
+                              <div className="px-4 py-2.5 text-(--color-text-muted)">Metrik</div>
+                              <div className="px-4 py-2.5 text-center" style={{ color: "#818cf8" }}>{cA.displayName}</div>
+                              <div className="px-4 py-2.5 text-center" style={{ color: "#f472b6" }}>{cB.displayName}</div>
+                            </div>
+                            {metrics.map(m => {
+                              const isNum = m.a >= 0;
+                              const aWins = isNum && m.a > m.b;
+                              const bWins = isNum && m.b > m.a;
+                              return (
+                                <div key={m.label} className="grid grid-cols-3 border-t text-sm" style={{ borderColor: "var(--color-line-soft)" }}>
+                                  <div className="px-4 py-3 text-(--color-text-muted) text-xs font-semibold">{m.label}</div>
+                                  <div className="px-4 py-3 text-center font-bold tabular-nums" style={{ color: aWins ? "#818cf8" : "var(--color-text-body)", background: aWins ? "rgba(129,140,248,0.06)" : "transparent" }}>
+                                    {isNum ? m.a : (m as { labelA?: string }).labelA ?? "—"}
+                                    {aWins && <span className="ml-1 text-[10px]">↑</span>}
+                                  </div>
+                                  <div className="px-4 py-3 text-center font-bold tabular-nums" style={{ color: bWins ? "#f472b6" : "var(--color-text-body)", background: bWins ? "rgba(244,114,182,0.06)" : "transparent" }}>
+                                    {isNum ? m.b : (m as { labelB?: string }).labelB ?? "—"}
+                                    {bWins && <span className="ml-1 text-[10px]">↑</span>}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {(!cA || !cB) && (
+                          <p className="text-xs text-(--color-text-muted) text-center py-4 m-0">Her iki danışanı da seçin.</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
               </div>
             </div>
           );
@@ -6361,6 +6717,55 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   Şimdi değil
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Keyboard Shortcut Guide ── */}
+      {showShortcutGuide && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)" }}
+          onClick={() => setShowShortcutGuide(false)}>
+          <div className="w-full max-w-lg rounded-3xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "rgba(99,102,241,0.3)", boxShadow: "0 0 80px rgba(99,102,241,0.2)" }}
+            onClick={e => e.stopPropagation()}>
+            <div className="h-1 w-full" style={{ background: "linear-gradient(90deg,#6366f1,#8b5cf6,#06b6d4)" }} />
+            <div className="p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-extrabold text-(--color-text-strong) m-0 flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black" style={{ background: "rgba(99,102,241,0.15)", color: "#818cf8" }}>?</span>
+                  Klavye Kısayolları
+                </h3>
+                <button type="button" className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer border-none text-(--color-text-muted) hover:text-(--color-text-body) transition-colors" style={{ background: "var(--color-surface)" }} onClick={() => setShowShortcutGuide(false)}>✕</button>
+              </div>
+              {([
+                { section: "Genel", rows: [
+                  { keys: ["?"], desc: "Kısayol rehberini aç / kapat" },
+                  { keys: ["Esc"], desc: "Açık pencereyi kapat" },
+                ] },
+                { section: "Oyun Ekranı", rows: [
+                  { keys: ["A"], desc: "Önceki oyuna geç" },
+                  { keys: ["B"], desc: "Sonraki oyuna geç" },
+                  { keys: ["↑", "↓", "←", "→"], desc: "Seçimi hareket ettir" },
+                  { keys: ["Enter", "Boşluk"], desc: "Seçimi onayla / oyunu başlat" },
+                ] },
+              ] as { section: string; rows: { keys: string[]; desc: string }[] }[]).map(({ section, rows }) => (
+                <div key={section} className="mb-4 last:mb-0">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) m-0 mb-2">{section}</p>
+                  <div className="rounded-2xl overflow-hidden border" style={{ borderColor: "var(--color-line)" }}>
+                    {rows.map(({ keys, desc }, i) => (
+                      <div key={desc} className="flex items-center justify-between px-4 py-2.5 gap-4" style={{ borderTop: i === 0 ? "none" : "1px solid var(--color-line)", background: i % 2 === 0 ? "transparent" : "rgba(0,0,0,0.08)" }}>
+                        <span className="text-sm text-(--color-text-body)">{desc}</span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {keys.map(k => (
+                            <kbd key={k} className="text-[11px] font-bold px-2 py-0.5 rounded-lg" style={{ background: "rgba(99,102,241,0.12)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.25)", fontFamily: "monospace" }}>{k}</kbd>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <p className="text-[11px] text-(--color-text-muted) text-center m-0 mt-3">Herhangi bir yere tıklayarak kapat</p>
             </div>
           </div>
         </div>

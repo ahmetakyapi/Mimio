@@ -79,6 +79,7 @@ export interface ClientProfile {
   difficultyLevel?: string;
   archivedAt?: string | null;
   lastActiveAt?: string | null;
+  tags?: string[];
   source: ProfileSource;
 }
 

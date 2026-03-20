@@ -84,6 +84,7 @@ function parsePayload(body: unknown):
         ageGroup: typeof candidate.ageGroup === "string" ? candidate.ageGroup : undefined,
         primaryGoal: typeof candidate.primaryGoal === "string" ? candidate.primaryGoal : undefined,
         supportLevel: typeof candidate.supportLevel === "string" ? candidate.supportLevel : undefined,
+        tags: Array.isArray(candidate.tags) ? (candidate.tags as unknown[]).filter((t): t is string => typeof t === "string") : undefined,
       },
     } as { kind: "update-client"; payload: { clientId: string; difficultyLevel?: string } };
   }
