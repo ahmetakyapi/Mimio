@@ -44,7 +44,7 @@ import {
 } from "@/lib/therapy-program-data";
 
 type GameKey = PlatformGameKey;
-type GameCategoryKey = "memorySkills" | "motorSkills" | "visualSkills";
+type GameCategoryKey = "memorySkills" | "motorSkills" | "visualSkills" | "cognitiveSkills";
 type PatternKey = "rings" | "grid" | "wave";
 type CommandKey = "up" | "right" | "down" | "left";
 type MemoryPhase = "idle" | "showing" | "ready" | "success" | "finished";
@@ -53,6 +53,30 @@ type PulsePhase = "idle" | "playing" | "finished";
 type RoutePhase = "idle" | "playing" | "finished";
 type DifferencePhase = "idle" | "playing" | "finished";
 type ScanPhase = "idle" | "playing" | "finished";
+type LogicPhase = "idle" | "playing" | "finished";
+type LogicShape = "circle" | "square" | "triangle" | "diamond";
+
+interface LogicCell {
+  shape: LogicShape;
+  color: string;
+}
+
+interface LogicPuzzle {
+  grid: LogicCell[];
+  options: LogicCell[];
+  answerIdx: number;
+  ruleHint: string;
+}
+
+interface LogicState {
+  puzzle: LogicPuzzle | null;
+  round: number;
+  score: number;
+  phase: LogicPhase;
+  message: string;
+  selectedIdx: number | null;
+  showResult: boolean;
+}
 
 interface ScoreRecord {
   label: string;
@@ -68,6 +92,7 @@ interface Scoreboard {
   route: ScoreRecord;
   difference: ScoreRecord;
   scan: ScoreRecord;
+  logic: ScoreRecord;
 }
 
 interface SymbolVariant {
@@ -211,15 +236,17 @@ const GAME_TABS = [
   { key: "route" as const, category: "motorSkills" as const, title: "Komut Rotası", kicker: "Motor yanıt", blurb: "Ekranda verilen yön komutuna uygun oka bas. Hızlı karar verme ile kontrollü yön seçimi aynı oyunda birleşir.", goals: ["Motor planlama", "Yön komutu takibi", "Hızlı karar"], teaser: "Dört yönlü pad ile çalışan kontrollü komut oyunu.", accent: "#4acfff", preview: ["Komutu gör", "Doğru yönü seç", "Seriyi uzat"] },
   { key: "difference" as const, category: "visualSkills" as const, title: "Fark Avcısı", kicker: "Görsel ayrım", blurb: "Benzer kartlar içinden farklı olanı bul. Dikkatli tarama ve hızlı karşılaştırma gerekir.", goals: ["Görsel ayrım", "Figür-zemin farkı", "Tarama rutini"], teaser: "Benzer kartlar arasında tek farkı bulmaya odaklanan görev.", accent: "#69d4ff", preview: ["Kartları tara", "Farkı ayıkla", "Turu tamamla"] },
   { key: "scan" as const, category: "visualSkills" as const, title: "Hedef Tarama", kicker: "Seçici dikkat", blurb: "Üstte gösterilen hedef simgeyi kalabalık ızgara içinde seç. Her tur yeni hedef gelir ve dikkat filtrelemesi gerekir.", goals: ["Seçici dikkat", "Tarama hızı", "Hedef bulma"], teaser: "Belirli simgeyi ızgara içinde aratan dikkat oyunu.", accent: "#8be2ff", preview: ["Hedefi gör", "Izgarayı tara", "Doğru simgeyi seç"] },
+  { key: "logic" as const, category: "cognitiveSkills" as const, title: "Dizi Mantık", kicker: "Örüntü tamamlama", blurb: "3×3 matristeki şekil-renk örüntüsünü analiz et, eksik hücreyi 4 seçenek arasından bul. Her tur yeni bir kural, yeni bir zorluk.", goals: ["Tümevarımsal akıl yürütme", "Örüntü tanıma", "Çalışma belleği"], teaser: "Şekil ve renk kurallarını çözerek eksik hücreyi tamamlayan mantık oyunu.", accent: "#a78bfa", preview: ["Matrisi incele", "Kuralı çöz", "Doğru seçeneği seç"] },
 ];
 
 const GAME_CATEGORIES = [
   { key: "memorySkills" as const, title: "Hafıza Oyunları", kicker: "Bellek alanı", icon: "◎", description: "Sekans, eşleme ve kısa süreli hatırlama görevleri aynı modül altında toplanır." },
   { key: "motorSkills" as const, title: "Motor Beceri Oyunları", kicker: "Motor alanı", icon: "✦", description: "Hedefleme, yön takibi ve ritim odaklı yanıtlar daha kontrollü bir çalışma akışı sunar." },
   { key: "visualSkills" as const, title: "Görsel Algı Oyunları", kicker: "Algı alanı", icon: "◌", description: "Görsel ayrım, tarama ve seçici dikkat görevleri aynı görsel sistem içinde ilerler." },
+  { key: "cognitiveSkills" as const, title: "Bilişsel Beceri Oyunları", kicker: "Mantık alanı", icon: "◈", description: "Tümevarım, örüntü çözme ve soyut akıl yürütme görevleri problem çözme kapasitesini artırır." },
 ];
 
-const CATEGORY_ICONS = { memorySkills: Brain, motorSkills: Hand, visualSkills: Eye } as const;
+const CATEGORY_ICONS = { memorySkills: Brain, motorSkills: Hand, visualSkills: Eye, cognitiveSkills: Grid3X3 } as const;
 
 const EMPTY_SCOREBOARD: Scoreboard = {
   memory: { label: GAME_LABELS.memory, best: 0, last: 0, plays: 0 },
@@ -228,6 +255,7 @@ const EMPTY_SCOREBOARD: Scoreboard = {
   route: { label: GAME_LABELS.route, best: 0, last: 0, plays: 0 },
   difference: { label: GAME_LABELS.difference, best: 0, last: 0, plays: 0 },
   scan: { label: GAME_LABELS.scan, best: 0, last: 0, plays: 0 },
+  logic: { label: GAME_LABELS.logic, best: 0, last: 0, plays: 0 },
 };
 
 const PHASE_LABELS: Record<string, string> = {
@@ -286,6 +314,7 @@ const GAME_DIFF_CONFIG = {
   route:      { rounds:      [12, 18, 24] as const },
   difference: { rounds:      [8,  12, 16] as const },
   scan:       { tileCount:   [9,  9,  16] as const, rounds: [10, 15, 20] as const },
+  logic:      { rounds:      [8,  12, 16] as const },
 } as const;
 
 function createPairsDeck(pairCount = 8) {
@@ -340,7 +369,89 @@ function mergeScoreboard(payload: Partial<Scoreboard> | null | undefined): Score
     route: { ...EMPTY_SCOREBOARD.route, ...(payload?.route ?? {}) },
     difference: { ...EMPTY_SCOREBOARD.difference, ...(payload?.difference ?? {}) },
     scan: { ...EMPTY_SCOREBOARD.scan, ...(payload?.scan ?? {}) },
+    logic: { ...EMPTY_SCOREBOARD.logic, ...(payload?.logic ?? {}) },
   };
+}
+
+const LOGIC_SHAPES: LogicShape[] = ["circle", "square", "triangle", "diamond"];
+const LOGIC_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#a78bfa", "#ef4444"];
+
+function renderLogicShape(shape: LogicShape, color: string, size = 40): string {
+  const s = size;
+  const half = s / 2;
+  if (shape === "circle") return `<circle cx="${half}" cy="${half}" r="${half * 0.7}" fill="${color}" />`;
+  if (shape === "square") { const pad = s * 0.15; return `<rect x="${pad}" y="${pad}" width="${s - pad * 2}" height="${s - pad * 2}" rx="4" fill="${color}" />`; }
+  if (shape === "triangle") return `<polygon points="${half},${s * 0.1} ${s * 0.9},${s * 0.9} ${s * 0.1},${s * 0.9}" fill="${color}" />`;
+  const pad = s * 0.1;
+  return `<polygon points="${half},${pad} ${s - pad},${half} ${half},${s - pad} ${pad},${half}" fill="${color}" />`;
+}
+
+function createLogicPuzzle(): LogicPuzzle {
+  const useColorRule = Math.random() < 0.5;
+  const shapes = [...LOGIC_SHAPES];
+  const colors = [...LOGIC_COLORS];
+  const fixedShape = shapes[randomIndex(shapes.length)];
+  const fixedColor = colors[randomIndex(colors.length)];
+  const threeShapes: LogicShape[] = shuffleArray(shapes).slice(0, 3) as LogicShape[];
+  const threeColors = shuffleArray(colors).slice(0, 3);
+
+  let grid: LogicCell[];
+  let answerCell: LogicCell;
+  let ruleHint: string;
+
+  if (useColorRule) {
+    // Each row has same shape, cycling 3 colors
+    const rowShapes = shuffleArray(threeShapes) as LogicShape[];
+    grid = [];
+    for (let row = 0; row < 3; row++) {
+      for (let col = 0; col < 3; col++) {
+        grid.push({ shape: rowShapes[row], color: threeColors[col] });
+      }
+    }
+    answerCell = grid[8];
+    ruleHint = "Her satırda aynı şekil, her sütunda farklı renk";
+  } else {
+    // Each column has same color, cycling 3 shapes
+    const colColors = shuffleArray(threeColors);
+    grid = [];
+    for (let row = 0; row < 3; row++) {
+      for (let col = 0; col < 3; col++) {
+        grid.push({ shape: threeShapes[row], color: colColors[col] });
+      }
+    }
+    answerCell = grid[8];
+    ruleHint = "Her sütunda aynı renk, her satırda farklı şekil";
+  }
+
+  // Build 4 options: 1 correct + 3 wrong
+  const wrong: LogicCell[] = [];
+  const allCells: LogicCell[] = [];
+  for (const sh of threeShapes) {
+    for (const co of threeColors) {
+      allCells.push({ shape: sh, color: co });
+    }
+  }
+  // Extra cells from unused shape/color combos
+  for (const sh of LOGIC_SHAPES) {
+    for (const co of LOGIC_COLORS) {
+      allCells.push({ shape: sh, color: co });
+    }
+  }
+  for (const cell of shuffleArray(allCells)) {
+    if (cell.shape === answerCell.shape && cell.color === answerCell.color) continue;
+    if (wrong.some(w => w.shape === cell.shape && w.color === cell.color)) continue;
+    wrong.push(cell);
+    if (wrong.length === 3) break;
+  }
+
+  const answerIdx = randomIndex(4);
+  const options: LogicCell[] = [...wrong];
+  options.splice(answerIdx, 0, answerCell);
+
+  // Replace fixed vars to avoid unused lint
+  void fixedShape; void fixedColor;
+
+  return { grid: grid.slice(0, 8), options, answerIdx, ruleHint };
 }
 
 function parseSessionNotes(value: unknown): SessionNote[] {
@@ -919,6 +1030,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const [routeCursor, setRouteCursor] = useState(0);
   const [differenceCursor, setDifferenceCursor] = useState(0);
   const [scanCursor, setScanCursor] = useState(0);
+  const [logicCursor, setLogicCursor] = useState(0);
+  const [logicState, setLogicState] = useState<LogicState>({ puzzle: null, round: 0, score: 0, phase: "idle", message: "Matrisi analiz et ve eksik hücreyi bul.", selectedIdx: null, showResult: false });
   const [memoryState, setMemoryState] = useState<MemoryState>({ sequence: [], input: [], flashIndex: null, score: 0, phase: "idle", message: "Oyunu başlat ve diziyi dikkatle izle." });
   const [pairsState, setPairsState] = useState<PairsState>({ tiles: [], moves: 0, pairsFound: 0, locked: false, phase: "idle", message: "Kartları aç ve eşleşen çiftleri bul." });
   const [pulseState, setPulseState] = useState<PulseState>({ activeIndex: null, round: 0, hits: 0, misses: 0, combo: 0, points: 0, phase: "idle", message: "Parmak, kalem veya ekran kalemiyle kontrollü hız denemesi yap." });
@@ -1791,7 +1904,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
   // Approximate high-score thresholds per game (≥ this = strong performance)
   const ADAPTIVE_THRESHOLDS: Record<GameKey, number> = {
-    memory: 8, pairs: 10, pulse: 14, route: 12, difference: 9, scan: 10,
+    memory: 8, pairs: 10, pulse: 14, route: 12, difference: 9, scan: 10, logic: 10,
   } as const;
 
   function commitScore(game: GameKey, nextScore: number, metadata: Record<string, unknown> = {}) {
@@ -2017,6 +2130,32 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     setScanState({ ...nextRound, round: nextRoundNumber, score: scanState.score + 1, phase: "playing", revealId: null, message: `Doğru hedef bulundu. ${nextRoundNumber}. tura geçildi.` });
   }
 
+  function startLogicGame() {
+    setGameTimerKey(k => k + 1);
+    setLogicCursor(0);
+    const puzzle = createLogicPuzzle();
+    setLogicState({ puzzle, round: 1, score: 0, phase: "playing", message: "Matrisi analiz et, eksik hücreyi seç.", selectedIdx: null, showResult: false });
+  }
+
+  function handleLogicPick(optionIdx: number) {
+    if (logicState.phase !== "playing" || !logicState.puzzle || logicState.showResult) return;
+    const isCorrect = optionIdx === logicState.puzzle.answerIdx;
+    const nextScore = logicState.score + (isCorrect ? 10 : 0);
+    triggerFeedback(isCorrect, 0);
+    const logicRounds = GAME_DIFF_CONFIG.logic.rounds[clientDiffLevel - 1];
+    setLogicState(cur => ({ ...cur, selectedIdx: optionIdx, showResult: true, score: nextScore, message: isCorrect ? "Doğru! Sonraki bulmaca geliyor..." : "Yanlış seçim. Devam ediliyor..." }));
+    setTimeout(() => {
+      if (logicState.round >= logicRounds) {
+        commitScore("logic", nextScore, { phase: "finished", round: logicRounds, correct: isCorrect ? 1 : 0 });
+        setLogicState(cur => ({ ...cur, phase: "finished", showResult: false, message: `Tüm turlar tamamlandı. Final skor ${nextScore}.` }));
+        return;
+      }
+      const nextPuzzle = createLogicPuzzle();
+      setLogicState({ puzzle: nextPuzzle, round: logicState.round + 1, score: nextScore, phase: "playing", message: "Yeni bulmaca! Matrisi analiz et.", selectedIdx: null, showResult: false });
+      setLogicCursor(0);
+    }, 900);
+  }
+
   useEffect(() => {
     function moveCursor(key: string) {
       if (activeAppView !== "games") return;
@@ -2025,6 +2164,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       if (activeGame === "pairs") { setPairsCursor((current) => moveGridCursor(current, key, 4, SYMBOL_LIBRARY.length * 2)); return; }
       if (activeGame === "scan") { setScanCursor((current) => moveGridCursor(current, key, 3, 9)); return; }
       if (activeGame === "difference") { setDifferenceCursor((current) => moveGridCursor(current, key, 3, 6)); return; }
+      if (activeGame === "logic") { setLogicCursor((current) => moveGridCursor(current, key, 2, 4)); return; }
       setMemoryCursor((current) => moveGridCursor(current, key, 3, 6));
     }
     function activateCurrentSelection() {
@@ -2034,6 +2174,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       if (activeGame === "pulse") { if (pulseState.phase !== "playing") { startPulseGame(); return; } handlePulsePick(pulseCursor); return; }
       if (activeGame === "route") { if (routeState.phase !== "playing") { startRouteGame(); return; } const command = ROUTE_COMMANDS[routeCursor]; if (command) handleRoutePick(command.key); return; }
       if (activeGame === "difference") { if (differenceState.phase !== "playing") { startDifferenceGame(); return; } const activeTile = differenceState.tiles[differenceCursor]; if (activeTile) handleDifferencePick(activeTile.id); return; }
+      if (activeGame === "logic") { if (logicState.phase !== "playing") { startLogicGame(); return; } handleLogicPick(logicCursor); return; }
       if (scanState.phase !== "playing") { startScanGame(); return; }
       const activeTile = scanState.tiles[scanCursor];
       if (activeTile) handleScanPick(activeTile.id);
@@ -2047,6 +2188,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       if (event.key === "Escape") { setShowShortcutGuide(false); }
       if (activeAppView !== "games") return;
       const normalizedKey = event.key.toLowerCase();
+      // Logic game: 1-4 keys to pick option directly
+      if (activeGame === "logic" && logicState.phase === "playing") {
+        if (["1","2","3","4"].includes(event.key)) { event.preventDefault(); handleLogicPick(Number(event.key) - 1); return; }
+      }
       const currentIndex = GAME_TABS.findIndex((tab) => tab.key === activeGame);
       if (normalizedKey === "a") { event.preventDefault(); const nextIndex = currentIndex === 0 ? GAME_TABS.length - 1 : currentIndex - 1; setActiveGame(GAME_TABS[nextIndex].key); return; }
       if (normalizedKey === "b") { event.preventDefault(); const nextIndex = currentIndex === GAME_TABS.length - 1 ? 0 : currentIndex + 1; setActiveGame(GAME_TABS[nextIndex].key); return; }
@@ -2055,7 +2200,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activeGame, activeAppView, differenceCursor, differenceState, memoryCursor, memoryState, pairsCursor, pairsState, pulseCursor, pulseState, routeCursor, routeState, scanCursor, scanState]);
+  }, [activeGame, activeAppView, differenceCursor, differenceState, logicCursor, logicState, memoryCursor, memoryState, pairsCursor, pairsState, pulseCursor, pulseState, routeCursor, routeState, scanCursor, scanState]);
 
   // ── Derived values ──
   const activeTab = GAME_TABS.find((tab) => tab.key === activeGame) ?? GAME_TABS[0];
@@ -5430,6 +5575,129 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     </div>
                     <div className="relative flex gap-3">
                       <button type="button" data-tooltip="Ekranda görünen nesneleri tara ve say" data-tooltip-dir="top" className={gameBtn} style={{ background: "linear-gradient(135deg, #8be2ff, #34d399)", boxShadow: "0 4px 20px rgba(139,226,255,0.35)" }} onClick={startScanGame}>Taramayı Başlat</button>
+                    </div>
+                  </section>
+                )}
+
+                {/* ── Logic Game ── */}
+                {activeGame === "logic" && (
+                  <section className="relative rounded-3xl p-6 lg:p-8 flex flex-col gap-6 w-full overflow-hidden" style={{ background: "rgba(8,6,24,0.97)", border: "1px solid rgba(167,139,250,0.22)", boxShadow: "0 0 80px rgba(167,139,250,0.08), 0 24px 48px rgba(0,0,0,0.4)" }}>
+                    {logicState.phase === "finished" && (() => {
+                      const ls = logicState.score;
+                      const logicRounds = GAME_DIFF_CONFIG.logic.rounds[clientDiffLevel - 1];
+                      const logicStars = ls >= logicRounds * 8 ? 3 : ls >= logicRounds * 5 ? 2 : ls >= logicRounds * 2 ? 1 : 0;
+                      return (
+                        <GameResultOverlay
+                          accent="#a78bfa"
+                          gradFrom="#a78bfa"
+                          gradTo="#7c3aed"
+                          gameName="Dizi Mantık"
+                          score={ls}
+                          bestScore={scoreboard.logic.best}
+                          stars={logicStars}
+                          stats={[
+                            { label: "Skor", value: ls },
+                            { label: "Tur", value: `${logicState.round}/${logicRounds}` },
+                            { label: "En İyi", value: scoreboard.logic.best || "—" },
+                          ]}
+                          onReplay={startLogicGame}
+                          onBack={() => setActiveAppView("dashboard")}
+                          onSaveNote={async (note) => { setNoteForm({ date: getTodayString(), content: `[${GAME_LABELS[activeGame]}] ${note}` }); setNoteMode("free"); await handleAddNoteDB(); }}
+                          onSatisfaction={handleSaveSatisfaction}
+                          hasActiveClient={!!activeClient}
+                          durationSeconds={Math.max(30, Math.round((Date.now() - sessionStartedAt) / 1000))}
+                          sessionAvg={(() => { const gs = platformOverview.recentSessions.filter(s => s.gameKey === activeGame && s.clientId === (activeClient?.id ?? "")); return gs.length > 0 ? Math.round(gs.reduce((a, s) => a + s.score, 0) / gs.length) : 0; })()}
+                        />
+                      );
+                    })()}
+                    {/* Header */}
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #a78bfa, #7c3aed)" }}>
+                          <Grid3X3 size={18} className="text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-base font-extrabold text-(--color-text) m-0">Dizi Mantık</h3>
+                          <p className="text-xs text-(--color-text-muted) m-0">3×3 matris — şekil &amp; renk örüntüsü</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <div className="text-xl font-black" style={{ color: "#a78bfa" }}>{logicState.score}</div>
+                          <div className="text-[10px] text-(--color-text-muted) font-semibold uppercase tracking-wider">Puan</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xl font-black text-(--color-text)">{logicState.round}/{GAME_DIFF_CONFIG.logic.rounds[clientDiffLevel - 1]}</div>
+                          <div className="text-[10px] text-(--color-text-muted) font-semibold uppercase tracking-wider">Tur</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Status message */}
+                    <div className="rounded-2xl px-4 py-2.5 text-sm font-semibold text-center" style={{ background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.15)", color: "#c4b5fd" }}>
+                      {logicState.message}
+                      {logicState.phase === "playing" && logicState.puzzle && (
+                        <span className="ml-2 text-xs opacity-60">({logicState.puzzle.ruleHint})</span>
+                      )}
+                    </div>
+
+                    {logicState.phase === "playing" && logicState.puzzle && (() => {
+                      const { puzzle } = logicState;
+                      const cellSize = 56;
+                      return (
+                        <div className="flex flex-col lg:flex-row gap-8 items-start justify-center">
+                          {/* 3x3 matrix — last cell is the question */}
+                          <div className="flex flex-col gap-1.5 items-center">
+                            <p className="text-xs font-bold text-(--color-text-muted) uppercase tracking-wider mb-1">Matris</p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {puzzle.grid.map((cell, i) => (
+                                <div key={i} className="rounded-xl flex items-center justify-center" style={{ width: cellSize, height: cellSize, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(167,139,250,0.2)" }}>
+                                  <svg width={cellSize - 12} height={cellSize - 12} viewBox={`0 0 ${cellSize} ${cellSize}`} dangerouslySetInnerHTML={{ __html: renderLogicShape(cell.shape, cell.color, cellSize) }} />
+                                </div>
+                              ))}
+                              {/* Missing cell */}
+                              <div className="rounded-xl flex items-center justify-center" style={{ width: cellSize, height: cellSize, background: "rgba(167,139,250,0.12)", border: "2px dashed rgba(167,139,250,0.5)" }}>
+                                <span className="text-2xl font-black" style={{ color: "#a78bfa" }}>?</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Options */}
+                          <div className="flex flex-col gap-2 items-center">
+                            <p className="text-xs font-bold text-(--color-text-muted) uppercase tracking-wider mb-1">Seçenekler <span className="opacity-50 normal-case font-normal">(1–4 tuş)</span></p>
+                            <div className="grid grid-cols-2 gap-3">
+                              {puzzle.options.map((opt, i) => {
+                                const isCursor = logicCursor === i;
+                                const isSelected = logicState.selectedIdx === i;
+                                const isCorrectOpt = i === puzzle.answerIdx;
+                                let borderColor = isCursor ? "rgba(167,139,250,0.7)" : "rgba(167,139,250,0.2)";
+                                let bg = isCursor ? "rgba(167,139,250,0.10)" : "rgba(255,255,255,0.03)";
+                                if (logicState.showResult && isSelected) { bg = isCorrectOpt ? "rgba(16,185,129,0.18)" : "rgba(239,68,68,0.18)"; borderColor = isCorrectOpt ? "#10b981" : "#ef4444"; }
+                                if (logicState.showResult && isCorrectOpt && !isSelected) { bg = "rgba(16,185,129,0.10)"; borderColor = "#10b98188"; }
+                                return (
+                                  <button
+                                    key={i}
+                                    type="button"
+                                    className="relative rounded-2xl flex flex-col items-center justify-center gap-1 cursor-pointer transition-all hover:scale-105 active:scale-95"
+                                    style={{ width: cellSize + 20, height: cellSize + 28, background: bg, border: `2px solid ${borderColor}` }}
+                                    onClick={() => handleLogicPick(i)}
+                                    disabled={logicState.showResult}
+                                  >
+                                    <span className="absolute top-1.5 left-2 text-[10px] font-black opacity-50">{i + 1}</span>
+                                    <svg width={cellSize - 8} height={cellSize - 8} viewBox={`0 0 ${cellSize} ${cellSize}`} dangerouslySetInnerHTML={{ __html: renderLogicShape(opt.shape, opt.color, cellSize) }} />
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    <div className="relative flex gap-3">
+                      <button type="button" className={gameBtn} style={{ background: "linear-gradient(135deg, #a78bfa, #7c3aed)", boxShadow: "0 4px 20px rgba(167,139,250,0.35)" }} onClick={startLogicGame}>
+                        {logicState.phase === "idle" ? "Oyunu Başlat" : "Yeniden Başlat"}
+                      </button>
                     </div>
                   </section>
                 )}

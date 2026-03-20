@@ -47,6 +47,7 @@ export const GAME_LABELS = {
   route: "Komut Rotası",
   difference: "Fark Avcısı",
   scan: "Hedef Tarama",
+  logic: "Dizi Mantık",
 } as const;
 
 export type PlatformGameKey = keyof typeof GAME_LABELS;
@@ -167,6 +168,7 @@ export function createEmptyRemoteScores(): Record<PlatformGameKey, RemoteScoreSu
     route: { label: GAME_LABELS.route, best: 0, last: 0, sessions: 0, lastPlayedAt: null },
     difference: { label: GAME_LABELS.difference, best: 0, last: 0, sessions: 0, lastPlayedAt: null },
     scan: { label: GAME_LABELS.scan, best: 0, last: 0, sessions: 0, lastPlayedAt: null },
+    logic: { label: GAME_LABELS.logic, best: 0, last: 0, sessions: 0, lastPlayedAt: null },
   };
 }
 
