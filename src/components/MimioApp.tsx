@@ -3019,10 +3019,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         </div>
 
         {/* User footer */}
-        <div className="relative p-3 mt-auto" style={{ borderTop: "1px solid var(--color-line)" }}>
-          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors"
+        <div className="relative p-3 mt-auto flex flex-col gap-2" style={{ borderTop: "1px solid var(--color-line)" }}>
+          {/* User info */}
+          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
             style={{ background: "rgba(255,255,255,0.03)" }}>
-            {/* Avatar */}
             <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
               style={{ background: "linear-gradient(135deg, #6366f1, #818cf8)", boxShadow: "0 2px 8px rgba(99,102,241,0.35)" }}>
               {activeTherapist?.displayName?.[0]?.toUpperCase() ?? "T"}
@@ -3035,52 +3035,42 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 {activeTherapist?.clinicName || "Bağımsız terapist"}
               </span>
             </div>
-            <div className="flex items-center gap-1">
-              <button type="button" onClick={toggleTheme}
-                data-tooltip={theme === "dark" ? "Açık temaya geç" : "Koyu temaya geç"}
-                data-tooltip-dir="top"
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-(--color-text-muted) hover:text-(--color-primary) hover:bg-(--color-primary-light) bg-transparent border-none cursor-pointer transition-all"
-                aria-label="Tema değiştir">
-                {theme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
-              </button>
-              <button type="button"
-                data-tooltip={theme === "high-contrast" ? "Normal temaya dön" : "Yüksek kontrast modu"}
-                data-tooltip-dir="top"
-                className="w-7 h-7 rounded-lg flex items-center justify-center bg-transparent border-none cursor-pointer transition-all text-xs font-black"
-                style={{ color: theme === "high-contrast" ? "#ffff00" : "var(--color-text-muted)" }}
-                onClick={() => setTheme(theme === "high-contrast" ? "dark" : "high-contrast")}
-                aria-label="Yüksek kontrast">
-                ⊙
-              </button>
-              <button type="button"
-                data-tooltip="Profil düzenle"
-                data-tooltip-dir="top"
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-(--color-text-muted) hover:text-indigo-400 hover:bg-indigo-500/10 bg-transparent border-none cursor-pointer transition-all"
-                onClick={() => { setTherapistEditDraft({ displayName: activeTherapist?.displayName ?? "", clinicName: activeTherapist?.clinicName ?? "", specialty: activeTherapist?.specialty ?? "" }); setShowEditTherapist(true); }} aria-label="Profil düzenle">
-                <Edit2 size={13} />
-              </button>
-              <button type="button"
-                data-tooltip="Raporlar & Analitik"
-                data-tooltip-dir="top"
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-(--color-text-muted) hover:text-amber-400 hover:bg-amber-500/10 bg-transparent border-none cursor-pointer transition-all"
-                onClick={() => setActiveAppView("reports")} aria-label="Raporlar">
-                <BarChart3 size={13} />
-              </button>
-              <button type="button"
-                data-tooltip="Klavye kısayolları (?)"
-                data-tooltip-dir="top"
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-(--color-text-muted) hover:text-indigo-400 hover:bg-indigo-500/10 bg-transparent border-none cursor-pointer transition-all text-xs font-black"
-                onClick={() => setShowShortcutGuide(v => !v)} aria-label="Kısayol rehberi">
-                ?
-              </button>
-              <button type="button"
-                data-tooltip="Çıkış yap"
-                data-tooltip-dir="top"
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-(--color-text-muted) hover:text-red-400 hover:bg-red-500/10 bg-transparent border-none cursor-pointer transition-all"
-                onClick={handleLogout} aria-label="Çıkış yap">
-                <LogOut size={13} />
-              </button>
-            </div>
+          </div>
+
+          {/* Action row */}
+          <div className="flex items-center gap-1 px-1">
+            <button type="button" onClick={toggleTheme}
+              data-tooltip={theme === "dark" ? "Açık temaya geç" : "Koyu temaya geç"}
+              data-tooltip-dir="top"
+              className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-medium text-(--color-text-muted) hover:text-(--color-primary) hover:bg-(--color-primary-light) bg-transparent border-none cursor-pointer transition-all"
+              aria-label="Tema değiştir">
+              {theme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
+              <span>{theme === "dark" ? "Açık" : "Koyu"}</span>
+            </button>
+
+            <div className="w-px h-4 shrink-0" style={{ background: "var(--color-line)" }} />
+
+            <button type="button"
+              data-tooltip="Profil düzenle"
+              data-tooltip-dir="top"
+              className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-medium text-(--color-text-muted) hover:text-indigo-400 hover:bg-indigo-500/10 bg-transparent border-none cursor-pointer transition-all"
+              onClick={() => { setTherapistEditDraft({ displayName: activeTherapist?.displayName ?? "", clinicName: activeTherapist?.clinicName ?? "", specialty: activeTherapist?.specialty ?? "" }); setShowEditTherapist(true); }}
+              aria-label="Profil düzenle">
+              <Edit2 size={13} />
+              <span>Düzenle</span>
+            </button>
+
+            <div className="w-px h-4 shrink-0" style={{ background: "var(--color-line)" }} />
+
+            <button type="button"
+              data-tooltip="Çıkış yap"
+              data-tooltip-dir="top"
+              className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-medium text-(--color-text-muted) hover:text-red-400 hover:bg-red-500/10 bg-transparent border-none cursor-pointer transition-all"
+              onClick={handleLogout}
+              aria-label="Çıkış yap">
+              <LogOut size={13} />
+              <span>Çıkış</span>
+            </button>
           </div>
         </div>
       </nav>

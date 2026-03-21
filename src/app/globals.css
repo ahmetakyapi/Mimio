@@ -191,6 +191,13 @@ html[data-theme='light'] body {
     radial-gradient(circle at 82% 10%, rgba(34, 211, 238, 0.05), transparent 26%),
     radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.04), transparent 30%),
     #eef2ff;
+  background-attachment: fixed;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  html[data-theme='light'] body {
+    background-attachment: scroll;
+  }
 }
 
 body {
@@ -264,6 +271,13 @@ img {
   button, [role="button"], select, input[type="submit"] {
     min-height: 44px;
     min-width: 44px;
+  }
+}
+
+/* ── Mobile: background-attachment fixed breaks on iOS ── */
+@media (hover: none) and (pointer: coarse) {
+  body {
+    background-attachment: scroll;
   }
 }
 
@@ -631,8 +645,8 @@ html[data-theme='light'] .section-games {
   border: none;
   cursor: pointer;
   box-shadow: 0 8px 24px rgba(99,102,241,0.45), 0 2px 8px rgba(0,0,0,0.3);
-  background: linear-gradient(135deg, #6366f1, #818cf8);
-  color: white;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #ffffff;
   transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s ease;
 }
 .mobile-fab:active {
