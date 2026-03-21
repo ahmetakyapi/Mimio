@@ -4604,6 +4604,74 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     })}
                   </div>
 
+                  {/* ── Goal-Based Session Planner ── */}
+                  {clientGoals.length > 0 && (() => {
+                    const GOAL_GAME_MAP: Record<string, GameKey[]> = {
+                      dikkat:         ["scan", "difference", "logic"],
+                      odak:           ["scan", "difference", "logic"],
+                      hafıza:         ["memory", "pairs"],
+                      bellek:         ["memory", "pairs"],
+                      motor:          ["pulse", "route"],
+                      koordinasyon:   ["pulse", "route"],
+                      görsel:         ["difference", "scan"],
+                      algı:           ["difference", "scan"],
+                      planlama:       ["route", "logic"],
+                      mantık:         ["logic", "route"],
+                      yürütücü:       ["route", "logic"],
+                    };
+                    function getGoalGames(goalTitle: string): GameKey[] {
+                      const lower = goalTitle.toLowerCase();
+                      for (const [kw, games] of Object.entries(GOAL_GAME_MAP)) {
+                        if (lower.includes(kw)) return games;
+                      }
+                      return ["memory", "scan", "pulse"];
+                    }
+                    const activeGoals = clientGoals.filter(g => g.currentValue < g.targetValue);
+                    if (activeGoals.length === 0) return null;
+                    return (
+                      <div className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
+                        <div className="px-4 py-3 border-b border-(--color-line)" style={{ background: "rgba(99,102,241,0.06)" }}>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400 m-0">🎯 Hedef Bazlı Oyun Önerisi</p>
+                        </div>
+                        <div className="p-4 space-y-3">
+                          {activeGoals.slice(0, 3).map(goal => {
+                            const games = getGoalGames(goal.title);
+                            return (
+                              <div key={goal.id} className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-bold text-(--color-text-strong) truncate flex-1">{goal.title}</span>
+                                  <span className="text-[10px] text-(--color-text-muted) shrink-0 ml-2">{Math.round((goal.currentValue / Math.max(goal.targetValue, 1)) * 100)}%</span>
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  {games.map(g => (
+                                    <button key={g} type="button"
+                                      onClick={() => {
+                                        const entry: WeeklyPlanEntry = { gameKey: g as PlatformGameKey, goal: goal.title };
+                                        setPlanEdits(cur => {
+                                          const updated = { ...cur };
+                                          for (const day of DAY_KEYS) {
+                                            if (!updated[day].some(e => e.gameKey === g)) {
+                                              updated[day] = [...updated[day], entry];
+                                            }
+                                          }
+                                          return updated;
+                                        });
+                                      }}
+                                      className="flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border cursor-pointer transition-all hover:opacity-80"
+                                      style={{ background: "rgba(99,102,241,0.08)", borderColor: "rgba(99,102,241,0.2)", color: "var(--color-primary)" }}>
+                                      + {GAME_LABELS[g]}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                          <p className="text-[10px] text-(--color-text-muted) m-0">Butona tıklayarak ilgili oyunu haftanın tüm planlanmış günlerine ekleyebilirsiniz.</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   <button type="button" className={btnPrimary} onClick={() => { void handleSaveWeeklyPlanDB(); }}>
                     Planı Kaydet
                   </button>
