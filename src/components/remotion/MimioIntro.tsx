@@ -17,6 +17,8 @@ import {
   CalendarDays,
   Star,
   CheckCircle2,
+  FileText,
+  Zap,
 } from "lucide-react";
 
 /* ── Color palettes ── */
@@ -84,6 +86,16 @@ function sp(
   return spring({ frame: frame - delay, fps, config: { stiffness, damping } });
 }
 
+/* ── Scene opacity helper ── */
+function sceneOpacity(frame: number, start: number) {
+  return interpolate(
+    frame,
+    [start, start + 15, start + 155, start + 175],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+}
+
 /* ══════════════════════════════════════════
    Scene 1 — Dashboard Overview
 ══════════════════════════════════════════ */
@@ -106,7 +118,6 @@ function DashboardScene({ frame, fps, C }: SceneProps) {
 
   return (
     <AbsoluteFill style={{ padding: 28, fontFamily: "system-ui, sans-serif" }}>
-      {/* Ambient glow */}
       <div
         style={{
           position: "absolute",
@@ -120,7 +131,6 @@ function DashboardScene({ frame, fps, C }: SceneProps) {
         }}
       />
 
-      {/* Header */}
       <div
         style={{
           transform: `translateY(${interpolate(headerP, [0, 1], [16, 0])}px)`,
@@ -176,7 +186,6 @@ function DashboardScene({ frame, fps, C }: SceneProps) {
         </p>
       </div>
 
-      {/* Stat cards */}
       <div
         style={{
           display: "grid",
@@ -237,7 +246,6 @@ function DashboardScene({ frame, fps, C }: SceneProps) {
         })}
       </div>
 
-      {/* Label */}
       <div style={{ opacity: sp(frame, fps, 45), marginBottom: 8 }}>
         <p
           style={{
@@ -253,7 +261,6 @@ function DashboardScene({ frame, fps, C }: SceneProps) {
         </p>
       </div>
 
-      {/* Client rows */}
       {clients.map((c, i) => {
         const p = sp(frame, fps, 52 + i * 12);
         return (
@@ -326,7 +333,6 @@ function DashboardScene({ frame, fps, C }: SceneProps) {
         );
       })}
 
-      {/* Notification badge */}
       <div
         style={{
           position: "absolute",
@@ -360,6 +366,9 @@ function GamesScene({ frame, fps, C }: SceneProps) {
     { label: "Sıra Hafızası", area: "Çalışma Belleği", Icon: Brain, color: C.indigo },
     { label: "Mavi Nabız", area: "Motor Beceri", Icon: Target, color: C.purple },
     { label: "Hedef Tarama", area: "Görsel Algı", Icon: Target, color: C.cyan },
+    { label: "Ritim Vurgu", area: "Koordinasyon", Icon: Gamepad2, color: C.emerald },
+    { label: "Renk Akışı", area: "Dikkat", Icon: Brain, color: C.amber },
+    { label: "Örüntü Bul", area: "Mantıksal Düşünme", Icon: Target, color: C.purple },
   ];
 
   const headerP = sp(frame, fps, 0);
@@ -377,7 +386,6 @@ function GamesScene({ frame, fps, C }: SceneProps) {
 
   return (
     <AbsoluteFill style={{ padding: 28, fontFamily: "system-ui, sans-serif" }}>
-      {/* Ambient glow */}
       <div
         style={{
           position: "absolute",
@@ -391,12 +399,11 @@ function GamesScene({ frame, fps, C }: SceneProps) {
         }}
       />
 
-      {/* Header */}
       <div
         style={{
           opacity: headerP,
           transform: `translateY(${interpolate(headerP, [0, 1], [16, 0])}px)`,
-          marginBottom: 18,
+          marginBottom: 14,
         }}
       >
         <div
@@ -427,63 +434,57 @@ function GamesScene({ frame, fps, C }: SceneProps) {
           Her Oyun Bir Gelişim Hedefi
         </h2>
         <p style={{ color: C.textMuted, fontSize: 11, margin: 0 }}>
-          6 oyun · 3 beceri alanı · kanıta dayalı tasarım
+          6 oyun · 5 beceri alanı · kanıta dayalı tasarım
         </p>
       </div>
 
-      {/* Game cards */}
-      {games.map((g, i) => {
-        const p = sp(frame, fps, 15 + i * 16, 80, 18);
-        const Icon = g.Icon;
-        return (
-          <div
-            key={g.label}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 11,
-              background: C.surfaceEl,
-              border: `1px solid ${g.color}28`,
-              borderRadius: 12,
-              padding: "11px 14px",
-              marginBottom: 8,
-              transform: `translateX(${interpolate(p, [0, 1], [30, 0])}px)`,
-              opacity: p,
-            }}
-          >
+      {/* Game grid 2 cols */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 10 }}>
+        {games.map((g, i) => {
+          const p = sp(frame, fps, 15 + i * 10, 80, 18);
+          const Icon = g.Icon;
+          return (
             <div
+              key={g.label}
               style={{
-                width: 38,
-                height: 38,
-                borderRadius: 10,
-                background: `${g.color}18`,
-                border: `1px solid ${g.color}28`,
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
+                gap: 8,
+                background: C.surfaceEl,
+                border: `1px solid ${g.color}28`,
+                borderRadius: 10,
+                padding: "9px 11px",
+                transform: `translateX(${interpolate(p, [0, 1], [i % 2 === 0 ? -20 : 20, 0])}px)`,
+                opacity: p,
               }}
             >
-              <Icon size={16} color={g.color} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <p
-                style={{ color: C.textStrong, fontSize: 12, fontWeight: 700, margin: 0 }}
+              <div
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 8,
+                  background: `${g.color}18`,
+                  border: `1px solid ${g.color}28`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
               >
-                {g.label}
-              </p>
-              <p style={{ color: C.textMuted, fontSize: 10, margin: 0 }}>
-                {g.area}
-              </p>
+                <Icon size={13} color={g.color} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p
+                  style={{ color: C.textStrong, fontSize: 10, fontWeight: 700, margin: 0 }}
+                >
+                  {g.label}
+                </p>
+                <p style={{ color: C.textMuted, fontSize: 8, margin: 0 }}>{g.area}</p>
+              </div>
             </div>
-            <div style={{ display: "flex", gap: 2 }}>
-              {[1, 2, 3, 4, 5].map((s) => (
-                <Star key={s} size={9} color={C.amber} fill={C.amber} />
-              ))}
-            </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
 
       {/* Score card */}
       <div
@@ -491,7 +492,7 @@ function GamesScene({ frame, fps, C }: SceneProps) {
           background: `${C.indigo}12`,
           border: `1px solid ${C.indigo}28`,
           borderRadius: 12,
-          padding: "13px 16px",
+          padding: "11px 14px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -509,22 +510,21 @@ function GamesScene({ frame, fps, C }: SceneProps) {
               margin: "0 0 3px",
             }}
           >
-            Son Seans Skoru
+            Son Seans Skoru · Ela Selin
           </p>
           <div style={{ display: "flex", alignItems: "baseline", gap: 3 }}>
             <strong
-              style={{ color: C.indigo, fontSize: 32, fontWeight: 900, lineHeight: 1 }}
+              style={{ color: C.indigo, fontSize: 28, fontWeight: 900, lineHeight: 1 }}
             >
               {countedScore}
             </strong>
-            <span style={{ color: C.textMuted, fontSize: 14 }}>/100</span>
+            <span style={{ color: C.textMuted, fontSize: 13 }}>/100</span>
           </div>
         </div>
-        {/* Gauge */}
         <div
           style={{
-            width: 54,
-            height: 54,
+            width: 50,
+            height: 50,
             borderRadius: "50%",
             border: `3px solid ${C.indigo}28`,
             display: "flex",
@@ -544,7 +544,7 @@ function GamesScene({ frame, fps, C }: SceneProps) {
               transform: `rotate(${gaugeRotation}deg)`,
             }}
           />
-          <span style={{ color: C.indigo, fontSize: 10, fontWeight: 800 }}>
+          <span style={{ color: C.indigo, fontSize: 9, fontWeight: 800 }}>
             %{countedScore}
           </span>
         </div>
@@ -554,10 +554,642 @@ function GamesScene({ frame, fps, C }: SceneProps) {
 }
 
 /* ══════════════════════════════════════════
+   Scene 3 — Session Planner
+══════════════════════════════════════════ */
+function SessionPlannerScene({ frame, fps, C }: SceneProps) {
+  const goals = [
+    { label: "Çalışma Belleği", progress: 72, color: C.indigo },
+    { label: "Görsel Algı", progress: 58, color: C.cyan },
+    { label: "Motor Koordinasyon", progress: 84, color: C.emerald },
+  ];
+
+  const activities = [
+    { name: "Sıra Hafızası", type: "Çalışma Belleği", dur: "15 dk", diff: "Orta", color: C.indigo },
+    { name: "Hedef Tarama", type: "Görsel Algı", dur: "10 dk", diff: "Kolay", color: C.cyan },
+    { name: "Ritim Vurgu", type: "Koordinasyon", dur: "12 dk", diff: "Zor", color: C.purple },
+  ];
+
+  const headerP = sp(frame, fps, 0);
+  const btnP = sp(frame, fps, 118);
+
+  return (
+    <AbsoluteFill style={{ padding: 28, fontFamily: "system-ui, sans-serif" }}>
+      <div
+        style={{
+          position: "absolute",
+          top: -60,
+          right: -60,
+          width: 280,
+          height: 280,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${C.glowIndigo}, transparent 70%)`,
+          pointerEvents: "none",
+        }}
+      />
+
+      <div
+        style={{
+          transform: `translateY(${interpolate(headerP, [0, 1], [14, 0])}px)`,
+          opacity: headerP,
+          marginBottom: 15,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+          <CalendarDays size={11} color={C.indigo} />
+          <span
+            style={{
+              color: C.indigo,
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: 2,
+              textTransform: "uppercase",
+            }}
+          >
+            Seans Planlayıcısı
+          </span>
+        </div>
+        <h2
+          style={{
+            color: C.textStrong,
+            fontSize: 17,
+            fontWeight: 800,
+            margin: "0 0 2px",
+            lineHeight: 1.2,
+          }}
+        >
+          Ela Selin — Program
+        </h2>
+        <p style={{ color: C.textMuted, fontSize: 11, margin: 0 }}>
+          3 hedef · 3 aktivite · ~37 dakika
+        </p>
+      </div>
+
+      <p
+        style={{
+          color: C.textMuted,
+          fontSize: 9,
+          fontWeight: 700,
+          letterSpacing: 1.5,
+          textTransform: "uppercase",
+          margin: "0 0 9px",
+          opacity: sp(frame, fps, 14),
+        }}
+      >
+        Tedavi Hedefleri
+      </p>
+
+      {goals.map((g, i) => {
+        const p = sp(frame, fps, 20 + i * 14);
+        const barWidth = interpolate(frame, [35 + i * 14, 95 + i * 14], [0, g.progress], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        });
+        return (
+          <div
+            key={g.label}
+            style={{
+              marginBottom: 9,
+              opacity: p,
+              transform: `translateX(${interpolate(p, [0, 1], [-18, 0])}px)`,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+              <span style={{ color: C.textSoft, fontSize: 10, fontWeight: 600 }}>
+                {g.label}
+              </span>
+              <span style={{ color: g.color, fontSize: 10, fontWeight: 800 }}>
+                {g.progress}%
+              </span>
+            </div>
+            <div
+              style={{
+                height: 5,
+                background: `${g.color}18`,
+                borderRadius: 3,
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  width: `${barWidth}%`,
+                  height: "100%",
+                  background: `linear-gradient(90deg, ${g.color}, ${g.color}cc)`,
+                  borderRadius: 3,
+                }}
+              />
+            </div>
+          </div>
+        );
+      })}
+
+      <p
+        style={{
+          color: C.textMuted,
+          fontSize: 9,
+          fontWeight: 700,
+          letterSpacing: 1.5,
+          textTransform: "uppercase",
+          margin: "12px 0 8px",
+          opacity: sp(frame, fps, 62),
+        }}
+      >
+        Planlanan Aktiviteler
+      </p>
+
+      {activities.map((a, i) => {
+        const p = sp(frame, fps, 68 + i * 12, 90, 20);
+        return (
+          <div
+            key={a.name}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              background: C.surfaceEl,
+              border: `1px solid ${a.color}22`,
+              borderRadius: 10,
+              padding: "8px 12px",
+              marginBottom: 6,
+              opacity: p,
+              transform: `translateX(${interpolate(p, [0, 1], [20, 0])}px)`,
+            }}
+          >
+            <div
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 8,
+                background: `${a.color}18`,
+                border: `1px solid ${a.color}28`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Brain size={12} color={a.color} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <p
+                style={{ color: C.textStrong, fontSize: 11, fontWeight: 700, margin: 0 }}
+              >
+                {a.name}
+              </p>
+              <p style={{ color: C.textMuted, fontSize: 9, margin: 0 }}>{a.type}</p>
+            </div>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <span style={{ color: C.textMuted, fontSize: 9 }}>{a.dur}</span>
+              <span
+                style={{
+                  background: `${a.color}18`,
+                  color: a.color,
+                  fontSize: 8,
+                  fontWeight: 700,
+                  padding: "2px 6px",
+                  borderRadius: 4,
+                  border: `1px solid ${a.color}28`,
+                }}
+              >
+                {a.diff}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+
+      <div
+        style={{
+          position: "absolute",
+          bottom: 22,
+          right: 22,
+          background: `linear-gradient(135deg, ${C.indigo}, ${C.purple})`,
+          borderRadius: 10,
+          padding: "8px 18px",
+          color: "white",
+          fontSize: 11,
+          fontWeight: 700,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          opacity: btnP,
+          transform: `translateY(${interpolate(btnP, [0, 1], [10, 0])}px)`,
+          boxShadow: `0 6px 20px ${C.glowIndigo}`,
+        }}
+      >
+        <CheckCircle2 size={11} color="white" />
+        Seans Oluştur
+      </div>
+    </AbsoluteFill>
+  );
+}
+
+/* ══════════════════════════════════════════
+   Scene 4 — Smart Therapy Suggestions
+══════════════════════════════════════════ */
+function TherapySuggestionsScene({ frame, fps, C }: SceneProps) {
+  const suggestions = [
+    {
+      client: "Ela Selin",
+      suggestion: "Sıra Hafızası — Zorluk 3",
+      reason: "Son 3 seansta çalışma belleği skoru sürekli yükseliyor, zorluk artırılabilir",
+      confidence: 94,
+      priority: "Yüksek",
+      color: C.emerald,
+    },
+    {
+      client: "Tuna Akarsu",
+      suggestion: "Mavi Nabız — Motor Odaklı",
+      reason: "Motor beceri skoru 2 haftadır platoda, farklı egzersiz türü önerilir",
+      confidence: 78,
+      priority: "Orta",
+      color: C.amber,
+    },
+    {
+      client: "Asya Demir",
+      suggestion: "Hedef Tarama — Hız Modu",
+      reason: "Görsel algı gelişimi beklenen eğrinin altında kaldı",
+      confidence: 62,
+      priority: "Düşük",
+      color: C.cyan,
+    },
+  ];
+
+  const headerP = sp(frame, fps, 0);
+
+  return (
+    <AbsoluteFill style={{ padding: 28, fontFamily: "system-ui, sans-serif" }}>
+      <div
+        style={{
+          position: "absolute",
+          top: -60,
+          left: -60,
+          width: 300,
+          height: 300,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${C.glowPurple}, transparent 70%)`,
+          pointerEvents: "none",
+        }}
+      />
+
+      <div
+        style={{
+          opacity: headerP,
+          transform: `translateY(${interpolate(headerP, [0, 1], [14, 0])}px)`,
+          marginBottom: 18,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+          <Zap size={11} color={C.purple} />
+          <span
+            style={{
+              color: C.purple,
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: 2,
+              textTransform: "uppercase",
+            }}
+          >
+            Akıllı Öneri Motoru
+          </span>
+        </div>
+        <h2
+          style={{
+            color: C.textStrong,
+            fontSize: 17,
+            fontWeight: 800,
+            margin: "0 0 2px",
+            lineHeight: 1.2,
+          }}
+        >
+          Kişiselleştirilmiş Öneriler
+        </h2>
+        <p style={{ color: C.textMuted, fontSize: 11, margin: 0 }}>
+          Geçmiş seans verisi ve kural motoruna dayalı
+        </p>
+      </div>
+
+      {suggestions.map((s, i) => {
+        const p = sp(frame, fps, 15 + i * 22, 85, 18);
+        const confWidth = interpolate(frame, [40 + i * 22, 105 + i * 22], [0, s.confidence], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        });
+        return (
+          <div
+            key={s.client}
+            style={{
+              background: C.surfaceEl,
+              border: `1px solid ${s.color}22`,
+              borderRadius: 12,
+              padding: "12px 14px",
+              marginBottom: 10,
+              opacity: p,
+              transform: `translateX(${interpolate(p, [0, 1], [24, 0])}px)`,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                marginBottom: 5,
+              }}
+            >
+              <div>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}
+                >
+                  <span style={{ color: C.textStrong, fontSize: 11, fontWeight: 700 }}>
+                    {s.client}
+                  </span>
+                  <span
+                    style={{
+                      background: `${s.color}18`,
+                      color: s.color,
+                      fontSize: 8,
+                      fontWeight: 700,
+                      padding: "2px 7px",
+                      borderRadius: 20,
+                      border: `1px solid ${s.color}30`,
+                    }}
+                  >
+                    {s.priority}
+                  </span>
+                </div>
+                <p style={{ color: s.color, fontSize: 10, fontWeight: 600, margin: 0 }}>
+                  {s.suggestion}
+                </p>
+              </div>
+              <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 8 }}>
+                <span
+                  style={{
+                    color: s.color,
+                    fontSize: 18,
+                    fontWeight: 900,
+                    lineHeight: 1,
+                    display: "block",
+                  }}
+                >
+                  {Math.round(confWidth)}%
+                </span>
+                <span style={{ color: C.textMuted, fontSize: 8 }}>güven</span>
+              </div>
+            </div>
+            <p
+              style={{
+                color: C.textMuted,
+                fontSize: 9,
+                margin: "0 0 8px",
+                lineHeight: 1.5,
+              }}
+            >
+              {s.reason}
+            </p>
+            <div
+              style={{
+                height: 3,
+                background: `${s.color}18`,
+                borderRadius: 2,
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  width: `${confWidth}%`,
+                  height: "100%",
+                  background: s.color,
+                  borderRadius: 2,
+                }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </AbsoluteFill>
+  );
+}
+
+/* ══════════════════════════════════════════
+   Scene 5 — Clinical Summary
+══════════════════════════════════════════ */
+function ClinicalSummaryScene({ frame, fps, C }: SceneProps) {
+  const SUMMARY_TEXT =
+    "Ela Selin, son 4 seanslık değerlendirmede çalışma belleği alanında belirgin gelişim gösterdi. Sıra Hafızası oyununda skor ortalaması 68'den 92'ye yükseldi. Motor beceri egzersizlerine devam edilmesi önerilir. Ailenin sürece dahil edilmesi için rehberlik seansı planlanmalı.";
+
+  const charCount = Math.floor(
+    interpolate(frame, [22, 145], [0, SUMMARY_TEXT.length], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    })
+  );
+
+  const activities = [
+    { label: "Sıra Hafızası", done: true, score: 92, color: C.indigo },
+    { label: "Hedef Tarama", done: true, score: 85, color: C.cyan },
+    { label: "Mavi Nabız", done: true, score: 78, color: C.purple },
+    { label: "Ritim Vurgu", done: false, score: null, color: C.textMuted },
+  ];
+
+  const headerP = sp(frame, fps, 0);
+  const exportP = sp(frame, fps, 122);
+
+  return (
+    <AbsoluteFill style={{ padding: 28, fontFamily: "system-ui, sans-serif" }}>
+      <div
+        style={{
+          position: "absolute",
+          bottom: -60,
+          right: -60,
+          width: 280,
+          height: 280,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${C.glowIndigo}, transparent 70%)`,
+          pointerEvents: "none",
+        }}
+      />
+
+      <div
+        style={{
+          opacity: headerP,
+          transform: `translateY(${interpolate(headerP, [0, 1], [14, 0])}px)`,
+          marginBottom: 14,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+          <FileText size={11} color={C.indigo} />
+          <span
+            style={{
+              color: C.indigo,
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: 2,
+              textTransform: "uppercase",
+            }}
+          >
+            Klinik Özet
+          </span>
+        </div>
+        <h2
+          style={{
+            color: C.textStrong,
+            fontSize: 17,
+            fontWeight: 800,
+            margin: "0 0 2px",
+            lineHeight: 1.2,
+          }}
+        >
+          Ela Selin — Seans Özeti
+        </h2>
+        <p style={{ color: C.textMuted, fontSize: 11, margin: 0 }}>
+          Otomatik oluşturuldu · 14 Mart 2025
+        </p>
+      </div>
+
+      {/* Summary text box */}
+      <div
+        style={{
+          background: C.surfaceEl,
+          border: `1px solid ${C.indigo}28`,
+          borderRadius: 11,
+          padding: "11px 13px",
+          marginBottom: 13,
+          minHeight: 74,
+          opacity: sp(frame, fps, 18),
+          transform: `translateY(${interpolate(sp(frame, fps, 18), [0, 1], [10, 0])}px)`,
+        }}
+      >
+        <p style={{ color: C.textStrong, fontSize: 10, lineHeight: 1.7, margin: 0 }}>
+          {SUMMARY_TEXT.slice(0, charCount)}
+          {charCount < SUMMARY_TEXT.length && (
+            <span
+              style={{
+                display: "inline-block",
+                width: 1,
+                height: 11,
+                background: C.indigo,
+                marginLeft: 1,
+                verticalAlign: "text-bottom",
+                opacity: frame % 18 < 9 ? 1 : 0,
+              }}
+            />
+          )}
+        </p>
+      </div>
+
+      <p
+        style={{
+          color: C.textMuted,
+          fontSize: 9,
+          fontWeight: 700,
+          letterSpacing: 1.5,
+          textTransform: "uppercase",
+          margin: "0 0 8px",
+          opacity: sp(frame, fps, 72),
+        }}
+      >
+        Aktivite Tamamlama
+      </p>
+
+      {activities.map((a, i) => {
+        const p = sp(frame, fps, 78 + i * 11);
+        return (
+          <div
+            key={a.label}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 9,
+              background: C.surface,
+              border: `1px solid ${C.border}`,
+              borderRadius: 9,
+              padding: "7px 11px",
+              marginBottom: 5,
+              opacity: p,
+              transform: `translateX(${interpolate(p, [0, 1], [16, 0])}px)`,
+            }}
+          >
+            <div
+              style={{
+                width: 18,
+                height: 18,
+                borderRadius: 5,
+                flexShrink: 0,
+                background: a.done ? `${a.color}18` : `${C.textMuted}12`,
+                border: `1px solid ${a.done ? a.color : C.border}30`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {a.done ? (
+                <CheckCircle2 size={10} color={a.color} />
+              ) : (
+                <div
+                  style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: 2,
+                    background: `${C.textMuted}30`,
+                  }}
+                />
+              )}
+            </div>
+            <span
+              style={{
+                color: a.done ? C.textStrong : C.textMuted,
+                fontSize: 11,
+                fontWeight: 600,
+                flex: 1,
+              }}
+            >
+              {a.label}
+            </span>
+            {a.score !== null ? (
+              <span style={{ color: a.color, fontSize: 12, fontWeight: 800 }}>
+                {a.score}
+              </span>
+            ) : (
+              <span style={{ color: C.textMuted, fontSize: 9 }}>Bekliyor</span>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Export button */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 22,
+          right: 22,
+          background: C.surfaceEl,
+          border: `1px solid ${C.indigo}28`,
+          borderRadius: 9,
+          padding: "7px 16px",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          color: C.indigo,
+          fontSize: 10,
+          fontWeight: 700,
+          opacity: exportP,
+          transform: `translateY(${interpolate(exportP, [0, 1], [8, 0])}px)`,
+        }}
+      >
+        <FileText size={10} color={C.indigo} />
+        PDF Aktar
+      </div>
+    </AbsoluteFill>
+  );
+}
+
+/* ══════════════════════════════════════════
    Main Composition
-   300 frames @ 30fps = 10s looping
-   Scene 1: Dashboard  0–148  (fade 120–148)
-   Scene 2: Games      148–300 (fade 148–168, fade out 275–298)
+   840 frames @ 30fps = 28s looping
+   Scene 1: Dashboard         0   → 175
+   Scene 2: Games             165 → 340
+   Scene 3: Session Planner   330 → 505
+   Scene 4: Therapy Suggestions 495 → 670
+   Scene 5: Clinical Summary  660 → 840
 ══════════════════════════════════════════ */
 export type MimioIntroProps = { theme?: "dark" | "light" };
 
@@ -567,27 +1199,28 @@ export function MimioIntro({ theme = "dark" }: MimioIntroProps) {
 
   const C: Colors = theme === "light" ? LIGHT : DARK;
 
-  const s1Opacity = interpolate(frame, [0, 12, 120, 148], [0, 1, 1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const s2Opacity = interpolate(frame, [148, 168, 275, 298], [0, 1, 1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  const scene2Frame = Math.max(0, frame - 155);
+  const s1Op = sceneOpacity(frame, 0);
+  const s2Op = sceneOpacity(frame, 165);
+  const s3Op = sceneOpacity(frame, 330);
+  const s4Op = sceneOpacity(frame, 495);
+  const s5Op = sceneOpacity(frame, 660);
 
   return (
     <AbsoluteFill style={{ background: C.bg, overflow: "hidden" }}>
-      {/* Scene 1 */}
-      <div style={{ position: "absolute", inset: 0, opacity: s1Opacity }}>
+      <div style={{ position: "absolute", inset: 0, opacity: s1Op }}>
         <DashboardScene frame={frame} fps={fps} C={C} />
       </div>
-
-      {/* Scene 2 */}
-      <div style={{ position: "absolute", inset: 0, opacity: s2Opacity }}>
-        <GamesScene frame={scene2Frame} fps={fps} C={C} />
+      <div style={{ position: "absolute", inset: 0, opacity: s2Op }}>
+        <GamesScene frame={Math.max(0, frame - 165)} fps={fps} C={C} />
+      </div>
+      <div style={{ position: "absolute", inset: 0, opacity: s3Op }}>
+        <SessionPlannerScene frame={Math.max(0, frame - 330)} fps={fps} C={C} />
+      </div>
+      <div style={{ position: "absolute", inset: 0, opacity: s4Op }}>
+        <TherapySuggestionsScene frame={Math.max(0, frame - 495)} fps={fps} C={C} />
+      </div>
+      <div style={{ position: "absolute", inset: 0, opacity: s5Op }}>
+        <ClinicalSummaryScene frame={Math.max(0, frame - 660)} fps={fps} C={C} />
       </div>
     </AbsoluteFill>
   );

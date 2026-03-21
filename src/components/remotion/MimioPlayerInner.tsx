@@ -10,7 +10,7 @@ export default function MimioPlayerInner({ theme = "dark" }: Props) {
     <Player
       component={MimioIntro}
       inputProps={{ theme }}
-      durationInFrames={300}
+      durationInFrames={840}
       compositionWidth={640}
       compositionHeight={480}
       fps={30}
