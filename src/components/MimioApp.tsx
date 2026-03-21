@@ -325,6 +325,131 @@ function SessionSetSummary({ sessionSet, onClose, onNewSet }: SessionSetSummaryP
   );
 }
 
+// ── Therapy Protocol Templates ──
+interface TherapyProtocolWeek {
+  week: number;
+  focus: string;
+  games: GameKey[];
+  activities: string[];
+  targetScore: number;
+}
+interface TherapyProtocol {
+  id: string;
+  name: string;
+  emoji: string;
+  domain: string;
+  color: string;
+  duration: number; // weeks
+  description: string;
+  targetGroup: string;
+  frequency: string;
+  weeks: TherapyProtocolWeek[];
+  outcomes: string[];
+}
+
+const THERAPY_PROTOCOLS: TherapyProtocol[] = [
+  {
+    id: "adhd-basic",
+    name: "DEHB Temel Dikkat Programı",
+    emoji: "🎯",
+    domain: "Nöroçeşitlilik",
+    color: "#8b5cf6",
+    duration: 6,
+    description: "DEHB'li danışanlar için dikkat, çalışma belleği ve yürütücü işlev odaklı 6 haftalık kanıta dayalı müdahale protokolü.",
+    targetGroup: "6-18 yaş, DEHB tanılı",
+    frequency: "Haftada 3",
+    weeks: [
+      { week: 1, focus: "Taban ölçüm & alışma", games: ["scan", "memory"], activities: ["Dikkat egzersizleri", "Nefes tekniği"], targetScore: 5 },
+      { week: 2, focus: "Sekans hafıza geliştirme", games: ["memory", "pairs"], activities: ["Sıralama aktivitesi", "İpucu stratejisi"], targetScore: 8 },
+      { week: 3, focus: "Yürütücü işlev — planlama", games: ["route", "logic"], activities: ["Adım sıralama", "Görev analizi"], targetScore: 10 },
+      { week: 4, focus: "Seçici dikkat güçlendirme", games: ["scan", "difference"], activities: ["Figür-zemin egzersizi", "Dikkat odaklama"], targetScore: 12 },
+      { week: 5, focus: "Çift görev & entegrasyon", games: ["route", "memory"], activities: ["Çift görev kombinasyonu", "Strateji geliştirme"], targetScore: 14 },
+      { week: 6, focus: "Pekiştirme & çıktı ölçümü", games: ["memory", "scan", "logic"], activities: ["Başarı portfolyosu", "Aile bilgilendirmesi"], targetScore: 16 },
+    ],
+    outcomes: ["Dikkat süresinde artış", "Çalışma belleği kapasitesi gelişimi", "Yürütücü işlev puanı yükselişi", "Ebeveyn/öğretmen gözlem puanları"],
+  },
+  {
+    id: "stroke-cognitive",
+    name: "İnme Sonrası Kognitif Rehabilitasyon",
+    emoji: "🧠",
+    domain: "Nörolojik",
+    color: "#ef4444",
+    duration: 8,
+    description: "İnme sonrası dikkat, görsel algı ve çalışma belleği rehabilitasyonu için 8 haftalık progresif kognitif program.",
+    targetGroup: "Akut sonrası inme danışanı, 18+",
+    frequency: "Haftada 3-5",
+    weeks: [
+      { week: 1, focus: "Taban değerlendirme & yönelim", games: ["scan"], activities: ["Görsel tarama", "Çevre adaptasyonu"], targetScore: 3 },
+      { week: 2, focus: "Görsel dikkat geliştirme", games: ["scan", "difference"], activities: ["Görsel arama görevi", "İhmal egzersizi"], targetScore: 5 },
+      { week: 3, focus: "Hafıza stimülasyonu", games: ["pairs", "memory"], activities: ["Kart eşleme (fiziksel)", "Bellek defteri"], targetScore: 7 },
+      { week: 4, focus: "Motor-kognitif koordinasyon", games: ["pulse", "difference"], activities: ["Üst ekstremite aktivitesi", "Koordinasyon egzersizi"], targetScore: 9 },
+      { week: 5, focus: "Yürütücü işlev tabanı", games: ["route", "logic"], activities: ["Planlama görevi", "Problem çözme"], targetScore: 11 },
+      { week: 6, focus: "Günlük yaşam aktivasyonu", games: ["memory", "route"], activities: ["GYA simülasyonu", "Ev düzenlemesi"], targetScore: 13 },
+      { week: 7, focus: "İlerleme pekiştirme", games: ["scan", "pairs", "pulse"], activities: ["Karma aktivite", "Bağımsızlık hedefi"], targetScore: 15 },
+      { week: 8, focus: "Çıktı değerlendirmesi & ev planı", games: ["memory", "scan"], activities: ["Ev programı eğitimi", "Bakıcı bilgilendirme"], targetScore: 16 },
+    ],
+    outcomes: ["Dikkat puanı artışı (LOTCA)", "Görsel ihmal azalması", "GYA bağımsızlık skoru", "FIM motor+kognitif puanları"],
+  },
+  {
+    id: "geriatric-stimulation",
+    name: "Yaşlı Kognitif Uyarım Programı",
+    emoji: "🌟",
+    domain: "Geriatrik",
+    color: "#f59e0b",
+    duration: 4,
+    description: "65+ yaş grubunda kognitif rezervi destekleyen, katılımı yüksek tutmayı öncelikleyen 4 haftalık hafif-orta kognitif stimülasyon programı.",
+    targetGroup: "65+ yaş, hafif kognitif şikayet",
+    frequency: "Haftada 2-3",
+    weeks: [
+      { week: 1, focus: "Tanışma & alışma", games: ["pairs", "scan"], activities: ["Sosyal tanışma oyunu", "Anı paylaşımı"], targetScore: 4 },
+      { week: 2, focus: "Bellek & dikkat kombinasyonu", games: ["memory", "difference"], activities: ["Hikaye anlatımı", "Nesne tanıma"], targetScore: 6 },
+      { week: 3, focus: "Görsel algı & stratejiler", games: ["pairs", "scan", "difference"], activities: ["Strateji geliştirme", "Yardımcı ipucu eğitimi"], targetScore: 8 },
+      { week: 4, focus: "Pekiştirme & ev programı", games: ["memory", "pairs"], activities: ["Topluluk aktivitesi", "Aile katılımı"], targetScore: 10 },
+    ],
+    outcomes: ["MoCA puanı korunumu", "Katılım & motivasyon düzeyi", "Günlük rutinlerde hafıza kullanımı", "Sosyal etkileşim kalitesi"],
+  },
+  {
+    id: "school-readiness",
+    name: "Okul Hazırlık Programı",
+    emoji: "📚",
+    domain: "Pediatrik",
+    color: "#10b981",
+    duration: 6,
+    description: "Okul öncesi dönemde bilişsel, görsel ve dikkat hazırlığını destekleyen oyun odaklı 6 haftalık müdahale programı.",
+    targetGroup: "4-6 yaş, okul öncesi",
+    frequency: "Haftada 2",
+    weeks: [
+      { week: 1, focus: "Oyun kuralları & sıra bekleme", games: ["pairs"], activities: ["Yapılandırılmış oyun", "Eşleştirme aktivitesi"], targetScore: 2 },
+      { week: 2, focus: "Görsel eşleştirme & sınıflandırma", games: ["difference", "pairs"], activities: ["Sınıflandırma oyunu", "Renk-şekil eşleme"], targetScore: 4 },
+      { week: 3, focus: "Kısa süreli bellek", games: ["memory", "scan"], activities: ["Nesne hafıza oyunu", "Kim sakladı?"], targetScore: 5 },
+      { week: 4, focus: "Dikkat yönlendirme", games: ["scan", "difference"], activities: ["Dikkat egzersizi", "Ne değişti?"], targetScore: 6 },
+      { week: 5, focus: "Sıralama & plan yapma", games: ["memory", "route"], activities: ["Günlük rutin sıralaması", "Hikaye sıralama"], targetScore: 7 },
+      { week: 6, focus: "Akademik hazırlık bütünleşmesi", games: ["memory", "pairs", "scan"], activities: ["Okul senaryosu oyunu", "Değerlendirme & geri bildirim"], targetScore: 8 },
+    ],
+    outcomes: ["Pre-akademik beceri ölçütleri", "Dikkat süresi gelişimi", "Oyun katılımı kalitesi", "Öğretmen gözlem formu puanları"],
+  },
+  {
+    id: "executive-function",
+    name: "Yürütücü İşlev Geliştirme",
+    emoji: "⚙️",
+    domain: "İş & Verimlilik",
+    color: "#06b6d4",
+    duration: 6,
+    description: "Planlama, problem çözme ve inhibisyon becerilerini hedefleyen çalışan yetişkinler için 6 haftalık yürütücü işlev programı.",
+    targetGroup: "18-55 yaş, iş performansı güçlükleri",
+    frequency: "Haftada 2",
+    weeks: [
+      { week: 1, focus: "Taban değerlendirme & farkındalık", games: ["route"], activities: ["BRIEF-A farkındalık görevi", "Günlük analiz"], targetScore: 8 },
+      { week: 2, focus: "Inhibisyon & dürtü kontrolü", games: ["scan", "logic"], activities: ["Dur-düşün-yap stratejisi", "Hata analizi"], targetScore: 11 },
+      { week: 3, focus: "Çalışma belleği kapasitesi", games: ["memory", "route"], activities: ["N-back egzersizi (analog)", "Görev listesi yönetimi"], targetScore: 13 },
+      { week: 4, focus: "Planlama & organizasyon", games: ["logic", "route"], activities: ["Proje planlama simülasyonu", "Öncelik sıralaması"], targetScore: 15 },
+      { week: 5, focus: "Bilişsel esneklik", games: ["scan", "logic", "memory"], activities: ["Kural değiştirme görevi", "Perspektif alma"], targetScore: 17 },
+      { week: 6, focus: "Günlük yaşama transfer", games: ["route", "logic"], activities: ["Gerçek senaryo pratiği", "Çıktı planlaması"], targetScore: 18 },
+    ],
+    outcomes: ["BRIEF-A yürütücü işlev puanları", "İş performansı değerlendirmesi", "Zaman yönetimi skoru", "Öz-izleme becerileri"],
+  },
+];
+
 const GAME_TABS = [
   { key: "memory" as const, category: "memorySkills" as const, title: "Sıra Hafızası", kicker: "Çalışma belleği", blurb: "Art arda yanan mavi alanları aynı sırayla tekrar et. Her doğru tur sekansı bir adım daha uzatır.", goals: ["Sekans hafızası", "Odak sürdürme", "Görsel izleme"], teaser: "Kısa süreli hatırlama için katmanlı sekans oyunu.", accent: "#13b8ff", preview: ["Deseni izle", "Aynı sırayı gir", "Seriyi büyüt"] },
   { key: "pairs" as const, category: "memorySkills" as const, title: "Kart Eşle", kicker: "Görsel hatırlama", blurb: "On iki kart içindeki eş çiftleri en az hamleyle bul. Açılan kartların konumunu akılda tutman gerekir.", goals: ["Kısa süreli hatırlama", "Görsel yer bellek", "Planlı seçim"], teaser: "Kapalı kartlar arasında eş çift bulmaya odaklanan hafıza görevi.", accent: "#5dd3ff", preview: ["Kart aç", "Konumu hatırla", "Çiftleri tamamla"] },
@@ -1112,7 +1237,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const THERAPY_CUSTOM_NOTES_KEY = "mimio-therapy-custom-notes-v1";
   const [tpSelectedDomain, setTpSelectedDomain] = useState<TherapyDomainKey | null>(null);
   const [tpSelectedClientId, setTpSelectedClientId] = useState<string | null>(null);
-  const [tpActiveTab, setTpActiveTab] = useState<"domains" | "activities" | "games" | "plan" | "progress">("domains");
+  const [tpActiveTab, setTpActiveTab] = useState<"domains" | "activities" | "games" | "plan" | "progress" | "protocols">("domains");
   const [tpDifficultyFilter, setTpDifficultyFilter] = useState<DifficultyLevel | "all">("all");
   const [tpGeneratedPlan, setTpGeneratedPlan] = useState<TherapyPlanSuggestion | null>(null);
   const [tpProgressEntries, setTpProgressEntries] = useState<ProgressEntry[]>([]);
@@ -1152,6 +1277,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const [logicState, setLogicState] = useState<LogicState>({ puzzle: null, round: 0, score: 0, phase: "idle", message: "Matrisi analiz et ve eksik hücreyi bul.", selectedIdx: null, showResult: false });
   const [sessionSet, setSessionSet] = useState<SessionSetState | null>(null);
   const [showSessionSetPicker, setShowSessionSetPicker] = useState(false);
+  const [tpSelectedProtocol, setTpSelectedProtocol] = useState<TherapyProtocol | null>(null);
   const [memoryState, setMemoryState] = useState<MemoryState>({ sequence: [], input: [], flashIndex: null, score: 0, phase: "idle", message: "Oyunu başlat ve diziyi dikkatle izle." });
   const [pairsState, setPairsState] = useState<PairsState>({ tiles: [], moves: 0, pairsFound: 0, locked: false, phase: "idle", message: "Kartları aç ve eşleşen çiftleri bul." });
   const [pulseState, setPulseState] = useState<PulseState>({ activeIndex: null, round: 0, hits: 0, misses: 0, combo: 0, points: 0, phase: "idle", message: "Parmak, kalem veya ekran kalemiyle kontrollü hız denemesi yap." });
@@ -6550,7 +6676,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 {key: "games" as const, label: "Oyunlar", labelFull: "Oyun Eşleme", Icon: Gamepad2, disabled: !tpSelectedDomain},
                 {key: "plan" as const, label: "Plan", labelFull: "Haftalık Plan", Icon: CalendarDays, disabled: !tpSelectedDomain},
                 {key: "progress" as const, label: "İlerleme", labelFull: "İlerleme", Icon: TrendingUp, disabled: !tpSelectedClientId},
-              ] as {key: "domains" | "activities" | "games" | "plan" | "progress"; label: string; labelFull: string; Icon: LucideIcon; disabled: boolean}[]).map(({key, label, labelFull, Icon, disabled}) => (
+                {key: "protocols" as const, label: "Protokol", labelFull: "Protokoller", Icon: BookOpen, disabled: false},
+              ] as {key: "domains" | "activities" | "games" | "plan" | "progress" | "protocols"; label: string; labelFull: string; Icon: LucideIcon; disabled: boolean}[]).map(({key, label, labelFull, Icon, disabled}) => (
                 <button key={key} type="button"
                   className="shrink-0 flex items-center gap-1 lg:gap-1.5 px-2.5 lg:px-3.5 py-1.5 lg:py-2 rounded-xl text-xs lg:text-sm font-semibold border-none cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   style={{
@@ -7521,6 +7648,154 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   </div>
                 );
               })()}
+
+              {/* ── Protocols Tab ── */}
+              {tpActiveTab === "protocols" && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-lg font-extrabold text-(--color-text-strong) mb-1 tracking-tight">Terapi Protokol Şablonları</h2>
+                    <p className="text-(--color-text-soft) text-sm m-0">Kanıta dayalı hazır protokol şablonları. Bir şablonu seçerek hafta hafta terapi planına dönüştürün.</p>
+                  </div>
+
+                  {/* Protocol grid */}
+                  {!tpSelectedProtocol ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {THERAPY_PROTOCOLS.map((proto) => (
+                        <button key={proto.id} type="button"
+                          className="flex flex-col gap-3 p-5 rounded-3xl border text-left cursor-pointer transition-all card-hover relative overflow-hidden group"
+                          style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = proto.color; (e.currentTarget as HTMLButtonElement).style.background = `${proto.color}0a`; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-line)"; (e.currentTarget as HTMLButtonElement).style.background = "var(--color-surface-strong)"; }}
+                          onClick={() => setTpSelectedProtocol(proto)}>
+                          <div className="flex items-start justify-between">
+                            <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0" style={{ background: `${proto.color}18`, border: `1px solid ${proto.color}30` }}>
+                              {proto.emoji}
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full" style={{ background: `${proto.color}18`, color: proto.color }}>{proto.duration} hafta</span>
+                              <span className="text-[10px] text-(--color-text-muted) font-medium">{proto.frequency}</span>
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-black uppercase tracking-widest block mb-1" style={{ color: proto.color }}>{proto.domain}</span>
+                            <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0 mb-1.5 leading-tight">{proto.name}</h3>
+                            <p className="text-(--color-text-muted) text-xs m-0 leading-relaxed line-clamp-2">{proto.description}</p>
+                          </div>
+                          <div className="pt-2 border-t border-(--color-line)">
+                            <span className="text-[10px] text-(--color-text-muted) font-medium">👥 {proto.targetGroup}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    // Protocol detail view
+                    <div className="space-y-5">
+                      {/* Back + header */}
+                      <div className="flex items-center gap-3">
+                        <button type="button" onClick={() => setTpSelectedProtocol(null)}
+                          className="flex items-center gap-1.5 text-xs font-bold cursor-pointer border-none px-3 py-1.5 rounded-xl transition-all"
+                          style={{ background: "var(--color-surface-elevated)", color: "var(--color-text-muted)" }}>
+                          ← Protokoller
+                        </button>
+                      </div>
+
+                      {/* Protocol header card */}
+                      <div className="relative overflow-hidden rounded-3xl border p-6" style={{ background: `linear-gradient(135deg, ${tpSelectedProtocol.color}12 0%, var(--color-surface-strong) 100%)`, borderColor: `${tpSelectedProtocol.color}30` }}>
+                        <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg, ${tpSelectedProtocol.color}, transparent)` }} />
+                        <div className="flex items-start gap-4">
+                          <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shrink-0" style={{ background: `${tpSelectedProtocol.color}18` }}>
+                            {tpSelectedProtocol.emoji}
+                          </div>
+                          <div className="flex-1">
+                            <span className="text-[10px] font-black uppercase tracking-widest block mb-1" style={{ color: tpSelectedProtocol.color }}>{tpSelectedProtocol.domain} · {tpSelectedProtocol.duration} haftalık protokol</span>
+                            <h2 className="text-lg font-extrabold text-(--color-text-strong) m-0 mb-2">{tpSelectedProtocol.name}</h2>
+                            <p className="text-(--color-text-soft) text-sm m-0 mb-3">{tpSelectedProtocol.description}</p>
+                            <div className="flex flex-wrap gap-2">
+                              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(255,255,255,0.06)", color: "var(--color-text-muted)" }}>👥 {tpSelectedProtocol.targetGroup}</span>
+                              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(255,255,255,0.06)", color: "var(--color-text-muted)" }}>📅 {tpSelectedProtocol.frequency}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Week-by-week timeline */}
+                      <div className="space-y-3">
+                        <h3 className="text-sm font-extrabold text-(--color-text-strong) tracking-tight">Haftalık Program</h3>
+                        {tpSelectedProtocol.weeks.map((week) => (
+                          <div key={week.week} className="relative flex gap-4 items-start">
+                            {/* Timeline line */}
+                            {week.week < tpSelectedProtocol.weeks.length && (
+                              <div className="absolute left-5 top-11 bottom-0 w-0.5" style={{ background: "var(--color-line)" }} />
+                            )}
+                            {/* Week badge */}
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-extrabold shrink-0 z-10" style={{ background: `${tpSelectedProtocol.color}18`, color: tpSelectedProtocol.color, border: `1px solid ${tpSelectedProtocol.color}30` }}>
+                              {week.week}
+                            </div>
+                            {/* Week content */}
+                            <div className="flex-1 pb-4">
+                              <div className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
+                                <div className="px-4 py-3 border-b border-(--color-line)" style={{ background: `${tpSelectedProtocol.color}08` }}>
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm font-bold text-(--color-text-strong)">{week.focus}</span>
+                                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full" style={{ background: `${tpSelectedProtocol.color}20`, color: tpSelectedProtocol.color }}>
+                                      Hedef: {week.targetScore}p
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="p-4 grid grid-cols-2 gap-3">
+                                  <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) m-0 mb-2">🎮 Oyunlar</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {week.games.map(g => (
+                                        <span key={g} className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "var(--color-surface-elevated)", color: "var(--color-text-soft)", border: "1px solid var(--color-line)" }}>
+                                          {GAME_LABELS[g]}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) m-0 mb-2">🧩 Aktiviteler</p>
+                                    <div className="space-y-0.5">
+                                      {week.activities.map(a => (
+                                        <p key={a} className="text-xs text-(--color-text-soft) m-0">• {a}</p>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Expected outcomes */}
+                      <div className="rounded-2xl border border-(--color-line) p-4" style={{ background: "var(--color-surface-strong)" }}>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) m-0 mb-3">📊 Beklenen Çıktılar</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {tpSelectedProtocol.outcomes.map(o => (
+                            <div key={o} className="flex items-start gap-2">
+                              <span className="text-xs shrink-0 mt-0.5" style={{ color: tpSelectedProtocol!.color }}>✓</span>
+                              <span className="text-xs text-(--color-text-soft)">{o}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Apply button */}
+                      <button type="button"
+                        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm text-white border-none cursor-pointer transition-all hover:opacity-90 active:scale-[0.99]"
+                        style={{ background: `linear-gradient(135deg, ${tpSelectedProtocol.color}, var(--color-primary))`, boxShadow: `0 4px 20px ${tpSelectedProtocol.color}40` }}
+                        onClick={() => {
+                          setTpActiveTab("plan");
+                          showToast(`📋 ${tpSelectedProtocol!.name} planı Haftalık Plan'a aktarıldı`, "success");
+                          setTpSelectedProtocol(null);
+                        }}>
+                        <BookOpen size={15} /> Bu Protokolü Planla
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
             </div>
           </div>
