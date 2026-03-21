@@ -4264,9 +4264,27 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               {/* ── Notes ── */}
               {clientDetailTab === "notes" && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <h3 className="text-sm font-extrabold uppercase tracking-wider text-(--color-text-muted) m-0">Seans Notları</h3>
-                    <button type="button" className="flex items-center gap-1.5 text-sm font-bold px-3 py-2 rounded-xl text-white cursor-pointer border-none transition-all hover:opacity-90 active:scale-95" style={{ background: `linear-gradient(135deg, ${palette.color}, ${palette.border})`, boxShadow: `0 3px 12px ${palette.glow}` }} onClick={() => setShowNoteForm(!showNoteForm)}>+ Not Ekle</button>
+                    <div className="flex gap-2 shrink-0">
+                      {/* Auto Clinical Summary generator */}
+                      <button type="button"
+                        data-tooltip="Seans verilerinden SOAP özeti üret"
+                        data-tooltip-dir="top"
+                        className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl cursor-pointer border transition-all hover:opacity-80 active:scale-95"
+                        style={{ background: "rgba(167,139,250,0.08)", borderColor: "rgba(167,139,250,0.25)", color: "#a78bfa" }}
+                        onClick={() => {
+                          const suggestion = generateTherapySuggestions(selectedClient, platformOverview.recentSessions);
+                          const s = suggestion.soapDraft;
+                          setSoapDraft({ s: s.s, o: s.o, a: s.a, p: s.p });
+                          setNoteForm({ date: getTodayString(), content: "" });
+                          setNoteMode("soap");
+                          setShowNoteForm(true);
+                        }}>
+                        <FileText size={13} /> Özet Üret
+                      </button>
+                      <button type="button" className="flex items-center gap-1.5 text-sm font-bold px-3 py-2 rounded-xl text-white cursor-pointer border-none transition-all hover:opacity-90 active:scale-95" style={{ background: `linear-gradient(135deg, ${palette.color}, ${palette.border})`, boxShadow: `0 3px 12px ${palette.glow}` }} onClick={() => setShowNoteForm(!showNoteForm)}>+ Not Ekle</button>
+                    </div>
                   </div>
 
                   {/* Note search + date filter */}
@@ -4453,6 +4471,34 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               {clientDetailTab === "plan" && (
                 <div className="space-y-4">
 
+                  {/* ── Weekly Completion Summary ── */}
+                  {(() => {
+                    const allEntries = Object.values(planEdits).flat();
+                    const totalPlan = allEntries.length;
+                    const totalDone = allEntries.filter(e => e.completed).length;
+                    if (totalPlan === 0) return null;
+                    const pct = Math.round((totalDone / totalPlan) * 100);
+                    return (
+                      <div className="rounded-2xl border border-(--color-line) p-4" style={{ background: "var(--color-surface-strong)" }}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted)">Haftalık Tamamlanma</span>
+                          <span className="text-sm font-extrabold tabular-nums" style={{ color: totalDone === totalPlan ? "#10b981" : pct > 50 ? "#f59e0b" : "var(--color-primary)" }}>
+                            {totalDone}/{totalPlan} · %{pct}
+                          </span>
+                        </div>
+                        <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--color-surface-elevated)" }}>
+                          <div className="h-full rounded-full transition-all duration-500" style={{
+                            width: `${pct}%`,
+                            background: totalDone === totalPlan ? "linear-gradient(90deg,#10b981,#059669)" : pct > 50 ? "linear-gradient(90deg,#f59e0b,#10b981)" : "linear-gradient(90deg,var(--color-primary),#8b5cf6)",
+                          }} />
+                        </div>
+                        {totalDone === totalPlan && totalPlan > 0 && (
+                          <p className="text-xs text-emerald-500 font-bold m-0 mt-2">🎉 Haftalık plan tamamlandı!</p>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   {/* Week navigation */}
                   <div className="flex items-center gap-3">
                     <button type="button"
@@ -4518,9 +4564,19 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                                   </span>
                                 )}
                               </div>
-                              {entries.length > 0 && (
-                                <span className="text-xs text-(--color-text-muted)">{entries.length} aktivite planlandı</span>
-                              )}
+                              {entries.length > 0 && (() => {
+                                const completedCount = entries.filter(e => e.completed).length;
+                                return (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-(--color-text-muted)">{entries.length} aktivite</span>
+                                    {completedCount > 0 && (
+                                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(16,185,129,0.12)", color: "#10b981" }}>
+                                        {completedCount}/{entries.length} ✓
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </div>
 
                             {/* Add button */}
@@ -4542,9 +4598,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                               <div className="h-px" style={{ background: isToday ? palette.border : "var(--color-line)" }} />
                               <div className="pt-1 space-y-2">
                                 {entries.map((entry, entryIndex) => (
-                                  <div key={entryIndex} className="flex items-start gap-3 rounded-xl px-3 py-2.5" style={{
-                                    background: isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)",
-                                    border: `1px solid ${isToday ? palette.border : "var(--color-line)"}`,
+                                  <div key={entryIndex} className="flex items-start gap-3 rounded-xl px-3 py-2.5 transition-all" style={{
+                                    background: entry.completed ? "rgba(16,185,129,0.06)" : (isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)"),
+                                    border: `1px solid ${entry.completed ? "rgba(16,185,129,0.2)" : (isToday ? palette.border : "var(--color-line)")}`,
+                                    opacity: entry.completed ? 0.75 : 1,
                                   }}>
                                     {/* Completed checkbox */}
                                     <button type="button"
@@ -4569,7 +4626,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                                       <select
                                         value={entry.gameKey}
                                         className="w-full text-sm font-semibold bg-transparent border-none outline-none cursor-pointer"
-                                        style={{ color: "var(--color-text-strong)" }}
+                                        style={{ color: "var(--color-text-strong)", textDecoration: entry.completed ? "line-through" : "none" }}
                                         onChange={(e) => {
                                           const newKey = e.target.value as PlatformGameKey;
                                           setPlanEdits((current) => { const updated = [...current[day]]; updated[entryIndex] = { ...updated[entryIndex], gameKey: newKey }; return { ...current, [day]: updated }; });
