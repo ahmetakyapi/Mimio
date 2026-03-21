@@ -229,6 +229,102 @@ const SYMBOL_LIBRARY: SymbolVariant[] = [
   { label: "Kare", icon: "□", accent: "#3daaee", background: "linear-gradient(180deg, rgba(6,20,44,0.92), rgba(4,14,34,0.80))", pattern: "grid" },
 ];
 
+// ── Session Set ──
+interface SessionSetState {
+  presetLabel: string;
+  games: GameKey[];
+  currentIndex: number;
+  entries: Array<{ gameKey: GameKey; score: number; label: string }>;
+  phase: "running" | "finished";
+}
+
+const SESSION_SET_PRESETS = [
+  { id: "daily", label: "Günlük Rutin", games: ["memory", "pulse", "scan"] as GameKey[], emoji: "📅", description: "3 oyun · Temel egzersiz" },
+  { id: "memory", label: "Hafıza Seti", games: ["memory", "pairs"] as GameKey[], emoji: "🧠", description: "2 oyun · Bellek güçlendirme" },
+  { id: "motor", label: "Motor Seti", games: ["pulse", "route"] as GameKey[], emoji: "✋", description: "2 oyun · El-göz koordinasyonu" },
+  { id: "visual", label: "Görsel Set", games: ["difference", "scan"] as GameKey[], emoji: "👁", description: "2 oyun · Dikkat ve tarama" },
+  { id: "full", label: "Tam Set", games: ["memory", "pairs", "pulse", "route", "difference", "scan", "logic"] as GameKey[], emoji: "⚡", description: "7 oyun · Kapsamlı seans" },
+] as const;
+
+interface SessionSetSummaryProps {
+  readonly sessionSet: SessionSetState;
+  readonly onClose: () => void;
+  readonly onNewSet: () => void;
+}
+function SessionSetSummary({ sessionSet, onClose, onNewSet }: SessionSetSummaryProps) {
+  const total = sessionSet.entries.reduce((sum, e) => sum + e.score, 0);
+  const maxPossible = sessionSet.games.length * 100;
+  const pct = Math.round((total / Math.max(maxPossible, 1)) * 100);
+  const stars = pct >= 80 ? 3 : pct >= 50 ? 2 : pct >= 20 ? 1 : 0;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(4,8,18,0.92)", backdropFilter: "blur(8px)" }}>
+      <div className="relative w-full max-w-md mx-4 rounded-3xl overflow-hidden" style={{ background: "linear-gradient(160deg, #0d1424 0%, #08111f 100%)", border: "1px solid rgba(99,102,241,0.25)", boxShadow: "0 24px 80px rgba(0,0,0,0.7)" }}>
+        {/* Top gradient bar */}
+        <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #6366f1, #a78bfa, #ec4899)" }} />
+
+        <div className="p-6 space-y-5">
+          {/* Header */}
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0" style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.2), rgba(167,139,250,0.1))", border: "1px solid rgba(99,102,241,0.3)" }}>
+              🏁
+            </div>
+            <div>
+              <p className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-400 m-0">{sessionSet.presetLabel} · Tamamlandı</p>
+              <h3 className="text-white font-extrabold text-lg m-0 leading-tight">Seri Özeti</h3>
+            </div>
+          </div>
+
+          {/* Stars */}
+          <div className="flex justify-center gap-2">
+            {[1, 2, 3].map(i => (
+              <span key={i} className="text-3xl transition-all" style={{ filter: i <= stars ? "none" : "grayscale(1) opacity(0.25)" }}>⭐</span>
+            ))}
+          </div>
+
+          {/* Total score */}
+          <div className="rounded-2xl p-4 text-center" style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}>
+            <p className="text-white/40 text-[10px] uppercase tracking-widest font-bold m-0 mb-1">Toplam Skor</p>
+            <span className="font-extrabold tabular-nums" style={{ fontSize: "3.5rem", lineHeight: 1, background: "linear-gradient(135deg, #818cf8, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              {total}
+            </span>
+            <p className="text-white/35 text-xs m-0 mt-1">{sessionSet.entries.length}/{sessionSet.games.length} oyun tamamlandı · %{pct}</p>
+          </div>
+
+          {/* Per-game breakdown */}
+          <div className="space-y-2">
+            {sessionSet.entries.map((entry, i) => {
+              const accent = (["#13b8ff", "#5dd3ff", "#39c6ff", "#4acfff", "#69d4ff", "#8be2ff", "#a78bfa"] as const)[i % 7];
+              return (
+                <div key={`${entry.gameKey}-${i}`} className="flex items-center gap-3 px-3 py-2.5 rounded-xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-extrabold shrink-0" style={{ background: `${accent}18`, color: accent }}>
+                    {i + 1}
+                  </div>
+                  <span className="flex-1 text-sm font-semibold text-white/80">{entry.label}</span>
+                  <span className="font-extrabold tabular-nums text-sm" style={{ color: accent }}>{entry.score}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Buttons */}
+          <div className="flex gap-3">
+            <button type="button" onClick={onNewSet}
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm text-white border-none cursor-pointer transition-all active:scale-95"
+              style={{ background: "linear-gradient(135deg, #6366f1, #a78bfa)", boxShadow: "0 4px 20px rgba(99,102,241,0.35)" }}>
+              ↩ Yeni Set
+            </button>
+            <button type="button" onClick={onClose}
+              className="flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl font-bold text-sm text-white/60 cursor-pointer transition-all active:scale-95 hover:text-white/90"
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+              Kapat
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const GAME_TABS = [
   { key: "memory" as const, category: "memorySkills" as const, title: "Sıra Hafızası", kicker: "Çalışma belleği", blurb: "Art arda yanan mavi alanları aynı sırayla tekrar et. Her doğru tur sekansı bir adım daha uzatır.", goals: ["Sekans hafızası", "Odak sürdürme", "Görsel izleme"], teaser: "Kısa süreli hatırlama için katmanlı sekans oyunu.", accent: "#13b8ff", preview: ["Deseni izle", "Aynı sırayı gir", "Seriyi büyüt"] },
   { key: "pairs" as const, category: "memorySkills" as const, title: "Kart Eşle", kicker: "Görsel hatırlama", blurb: "On iki kart içindeki eş çiftleri en az hamleyle bul. Açılan kartların konumunu akılda tutman gerekir.", goals: ["Kısa süreli hatırlama", "Görsel yer bellek", "Planlı seçim"], teaser: "Kapalı kartlar arasında eş çift bulmaya odaklanan hafıza görevi.", accent: "#5dd3ff", preview: ["Kart aç", "Konumu hatırla", "Çiftleri tamamla"] },
@@ -589,8 +685,9 @@ interface GameResultOverlayProps {
   readonly hasActiveClient?: boolean;
   readonly durationSeconds?: number;
   readonly sessionAvg?: number;
+  readonly nextInSet?: { gameName: string; onNext: () => void } | null;
 }
-function GameResultOverlay({ accent, gradFrom, gradTo, gameName, score, bestScore, stars, stats, onReplay, onBack, onSaveNote, onSatisfaction, hasActiveClient, durationSeconds, sessionAvg }: GameResultOverlayProps) {
+function GameResultOverlay({ accent, gradFrom, gradTo, gameName, score, bestScore, stars, stats, onReplay, onBack, onSaveNote, onSatisfaction, hasActiveClient, durationSeconds, sessionAvg, nextInSet }: GameResultOverlayProps) {
   const [noteText, setNoteText] = useState("");
   const [noteSaved, setNoteSaved] = useState(false);
   const [satisfaction, setSatisfaction] = useState<number | null>(null);
@@ -686,24 +783,45 @@ function GameResultOverlay({ accent, gradFrom, gradTo, gameName, score, bestScor
         )}
 
         {/* Action buttons */}
-        <div className="result-btn-in w-full flex gap-3">
-          <button
-            type="button"
-            onClick={onReplay}
-            className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm text-white border-none cursor-pointer transition-all active:scale-95"
-            style={{ background: `linear-gradient(135deg, ${gradFrom}, ${gradTo})`, boxShadow: `0 4px 20px ${accent}40` }}
-          >
-            <span>↩</span> Tekrar Oyna
-          </button>
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl font-bold text-sm text-white/60 cursor-pointer transition-all active:scale-95 hover:text-white/90"
-            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
-          >
-            Oyunlar
-          </button>
-        </div>
+        {nextInSet ? (
+          <div className="result-btn-in w-full flex gap-3">
+            <button
+              type="button"
+              onClick={nextInSet.onNext}
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm text-white border-none cursor-pointer transition-all active:scale-95"
+              style={{ background: `linear-gradient(135deg, ${gradFrom}, ${gradTo})`, boxShadow: `0 4px 20px ${accent}40` }}
+            >
+              <span>▶</span> Sonraki: {nextInSet.gameName}
+            </button>
+            <button
+              type="button"
+              onClick={onBack}
+              className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl font-bold text-sm text-white/40 cursor-pointer transition-all active:scale-95 hover:text-white/70"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+            >
+              Bırak
+            </button>
+          </div>
+        ) : (
+          <div className="result-btn-in w-full flex gap-3">
+            <button
+              type="button"
+              onClick={onReplay}
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm text-white border-none cursor-pointer transition-all active:scale-95"
+              style={{ background: `linear-gradient(135deg, ${gradFrom}, ${gradTo})`, boxShadow: `0 4px 20px ${accent}40` }}
+            >
+              <span>↩</span> Tekrar Oyna
+            </button>
+            <button
+              type="button"
+              onClick={onBack}
+              className="flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl font-bold text-sm text-white/60 cursor-pointer transition-all active:scale-95 hover:text-white/90"
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+            >
+              Oyunlar
+            </button>
+          </div>
+        )}
 
         {/* Satisfaction rating */}
         {hasActiveClient && (
@@ -1032,6 +1150,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const [scanCursor, setScanCursor] = useState(0);
   const [logicCursor, setLogicCursor] = useState(0);
   const [logicState, setLogicState] = useState<LogicState>({ puzzle: null, round: 0, score: 0, phase: "idle", message: "Matrisi analiz et ve eksik hücreyi bul.", selectedIdx: null, showResult: false });
+  const [sessionSet, setSessionSet] = useState<SessionSetState | null>(null);
+  const [showSessionSetPicker, setShowSessionSetPicker] = useState(false);
   const [memoryState, setMemoryState] = useState<MemoryState>({ sequence: [], input: [], flashIndex: null, score: 0, phase: "idle", message: "Oyunu başlat ve diziyi dikkatle izle." });
   const [pairsState, setPairsState] = useState<PairsState>({ tiles: [], moves: 0, pairsFound: 0, locked: false, phase: "idle", message: "Kartları aç ve eşleşen çiftleri bul." });
   const [pulseState, setPulseState] = useState<PulseState>({ activeIndex: null, round: 0, hits: 0, misses: 0, combo: 0, points: 0, phase: "idle", message: "Parmak, kalem veya ekran kalemiyle kontrollü hız denemesi yap." });
@@ -1071,10 +1191,22 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   // ── In-game feedback ──
   const [lastFeedback, setLastFeedback] = useState<{ correct: boolean; combo: number; timestamp: number } | null>(null);
   const feedbackTimerRef = useRef<number | null>(null);
-  function triggerFeedback(correct: boolean, combo = 0) {
+  const [floatScores, setFloatScores] = useState<Array<{ id: number; value: number; correct: boolean }>>([]);
+  const floatTimersRef = useRef<Record<number, number>>({});
+
+  function triggerFeedback(correct: boolean, combo = 0, points?: number) {
     if (feedbackTimerRef.current) window.clearTimeout(feedbackTimerRef.current);
     setLastFeedback({ correct, combo, timestamp: Date.now() });
     feedbackTimerRef.current = window.setTimeout(() => setLastFeedback(null), 700);
+    if (typeof points === "number" && points !== 0) {
+      const id = Date.now() + Math.random();
+      setFloatScores(prev => [...prev, { id, value: points, correct }]);
+      const timer = window.setTimeout(() => {
+        setFloatScores(prev => prev.filter(s => s.id !== id));
+        delete floatTimersRef.current[id];
+      }, 900);
+      floatTimersRef.current[id] = timer;
+    }
   }
 
   // ── On mount: restore local UI state ──
@@ -1945,6 +2077,40 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       }
     }
     void syncScoreToBackend(game, nextScore, metadata, sessionEntry);
+    // ── Session Set tracking ──
+    setSessionSet(cur => {
+      if (!cur || cur.phase === "finished") return cur;
+      if (cur.games[cur.currentIndex] !== game) return cur;
+      const newEntry = { gameKey: game, score: nextScore, label: GAME_LABELS[game] };
+      const newEntries = [...cur.entries, newEntry];
+      const isLast = cur.currentIndex >= cur.games.length - 1;
+      if (isLast) return { ...cur, entries: newEntries, phase: "finished" };
+      return { ...cur, entries: newEntries };
+    });
+  }
+
+  function startSessionSet(preset: typeof SESSION_SET_PRESETS[number]) {
+    setShowSessionSetPicker(false);
+    setSessionSet({ presetLabel: preset.label, games: preset.games as GameKey[], currentIndex: 0, entries: [], phase: "running" });
+    setActiveGame(preset.games[0] as GameKey);
+  }
+
+  function advanceSessionSet() {
+    if (!sessionSet) return;
+    const nextIndex = sessionSet.currentIndex + 1;
+    if (nextIndex >= sessionSet.games.length) return;
+    const nextGame = sessionSet.games[nextIndex];
+    setSessionSet(cur => cur ? { ...cur, currentIndex: nextIndex } : null);
+    setActiveGame(nextGame);
+    setTimeout(() => {
+      if (nextGame === "memory") startMemoryGame();
+      else if (nextGame === "pairs") startPairsGame();
+      else if (nextGame === "pulse") startPulseGame();
+      else if (nextGame === "route") startRouteGame();
+      else if (nextGame === "difference") startDifferenceGame();
+      else if (nextGame === "scan") startScanGame();
+      else if (nextGame === "logic") startLogicGame();
+    }, 350);
   }
 
   function openGameView(game: GameKey) {
@@ -2043,7 +2209,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     const nextMisses = pulseState.misses + (isHit ? 0 : 1);
     const nextCombo = isHit ? pulseState.combo + 1 : 0;
     const nextPoints = Math.max(0, pulseState.points + (isHit ? 12 + pulseState.combo * 2 : -4));
-    triggerFeedback(isHit, nextCombo);
+    triggerFeedback(isHit, nextCombo, isHit ? 12 + pulseState.combo * 2 : -4);
     const pulseRounds = GAME_DIFF_CONFIG.pulse.rounds[clientDiffLevel - 1];
     if (nextRound > pulseRounds) {
       commitScore("pulse", nextPoints, { phase: "finished", round: pulseRounds, hits: nextHits, misses: nextMisses });
@@ -2062,7 +2228,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     const nextStreak = isCorrect ? routeState.streak + 1 : 0;
     const nextScore = Math.max(0, routeState.score + (isCorrect ? 14 + routeState.streak * 3 : -5));
     const nextHistory = [...routeState.history, routeState.command];
-    triggerFeedback(isCorrect, nextStreak);
+    triggerFeedback(isCorrect, nextStreak, isCorrect ? 14 + routeState.streak * 3 : -5);
     const routeRounds = GAME_DIFF_CONFIG.route.rounds[clientDiffLevel - 1];
     if (nextRound > routeRounds) {
       commitScore("route", nextScore, { phase: "finished", round: routeRounds, streak: nextStreak, historyLength: nextHistory.length });
@@ -2082,7 +2248,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   function handleDifferencePick(tileId: string) {
     if (differenceState.phase !== "playing") return;
     const isCorrect = tileId === differenceState.oddId;
-    triggerFeedback(isCorrect, 0);
+    triggerFeedback(isCorrect, 0, isCorrect ? 1 : 0);
     if (!isCorrect) {
       commitScore("difference", differenceState.score, { phase: "finished", round: differenceState.round, revealId: differenceState.oddId });
       setDifferenceState((current) => ({ ...current, phase: "finished", revealId: current.oddId, message: `Tur bitti. Kaydedilen skor ${current.score}. İşaretlenen kart doğru değildi.` }));
@@ -2111,7 +2277,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   function handleScanPick(tileId: string) {
     if (scanState.phase !== "playing") return;
     const isCorrect = tileId === scanState.targetId;
-    triggerFeedback(isCorrect, 0);
+    triggerFeedback(isCorrect, 0, isCorrect ? 1 : 0);
     const scanRounds = GAME_DIFF_CONFIG.scan.rounds[clientDiffLevel - 1];
     const tileCount = GAME_DIFF_CONFIG.scan.tileCount[clientDiffLevel - 1];
     if (!isCorrect) {
@@ -2212,6 +2378,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   // ── Adaptive difficulty derived from active client ──
   const clientDiffLevel = getDifficultyLevel(activeClient?.difficultyLevel);
   const visibleTabs = GAME_TABS.filter((tab) => tab.category === activeTab.category);
+  // Compute nextInSet for the current game's result overlay
+  const sessionSetNextInSet = sessionSet?.phase === "running" && sessionSet.currentIndex < sessionSet.games.length - 1
+    ? { gameName: GAME_LABELS[sessionSet.games[sessionSet.currentIndex + 1]], onNext: advanceSessionSet }
+    : null;
   const activeScoreCard = scoreboard[activeGame];
   const activeRemoteScore = platformOverview.remoteScores[activeGame];
   const scoreCards = Object.values(scoreboard);
@@ -4694,6 +4864,16 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         {/* ── Games View ── */}
         {activeAppView === "games" && (
           <div className="flex flex-col h-full">
+
+            {/* ── Session Set Summary Overlay ── */}
+            {sessionSet?.phase === "finished" && (
+              <SessionSetSummary
+                sessionSet={sessionSet}
+                onClose={() => setSessionSet(null)}
+                onNewSet={() => { setSessionSet(null); setShowSessionSetPicker(true); }}
+              />
+            )}
+
             {/* ── Premium Desktop Game Header ── */}
             <div className="hidden lg:flex items-center justify-between px-6 h-16 border-b border-(--color-line) sticky top-0 z-20" style={{
               background: "var(--color-chrome-header)",
@@ -4925,6 +5105,52 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     <span>{gameElapsed > 0 ? "↺" : "▶"}</span>
                     {gameElapsed > 0 ? "Yeni Seans" : "Seansı Başlat"}
                   </button>
+
+                  {/* Session Set trigger */}
+                  {sessionSet?.phase === "running" ? (
+                    <div className="rounded-2xl p-3" style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-400">Seri Aktif</span>
+                        <button type="button" onClick={() => setSessionSet(null)} className="text-white/30 hover:text-white/60 text-xs font-bold cursor-pointer border-none bg-transparent" title="Seriyi iptal et">✕</button>
+                      </div>
+                      <p className="text-white/70 text-xs font-semibold m-0 mb-2">{sessionSet.presetLabel}</p>
+                      <div className="flex gap-1">
+                        {sessionSet.games.map((g, i) => (
+                          <div key={g} className="flex-1 h-1.5 rounded-full" style={{ background: i < sessionSet.entries.length ? "#10b981" : i === sessionSet.currentIndex ? "var(--color-primary)" : "rgba(255,255,255,0.1)" }} />
+                        ))}
+                      </div>
+                      <p className="text-white/35 text-[10px] mt-1.5 m-0">{sessionSet.entries.length}/{sessionSet.games.length} tamamlandı</p>
+                    </div>
+                  ) : (
+                    <button type="button"
+                      onClick={() => setShowSessionSetPicker(prev => !prev)}
+                      className="w-full flex items-center justify-center gap-2 font-semibold text-xs px-4 py-2 rounded-xl cursor-pointer border transition-all hover:text-white/80"
+                      style={{ background: "rgba(99,102,241,0.06)", borderColor: "rgba(99,102,241,0.2)", color: "var(--color-primary)" }}>
+                      ⚡ Seri Modu
+                    </button>
+                  )}
+
+                  {/* Session Set preset picker */}
+                  {showSessionSetPicker && !sessionSet && (
+                    <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(99,102,241,0.2)", background: "var(--color-surface-elevated)" }}>
+                      <div className="px-3 py-2 border-b border-white/5">
+                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-400">Set Seç</span>
+                      </div>
+                      <div className="p-2 space-y-1">
+                        {SESSION_SET_PRESETS.map(preset => (
+                          <button key={preset.id} type="button"
+                            onClick={() => startSessionSet(preset)}
+                            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl cursor-pointer border-none transition-all hover:bg-white/5 text-left">
+                            <span className="text-base shrink-0">{preset.emoji}</span>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-xs font-bold text-(--color-text-strong) block truncate">{preset.label}</span>
+                              <span className="text-[10px] text-(--color-text-muted)">{preset.description}</span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Categories */}
@@ -5028,7 +5254,45 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 )}
               </aside>
 
-              <section className="flex-1 overflow-y-auto" style={{ background: "var(--color-page-bg)" }}>
+              <section className="relative flex-1 overflow-y-auto" style={{ background: "var(--color-page-bg)" }}>
+
+                {/* ── Float Score Overlay ── */}
+                {floatScores.map(fs => (
+                  <span
+                    key={fs.id}
+                    className={`score-pop${fs.correct ? "" : " negative"}`}
+                    style={{ left: "50%", top: "28%", transform: "translateX(-50%)" }}
+                  >
+                    {fs.correct ? `+${fs.value}` : `-${Math.abs(fs.value)}`}
+                  </span>
+                ))}
+
+                {/* ── Combo Milestone Badge ── */}
+                {lastFeedback && lastFeedback.combo >= 3 && (
+                  <div
+                    className="combo-badge-enter"
+                    style={{
+                      position: "absolute",
+                      left: "50%",
+                      top: "20%",
+                      transform: "translateX(-50%)",
+                      zIndex: 50,
+                      pointerEvents: "none",
+                      padding: "6px 16px",
+                      borderRadius: "999px",
+                      background: lastFeedback.combo >= 8 ? "linear-gradient(90deg,#ef4444,#f59e0b)" : lastFeedback.combo >= 5 ? "linear-gradient(90deg,#f59e0b,#a78bfa)" : "linear-gradient(90deg,#6366f1,#10b981)",
+                      color: "#fff",
+                      fontWeight: 700,
+                      fontSize: "0.85rem",
+                      letterSpacing: "0.03em",
+                      boxShadow: "0 4px 20px rgba(0,0,0,0.35)",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {lastFeedback.combo >= 8 ? "💥" : lastFeedback.combo >= 5 ? "⚡" : "🔥"} {lastFeedback.combo}x Seri!
+                  </div>
+                )}
+
               {(() => {
                 const gameBtn = "flex items-center gap-2 text-white text-sm font-bold px-6 py-3 rounded-2xl transition-all cursor-pointer border-none active:scale-95";
                 const gameBtnSec = "flex items-center gap-2 text-slate-300 text-sm font-semibold px-6 py-3 rounded-2xl transition-all cursor-pointer border border-white/15 hover:border-white/30 hover:text-white";
@@ -5089,6 +5353,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           hasActiveClient={!!activeClient}
                           durationSeconds={Math.max(30, Math.round((Date.now() - sessionStartedAt) / 1000))}
                           sessionAvg={(() => { const gs = platformOverview.recentSessions.filter(s => s.gameKey === activeGame && s.clientId === (activeClient?.id ?? "")); return gs.length > 0 ? Math.round(gs.reduce((a, s) => a + s.score, 0) / gs.length) : 0; })()}
+                          nextInSet={sessionSetNextInSet}
                         />
                       );
                     })()}
@@ -5169,6 +5434,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           hasActiveClient={!!activeClient}
                           durationSeconds={Math.max(30, Math.round((Date.now() - sessionStartedAt) / 1000))}
                           sessionAvg={(() => { const gs = platformOverview.recentSessions.filter(s => s.gameKey === activeGame && s.clientId === (activeClient?.id ?? "")); return gs.length > 0 ? Math.round(gs.reduce((a, s) => a + s.score, 0) / gs.length) : 0; })()}
+                          nextInSet={sessionSetNextInSet}
                         />
                       );
                     })()}
@@ -5246,6 +5512,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           hasActiveClient={!!activeClient}
                           durationSeconds={Math.max(30, Math.round((Date.now() - sessionStartedAt) / 1000))}
                           sessionAvg={(() => { const gs = platformOverview.recentSessions.filter(s => s.gameKey === activeGame && s.clientId === (activeClient?.id ?? "")); return gs.length > 0 ? Math.round(gs.reduce((a, s) => a + s.score, 0) / gs.length) : 0; })()}
+                          nextInSet={sessionSetNextInSet}
                         />
                       );
                     })()}
@@ -5329,6 +5596,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           hasActiveClient={!!activeClient}
                           durationSeconds={Math.max(30, Math.round((Date.now() - sessionStartedAt) / 1000))}
                           sessionAvg={(() => { const gs = platformOverview.recentSessions.filter(s => s.gameKey === activeGame && s.clientId === (activeClient?.id ?? "")); return gs.length > 0 ? Math.round(gs.reduce((a, s) => a + s.score, 0) / gs.length) : 0; })()}
+                          nextInSet={sessionSetNextInSet}
                         />
                       );
                     })()}
@@ -5427,6 +5695,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           hasActiveClient={!!activeClient}
                           durationSeconds={Math.max(30, Math.round((Date.now() - sessionStartedAt) / 1000))}
                           sessionAvg={(() => { const gs = platformOverview.recentSessions.filter(s => s.gameKey === activeGame && s.clientId === (activeClient?.id ?? "")); return gs.length > 0 ? Math.round(gs.reduce((a, s) => a + s.score, 0) / gs.length) : 0; })()}
+                          nextInSet={sessionSetNextInSet}
                         />
                       );
                     })()}
@@ -5504,6 +5773,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           hasActiveClient={!!activeClient}
                           durationSeconds={Math.max(30, Math.round((Date.now() - sessionStartedAt) / 1000))}
                           sessionAvg={(() => { const gs = platformOverview.recentSessions.filter(s => s.gameKey === activeGame && s.clientId === (activeClient?.id ?? "")); return gs.length > 0 ? Math.round(gs.reduce((a, s) => a + s.score, 0) / gs.length) : 0; })()}
+                          nextInSet={sessionSetNextInSet}
                         />
                       );
                     })()}
@@ -5607,6 +5877,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           hasActiveClient={!!activeClient}
                           durationSeconds={Math.max(30, Math.round((Date.now() - sessionStartedAt) / 1000))}
                           sessionAvg={(() => { const gs = platformOverview.recentSessions.filter(s => s.gameKey === activeGame && s.clientId === (activeClient?.id ?? "")); return gs.length > 0 ? Math.round(gs.reduce((a, s) => a + s.score, 0) / gs.length) : 0; })()}
+                          nextInSet={sessionSetNextInSet}
                         />
                       );
                     })()}
