@@ -11,12 +11,14 @@
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
+    "@remotion/player": "^4.0.438",
     "clsx": "^2.1.1",
     "framer-motion": "^11.18.2",
     "lucide-react": "^0.511.0",
     "next": "^15.5.12",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "remotion": "^4.0.438",
     "tailwind-merge": "^3.3.0"
   },
   "devDependencies": {

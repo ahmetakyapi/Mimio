@@ -1,8 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
+import { motion, AnimatePresence, useScroll, useSpring as useSpringFM } from "framer-motion";
+import { MimioPlayer } from "./MimioPlayer";
+
+/* ── Scroll Progress Bar ── */
+function ScrollProgress() {
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpringFM(scrollYProgress, { stiffness: 200, damping: 30 });
+  return (
+    <motion.div
+      style={{ scaleX }}
+      className="fixed top-0 left-0 right-0 z-[200] h-[2px] bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-400 origin-left pointer-events-none"
+    />
+  );
+}
 import {
   Users,
   Gamepad2,
@@ -173,17 +185,34 @@ const NAV_LINKS = [
 
 /* ── Animations ── */
 
+const ease = [0.22, 1, 0.36, 1] as const;
+
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
-  },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease } },
+};
+
+const slideLeft = {
+  hidden: { opacity: 0, x: -48 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.65, ease } },
+};
+
+const slideRight = {
+  hidden: { opacity: 0, x: 48 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.65, ease } },
+};
+
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.88 },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.55, ease } },
 };
 
 const stagger = {
   visible: { transition: { staggerChildren: 0.1 } },
+};
+
+const staggerFast = {
+  visible: { transition: { staggerChildren: 0.07 } },
 };
 
 /* ── Animated Background Orbs ── */
@@ -346,6 +375,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
 
   return (
     <div className="min-h-screen bg-(--color-page-bg) font-(--font-sans) relative">
+      <ScrollProgress />
       <BackgroundOrbs />
       <GridPattern />
 
@@ -587,120 +617,57 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               </motion.div>
             </motion.div>
 
-            {/* Right — Premium App Preview */}
+            {/* Right — App window showcase */}
             <motion.div
-              initial={{ opacity: 0, y: 40, scale: 0.95 }}
+              initial={{ opacity: 0, y: 48, scale: 0.94 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{
-                duration: 0.8,
-                delay: 0.3,
-                ease: [0.22, 1, 0.36, 1],
-              }}
-              className="relative flex justify-center"
+              transition={{ duration: 0.9, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="relative"
             >
-              {/* Background glow */}
-              <div className="absolute inset-0 m-auto w-[90%] h-[80%] bg-[radial-gradient(circle,rgba(99,102,241,0.18),transparent_65%)] blur-3xl" />
+              {/* Glow halo */}
+              <div className="absolute -inset-8 bg-[radial-gradient(ellipse_70%_60%_at_60%_50%,rgba(99,102,241,0.14),transparent)] blur-3xl pointer-events-none" />
 
-              {/* Floating cards */}
-              <motion.div
-                animate={{ y: [0, -8, 0] }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: "easeInOut",
+              {/* App window frame */}
+              <div
+                className="relative w-full rounded-2xl overflow-hidden border border-(--color-line)"
+                style={{
+                  boxShadow:
+                    "0 2px 0 0 rgba(255,255,255,0.06) inset, 0 24px 64px rgba(99,102,241,0.14), 0 8px 28px rgba(0,0,0,0.16)",
                 }}
-                className="hidden sm:flex absolute -top-4 -right-4 lg:-right-8 z-20 glass rounded-2xl px-4 py-3 items-center gap-3"
               >
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center">
-                  <TrendingUp size={16} className="text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-(--color-text-strong) m-0 leading-tight">
-                    +42%
-                  </p>
-                  <p className="text-[11px] text-(--color-text-soft) m-0">
-                    Katılım artışı
-                  </p>
-                </div>
-              </motion.div>
-
-              <motion.div
-                animate={{ y: [0, -10, 0] }}
-                transition={{
-                  duration: 4.5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: 1.2,
-                }}
-                className="hidden sm:flex absolute -bottom-2 -left-4 lg:-left-8 z-20 glass rounded-2xl px-4 py-3 items-center gap-3"
-              >
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-                  <Award size={16} className="text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-(--color-text-strong) m-0 leading-tight">
-                    6 Oyun
-                  </p>
-                  <p className="text-[11px] text-(--color-text-soft) m-0">
-                    Kanıta dayalı
-                  </p>
-                </div>
-              </motion.div>
-
-              <motion.div
-                animate={{ y: [0, -6, 0] }}
-                transition={{
-                  duration: 3.5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: 0.6,
-                }}
-                className="hidden sm:block absolute top-1/2 -translate-y-1/2 -right-4 lg:-right-12 z-20 glass rounded-2xl px-4 py-3"
-              >
-                <div className="flex items-center gap-2 mb-1.5">
-                  <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-[10px] font-bold">
-                    A
-                  </div>
-                  <p className="text-xs font-bold text-(--color-text-strong) m-0">
-                    Ahmet A.
-                  </p>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  {[1, 2, 3].map((s) => (
-                    <Star
-                      key={s}
-                      size={11}
-                      className="text-amber-400 fill-amber-400"
-                    />
-                  ))}
-                  <span className="text-[10px] text-(--color-text-soft) ml-1">
-                    340 puan
-                  </span>
-                </div>
-              </motion.div>
-
-              {/* Hero dashboard image */}
-              <div className="relative w-full max-w-lg">
+                {/* Chrome bar */}
                 <div
-                  className="relative rounded-3xl overflow-hidden"
-                  style={{
-                    boxShadow:
-                      "0 25px 60px rgba(99,102,241,0.15), 0 8px 24px rgba(0,0,0,0.2)",
-                  }}
+                  className="flex items-center gap-3 px-4 py-3 border-b border-(--color-line)"
+                  style={{ background: "var(--color-surface)" }}
                 >
-                  <Image
-                    src="/hero-dashboard.png"
-                    alt="Mimio Platform — Danışan yönetimi, haftalık plan, seans notları ve ilerleme takibi"
-                    width={1024}
-                    height={768}
-                    quality={90}
-                    priority
-                    className="w-full h-auto object-cover"
-                  />
-                  {/* Subtle overlay gradient at edges */}
-                  <div className="absolute inset-0 pointer-events-none rounded-3xl ring-1 ring-inset ring-white/10" />
-                  <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/8 via-transparent to-transparent" />
+                  {/* Traffic lights */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="w-3 h-3 rounded-full bg-red-400/70" />
+                    <div className="w-3 h-3 rounded-full bg-amber-400/70" />
+                    <div className="w-3 h-3 rounded-full bg-emerald-400/70" />
+                  </div>
+
+                  {/* URL bar */}
+                  <div className="flex-1 mx-2 max-w-xs">
+                    <div className="h-6 rounded-md bg-(--color-surface-elevated) border border-(--color-line) flex items-center justify-center gap-1.5 px-3">
+                      <ShieldCheck size={9} className="text-(--color-accent-green) shrink-0" />
+                      <span className="text-[10px] text-(--color-text-muted) truncate">
+                        mimio.app/dashboard
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Tab indicator */}
+                  <div className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-(--color-primary-light) border border-(--color-primary)/15">
+                    <Gamepad2 size={10} className="text-(--color-primary)" />
+                    <span className="text-[10px] font-semibold text-(--color-primary)">
+                      Mimio
+                    </span>
+                  </div>
                 </div>
+
+                {/* Remotion player */}
+                <MimioPlayer />
               </div>
             </motion.div>
           </div>
@@ -789,7 +756,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               return (
                 <motion.div
                   key={f.title}
-                  variants={fadeUp}
+                  variants={scaleIn}
                   className={`glass rounded-3xl p-7 relative overflow-hidden group cursor-default transition-all duration-300 hover:-translate-y-1 hover:shadow-(--shadow-elevated) ${
                     isLarge ? "sm:col-span-2 md:col-span-2" : "md:col-span-1"
                   }`}
@@ -1123,7 +1090,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 return (
                   <motion.div
                     key={step.num}
-                    variants={fadeUp}
+                    variants={slideLeft}
                     className="flex flex-col items-center text-center gap-5 relative"
                   >
                     <div className="relative z-10">
@@ -1199,7 +1166,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-60px" }}
-            variants={stagger}
+            variants={staggerFast}
             className="grid md:grid-cols-3 gap-6"
           >
             {GAMES.map((game) => {
@@ -1285,13 +1252,13 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-60px" }}
-            variants={stagger}
+            variants={staggerFast}
             className="grid sm:grid-cols-2 md:grid-cols-3 gap-6"
           >
             {TESTIMONIALS.map((t) => (
               <motion.div
                 key={t.name}
-                variants={fadeUp}
+                variants={slideRight}
                 className="glass rounded-3xl p-7 relative overflow-hidden group"
               >
                 <div className="absolute top-4 right-6 text-6xl font-serif text-(--color-text-disabled) leading-none select-none">
