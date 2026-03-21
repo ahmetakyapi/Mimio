@@ -490,6 +490,199 @@ const DAY_LABELS: Record<DayKey, string> = {
 };
 
 
+// ── Rule-Based Therapy Suggestion Engine ──
+type GameTrend = "improving" | "stable" | "declining" | "new";
+
+interface GameAnalysis {
+  gameKey: GameKey;
+  label: string;
+  plays: number;
+  best: number;
+  last3Avg: number;
+  last5Avg: number;
+  trend: GameTrend;
+  relativeScore: number; // 0-1, ratio of best to max potential
+  daysSinceLastPlay: number | null;
+}
+
+interface TherapySuggestion {
+  strengths: Array<{ gameKey: GameKey; label: string; trend: GameTrend; last3Avg: number }>;
+  attentionAreas: Array<{ gameKey: GameKey; label: string; reason: string; trend: GameTrend }>;
+  recommendedSet: GameKey[];
+  protocolId: string | null;
+  protocolName: string | null;
+  soapDraft: { s: string; o: string; a: string; p: string };
+  performanceSummary: string;
+  overallTrend: "improving" | "stable" | "declining" | "insufficient_data";
+}
+
+const GOAL_PROTOCOL_MAP: Record<string, string> = {
+  "dikkat": "adhd-basic",
+  "odak": "adhd-basic",
+  "dehb": "adhd-basic",
+  "bellek": "adhd-basic",
+  "hafıza": "adhd-basic",
+  "inme": "stroke-cognitive",
+  "felç": "stroke-cognitive",
+  "nörolojik": "stroke-cognitive",
+  "rehabilitasyon": "stroke-cognitive",
+  "yaşlı": "geriatric-stimulation",
+  "demans": "geriatric-stimulation",
+  "bilişsel": "geriatric-stimulation",
+  "okul": "school-readiness",
+  "çocuk": "school-readiness",
+  "pediatrik": "school-readiness",
+  "iş": "executive-function",
+  "yürütücü": "executive-function",
+  "planlama": "executive-function",
+};
+
+function analyzeClientGames(
+  clientId: string,
+  recentSessions: RecentSessionEntry[],
+): GameAnalysis[] {
+  const allGames: GameKey[] = ["memory", "pairs", "pulse", "route", "difference", "scan", "logic"];
+  const clientSessions = recentSessions.filter(s => s.clientId === clientId);
+  const now = Date.now();
+
+  return allGames.map(gameKey => {
+    const gameSessions = clientSessions
+      .filter(s => s.gameKey === gameKey)
+      .sort((a, b) => new Date(b.playedAt).getTime() - new Date(a.playedAt).getTime());
+
+    const plays = gameSessions.length;
+    const best = plays > 0 ? Math.max(...gameSessions.map(s => s.score)) : 0;
+    const last3 = gameSessions.slice(0, 3).map(s => s.score);
+    const last5 = gameSessions.slice(0, 5).map(s => s.score);
+    const last3Avg = last3.length > 0 ? last3.reduce((a, b) => a + b, 0) / last3.length : 0;
+    const last5Avg = last5.length > 0 ? last5.reduce((a, b) => a + b, 0) / last5.length : 0;
+
+    let trend: GameTrend = "new";
+    if (plays >= 5) {
+      const diff = last3Avg - last5Avg;
+      if (diff > 1.5) trend = "improving";
+      else if (diff < -1.5) trend = "declining";
+      else trend = "stable";
+    } else if (plays >= 2) {
+      trend = "stable";
+    }
+
+    const lastPlayedAt = gameSessions.length > 0 ? new Date(gameSessions[0].playedAt).getTime() : null;
+    const daysSinceLastPlay = lastPlayedAt !== null ? Math.floor((now - lastPlayedAt) / (1000 * 60 * 60 * 24)) : null;
+
+    const maxPotential = 20; // approximate max score for most games
+    const relativeScore = best > 0 ? Math.min(1, best / maxPotential) : 0;
+
+    return { gameKey, label: GAME_LABELS[gameKey], plays, best, last3Avg, last5Avg, trend, relativeScore, daysSinceLastPlay };
+  });
+}
+
+function generateTherapySuggestions(
+  client: ClientProfile,
+  recentSessions: RecentSessionEntry[],
+): TherapySuggestion {
+  const analyses = analyzeClientGames(client.id, recentSessions);
+  const playedGames = analyses.filter(a => a.plays > 0);
+  const totalPlays = playedGames.reduce((sum, a) => sum + a.plays, 0);
+
+  if (totalPlays < 3) {
+    return {
+      strengths: [], attentionAreas: [], recommendedSet: ["memory", "pulse", "scan"],
+      protocolId: null, protocolName: null,
+      performanceSummary: "Henüz yeterli veri yok. Danışanla en az 3 seans tamamlayın.",
+      overallTrend: "insufficient_data",
+      soapDraft: {
+        s: `Danışan ${client.displayName} değerlendirme sürecinde. Yeterli seans verisi bekleniyor.`,
+        o: "Toplam tamamlanan seans sayısı yetersiz (< 3). Sistematik değerlendirme için daha fazla oyun verisi gerekli.",
+        a: "Taban ölçümü tamamlanmamış. İlk 3-5 seans taban değerlendirmesi olarak kullanılacak.",
+        p: "Başlangıç protokolü: Sıra Hafızası, Mavi Nabız, Hedef Tarama oyunları ile taban ölçümü al. Haftada 2-3 seans önerisi.",
+      },
+    };
+  }
+
+  // Identify strengths: plays ≥ 3, trend not declining, last3Avg ≥ 60% of best
+  const strengths = analyses.filter(a =>
+    a.plays >= 3 &&
+    a.trend !== "declining" &&
+    a.best > 0 &&
+    a.last3Avg >= a.best * 0.6
+  ).sort((a, b) => b.last3Avg - a.last3Avg).slice(0, 3);
+
+  // Identify attention areas
+  const attentionAreas = analyses.filter(a => {
+    if (a.trend === "declining" && a.plays >= 3) return true;
+    if (a.plays === 0) return true;
+    if (a.plays >= 3 && a.last3Avg < a.best * 0.45) return true;
+    if (a.daysSinceLastPlay !== null && a.daysSinceLastPlay > 14) return true;
+    return false;
+  }).map(a => {
+    let reason = "";
+    if (a.plays === 0) reason = "Henüz oynanmadı";
+    else if (a.trend === "declining") reason = `Son 3 seans ortalaması düşüyor (${Math.round(a.last3Avg)})`;
+    else if (a.daysSinceLastPlay !== null && a.daysSinceLastPlay > 14) reason = `${a.daysSinceLastPlay} gündür oynanmadı`;
+    else reason = `Performans potansiyelin altında (%${Math.round((a.last3Avg / Math.max(a.best, 1)) * 100)})`;
+    return { gameKey: a.gameKey, label: a.label, reason, trend: a.trend };
+  }).slice(0, 4);
+
+  // Recommend session set: 1-2 strengths + 1-2 attention areas
+  const recSet: GameKey[] = [];
+  if (strengths.length > 0) recSet.push(strengths[0].gameKey);
+  const attentionUnplayed = attentionAreas.filter(a => a.trend === "new");
+  const attentionWeak = attentionAreas.filter(a => a.trend !== "new");
+  if (attentionWeak.length > 0) recSet.push(attentionWeak[0].gameKey);
+  if (attentionUnplayed.length > 0 && recSet.length < 3) recSet.push(attentionUnplayed[0].gameKey);
+  if (recSet.length < 3 && strengths.length > 1) recSet.push(strengths[1].gameKey);
+  if (recSet.length === 0) recSet.push("memory", "scan", "difference");
+
+  // Match protocol to client goal
+  const goalText = (client.primaryGoal ?? "").toLowerCase() + " " + (client.ageGroup ?? "").toLowerCase();
+  let matchedProto: TherapyProtocol | null = null;
+  for (const [keyword, protoId] of Object.entries(GOAL_PROTOCOL_MAP)) {
+    if (goalText.includes(keyword)) {
+      matchedProto = THERAPY_PROTOCOLS.find(p => p.id === protoId) ?? null;
+      if (matchedProto) break;
+    }
+  }
+
+  // Overall trend
+  const improvingCount = playedGames.filter(a => a.trend === "improving").length;
+  const decliningCount = playedGames.filter(a => a.trend === "declining").length;
+  const overallTrend: TherapySuggestion["overallTrend"] =
+    playedGames.length < 2 ? "insufficient_data" :
+    improvingCount > decliningCount ? "improving" :
+    decliningCount > improvingCount ? "declining" : "stable";
+
+  // Performance summary
+  const avgScore = playedGames.length > 0
+    ? Math.round(playedGames.reduce((sum, a) => sum + a.last3Avg, 0) / playedGames.length)
+    : 0;
+  const trendLabel = overallTrend === "improving" ? "gelişme gösteriyor" : overallTrend === "declining" ? "geri düşüş görülüyor" : "stabil seyrediyor";
+  const performanceSummary = `${client.displayName}, ${playedGames.length} oyun alanında toplam ${totalPlays} seans tamamladı. Genel performans ${trendLabel}. Ortalama skor: ${avgScore}.`;
+
+  // SOAP draft
+  const strengthList = strengths.map(s => `${s.label} (ort. ${Math.round(s.last3Avg)})`).join(", ");
+  const attentionList = attentionAreas.slice(0, 2).map(a => a.label).join(", ");
+  const recSetLabels = recSet.map(k => GAME_LABELS[k]).join(", ");
+
+  const soapDraft = {
+    s: `Danışan ${client.displayName} seans için hazır. ${client.primaryGoal ? `Birincil hedef: ${client.primaryGoal}.` : ""} Danışanın genel motivasyonu ve katılım düzeyi değerlendirildi.`,
+    o: `Son ${totalPlays} seans verisi analiz edildi. Güçlü alanlar: ${strengthList || "henüz yok"}. Dikkat gereken alanlar: ${attentionList || "yok"}. Genel skor ortalaması: ${avgScore}.`,
+    a: `${performanceSummary} ${strengths.length > 0 ? `${strengths[0].label} alanında tutarlı başarı görülüyor.` : ""} ${attentionAreas.length > 0 ? `${attentionAreas[0].label} alanında ek çalışma öneriliyor.` : ""}`,
+    p: `Önerilen bir sonraki seans seti: ${recSetLabels}. ${matchedProto ? `Uzun vadeli protokol önerisi: ${matchedProto.name} (${matchedProto.duration} hafta).` : ""} Güçlü alanlarda zorluk kademeli artırılabilir.`,
+  };
+
+  return {
+    strengths: strengths.map(s => ({ gameKey: s.gameKey, label: s.label, trend: s.trend, last3Avg: Math.round(s.last3Avg) })),
+    attentionAreas,
+    recommendedSet: recSet,
+    protocolId: matchedProto?.id ?? null,
+    protocolName: matchedProto?.name ?? null,
+    soapDraft,
+    performanceSummary,
+    overallTrend,
+  };
+}
+
 function randomIndex(length: number, avoid?: number) {
   let next = Math.floor(Math.random() * length);
   if (typeof avoid === "number" && length > 1) {
@@ -1214,7 +1407,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [allNotes, setAllNotes] = useState<SessionNote[]>([]);
   const [allWeeklyPlans, setAllWeeklyPlans] = useState<WeeklyPlan[]>([]);
-  const [clientDetailTab, setClientDetailTab] = useState<"notes" | "plan" | "scores" | "progress">("notes");
+  const [clientDetailTab, setClientDetailTab] = useState<"notes" | "plan" | "scores" | "progress" | "suggestions">("notes");
   const [noteForm, setNoteForm] = useState({ date: getTodayString(), content: "" });
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [showAddClient, setShowAddClient] = useState(false);
@@ -2219,6 +2412,11 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     setShowSessionSetPicker(false);
     setSessionSet({ presetLabel: preset.label, games: preset.games as GameKey[], currentIndex: 0, entries: [], phase: "running" });
     setActiveGame(preset.games[0] as GameKey);
+  }
+
+  function startCustomSessionSet(label: string, games: GameKey[]) {
+    setSessionSet({ presetLabel: label, games, currentIndex: 0, entries: [], phase: "running" });
+    setActiveGame(games[0]);
   }
 
   function advanceSessionSet() {
@@ -4044,10 +4242,11 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               {/* ── Tabs ── */}
               <div className="flex gap-1 p-1 rounded-2xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
                 {([
-                  { key: "notes",    label: "📝 Notlar" },
-                  { key: "plan",     label: "📅 Plan" },
-                  { key: "scores",   label: "📊 Skorlar" },
-                  { key: "progress", label: "📈 İlerleme" },
+                  { key: "notes",       label: "📝 Notlar" },
+                  { key: "plan",        label: "📅 Plan" },
+                  { key: "scores",      label: "📊 Skorlar" },
+                  { key: "progress",    label: "📈 İlerleme" },
+                  { key: "suggestions", label: "🤖 Öneri" },
                 ] as const).map(({ key, label }) => (
                   <button key={key} type="button"
                     className="flex-1 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 border-none cursor-pointer"
@@ -4978,6 +5177,147 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           </div>
                         );
                       })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* ── AI Suggestions Tab (Rule-Based) ── */}
+              {clientDetailTab === "suggestions" && (() => {
+                const suggestion = generateTherapySuggestions(selectedClient, platformOverview.recentSessions);
+                const trendIcon = suggestion.overallTrend === "improving" ? "📈" : suggestion.overallTrend === "declining" ? "📉" : suggestion.overallTrend === "insufficient_data" ? "🔍" : "➡️";
+                const trendColor = suggestion.overallTrend === "improving" ? "#10b981" : suggestion.overallTrend === "declining" ? "#ef4444" : "#f59e0b";
+                return (
+                  <div className="space-y-4">
+                    {/* Header */}
+                    <div className="relative overflow-hidden rounded-2xl border border-(--color-line) p-4" style={{ background: "var(--color-surface-strong)" }}>
+                      <div className="h-0.5 w-full absolute top-0 left-0" style={{ background: "linear-gradient(90deg,#6366f1,#a78bfa,#ec4899)" }} />
+                      <div className="flex items-start gap-3 mt-1">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0" style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.2)" }}>🤖</div>
+                        <div>
+                          <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0 mb-1">Akıllı Terapi Analizi</h3>
+                          <p className="text-(--color-text-muted) text-xs m-0">{suggestion.performanceSummary}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Overall trend */}
+                    <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border" style={{ background: `${trendColor}0a`, borderColor: `${trendColor}25` }}>
+                      <span className="text-xl">{trendIcon}</span>
+                      <div>
+                        <p className="text-xs font-extrabold uppercase tracking-widest m-0" style={{ color: trendColor }}>Genel Trend</p>
+                        <p className="text-sm font-semibold text-(--color-text-strong) m-0">
+                          {suggestion.overallTrend === "improving" ? "Gelişme görülüyor" : suggestion.overallTrend === "declining" ? "Düşüş var — ek destek öneriliyor" : suggestion.overallTrend === "insufficient_data" ? "Yeterli veri bekleniyor" : "Stabil seyir"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Strengths */}
+                    {suggestion.strengths.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-500 m-0">✅ Güçlü Alanlar</h4>
+                        <div className="grid grid-cols-1 gap-2">
+                          {suggestion.strengths.map(s => (
+                            <div key={s.gameKey} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-(--color-line)" style={{ background: "rgba(16,185,129,0.06)" }}>
+                              <span className="text-base shrink-0">⭐</span>
+                              <div className="flex-1">
+                                <span className="text-xs font-bold text-(--color-text-strong)">{s.label}</span>
+                                <span className="text-[10px] text-emerald-500 ml-2">{s.trend === "improving" ? "↑ Gelişiyor" : "→ Stabil"}</span>
+                              </div>
+                              <span className="text-xs font-extrabold tabular-nums text-emerald-400">~{s.last3Avg}p</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Attention areas */}
+                    {suggestion.attentionAreas.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-amber-500 m-0">⚠️ Dikkat Gereken Alanlar</h4>
+                        <div className="grid grid-cols-1 gap-2">
+                          {suggestion.attentionAreas.map(a => (
+                            <div key={a.gameKey} className="flex items-start gap-3 px-3 py-2.5 rounded-xl border border-(--color-line)" style={{ background: "rgba(245,158,11,0.06)" }}>
+                              <span className="text-base shrink-0 mt-0.5">🎯</span>
+                              <div>
+                                <span className="text-xs font-bold text-(--color-text-strong) block">{a.label}</span>
+                                <span className="text-[10px] text-(--color-text-muted)">{a.reason}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Recommended session set */}
+                    {suggestion.recommendedSet.length > 0 && (
+                      <div className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
+                        <div className="px-4 py-3 border-b border-(--color-line)" style={{ background: "rgba(99,102,241,0.08)" }}>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400 m-0">📋 Önerilen Seans Seti</p>
+                        </div>
+                        <div className="p-4 space-y-2">
+                          {suggestion.recommendedSet.map((k, i) => (
+                            <div key={k} className="flex items-center gap-3 px-3 py-2 rounded-xl" style={{ background: "var(--color-surface-elevated)" }}>
+                              <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white shrink-0" style={{ background: "var(--color-primary)" }}>{i + 1}</span>
+                              <span className="text-xs font-semibold text-(--color-text-strong)">{GAME_LABELS[k]}</span>
+                            </div>
+                          ))}
+                          <button type="button"
+                            className="w-full mt-3 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-xs text-white border-none cursor-pointer transition-all hover:opacity-90"
+                            style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}
+                            onClick={() => {
+                              startCustomSessionSet("🤖 AI Önerisi", suggestion.recommendedSet);
+                              setActiveAppView("games");
+                            }}>
+                            ▶ Bu Seti Oyna
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Protocol recommendation */}
+                    {suggestion.protocolName && (
+                      <div className="px-4 py-3.5 rounded-2xl border border-(--color-line)" style={{ background: "rgba(167,139,250,0.08)" }}>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400 m-0 mb-1.5">📚 Protokol Önerisi</p>
+                        <p className="text-sm font-bold text-(--color-text-strong) m-0 mb-1">{suggestion.protocolName}</p>
+                        <p className="text-xs text-(--color-text-muted) m-0">Danışanın hedefleriyle eşleşen hazır protokol şablonu.</p>
+                        <button type="button"
+                          onClick={() => { setActiveAppView("therapy-program"); setTpActiveTab("protocols"); }}
+                          className="mt-2.5 text-xs font-bold cursor-pointer border-none bg-transparent p-0 underline"
+                          style={{ color: "var(--color-primary)" }}>
+                          Protokolleri Görüntüle →
+                        </button>
+                      </div>
+                    )}
+
+                    {/* SOAP draft */}
+                    <div className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
+                      <div className="px-4 py-3 border-b border-(--color-line)" style={{ background: "rgba(99,102,241,0.06)" }}>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400 m-0">📄 Otomatik SOAP Taslağı</p>
+                      </div>
+                      <div className="p-4 space-y-3">
+                        {(["s", "o", "a", "p"] as const).map(key => (
+                          <div key={key}>
+                            <span className="text-[10px] font-black uppercase tracking-widest block mb-1" style={{ color: "var(--color-primary)" }}>
+                              {key === "s" ? "S — Subjektif" : key === "o" ? "O — Objektif" : key === "a" ? "A — Analiz" : "P — Plan"}
+                            </span>
+                            <p className="text-xs text-(--color-text-soft) m-0 leading-relaxed">{suggestion.soapDraft[key]}</p>
+                          </div>
+                        ))}
+                        <button type="button"
+                          onClick={() => {
+                            const s = suggestion.soapDraft;
+                            const text = `S: ${s.s}\n\nO: ${s.o}\n\nA: ${s.a}\n\nP: ${s.p}`;
+                            setNoteForm({ date: getTodayString(), content: text });
+                            setNoteMode("free");
+                            setClientDetailTab("notes");
+                            setShowNoteForm(true);
+                          }}
+                          className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-xs border cursor-pointer transition-all hover:opacity-80"
+                          style={{ background: "transparent", borderColor: "var(--color-line)", color: "var(--color-text-soft)" }}>
+                          Not Olarak Kaydet
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
