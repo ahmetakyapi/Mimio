@@ -62,6 +62,10 @@ export default function RootLayout({ children }: { readonly children: React.Reac
     <html lang="tr" className={`${plusJakartaSans.variable} ${inter.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('mimio-theme');document.documentElement.setAttribute('data-theme',t==='light'?'light':'dark');}catch(e){}` }} />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
       <body className={plusJakartaSans.className}>
         <ThemeProvider>{children}</ThemeProvider>

@@ -222,7 +222,7 @@ function BackgroundOrbs() {
       <motion.div
         animate={{ x: [0, 30, -20, 0], y: [0, -40, 20, 0] }}
         transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full opacity-30"
+        className="absolute -top-40 -left-40 w-[300px] sm:w-[450px] lg:w-[600px] h-[300px] sm:h-[450px] lg:h-[600px] rounded-full opacity-30"
         style={{
           background:
             "radial-gradient(circle, rgba(99,102,241,0.15), transparent 70%)",
@@ -231,7 +231,7 @@ function BackgroundOrbs() {
       <motion.div
         animate={{ x: [0, -40, 30, 0], y: [0, 30, -20, 0] }}
         transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute -top-20 -right-40 w-[500px] h-[500px] rounded-full opacity-20"
+        className="absolute -top-20 -right-40 w-[250px] sm:w-[380px] lg:w-[500px] h-[250px] sm:h-[380px] lg:h-[500px] rounded-full opacity-20"
         style={{
           background:
             "radial-gradient(circle, rgba(34,211,238,0.12), transparent 70%)",
@@ -240,7 +240,7 @@ function BackgroundOrbs() {
       <motion.div
         animate={{ x: [0, 20, -30, 0], y: [0, -20, 30, 0] }}
         transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute top-1/2 -left-20 w-[400px] h-[400px] rounded-full opacity-15"
+        className="absolute top-1/2 -left-20 w-[200px] sm:w-[300px] lg:w-[400px] h-[200px] sm:h-[300px] lg:h-[400px] rounded-full opacity-15"
         style={{
           background:
             "radial-gradient(circle, rgba(139,92,246,0.12), transparent 70%)",
@@ -528,14 +528,14 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       </AnimatePresence>
 
       {/* ══════════════════════ HERO ══════════════════════ */}
-      <section className="pt-28 md:pt-36 pb-20 md:pb-28 px-6 relative overflow-hidden">
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[radial-gradient(circle,rgba(99,102,241,0.08),transparent_70%)]" />
-          <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[radial-gradient(circle,rgba(139,92,246,0.06),transparent_70%)]" />
+      <section className="pt-24 md:pt-36 pb-16 md:pb-28 px-4 sm:px-6 relative overflow-hidden">
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute top-0 left-1/4 w-[300px] sm:w-[450px] lg:w-[600px] h-[300px] sm:h-[450px] lg:h-[600px] bg-[radial-gradient(circle,rgba(99,102,241,0.08),transparent_70%)]" />
+          <div className="absolute bottom-0 right-1/4 w-[250px] sm:w-[380px] lg:w-[500px] h-[250px] sm:h-[380px] lg:h-[500px] bg-[radial-gradient(circle,rgba(139,92,246,0.06),transparent_70%)]" />
         </div>
 
         <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             {/* Left */}
             <motion.div
               initial="hidden"
@@ -579,7 +579,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 <button
                   type="button"
                   onClick={onRegister}
-                  className="group flex items-center gap-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold px-8 py-4 rounded-2xl hover:shadow-xl hover:shadow-indigo-500/25 transition-all duration-300 hover:-translate-y-0.5 text-sm"
+                  className="group flex items-center justify-center gap-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold px-8 py-4 rounded-2xl hover:shadow-xl hover:shadow-indigo-500/25 transition-all duration-300 hover:-translate-y-0.5 text-sm w-full sm:w-auto"
                 >
                   Ücretsiz Başla
                   <ArrowRight
@@ -590,7 +590,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 <button
                   type="button"
                   onClick={() => scrollTo("games")}
-                  className="flex items-center gap-2.5 bg-(--color-surface) text-(--color-text-body) font-semibold px-8 py-4 rounded-2xl border border-(--color-line) hover:border-(--color-primary)/30 hover:bg-(--color-surface-elevated) transition-all duration-200 text-sm backdrop-blur-sm"
+                  className="flex items-center justify-center gap-2.5 bg-(--color-surface) text-(--color-text-body) font-semibold px-8 py-4 rounded-2xl border border-(--color-line) hover:border-(--color-primary)/30 hover:bg-(--color-surface-elevated) transition-all duration-200 text-sm backdrop-blur-sm w-full sm:w-auto"
                 >
                   <Play size={14} />
                   Oyunları İncele
@@ -599,7 +599,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
 
               <motion.div
                 variants={fadeUp}
-                className="flex items-center gap-6 mt-2"
+                className="flex items-center gap-4 sm:gap-6 mt-2 flex-wrap"
               >
                 {[
                   { icon: Shield, text: "Güvenli veri" },
@@ -677,7 +677,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             initial="hidden"
             animate="visible"
             variants={stagger}
-            className="mt-20 md:mt-28 grid grid-cols-2 md:grid-cols-4 gap-4"
+            className="mt-14 md:mt-28 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4"
           >
             {[
               { value: "6+", label: "Terapi Oyunu", icon: Gamepad2 },
@@ -688,13 +688,13 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               <motion.div
                 key={s.label}
                 variants={fadeUp}
-                className="glass rounded-2xl p-5 flex items-center gap-4 hover:border-(--color-primary)/20 transition-colors"
+                className="glass rounded-2xl p-3.5 sm:p-5 flex items-center gap-3 sm:gap-4 hover:border-(--color-primary)/20 transition-colors"
               >
-                <div className="w-11 h-11 rounded-xl bg-(--color-primary-light) flex items-center justify-center shrink-0">
-                  <s.icon size={20} className="text-(--color-primary)" />
+                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-(--color-primary-light) flex items-center justify-center shrink-0">
+                  <s.icon size={18} className="text-(--color-primary)" />
                 </div>
                 <div>
-                  <p className="text-2xl font-extrabold text-(--color-text-strong) leading-none">
+                  <p className="text-xl sm:text-2xl font-extrabold text-(--color-text-strong) leading-none">
                     {s.value}
                   </p>
                   <p className="text-xs text-(--color-text-soft) mt-0.5">
@@ -708,14 +708,14 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       </section>
 
       {/* ══════════════════════ FEATURES — BENTO GRID ══════════════════════ */}
-      <section id="features" className="py-24 md:py-32 px-6 relative">
+      <section id="features" className="py-16 md:py-32 px-4 sm:px-6 relative">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-80px" }}
             variants={stagger}
-            className="text-center mb-16"
+            className="text-center mb-10 sm:mb-16"
           >
             <motion.div
               variants={fadeUp}
@@ -757,7 +757,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 <motion.div
                   key={f.title}
                   variants={scaleIn}
-                  className={`glass rounded-3xl p-7 relative overflow-hidden group cursor-default transition-all duration-300 hover:-translate-y-1 hover:shadow-(--shadow-elevated) ${
+                  className={`glass rounded-2xl sm:rounded-3xl p-5 sm:p-7 relative overflow-hidden group cursor-default transition-all duration-300 hover:-translate-y-1 hover:shadow-(--shadow-elevated) ${
                     isLarge ? "sm:col-span-2 md:col-span-2" : "md:col-span-1"
                   }`}
                 >
@@ -768,7 +768,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                     }}
                   />
                   <div
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110"
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center mb-4 sm:mb-5 transition-transform duration-300 group-hover:scale-110"
                     style={{
                       background: `${f.color}18`,
                       border: `1px solid ${f.color}25`,
@@ -794,9 +794,9 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       </section>
 
       {/* ══════════════════════ PLATFORM PREVIEW ══════════════════════ */}
-      <section className="py-20 md:py-28 px-6 relative overflow-hidden">
+      <section className="py-16 md:py-28 px-4 sm:px-6 relative overflow-hidden">
         <div className="absolute inset-0 -z-10">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[600px] bg-[radial-gradient(ellipse,rgba(99,102,241,0.08),transparent_65%)]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[900px] h-[400px] sm:h-[600px] bg-[radial-gradient(ellipse,rgba(99,102,241,0.08),transparent_65%)]" />
         </div>
         <div className="max-w-6xl mx-auto">
           <motion.div
@@ -1054,14 +1054,14 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       </section>
 
       {/* ══════════════════════ HOW IT WORKS ══════════════════════ */}
-      <section id="how-it-works" className="py-24 md:py-32 px-6 relative">
+      <section id="how-it-works" className="py-16 md:py-32 px-4 sm:px-6 relative">
         <div className="max-w-5xl mx-auto">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-80px" }}
             variants={stagger}
-            className="text-center mb-20"
+            className="text-center mb-12 md:mb-20"
           >
             <motion.h2
               variants={fadeUp}
@@ -1084,18 +1084,18 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             className="relative"
           >
             <div className="hidden md:block absolute top-1/2 left-0 right-0 h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-(--color-line) to-transparent" />
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
               {STEPS.map((step) => {
                 const StepIcon = step.icon;
                 return (
                   <motion.div
                     key={step.num}
                     variants={slideLeft}
-                    className="flex flex-col items-center text-center gap-5 relative"
+                    className="flex flex-col items-center text-center gap-4 sm:gap-5 relative"
                   >
                     <div className="relative z-10">
                       <div
-                        className="w-20 h-20 rounded-2xl flex items-center justify-center border border-(--color-line) shadow-(--shadow-card)"
+                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl flex items-center justify-center border border-(--color-line) shadow-(--shadow-card)"
                         style={{ background: `${step.color}12` }}
                       >
                         <StepIcon size={28} style={{ color: step.color }} />
@@ -1123,7 +1123,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       {/* ══════════════════════ GAMES ══════════════════════ */}
       <section
         id="games"
-        className="py-24 md:py-32 px-6 section-games relative"
+        className="py-16 md:py-32 px-4 sm:px-6 section-games relative"
       >
         <div className="max-w-7xl mx-auto">
           <motion.div
@@ -1131,7 +1131,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             whileInView="visible"
             viewport={{ once: true, margin: "-80px" }}
             variants={stagger}
-            className="mb-14"
+            className="mb-8 sm:mb-14"
           >
             <motion.div
               variants={fadeUp}
@@ -1202,8 +1202,8 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                       </div>
                     </div>
                   </div>
-                  <div className="p-6">
-                    <div className="flex items-center gap-3 mb-3">
+                  <div className="p-4 sm:p-6">
+                    <div className="flex items-center gap-3 mb-2 sm:mb-3">
                       <div
                         className="w-9 h-9 rounded-xl flex items-center justify-center"
                         style={{ background: `${game.color}20` }}
@@ -1226,7 +1226,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       </section>
 
       {/* ══════════════════════ TESTIMONIALS ══════════════════════ */}
-      <section id="testimonials" className="py-24 md:py-32 px-6">
+      <section id="testimonials" className="py-16 md:py-32 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial="hidden"
@@ -1259,7 +1259,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               <motion.div
                 key={t.name}
                 variants={slideRight}
-                className="glass rounded-3xl p-7 relative overflow-hidden group"
+                className="glass rounded-2xl sm:rounded-3xl p-5 sm:p-7 relative overflow-hidden group"
               >
                 <div className="absolute top-4 right-6 text-6xl font-serif text-(--color-text-disabled) leading-none select-none">
                   &ldquo;
@@ -1298,7 +1298,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       </section>
 
       {/* ══════════════════════ CTA ══════════════════════ */}
-      <section className="py-28 md:py-36 px-6 relative overflow-hidden">
+      <section className="py-20 md:py-36 px-4 sm:px-6 relative overflow-hidden">
         <div className="absolute inset-0 -z-10">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_100%,rgba(99,102,241,0.1),transparent)]" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_50%_at_50%_0%,rgba(139,92,246,0.06),transparent)]" />
@@ -1382,7 +1382,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
 
       {/* ══════════════════════ FOOTER ══════════════════════ */}
       <footer
-        className="border-t border-(--color-line) py-12 px-6"
+        className="border-t border-(--color-line) py-8 sm:py-12 px-4 sm:px-6"
         style={{ background: "var(--color-surface)" }}
       >
         <div className="max-w-7xl mx-auto">

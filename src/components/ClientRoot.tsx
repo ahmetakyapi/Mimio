@@ -1,8 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense, lazy } from "react";
 import LandingPage from "./LandingPage";
-import { MimioApp } from "./MimioApp";
+import { ErrorBoundary } from "./ui/ErrorBoundary";
+import { OfflineIndicator } from "./ui/OfflineIndicator";
+import { AppLoadingSkeleton } from "./ui/LoadingSkeleton";
+
+// Lazy load the main app to reduce initial bundle
+const MimioApp = lazy(() =>
+  import("./MimioApp").then((mod) => ({ default: mod.MimioApp }))
+);
 
 type TopView = "landing" | "app";
 
@@ -25,25 +32,35 @@ export function ClientRoot() {
     }
   }, []);
 
-  if (topView === "landing") {
-    return (
-      <LandingPage
-        onLogin={() => {
-          setInitialAppView("login");
-          setTopView("app");
-        }}
-        onRegister={() => {
-          setInitialAppView("register");
-          setTopView("app");
-        }}
-      />
-    );
-  }
-
   return (
-    <MimioApp
-      initialAppView={initialAppView}
-      onLogout={() => setTopView("landing")}
-    />
+    <ErrorBoundary>
+      <OfflineIndicator />
+      {/* Skip to main content link for accessibility */}
+      <a href="#main-content" className="skip-link">
+        Ana içeriğe atla
+      </a>
+
+      {topView === "landing" ? (
+        <LandingPage
+          onLogin={() => {
+            setInitialAppView("login");
+            setTopView("app");
+          }}
+          onRegister={() => {
+            setInitialAppView("register");
+            setTopView("app");
+          }}
+        />
+      ) : (
+        <Suspense fallback={<AppLoadingSkeleton />}>
+          <ErrorBoundary>
+            <MimioApp
+              initialAppView={initialAppView}
+              onLogout={() => setTopView("landing")}
+            />
+          </ErrorBoundary>
+        </Suspense>
+      )}
+    </ErrorBoundary>
   );
 }

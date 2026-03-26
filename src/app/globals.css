@@ -684,6 +684,205 @@ html[data-theme='light'] .section-games {
 .spin-refresh { animation: mobile-refresh 0.8s linear infinite; }
 
 /* ─────────────────────────────────────────────
+   GAME CANVAS — MOBILE RESPONSIVE
+   ─────────────────────────────────────────────── */
+
+/* Game container: fills available space, centers content */
+.game-canvas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  flex: 1;
+  padding: 0.75rem;
+  gap: 0.75rem;
+  overflow: hidden;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+@media (min-width: 640px) {
+  .game-canvas { padding: 1.5rem; gap: 1rem; }
+}
+
+/* Game grid: responsive tile sizing */
+.game-grid {
+  display: grid;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: min(100%, 400px);
+  aspect-ratio: 1;
+}
+@media (min-width: 640px) {
+  .game-grid { gap: 0.625rem; max-width: min(100%, 480px); }
+}
+@media (min-width: 1024px) {
+  .game-grid { gap: 0.75rem; max-width: 520px; }
+}
+
+/* Game tile: touch-friendly, responsive */
+.game-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  border: 1.5px solid rgba(255,255,255,0.08);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  min-height: 3rem;
+  position: relative;
+  overflow: hidden;
+}
+.game-tile:active {
+  transform: scale(0.94);
+}
+@media (min-width: 640px) {
+  .game-tile {
+    border-radius: 1rem;
+    min-height: 3.5rem;
+  }
+}
+
+/* Game HUD: compact overlay for score/timer/combo */
+.game-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: min(100%, 480px);
+  padding: 0.5rem 0.75rem;
+  border-radius: 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  font-size: 0.75rem;
+  gap: 0.5rem;
+}
+@media (min-width: 640px) {
+  .game-hud { padding: 0.625rem 1rem; font-size: 0.8125rem; }
+}
+
+/* Game HUD stat item */
+.game-hud-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  min-width: 3rem;
+}
+.game-hud-stat-value {
+  font-size: 1.125rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.game-hud-stat-label {
+  font-size: 0.5625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.6;
+}
+
+/* Game result overlay: full-screen with backdrop blur */
+.game-result-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(4,8,18,0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Compact card for mobile views */
+.compact-card {
+  border-radius: 1rem;
+  padding: 0.75rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+}
+@media (min-width: 640px) {
+  .compact-card { padding: 1rem; border-radius: 1.25rem; }
+}
+@media (min-width: 1024px) {
+  .compact-card { padding: 1.25rem; border-radius: 1.5rem; }
+}
+
+/* ─────────────────────────────────────────────
+   FOCUS VISIBLE — ACCESSIBILITY
+   ─────────────────────────────────────────────── */
+
+/* Global focus ring for keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--color-line-focus);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+/* Remove default focus for mouse users */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Game tiles get a more prominent focus ring */
+.game-tile:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(99,102,241,0.2);
+}
+
+/* Skip to main content link (hidden until focused) */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 1rem;
+  z-index: 9999;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--color-primary);
+  transition: top 0.2s ease;
+}
+.skip-link:focus {
+  top: 1rem;
+}
+
+/* ─────────────────────────────────────────────
+   COMPACT LAYOUT UTILITIES
+   ─────────────────────────────────────────────── */
+
+/* Responsive section padding */
+.section-padding {
+  padding: 1rem;
+}
+@media (min-width: 640px) {
+  .section-padding { padding: 1.5rem; }
+}
+@media (min-width: 1024px) {
+  .section-padding { padding: 2rem; }
+}
+
+/* Responsive gap system */
+.gap-responsive { gap: 0.5rem; }
+@media (min-width: 640px) { .gap-responsive { gap: 0.75rem; } }
+@media (min-width: 1024px) { .gap-responsive { gap: 1rem; } }
+
+/* Input fields: prevent zoom on iOS (16px minimum) */
+@media (pointer: coarse) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* ─────────────────────────────────────────────
    TOOLTIP SYSTEM  —  data-tooltip="…" attribute
    Variants: data-tooltip-dir="top|right|bottom|left"  (default: top)
    ─────────────────────────────────────────────── */
