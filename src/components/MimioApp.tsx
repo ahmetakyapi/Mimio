@@ -80,6 +80,16 @@ import { StarRating } from "@/components/shared/StarRating";
 import { GameResultOverlay } from "@/components/shared/GameResultOverlay";
 import { SessionSetSummary } from "@/components/shared/SessionSetSummary";
 import { ToastContainer, showToast } from "@/components/shared/ToastContainer";
+import { MilestoneContainer, checkAndShowMilestones } from "@/components/shared/MilestoneToast";
+import { WeeklySummaryCard, GameDistributionChart } from "@/components/shared/DashboardAnalytics";
+import { AchievementPanel, ACHIEVEMENTS, type AchievementStats, type EarnedAchievement } from "@/components/shared/AchievementBadge";
+import { QuickSessionStart } from "@/components/shared/QuickSessionStart";
+import { ClientProgressRadar } from "@/components/shared/ClientProgressRadar";
+import { SessionReminderBanner } from "@/components/shared/SessionReminder";
+import { ClientComparison } from "@/components/shared/ClientComparison";
+import { Breadcrumb, getBreadcrumbItems } from "@/components/shared/Breadcrumb";
+import { OnboardingTour } from "@/components/shared/OnboardingTour";
+import { WeeklyProgressReport } from "@/components/shared/WeeklyProgressReport";
 import { useCountUp } from "@/hooks/useCountUp";
 
 // ── Remaining constants that depend on lucide-react icons ──
@@ -257,6 +267,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const [postGameNote, setPostGameNote] = useState("");
   const [isNotesLoading, setIsNotesLoading] = useState(false);
 
+  // ── Achievement & new feature states ──
+  const ACHIEVEMENTS_KEY = "mimio-achievements-v1";
+  const [earnedAchievements, setEarnedAchievements] = useState<EarnedAchievement[]>([]);
+  const [showComparison, setShowComparison] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
+
   // ── In-game feedback ──
   const [lastFeedback, setLastFeedback] = useState<{ correct: boolean; combo: number; timestamp: number } | null>(null);
   const feedbackTimerRef = useRef<number | null>(null);
@@ -318,6 +334,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       if (storedFavs) { const p = JSON.parse(storedFavs); if (Array.isArray(p)) setTpFavoriteActivities(p); }
       const storedCNotes = window.localStorage.getItem(THERAPY_CUSTOM_NOTES_KEY);
       if (storedCNotes) { const p = JSON.parse(storedCNotes); if (p && typeof p === "object") setTpCustomNotes(p as Record<string, string>); }
+      const storedAchievements = window.localStorage.getItem(ACHIEVEMENTS_KEY);
+      if (storedAchievements) { const p = JSON.parse(storedAchievements); if (Array.isArray(p)) setEarnedAchievements(p); }
     } catch {
       setScoreboard(EMPTY_SCOREBOARD);
     }
@@ -330,6 +348,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   useEffect(() => { try { window.localStorage.setItem(THERAPY_PROGRESS_KEY, JSON.stringify(tpProgressEntries)); } catch { /* ignore */ } }, [tpProgressEntries]);
   useEffect(() => { try { window.localStorage.setItem(THERAPY_FAVORITES_KEY, JSON.stringify(tpFavoriteActivities)); } catch { /* ignore */ } }, [tpFavoriteActivities]);
   useEffect(() => { try { window.localStorage.setItem(THERAPY_CUSTOM_NOTES_KEY, JSON.stringify(tpCustomNotes)); } catch { /* ignore */ } }, [tpCustomNotes]);
+  useEffect(() => { try { window.localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(earnedAchievements)); } catch { /* ignore */ } }, [earnedAchievements]);
 
   useEffect(() => {
     if (!activeTherapistId && !activeClientId) return;
@@ -1442,6 +1461,16 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [activeGame, activeAppView, differenceCursor, differenceState, logicCursor, logicState, memoryCursor, memoryState, pairsCursor, pairsState, pulseCursor, pulseState, routeCursor, routeState, scanCursor, scanState]);
 
+  // ── Achievement handler ──
+  function handleEarnAchievement(achievementId: string) {
+    setEarnedAchievements(prev => {
+      if (prev.some(e => e.id === achievementId)) return prev;
+      return [...prev, { id: achievementId, earnedAt: new Date().toISOString() }];
+    });
+    const ach = ACHIEVEMENTS.find(a => a.id === achievementId);
+    if (ach) showToast(`🏅 Başarım: ${ach.title}`, "success");
+  }
+
   // ── Derived values ──
   const activeTab = GAME_TABS.find((tab) => tab.key === activeGame) ?? GAME_TABS[0];
   const activeCategory = GAME_CATEGORIES.find((category) => category.key === activeTab.category) ?? GAME_CATEGORIES[0];
@@ -1490,6 +1519,20 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     return streak;
   })();
 
+  // ── Achievement stats (computed) ──
+  const achievementStats: AchievementStats = {
+    totalSessions: effectiveSessionCount,
+    totalScore: platformOverview.totals.totalScore,
+    bestScore: Math.max(...Object.values(scoreboard).map(s => s.best), 0),
+    uniqueGamesPlayed: new Set(platformOverview.recentSessions.map(s => s.gameKey)).size,
+    sessionStreak,
+    perfectGames: 0, // tracked in commitScore
+    thisWeekSessions: thisWeekCount,
+    totalClients: clientOptions.length,
+    notesWritten: allNotes.length,
+    goalsCompleted: clientGoals.filter(g => g.currentValue >= g.targetValue).length,
+  };
+
   useEffect(() => {
     if (!activeTherapist && therapistOptions.length > 0) setActiveTherapistId(therapistOptions[0].id);
   }, [activeTherapist, therapistOptions]);
@@ -1507,9 +1550,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       <div className="min-h-dvh flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden" style={{ background: "var(--color-page-bg)" }}>
         {/* Animated background orbs */}
         <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute w-[600px] h-[600px] rounded-full" style={{ background: "radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)", top: "-20%", left: "50%", transform: "translateX(-50%)" }} />
-          <div className="absolute w-[400px] h-[400px] rounded-full" style={{ background: "radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%)", bottom: "-10%", right: "10%" }} />
-          <div className="absolute w-[300px] h-[300px] rounded-full" style={{ background: "radial-gradient(circle, rgba(236,72,153,0.06) 0%, transparent 70%)", bottom: "20%", left: "5%" }} />
+          <div className="absolute w-[min(600px,100vw)] h-[min(600px,100vw)] rounded-full" style={{ background: "radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)", top: "-20%", left: "50%", transform: "translateX(-50%)" }} />
+          <div className="absolute w-[min(400px,80vw)] h-[min(400px,80vw)] rounded-full" style={{ background: "radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%)", bottom: "-10%", right: "10%" }} />
+          <div className="absolute w-[min(300px,70vw)] h-[min(300px,70vw)] rounded-full" style={{ background: "radial-gradient(circle, rgba(236,72,153,0.06) 0%, transparent 70%)", bottom: "20%", left: "5%" }} />
         </div>
 
         {/* Logo */}
@@ -1615,8 +1658,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       <div className="min-h-dvh flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden" style={{ background: "var(--color-page-bg)" }}>
         {/* Animated background orbs */}
         <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute w-[700px] h-[700px] rounded-full" style={{ background: "radial-gradient(circle, rgba(99,102,241,0.10) 0%, transparent 70%)", top: "-30%", left: "50%", transform: "translateX(-50%)" }} />
-          <div className="absolute w-[400px] h-[400px] rounded-full" style={{ background: "radial-gradient(circle, rgba(139,92,246,0.07) 0%, transparent 70%)", bottom: "0%", right: "15%" }} />
+          <div className="absolute w-[min(700px,100vw)] h-[min(700px,100vw)] rounded-full" style={{ background: "radial-gradient(circle, rgba(99,102,241,0.10) 0%, transparent 70%)", top: "-30%", left: "50%", transform: "translateX(-50%)" }} />
+          <div className="absolute w-[min(400px,80vw)] h-[min(400px,80vw)] rounded-full" style={{ background: "radial-gradient(circle, rgba(139,92,246,0.07) 0%, transparent 70%)", bottom: "0%", right: "15%" }} />
         </div>
 
         {/* Logo */}
@@ -1718,6 +1761,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     { view: "reports", icon: BarChart3, label: "Raporlar", tooltip: "Analitik & performans raporları", badge: thisWeekCount > 0 ? `${thisWeekCount}↑` : undefined },
   ];
 
+  const earnedAchievementCount = earnedAchievements.length;
+
   return (
     <main id="main-content" className="flex h-dvh overflow-hidden bg-(--color-page-bg)" role="main">
       {/* ── Sidebar Navigation ── */}
@@ -1787,6 +1832,24 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               </button>
             );
           })}
+
+          {/* Achievements button */}
+          <button type="button"
+            data-tooltip="Başarımlar & rozetler"
+            data-tooltip-dir="right"
+            className={`${navItem} mt-2`}
+            onClick={() => setShowAchievements(true)}>
+            <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-transparent group-hover:bg-(--color-surface-elevated)">
+              <Award size={15} />
+            </span>
+            <span className="font-semibold text-sm flex-1">Başarımlar</span>
+            {earnedAchievementCount > 0 && (
+              <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 tabular-nums"
+                style={{ background: "rgba(245,158,11,0.15)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.2)" }}>
+                {earnedAchievementCount}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* User footer */}
@@ -1849,7 +1912,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       {/* ── Mobile top bar ── */}
       <header className="flex lg:hidden items-center justify-between px-4 shrink-0 fixed top-0 left-0 right-0 z-30"
         style={{
-          height: "56px",
+          height: "calc(56px + env(safe-area-inset-top, 0px))",
+          paddingTop: "env(safe-area-inset-top, 0px)",
           background: "var(--color-chrome-nav)",
           backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
@@ -1902,7 +1966,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           {showUserMenu && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
-              <div className="absolute right-3 z-50 rounded-2xl shadow-(--shadow-elevated) border p-2 min-w-[220px]"
+              <div className="absolute right-3 z-50 rounded-2xl shadow-(--shadow-elevated) border p-2 min-w-[200px] max-w-[calc(100vw-24px)]"
                 style={{ top: "60px", background: "var(--color-surface-strong)", borderColor: "rgba(99,102,241,0.2)", backdropFilter: "blur(20px)" }}>
                 {/* Top shimmer */}
                 <div className="absolute top-0 left-0 right-0 h-px rounded-t-2xl" style={{ background: "linear-gradient(90deg,transparent,rgba(99,102,241,0.4),transparent)" }} />
@@ -1938,7 +2002,15 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto pt-[56px] pb-20 lg:pt-0 lg:pb-0 safe-scroll-bottom">
+      <div className="flex-1 overflow-y-auto pb-20 lg:pt-0 lg:pb-0 safe-scroll-bottom" style={{ paddingTop: "calc(56px + env(safe-area-inset-top, 0px))", paddingLeft: "env(safe-area-inset-left, 0px)", paddingRight: "env(safe-area-inset-right, 0px)" }}>
+
+        {/* ── Breadcrumb Navigation ── */}
+        <div className="px-4 lg:px-8 pt-3 lg:pt-4 max-w-5xl mx-auto">
+          <Breadcrumb
+            items={getBreadcrumbItems(activeAppView, selectedClient?.displayName)}
+            onNavigate={setActiveAppView}
+          />
+        </div>
 
         {/* ── Dashboard ── */}
         {activeAppView === "dashboard" && (
@@ -2281,6 +2353,39 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   ))}
                 </div>
               </div>
+            )}
+
+            {/* ── Session Reminder Banner ── */}
+            <SessionReminderBanner
+              clients={clientOptions}
+              sessions={platformOverview.recentSessions}
+              onSelectClient={(cid) => { handleSelectClient(cid); }}
+            />
+
+            {/* ── Quick Session Start ── */}
+            {activeClient && (
+              <QuickSessionStart
+                clients={clientOptions}
+                activeClientId={activeClientId}
+                recentSessions={platformOverview.recentSessions}
+                onSelectClient={setActiveClientId}
+                onStartGame={(key) => { openGameView(key); }}
+                onStartSessionSet={() => { setShowSessionSetPicker(true); setActiveAppView("games"); }}
+              />
+            )}
+
+            {/* ── Weekly Summary Analytics ── */}
+            {effectiveSessionCount > 0 && (
+              <WeeklySummaryCard
+                sessions={platformOverview.recentSessions}
+                totalClients={clientOptions.length}
+                totalGoals={clientGoals.length}
+              />
+            )}
+
+            {/* ── Game Distribution Chart ── */}
+            {effectiveSessionCount > 3 && (
+              <GameDistributionChart sessions={platformOverview.recentSessions} />
             )}
 
             {/* Recent Sessions */}
@@ -3504,6 +3609,23 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               {/* ── Score History ── */}
               {clientDetailTab === "scores" && (
                 <div className="space-y-4">
+                  {/* ── Skill Radar Chart ── */}
+                  {selectedClientId && clientSessions.length > 0 && (
+                    <ClientProgressRadar sessions={platformOverview.recentSessions} clientId={selectedClientId} />
+                  )}
+
+                  {/* ── Weekly Progress Report ── */}
+                  {selectedClient && clientSessions.length > 0 && (
+                    <WeeklyProgressReport
+                      client={selectedClient}
+                      sessions={clientSessions}
+                      goals={clientGoals}
+                      therapistName={activeTherapist?.displayName ?? "Terapist"}
+                      clinicName={activeTherapist?.clinicName}
+                      allNotes={clientNotes}
+                    />
+                  )}
+
                   {/* ── Overall score summary strip ── */}
                   {clientSessions.length > 0 && (() => {
                     const avgScore = Math.round(clientSessions.reduce((s,ss) => s + ss.score, 0) / clientSessions.length);
@@ -5903,6 +6025,14 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                             })}
                           </div>
                         )}
+                        {cA && cB && (
+                          <button type="button"
+                            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm text-white border-none cursor-pointer transition-all hover:opacity-90 active:scale-[0.99] mt-2"
+                            style={{ background: "linear-gradient(135deg, #818cf8, #f472b6)", boxShadow: "0 4px 16px rgba(129,140,248,0.3)" }}
+                            onClick={() => setShowComparison(true)}>
+                            <Users size={14} /> Detaylı Karşılaştırma
+                          </button>
+                        )}
                         {(!cA || !cB) && (
                           <p className="text-xs text-(--color-text-muted) text-center py-4 m-0">Her iki danışanı da seçin.</p>
                         )}
@@ -7126,6 +7256,32 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         </div>
       </nav>
       <ToastContainer />
+      <MilestoneContainer />
+      <OnboardingTour />
+
+      {/* ── Achievement Panel Modal ── */}
+      {showAchievements && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)" }} onClick={() => setShowAchievements(false)}>
+          <div className="w-full max-w-md max-h-[80vh] overflow-y-auto rounded-3xl border" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }} onClick={e => e.stopPropagation()}>
+            <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #6366f1, #f59e0b, #ec4899)" }} />
+            <div className="p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0">Başarımlar</h3>
+                <button type="button" onClick={() => setShowAchievements(false)} className="w-8 h-8 rounded-xl flex items-center justify-center bg-(--color-surface) border-none cursor-pointer text-(--color-text-muted) hover:text-(--color-text-body)">✕</button>
+              </div>
+              <AchievementPanel stats={achievementStats} earned={earnedAchievements} onEarn={handleEarnAchievement} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Client Comparison Modal ── */}
+      {showComparison && compareClientA && compareClientB && (() => {
+        const cA = clientOptions.find(c => c.id === compareClientA);
+        const cB = clientOptions.find(c => c.id === compareClientB);
+        if (!cA || !cB) return null;
+        return <ClientComparison clientA={cA} clientB={cB} sessions={platformOverview.recentSessions} onClose={() => setShowComparison(false)} />;
+      })()}
 
       {/* ── Difficulty upgrade prompt ── */}
       {difficultyPrompt && (
