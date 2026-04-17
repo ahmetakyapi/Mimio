@@ -1,8 +1,56 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence, useScroll, useSpring as useSpringFM } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import {
+  motion,
+  AnimatePresence,
+  useScroll,
+  useSpring as useSpringFM,
+  useTransform,
+} from "framer-motion";
 import { MimioPlayer } from "./MimioPlayer";
+import {
+  Users,
+  Gamepad2,
+  CalendarDays,
+  FileText,
+  TrendingUp,
+  ShieldCheck,
+  ArrowRight,
+  Menu,
+  X,
+  Brain,
+  CheckCircle2,
+  LayoutDashboard,
+  Sun,
+  Moon,
+  Target,
+  Sparkles,
+  Zap,
+  Star,
+  Play,
+  Heart,
+  Shield,
+  Clock,
+  Stethoscope,
+  BarChart3,
+} from "lucide-react";
+import { useTheme } from "./ThemeProvider";
+import {
+  AuroraBackdrop,
+  ComparisonSection,
+  CursorSpotlight,
+  FAQSection,
+  FloatingCTA,
+  GamesCarousel,
+  Magnetic,
+  MetricsBand,
+  SectionDots,
+  SplitText,
+  StickyWalkthrough,
+  TiltCard,
+  TrustMarquee,
+} from "./landing/LandingExtras";
 
 /* ── Scroll Progress Bar ── */
 function ScrollProgress() {
@@ -15,36 +63,6 @@ function ScrollProgress() {
     />
   );
 }
-import {
-  Users,
-  Gamepad2,
-  CalendarDays,
-  FileText,
-  TrendingUp,
-  ShieldCheck,
-  ArrowRight,
-  Menu,
-  X,
-  Brain,
-  Eye,
-  CheckCircle2,
-  LayoutDashboard,
-  Sun,
-  Moon,
-  Target,
-  Sparkles,
-  Zap,
-  Star,
-  Play,
-  ChevronRight,
-  Heart,
-  Shield,
-  Clock,
-  Award,
-  Stethoscope,
-  BarChart3,
-} from "lucide-react";
-import { useTheme } from "./ThemeProvider";
 
 interface Props {
   readonly onLogin: () => void;
@@ -122,36 +140,6 @@ const STEPS = [
   },
 ];
 
-const GAMES = [
-  {
-    key: "memory",
-    label: "Sıra Hafızası",
-    area: "Hafıza",
-    icon: Brain,
-    desc: "Sırayla yanan nesneleri hatırlayarak çalışma belleğini güçlendir.",
-    color: "#6366f1",
-    pattern: "memory" as const,
-  },
-  {
-    key: "pulse",
-    label: "Mavi Nabız",
-    area: "Motor Beceri",
-    icon: Target,
-    desc: "Hedeflere dokunarak el-göz koordinasyonunu geliştir.",
-    color: "#8b5cf6",
-    pattern: "pulse" as const,
-  },
-  {
-    key: "scan",
-    label: "Hedef Tarama",
-    area: "Görsel Algı",
-    icon: Eye,
-    desc: "Görsel tarama ve seçici dikkat becerilerini destekle.",
-    color: "#06b6d4",
-    pattern: "scan" as const,
-  },
-];
-
 const TESTIMONIALS = [
   {
     name: "Dr. Elif Yılmaz",
@@ -174,14 +162,34 @@ const TESTIMONIALS = [
     avatar: "AD",
     gradient: "from-emerald-500 to-teal-500",
   },
+  {
+    name: "Prof. Dr. Cem Aksoy",
+    role: "Nörogelişim Araştırmacısı",
+    text: "Kanıta dayalı protokollerle uyumlu domain yapısı, akademik araştırma için de veri toplamayı kolaylaştırıyor.",
+    avatar: "CA",
+    gradient: "from-amber-500 to-orange-500",
+  },
 ];
 
 const NAV_LINKS = [
   { label: "Özellikler", id: "features" },
   { label: "Nasıl Çalışır?", id: "how-it-works" },
   { label: "Oyunlar", id: "games" },
-  { label: "Yorumlar", id: "testimonials" },
+  { label: "Karşılaştır", id: "comparison" },
+  { label: "SSS", id: "faq" },
 ];
+
+const SECTION_DOTS = [
+  { id: "top", label: "Ana Sayfa" },
+  { id: "features", label: "Özellikler" },
+  { id: "walkthrough", label: "Platform Turu" },
+  { id: "how-it-works", label: "Nasıl Çalışır?" },
+  { id: "games", label: "Oyunlar" },
+  { id: "comparison", label: "Karşılaştır" },
+  { id: "testimonials", label: "Yorumlar" },
+  { id: "faq", label: "SSS" },
+  { id: "cta", label: "Başla" },
+] as const;
 
 /* ── Animations ── */
 
@@ -190,11 +198,6 @@ const ease = [0.22, 1, 0.36, 1] as const;
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease } },
-};
-
-const slideLeft = {
-  hidden: { opacity: 0, x: -48 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.65, ease } },
 };
 
 const slideRight = {
@@ -276,83 +279,6 @@ function GridPattern() {
   );
 }
 
-/* ── Game Pattern Preview ── */
-function GamePatternPreview({ type, color }: { type: string; color: string }) {
-  if (type === "memory") {
-    return (
-      <div className="grid grid-cols-3 gap-2 w-28">
-        {Array.from({ length: 9 }).map((_, i) => (
-          <motion.div
-            key={i}
-            animate={{
-              opacity: [0.2, i % 3 === 1 ? 1 : 0.2, 0.2],
-              scale: [1, i % 3 === 1 ? 1.1 : 1, 1],
-            }}
-            transition={{
-              duration: 2,
-              delay: i * 0.15,
-              repeat: Infinity,
-              repeatDelay: 1,
-            }}
-            className="w-8 h-8 rounded-lg"
-            style={{ background: `${color}22`, border: `1px solid ${color}33` }}
-          />
-        ))}
-      </div>
-    );
-  }
-  if (type === "pulse") {
-    return (
-      <div className="relative w-28 h-28">
-        {[0, 1, 2].map((i) => (
-          <motion.div
-            key={i}
-            animate={{ scale: [1, 1.5, 1], opacity: [0.6, 0, 0.6] }}
-            transition={{ duration: 2, delay: i * 0.5, repeat: Infinity }}
-            className="absolute inset-0 m-auto w-12 h-12 rounded-full"
-            style={{ border: `2px solid ${color}44` }}
-          />
-        ))}
-        <motion.div
-          animate={{ scale: [0.9, 1.1, 0.9] }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute inset-0 m-auto w-6 h-6 rounded-full"
-          style={{ background: color }}
-        />
-      </div>
-    );
-  }
-  return (
-    <div className="grid grid-cols-3 gap-1.5 w-28">
-      {Array.from({ length: 9 }).map((_, i) => (
-        <motion.div
-          key={i}
-          animate={
-            i === 4
-              ? {
-                  boxShadow: [
-                    `0 0 0 0px ${color}00`,
-                    `0 0 0 4px ${color}44`,
-                    `0 0 0 0px ${color}00`,
-                  ],
-                }
-              : {}
-          }
-          transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 0.5 }}
-          className="w-8 h-8 rounded-md flex items-center justify-center text-xs"
-          style={{
-            background: i === 4 ? `${color}33` : `${color}11`,
-            border: `1px solid ${i === 4 ? color + "55" : color + "22"}`,
-            color: i === 4 ? color : `${color}66`,
-          }}
-        >
-          {["◎", "◌", "✦", "○", "◎", "□", "≈", "✦", "◌"][i]}
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
 /* ══════════════════════════════════════════════════════════════ */
 /*  MAIN COMPONENT                                               */
 /* ══════════════════════════════════════════════════════════════ */
@@ -361,6 +287,17 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { theme, toggle: toggleTheme } = useTheme();
   const [scrolled, setScrolled] = useState(false);
+
+  const heroRef = useRef<HTMLDivElement | null>(null);
+  const { scrollYProgress: heroProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  const heroY = useTransform(heroProgress, [0, 1], [0, -120]);
+  const heroScale = useTransform(heroProgress, [0, 1], [1, 0.94]);
+  const heroOpacity = useTransform(heroProgress, [0, 1], [1, 0.35]);
+  const parallaxMockY = useTransform(heroProgress, [0, 1], [0, 80]);
+  const parallaxMockScale = useTransform(heroProgress, [0, 1], [1, 1.06]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -374,10 +311,13 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-(--color-page-bg) font-(--font-sans) relative">
+    <div id="top" className="min-h-screen bg-(--color-page-bg) font-(--font-sans) relative">
       <ScrollProgress />
       <BackgroundOrbs />
       <GridPattern />
+      <CursorSpotlight />
+      <SectionDots sections={SECTION_DOTS} />
+      <FloatingCTA onRegister={onRegister} />
 
       {/* ── Navbar ── */}
       <motion.header
@@ -394,14 +334,18 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
         }}
       >
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => scrollTo("top")}
+            className="flex items-center gap-2.5"
+          >
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-indigo-500/25">
               M
             </div>
             <span className="font-extrabold text-(--color-text-strong) text-lg tracking-tight">
               Mimio
             </span>
-          </div>
+          </button>
           <nav className="hidden md:flex items-center gap-1">
             {NAV_LINKS.map((l) => (
               <button
@@ -430,13 +374,15 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             >
               Giriş Yap
             </button>
-            <button
-              type="button"
-              onClick={onRegister}
-              className="text-sm font-semibold bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-5 py-2.5 rounded-xl hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-200 hover:-translate-y-0.5"
-            >
-              Hemen Başla
-            </button>
+            <Magnetic strength={10}>
+              <button
+                type="button"
+                onClick={onRegister}
+                className="text-sm font-semibold bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-5 py-2.5 rounded-xl hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-200 hover:-translate-y-0.5"
+              >
+                Hemen Başla
+              </button>
+            </Magnetic>
           </div>
           <div className="md:hidden flex items-center gap-2">
             <button
@@ -528,13 +474,16 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       </AnimatePresence>
 
       {/* ══════════════════════ HERO ══════════════════════ */}
-      <section className="pt-24 md:pt-36 pb-16 md:pb-28 px-4 sm:px-6 relative overflow-hidden">
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute top-0 left-1/4 w-[300px] sm:w-[450px] lg:w-[600px] h-[300px] sm:h-[450px] lg:h-[600px] bg-[radial-gradient(circle,rgba(99,102,241,0.08),transparent_70%)]" />
-          <div className="absolute bottom-0 right-1/4 w-[250px] sm:w-[380px] lg:w-[500px] h-[250px] sm:h-[380px] lg:h-[500px] bg-[radial-gradient(circle,rgba(139,92,246,0.06),transparent_70%)]" />
-        </div>
+      <section
+        ref={heroRef}
+        className="pt-24 md:pt-36 pb-16 md:pb-28 px-4 sm:px-6 relative overflow-hidden"
+      >
+        <AuroraBackdrop />
 
-        <div className="max-w-7xl mx-auto">
+        <motion.div
+          style={{ y: heroY, scale: heroScale, opacity: heroOpacity }}
+          className="max-w-7xl mx-auto relative"
+        >
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             {/* Left */}
             <motion.div
@@ -545,23 +494,23 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             >
               <motion.div variants={fadeUp}>
                 <span className="inline-flex items-center gap-2.5 text-xs font-bold text-(--color-primary) bg-(--color-primary-light) px-4 py-2 rounded-full border border-(--color-primary)/15 backdrop-blur-sm">
-                  <Sparkles size={13} className="text-(--color-primary)" />
-                  <span>Ergoterapistler için Yeni Nesil Platform</span>
+                  <span
+                    className="halo-dot w-1.5 h-1.5 rounded-full"
+                    style={{ color: "#6366f1", background: "#6366f1" }}
+                  />
+                  Ergoterapistler için Yeni Nesil Platform
                 </span>
               </motion.div>
 
-              <motion.h1
-                variants={fadeUp}
-                className="text-[2.5rem] sm:text-6xl lg:text-7xl font-extrabold text-(--color-text-strong) leading-[1.05] tracking-tight"
-              >
-                Terapi
+              <h1 className="text-[2.5rem] sm:text-6xl lg:text-7xl font-extrabold text-(--color-text-strong) leading-[1.05] tracking-tight">
+                <SplitText text="Terapi" />
                 <br />
-                Seanslarını
+                <SplitText text="Seanslarını" delay={0.08} />
                 <br />
-                <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
-                  Oyuna Dönüştür
+                <span className="text-gradient-shift">
+                  <SplitText text="Oyuna Dönüştür" delay={0.18} />
                 </span>
-              </motion.h1>
+              </h1>
 
               <motion.p
                 variants={fadeUp}
@@ -576,17 +525,22 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 variants={fadeUp}
                 className="flex items-center gap-4 flex-wrap"
               >
-                <button
-                  type="button"
-                  onClick={onRegister}
-                  className="group flex items-center justify-center gap-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold px-8 py-4 rounded-2xl hover:shadow-xl hover:shadow-indigo-500/25 transition-all duration-300 hover:-translate-y-0.5 text-sm w-full sm:w-auto"
-                >
-                  Ücretsiz Başla
-                  <ArrowRight
-                    size={16}
-                    className="transition-transform group-hover:translate-x-1"
-                  />
-                </button>
+                <Magnetic strength={14}>
+                  <button
+                    type="button"
+                    onClick={onRegister}
+                    className="group relative flex items-center justify-center gap-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold px-8 py-4 rounded-2xl hover:shadow-xl hover:shadow-indigo-500/25 transition-all duration-300 hover:-translate-y-0.5 text-sm w-full sm:w-auto overflow-hidden"
+                  >
+                    <span className="beam-sweep opacity-60" />
+                    <span className="relative z-10 flex items-center gap-2.5">
+                      Ücretsiz Başla
+                      <ArrowRight
+                        size={16}
+                        className="transition-transform group-hover:translate-x-1"
+                      />
+                    </span>
+                  </button>
+                </Magnetic>
                 <button
                   type="button"
                   onClick={() => scrollTo("games")}
@@ -617,19 +571,50 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               </motion.div>
             </motion.div>
 
-            {/* Right — App window showcase */}
+            {/* Right — App window showcase with parallax + float */}
             <motion.div
               initial={{ opacity: 0, y: 48, scale: 0.94 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.9, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.9, delay: 0.3, ease }}
+              style={{ y: parallaxMockY, scale: parallaxMockScale }}
               className="relative"
             >
               {/* Glow halo */}
               <div className="absolute -inset-8 bg-[radial-gradient(ellipse_70%_60%_at_60%_50%,rgba(99,102,241,0.14),transparent)] blur-3xl pointer-events-none" />
 
+              {/* Floating accent pills */}
+              <motion.div
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="hidden sm:flex absolute -top-6 -left-8 z-20 items-center gap-2 px-3.5 py-2 rounded-2xl border glass"
+              >
+                <span
+                  className="halo-dot w-2 h-2 rounded-full"
+                  style={{ color: "#10b981", background: "#10b981" }}
+                />
+                <span className="text-[11px] font-bold text-(--color-text-strong)">
+                  +12 gelişim skoru
+                </span>
+              </motion.div>
+              <motion.div
+                animate={{ y: [0, 10, 0] }}
+                transition={{
+                  duration: 4.5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: 0.6,
+                }}
+                className="hidden sm:flex absolute -bottom-6 -right-5 z-20 items-center gap-2 px-3.5 py-2 rounded-2xl border glass"
+              >
+                <Star size={13} className="fill-amber-400 text-amber-400" />
+                <span className="text-[11px] font-bold text-(--color-text-strong)">
+                  Yeni rekor!
+                </span>
+              </motion.div>
+
               {/* App window frame */}
               <div
-                className="relative w-full rounded-2xl overflow-hidden border border-(--color-line)"
+                className="relative w-full rounded-2xl overflow-hidden border border-(--color-line) ring-conic"
                 style={{
                   boxShadow:
                     "0 2px 0 0 rgba(255,255,255,0.06) inset, 0 24px 64px rgba(99,102,241,0.14), 0 8px 28px rgba(0,0,0,0.16)",
@@ -640,14 +625,11 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                   className="flex items-center gap-3 px-4 py-3 border-b border-(--color-line)"
                   style={{ background: "var(--color-surface)" }}
                 >
-                  {/* Traffic lights */}
                   <div className="flex items-center gap-1.5 shrink-0">
                     <div className="w-3 h-3 rounded-full bg-red-400/70" />
                     <div className="w-3 h-3 rounded-full bg-amber-400/70" />
                     <div className="w-3 h-3 rounded-full bg-emerald-400/70" />
                   </div>
-
-                  {/* URL bar */}
                   <div className="flex-1 mx-2 max-w-xs">
                     <div className="h-6 rounded-md bg-(--color-surface-elevated) border border-(--color-line) flex items-center justify-center gap-1.5 px-3">
                       <ShieldCheck size={9} className="text-(--color-accent-green) shrink-0" />
@@ -656,8 +638,6 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                       </span>
                     </div>
                   </div>
-
-                  {/* Tab indicator */}
                   <div className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-(--color-primary-light) border border-(--color-primary)/15">
                     <Gamepad2 size={10} className="text-(--color-primary)" />
                     <span className="text-[10px] font-semibold text-(--color-primary)">
@@ -665,8 +645,6 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                     </span>
                   </div>
                 </div>
-
-                {/* Remotion player */}
                 <MimioPlayer />
               </div>
             </motion.div>
@@ -704,10 +682,13 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               </motion.div>
             ))}
           </motion.div>
-        </div>
+        </motion.div>
       </section>
 
-      {/* ══════════════════════ FEATURES — BENTO GRID ══════════════════════ */}
+      {/* ══════════════════════ TRUST MARQUEE ══════════════════════ */}
+      <TrustMarquee />
+
+      {/* ══════════════════════ FEATURES — BENTO GRID w/ TILT ══════════════════════ */}
       <section id="features" className="py-16 md:py-32 px-4 sm:px-6 relative">
         <div className="max-w-7xl mx-auto">
           <motion.div
@@ -730,9 +711,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             >
               İhtiyacınız Olan
               <br />
-              <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                Her Şey Tek Yerde
-              </span>
+              <span className="text-gradient-shift">Her Şey Tek Yerde</span>
             </motion.h2>
             <motion.p
               variants={fadeUp}
@@ -757,41 +736,51 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 <motion.div
                   key={f.title}
                   variants={scaleIn}
-                  className={`glass rounded-2xl sm:rounded-3xl p-5 sm:p-7 relative overflow-hidden group cursor-default transition-all duration-300 hover:-translate-y-1 hover:shadow-(--shadow-elevated) ${
+                  className={
                     isLarge ? "sm:col-span-2 md:col-span-2" : "md:col-span-1"
-                  }`}
+                  }
                 >
-                  <div
-                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10"
-                    style={{
-                      background: `radial-gradient(circle at 0% 0%, ${f.color}15, transparent 50%)`,
-                    }}
-                  />
-                  <div
-                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center mb-4 sm:mb-5 transition-transform duration-300 group-hover:scale-110"
-                    style={{
-                      background: `${f.color}18`,
-                      border: `1px solid ${f.color}25`,
-                    }}
-                  >
-                    <Icon size={22} style={{ color: f.color }} />
-                  </div>
-                  <h3 className="font-bold text-(--color-text-strong) mb-2 text-lg">
-                    {f.title}
-                  </h3>
-                  <p className="text-sm text-(--color-text-soft) leading-relaxed">
-                    {f.body}
-                  </p>
-                  <div
-                    className="absolute -top-12 -right-12 w-32 h-32 rounded-full opacity-0 group-hover:opacity-30 transition-opacity duration-500"
-                    style={{ background: f.color, filter: "blur(40px)" }}
-                  />
+                  <TiltCard max={7}>
+                    <div className="glass rounded-2xl sm:rounded-3xl p-5 sm:p-7 relative overflow-hidden group cursor-default transition-all duration-300 h-full">
+                      <div
+                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10"
+                        style={{
+                          background: `radial-gradient(circle at 0% 0%, ${f.color}15, transparent 50%)`,
+                        }}
+                      />
+                      <div
+                        className="tilt-layer-1 w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center mb-4 sm:mb-5 transition-transform duration-300"
+                        style={{
+                          background: `${f.color}18`,
+                          border: `1px solid ${f.color}25`,
+                        }}
+                      >
+                        <Icon size={22} style={{ color: f.color }} />
+                      </div>
+                      <h3 className="tilt-layer-2 font-bold text-(--color-text-strong) mb-2 text-lg">
+                        {f.title}
+                      </h3>
+                      <p className="text-sm text-(--color-text-soft) leading-relaxed">
+                        {f.body}
+                      </p>
+                      <div
+                        className="absolute -top-12 -right-12 w-32 h-32 rounded-full opacity-0 group-hover:opacity-30 transition-opacity duration-500"
+                        style={{ background: f.color, filter: "blur(40px)" }}
+                      />
+                    </div>
+                  </TiltCard>
                 </motion.div>
               );
             })}
           </motion.div>
         </div>
       </section>
+
+      {/* ══════════════════════ STICKY WALKTHROUGH ══════════════════════ */}
+      <StickyWalkthrough />
+
+      {/* ══════════════════════ METRICS BAND ══════════════════════ */}
+      <MetricsBand />
 
       {/* ══════════════════════ PLATFORM PREVIEW ══════════════════════ */}
       <section className="py-16 md:py-28 px-4 sm:px-6 relative overflow-hidden">
@@ -835,220 +824,211 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.7, ease }}
             className="relative"
           >
-            {/* Glow behind the browser frame */}
             <div className="absolute -inset-8 bg-[radial-gradient(ellipse_60%_50%_at_50%_40%,rgba(99,102,241,0.12),transparent)] blur-2xl pointer-events-none" />
-
-            {/* Browser shell */}
-            <div
-              className="relative glass-strong rounded-2xl md:rounded-3xl overflow-hidden"
-              style={{
-                boxShadow:
-                  "0 25px 60px rgba(0,0,0,0.2), 0 0 80px rgba(99,102,241,0.08)",
-              }}
-            >
-              {/* Top accent line */}
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent" />
-
-              {/* Browser bar */}
+            <TiltCard max={4}>
               <div
-                className="flex items-center gap-2 px-5 py-3 border-b border-(--color-line)"
-                style={{ background: "var(--color-surface)" }}
+                className="relative glass-strong rounded-2xl md:rounded-3xl overflow-hidden"
+                style={{
+                  boxShadow:
+                    "0 25px 60px rgba(0,0,0,0.2), 0 0 80px rgba(99,102,241,0.08)",
+                }}
               >
-                <div className="flex gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-400/60" />
-                  <div className="w-3 h-3 rounded-full bg-amber-400/60" />
-                  <div className="w-3 h-3 rounded-full bg-emerald-400/60" />
-                </div>
-                <div className="flex-1 mx-4 max-w-sm">
-                  <div className="h-6 rounded-lg bg-(--color-surface-elevated) border border-(--color-line) flex items-center justify-center">
-                    <span className="text-[10px] text-(--color-text-muted) flex items-center gap-1.5">
-                      <Shield
-                        size={9}
-                        className="text-(--color-accent-green)"
-                      />
-                      mimio.app/dashboard
-                    </span>
-                  </div>
-                </div>
-              </div>
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent" />
 
-              {/* Dashboard content */}
-              <div className="flex" style={{ minHeight: 340 }}>
-                {/* Mini sidebar */}
                 <div
-                  className="hidden sm:flex w-14 border-r border-(--color-line) flex-col items-center py-4 gap-2 shrink-0"
-                  style={{ background: "var(--color-sidebar)" }}
+                  className="flex items-center gap-2 px-5 py-3 border-b border-(--color-line)"
+                  style={{ background: "var(--color-surface)" }}
                 >
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-[10px] mb-3">
-                    M
+                  <div className="flex gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-400/60" />
+                    <div className="w-3 h-3 rounded-full bg-amber-400/60" />
+                    <div className="w-3 h-3 rounded-full bg-emerald-400/60" />
                   </div>
-                  {[
-                    { Icon: LayoutDashboard, active: true },
-                    { Icon: Users, active: false },
-                    { Icon: Gamepad2, active: false },
-                    { Icon: Stethoscope, active: false },
-                    { Icon: BarChart3, active: false },
-                  ].map(({ Icon, active }, i) => (
-                    <div
-                      key={i}
-                      className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-                        active
-                          ? "bg-(--color-primary)/15 text-(--color-primary)"
-                          : "text-(--color-text-muted)"
-                      }`}
-                    >
-                      <Icon size={15} />
+                  <div className="flex-1 mx-4 max-w-sm">
+                    <div className="h-6 rounded-lg bg-(--color-surface-elevated) border border-(--color-line) flex items-center justify-center">
+                      <span className="text-[10px] text-(--color-text-muted) flex items-center gap-1.5">
+                        <Shield
+                          size={9}
+                          className="text-(--color-accent-green)"
+                        />
+                        mimio.app/dashboard
+                      </span>
                     </div>
-                  ))}
+                  </div>
                 </div>
 
-                {/* Main area */}
-                <div className="flex-1 p-4 md:p-6 flex flex-col gap-4 overflow-hidden">
-                  {/* Header row */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-1.5">
-                      <div
-                        className="h-5 rounded-full w-40"
-                        style={{
-                          background:
-                            "linear-gradient(90deg, var(--color-primary), rgba(139,92,246,0.6))",
-                          opacity: 0.7,
-                        }}
-                      />
-                      <div className="h-2.5 rounded-full w-24 bg-(--color-skeleton-lo)" />
+                <div className="flex" style={{ minHeight: 340 }}>
+                  <div
+                    className="hidden sm:flex w-14 border-r border-(--color-line) flex-col items-center py-4 gap-2 shrink-0"
+                    style={{ background: "var(--color-sidebar)" }}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-[10px] mb-3">
+                      M
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-20 h-8 rounded-lg bg-(--color-primary)/15 flex items-center justify-center">
-                        <Gamepad2
-                          size={12}
-                          className="text-(--color-primary)"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Stat cards */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     {[
-                      {
-                        label: "Toplam Seans",
-                        value: "24",
-                        bg: "rgba(99,102,241,0.12)",
-                        color: "rgba(99,102,241,0.6)",
-                        icon: CalendarDays,
-                      },
-                      {
-                        label: "Danışanlar",
-                        value: "8",
-                        bg: "rgba(16,185,129,0.12)",
-                        color: "rgba(16,185,129,0.6)",
-                        icon: Users,
-                      },
-                      {
-                        label: "Ort. Skor",
-                        value: "84",
-                        bg: "rgba(245,158,11,0.12)",
-                        color: "rgba(245,158,11,0.6)",
-                        icon: TrendingUp,
-                      },
-                      {
-                        label: "Bu Hafta",
-                        value: "6",
-                        bg: "rgba(6,182,212,0.12)",
-                        color: "rgba(6,182,212,0.6)",
-                        icon: Target,
-                      },
-                    ].map((s) => (
+                      { Icon: LayoutDashboard, active: true },
+                      { Icon: Users, active: false },
+                      { Icon: Gamepad2, active: false },
+                      { Icon: Stethoscope, active: false },
+                      { Icon: BarChart3, active: false },
+                    ].map(({ Icon, active }, i) => (
                       <div
-                        key={s.label}
-                        className="rounded-xl p-3"
-                        style={{ background: s.bg }}
+                        key={i}
+                        className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
+                          active
+                            ? "bg-(--color-primary)/15 text-(--color-primary)"
+                            : "text-(--color-text-muted)"
+                        }`}
                       >
-                        <div className="flex items-center gap-1.5 mb-1.5">
-                          <s.icon size={11} style={{ color: s.color }} />
-                          <span
-                            className="text-[9px] font-bold uppercase tracking-wider"
-                            style={{ color: s.color }}
-                          >
-                            {s.label}
-                          </span>
-                        </div>
-                        <strong className="text-xl font-extrabold text-(--color-text-strong) leading-none">
-                          {s.value}
-                        </strong>
+                        <Icon size={15} />
                       </div>
                     ))}
                   </div>
 
-                  {/* Recent sessions */}
-                  <div className="space-y-2">
-                    {[
-                      {
-                        name: "Ela Selin",
-                        game: "Sıra Hafızası",
-                        score: 92,
-                        color: "#6366f1",
-                      },
-                      {
-                        name: "Tuna Akarsu",
-                        game: "Mavi Nabız",
-                        score: 78,
-                        color: "#8b5cf6",
-                      },
-                      {
-                        name: "Asya Demir",
-                        game: "Hedef Tarama",
-                        score: 85,
-                        color: "#06b6d4",
-                      },
-                    ].map((s) => (
-                      <div
-                        key={s.name}
-                        className="flex items-center gap-2.5 border border-(--color-line) rounded-xl px-3 py-2.5"
-                        style={{ background: "var(--color-surface)" }}
-                      >
+                  <div className="flex-1 p-4 md:p-6 flex flex-col gap-4 overflow-hidden">
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-1.5">
                         <div
-                          className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-white text-[10px] font-bold"
+                          className="h-5 rounded-full w-40"
                           style={{
-                            background: `linear-gradient(135deg, ${s.color}, ${s.color}88)`,
+                            background:
+                              "linear-gradient(90deg, var(--color-primary), rgba(139,92,246,0.6))",
+                            opacity: 0.7,
                           }}
+                        />
+                        <div className="h-2.5 rounded-full w-24 bg-(--color-skeleton-lo)" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 h-8 rounded-lg bg-(--color-primary)/15 flex items-center justify-center">
+                          <Gamepad2
+                            size={12}
+                            className="text-(--color-primary)"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {[
+                        {
+                          label: "Toplam Seans",
+                          value: "24",
+                          bg: "rgba(99,102,241,0.12)",
+                          color: "rgba(99,102,241,0.6)",
+                          icon: CalendarDays,
+                        },
+                        {
+                          label: "Danışanlar",
+                          value: "8",
+                          bg: "rgba(16,185,129,0.12)",
+                          color: "rgba(16,185,129,0.6)",
+                          icon: Users,
+                        },
+                        {
+                          label: "Ort. Skor",
+                          value: "84",
+                          bg: "rgba(245,158,11,0.12)",
+                          color: "rgba(245,158,11,0.6)",
+                          icon: TrendingUp,
+                        },
+                        {
+                          label: "Bu Hafta",
+                          value: "6",
+                          bg: "rgba(6,182,212,0.12)",
+                          color: "rgba(6,182,212,0.6)",
+                          icon: Target,
+                        },
+                      ].map((s) => (
+                        <div
+                          key={s.label}
+                          className="rounded-xl p-3"
+                          style={{ background: s.bg }}
                         >
-                          {s.name[0]}
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <s.icon size={11} style={{ color: s.color }} />
+                            <span
+                              className="text-[9px] font-bold uppercase tracking-wider"
+                              style={{ color: s.color }}
+                            >
+                              {s.label}
+                            </span>
+                          </div>
+                          <strong className="text-xl font-extrabold text-(--color-text-strong) leading-none">
+                            {s.value}
+                          </strong>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-(--color-text-strong) m-0 truncate">
-                            {s.name}
-                          </p>
-                          <p className="text-[10px] text-(--color-text-muted) m-0">
-                            {s.game}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="text-xs font-extrabold tabular-nums"
-                            style={{ color: s.color }}
+                      ))}
+                    </div>
+
+                    <div className="space-y-2">
+                      {[
+                        {
+                          name: "Ela Selin",
+                          game: "Sıra Hafızası",
+                          score: 92,
+                          color: "#6366f1",
+                        },
+                        {
+                          name: "Tuna Akarsu",
+                          game: "Mavi Nabız",
+                          score: 78,
+                          color: "#8b5cf6",
+                        },
+                        {
+                          name: "Asya Demir",
+                          game: "Hedef Tarama",
+                          score: 85,
+                          color: "#06b6d4",
+                        },
+                      ].map((s) => (
+                        <div
+                          key={s.name}
+                          className="flex items-center gap-2.5 border border-(--color-line) rounded-xl px-3 py-2.5"
+                          style={{ background: "var(--color-surface)" }}
+                        >
+                          <div
+                            className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-white text-[10px] font-bold"
+                            style={{
+                              background: `linear-gradient(135deg, ${s.color}, ${s.color}88)`,
+                            }}
                           >
-                            {s.score}
-                          </span>
-                          <div className="w-14 h-1.5 bg-(--color-surface-elevated) rounded-full overflow-hidden">
-                            <div
-                              className="h-full rounded-full"
-                              style={{
-                                width: `${s.score}%`,
-                                background: s.color,
-                              }}
-                            />
+                            {s.name[0]}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-(--color-text-strong) m-0 truncate">
+                              {s.name}
+                            </p>
+                            <p className="text-[10px] text-(--color-text-muted) m-0">
+                              {s.game}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="text-xs font-extrabold tabular-nums"
+                              style={{ color: s.color }}
+                            >
+                              {s.score}
+                            </span>
+                            <div className="w-14 h-1.5 bg-(--color-surface-elevated) rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full"
+                                style={{
+                                  width: `${s.score}%`,
+                                  background: s.color,
+                                }}
+                              />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </TiltCard>
           </motion.div>
         </div>
       </section>
@@ -1090,7 +1070,9 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 return (
                   <motion.div
                     key={step.num}
-                    variants={slideLeft}
+                    variants={fadeUp}
+                    whileHover={{ y: -6 }}
+                    transition={{ duration: 0.3 }}
                     className="flex flex-col items-center text-center gap-4 sm:gap-5 relative"
                   >
                     <div className="relative z-10">
@@ -1120,113 +1102,15 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
         </div>
       </section>
 
-      {/* ══════════════════════ GAMES ══════════════════════ */}
-      <section
-        id="games"
-        className="py-16 md:py-32 px-4 sm:px-6 section-games relative"
-      >
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={stagger}
-            className="mb-8 sm:mb-14"
-          >
-            <motion.div
-              variants={fadeUp}
-              className="inline-flex items-center gap-2 text-xs font-bold tracking-widest text-(--color-primary) uppercase mb-4 bg-(--color-primary-light) px-4 py-2 rounded-full"
-            >
-              <Gamepad2 size={12} />
-              Terapötik İçerik
-            </motion.div>
-            <div className="flex items-end justify-between gap-6 flex-wrap">
-              <motion.div variants={fadeUp}>
-                <h2 className="text-3xl md:text-5xl font-extrabold text-(--color-games-text) leading-tight max-w-lg">
-                  Her Oyun Bir
-                  <br />
-                  <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
-                    Gelişim Hedefi
-                  </span>
-                </h2>
-              </motion.div>
-              <motion.button
-                type="button"
-                variants={fadeUp}
-                onClick={onLogin}
-                className="flex items-center gap-2 text-sm font-semibold text-(--color-games-text) bg-(--color-games-badge-bg) hover:bg-(--color-games-card-hover) border border-(--color-games-badge-border) px-5 py-2.5 rounded-xl transition-colors whitespace-nowrap"
-              >
-                Tüm Kataloğu Gör
-                <ChevronRight size={14} />
-              </motion.button>
-            </div>
-          </motion.div>
+      {/* ══════════════════════ GAMES — HORIZONTAL CAROUSEL ══════════════════════ */}
+      <GamesCarousel onLogin={onLogin} />
 
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-60px" }}
-            variants={staggerFast}
-            className="grid md:grid-cols-3 gap-6"
-          >
-            {GAMES.map((game) => {
-              const Icon = game.icon;
-              return (
-                <motion.div
-                  key={game.key}
-                  variants={fadeUp}
-                  whileHover={{ y: -8, transition: { duration: 0.3 } }}
-                  className="glass rounded-3xl overflow-hidden border border-(--color-games-card-border) transition-all duration-300 group cursor-pointer hover:shadow-xl"
-                  onClick={onLogin}
-                >
-                  <div className="aspect-[4/3] relative flex items-center justify-center overflow-hidden">
-                    <div
-                      className="absolute inset-0 opacity-20"
-                      style={{
-                        background: `radial-gradient(circle at 50% 50%, ${game.color}, transparent 70%)`,
-                      }}
-                    />
-                    <div className="absolute inset-0 game-tile-preview" />
-                    <div className="relative z-10">
-                      <GamePatternPreview
-                        type={game.pattern}
-                        color={game.color}
-                      />
-                    </div>
-                    <span className="absolute top-4 left-4 text-xs font-semibold text-(--color-games-text) bg-(--color-games-badge-bg) backdrop-blur-md px-3 py-1.5 rounded-full border border-(--color-games-badge-border)">
-                      {game.area}
-                    </span>
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <div className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
-                        <Play size={20} className="text-white ml-0.5" />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-4 sm:p-6">
-                    <div className="flex items-center gap-3 mb-2 sm:mb-3">
-                      <div
-                        className="w-9 h-9 rounded-xl flex items-center justify-center"
-                        style={{ background: `${game.color}20` }}
-                      >
-                        <Icon size={18} style={{ color: game.color }} />
-                      </div>
-                      <h3 className="font-bold text-(--color-games-text) text-lg">
-                        {game.label}
-                      </h3>
-                    </div>
-                    <p className="text-sm text-(--color-games-text-soft) leading-relaxed">
-                      {game.desc}
-                    </p>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </motion.div>
-        </div>
-      </section>
+      {/* ══════════════════════ COMPARISON ══════════════════════ */}
+      <ComparisonSection />
 
       {/* ══════════════════════ TESTIMONIALS ══════════════════════ */}
-      <section id="testimonials" className="py-16 md:py-32 px-4 sm:px-6">
+      <section id="testimonials" className="py-16 md:py-32 px-4 sm:px-6 relative overflow-hidden">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_70%_40%_at_50%_50%,rgba(139,92,246,0.06),transparent)]" />
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial="hidden"
@@ -1253,36 +1137,19 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             whileInView="visible"
             viewport={{ once: true, margin: "-60px" }}
             variants={staggerFast}
-            className="grid sm:grid-cols-2 md:grid-cols-3 gap-6"
+            className="grid sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6"
           >
             {TESTIMONIALS.map((t) => (
               <motion.div
                 key={t.name}
                 variants={slideRight}
-                className="glass rounded-2xl sm:rounded-3xl p-5 sm:p-7 relative overflow-hidden group"
+                whileHover={{ y: -6, transition: { duration: 0.3 } }}
+                className="glass rounded-2xl sm:rounded-3xl p-5 sm:p-6 relative overflow-hidden group"
               >
-                <div className="absolute top-4 right-6 text-6xl font-serif text-(--color-text-disabled) leading-none select-none">
+                <div className="absolute top-3 right-5 text-5xl font-serif text-(--color-text-disabled) leading-none select-none">
                   &ldquo;
                 </div>
-                <p className="text-sm text-(--color-text-body) leading-relaxed mb-6 relative z-10">
-                  {t.text}
-                </p>
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-10 h-10 rounded-xl bg-gradient-to-br ${t.gradient} flex items-center justify-center text-white text-xs font-bold`}
-                  >
-                    {t.avatar}
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-(--color-text-strong) m-0">
-                      {t.name}
-                    </p>
-                    <p className="text-xs text-(--color-text-soft) m-0">
-                      {t.role}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-1 mt-4">
+                <div className="flex gap-1 mb-4">
                   {[1, 2, 3, 4, 5].map((s) => (
                     <Star
                       key={s}
@@ -1291,14 +1158,36 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                     />
                   ))}
                 </div>
+                <p className="text-sm text-(--color-text-body) leading-relaxed mb-5 relative z-10">
+                  {t.text}
+                </p>
+                <div className="flex items-center gap-3 pt-4 border-t border-(--color-line)">
+                  <div
+                    className={`w-10 h-10 rounded-xl bg-gradient-to-br ${t.gradient} flex items-center justify-center text-white text-xs font-bold`}
+                  >
+                    {t.avatar}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-(--color-text-strong) m-0 truncate">
+                      {t.name}
+                    </p>
+                    <p className="text-xs text-(--color-text-soft) m-0 truncate">
+                      {t.role}
+                    </p>
+                  </div>
+                </div>
               </motion.div>
             ))}
           </motion.div>
         </div>
       </section>
 
+      {/* ══════════════════════ FAQ ══════════════════════ */}
+      <FAQSection />
+
       {/* ══════════════════════ CTA ══════════════════════ */}
-      <section className="py-20 md:py-36 px-4 sm:px-6 relative overflow-hidden">
+      <section id="cta" className="py-20 md:py-36 px-4 sm:px-6 relative overflow-hidden">
+        <AuroraBackdrop />
         <div className="absolute inset-0 -z-10">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_100%,rgba(99,102,241,0.1),transparent)]" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_50%_at_50%_0%,rgba(139,92,246,0.06),transparent)]" />
@@ -1324,9 +1213,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             >
               Klinik Süreçlerinizi
               <br />
-              <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
-                Bugün Dijitalleştirin
-              </span>
+              <span className="text-gradient-shift">Bugün Dijitalleştirin</span>
             </motion.h2>
             <motion.p
               variants={fadeUp}
@@ -1339,20 +1226,22 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               variants={fadeUp}
               className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
             >
-              <button
-                type="button"
-                onClick={onRegister}
-                className="group relative flex items-center gap-2.5 text-white font-semibold px-10 py-4 rounded-2xl text-base transition-all duration-300 hover:-translate-y-0.5 overflow-hidden w-full sm:w-auto justify-center"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 bg-[length:200%_100%] animate-[shimmer_3s_ease-in-out_infinite]" />
-                <span className="relative z-10 flex items-center gap-2.5">
-                  Ücretsiz Hesabını Oluştur
-                  <ArrowRight
-                    size={18}
-                    className="transition-transform group-hover:translate-x-1"
-                  />
-                </span>
-              </button>
+              <Magnetic strength={18}>
+                <button
+                  type="button"
+                  onClick={onRegister}
+                  className="group relative flex items-center gap-2.5 text-white font-semibold px-10 py-4 rounded-2xl text-base transition-all duration-300 hover:-translate-y-0.5 overflow-hidden w-full sm:w-auto justify-center"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 bg-[length:200%_100%] animate-[shimmer_3s_ease-in-out_infinite]" />
+                  <span className="relative z-10 flex items-center gap-2.5">
+                    Ücretsiz Hesabını Oluştur
+                    <ArrowRight
+                      size={18}
+                      className="transition-transform group-hover:translate-x-1"
+                    />
+                  </span>
+                </button>
+              </Magnetic>
               <button
                 type="button"
                 onClick={onLogin}

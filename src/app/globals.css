@@ -1115,3 +1115,360 @@ html[data-theme='light'] .section-games {
 .skip-to-content:focus {
   top: 0;
 }
+
+/* ─────────────────────────────────────────────
+   LANDING — PREMIUM PRIMITIVES
+   aurora gradient, marquee, noise, tilt, accordion,
+   gradient text shift, floating nav dots, magnetic
+   ─────────────────────────────────────────────── */
+
+/* Aurora — slowly morphing mesh gradient used behind hero + CTA */
+@keyframes aurora-shift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  33%  { transform: translate3d(4%, -3%, 0) scale(1.08); }
+  66%  { transform: translate3d(-3%, 4%, 0) scale(0.96); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+.aurora-layer {
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  filter: blur(60px);
+  opacity: 0.55;
+  background:
+    radial-gradient(40% 35% at 20% 30%, rgba(99,102,241,0.35), transparent 60%),
+    radial-gradient(35% 30% at 80% 20%, rgba(139,92,246,0.30), transparent 65%),
+    radial-gradient(45% 40% at 65% 75%, rgba(6,182,212,0.28), transparent 60%),
+    radial-gradient(30% 25% at 20% 80%, rgba(236,72,153,0.22), transparent 65%);
+  animation: aurora-shift 22s ease-in-out infinite;
+  will-change: transform;
+}
+html[data-theme='light'] .aurora-layer {
+  opacity: 0.4;
+  background:
+    radial-gradient(40% 35% at 20% 30%, rgba(99,102,241,0.22), transparent 60%),
+    radial-gradient(35% 30% at 80% 20%, rgba(139,92,246,0.18), transparent 65%),
+    radial-gradient(45% 40% at 65% 75%, rgba(6,182,212,0.18), transparent 60%),
+    radial-gradient(30% 25% at 20% 80%, rgba(236,72,153,0.14), transparent 65%);
+}
+
+/* Noise overlay — subtle film grain for that "tactile" feel */
+.noise-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.65 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 160px 160px;
+}
+html[data-theme='light'] .noise-overlay {
+  opacity: 0.045;
+  mix-blend-mode: multiply;
+}
+
+/* Marquee — infinite horizontal scroll for trust bar / testimonials */
+@keyframes marquee-ltr {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes marquee-rtl {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  gap: 3rem;
+  animation: marquee-ltr 40s linear infinite;
+  will-change: transform;
+}
+.marquee-track.reverse { animation-name: marquee-rtl; }
+.marquee-track.fast    { animation-duration: 28s; }
+.marquee-track.slow    { animation-duration: 55s; }
+.marquee-mask {
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+.marquee-viewport:hover .marquee-track { animation-play-state: paused; }
+
+/* Animated gradient text — slow hue shift across brand gradient */
+@keyframes gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.text-gradient-shift {
+  background: linear-gradient(90deg, #818cf8, #a78bfa, #22d3ee, #a78bfa, #818cf8);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradient-shift 8s ease-in-out infinite;
+}
+
+/* 3D tilt base — JS sets --rx / --ry via motion values */
+.tilt-3d {
+  transform:
+    perspective(1100px)
+    rotateX(var(--rx, 0deg))
+    rotateY(var(--ry, 0deg))
+    translate3d(0, 0, 0);
+  transition: transform 0.12s cubic-bezier(0.22,1,0.36,1);
+  will-change: transform;
+  transform-style: preserve-3d;
+}
+.tilt-3d > * { transform: translateZ(0); }
+.tilt-3d .tilt-layer-1 { transform: translateZ(28px); }
+.tilt-3d .tilt-layer-2 { transform: translateZ(46px); }
+
+/* Tilt shine — diagonal highlight that tracks mouse */
+.tilt-shine {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    320px 220px at var(--mx, 50%) var(--my, 50%),
+    rgba(255,255,255,0.18),
+    transparent 55%
+  );
+  transition: opacity 0.25s ease;
+}
+.tilt-3d:hover .tilt-shine { opacity: 1; }
+
+/* Gradient border card — conic rotating ring */
+@keyframes border-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.ring-conic {
+  position: relative;
+  isolation: isolate;
+}
+.ring-conic::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(from 0deg,
+    rgba(99,102,241,0.0) 0deg,
+    rgba(99,102,241,0.8) 60deg,
+    rgba(139,92,246,0.8) 120deg,
+    rgba(6,182,212,0.8) 180deg,
+    rgba(99,102,241,0.0) 240deg,
+    rgba(99,102,241,0.0) 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  animation: border-spin 6s linear infinite;
+  pointer-events: none;
+}
+
+/* Side-rail section nav dots (desktop only) */
+.section-dots {
+  position: fixed;
+  right: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 45;
+  display: none;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(15,18,32,0.55);
+  border: 1px solid var(--color-line);
+  backdrop-filter: blur(14px);
+}
+@media (min-width: 1280px) {
+  .section-dots { display: flex; }
+}
+html[data-theme='light'] .section-dots {
+  background: rgba(255,255,255,0.7);
+}
+.section-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-text-disabled);
+  transition: all 0.25s ease;
+  position: relative;
+}
+.section-dot[data-active="true"] {
+  background: var(--color-primary);
+  box-shadow: 0 0 0 4px rgba(99,102,241,0.18);
+  transform: scale(1.25);
+}
+.section-dot-label {
+  position: absolute;
+  right: calc(100% + 14px);
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--color-text-strong);
+  background: rgba(15,18,32,0.85);
+  border: 1px solid var(--color-line);
+  padding: 4px 9px;
+  border-radius: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+.section-dot:hover .section-dot-label { opacity: 1; }
+html[data-theme='light'] .section-dot-label {
+  background: rgba(255,255,255,0.95);
+}
+
+/* Floating bottom CTA — appears after hero, disappears near footer */
+.floating-cta {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translateX(-50%);
+  z-index: 44;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.55rem 0.55rem 1rem;
+  border-radius: 999px;
+  background: rgba(15,18,32,0.78);
+  border: 1px solid var(--color-line);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 20px 48px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.05) inset;
+}
+html[data-theme='light'] .floating-cta {
+  background: rgba(255,255,255,0.85);
+  box-shadow: 0 20px 48px rgba(99,102,241,0.18), 0 0 0 1px rgba(255,255,255,0.9) inset;
+}
+
+/* Cursor spotlight — large soft glow following the mouse (desktop only) */
+.cursor-spotlight {
+  position: fixed;
+  pointer-events: none;
+  z-index: 40;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(99,102,241,0.18), rgba(139,92,246,0.08) 40%, transparent 70%);
+  mix-blend-mode: screen;
+  transform: translate3d(-50%, -50%, 0);
+  will-change: transform, opacity;
+  transition: opacity 0.3s ease;
+  filter: blur(4px);
+}
+html[data-theme='light'] .cursor-spotlight {
+  mix-blend-mode: multiply;
+  background: radial-gradient(circle, rgba(99,102,241,0.14), rgba(139,92,246,0.06) 40%, transparent 70%);
+}
+@media (hover: none) and (pointer: coarse) {
+  .cursor-spotlight { display: none !important; }
+}
+
+/* Accordion — height transition via grid trick */
+.acc-item { display: grid; grid-template-rows: auto 0fr; transition: grid-template-rows 0.45s cubic-bezier(0.22,1,0.36,1); }
+.acc-item[data-open="true"] { grid-template-rows: auto 1fr; }
+.acc-body { overflow: hidden; }
+.acc-body-inner {
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.3s ease 0.08s, transform 0.3s ease 0.08s;
+}
+.acc-item[data-open="true"] .acc-body-inner { opacity: 1; transform: translateY(0); }
+
+/* Horizontal carousel — snap + hide scrollbar */
+.h-snap {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-behavior: smooth;
+  gap: 1rem;
+  padding: 0.25rem 1.5rem 1.5rem;
+  -webkit-overflow-scrolling: touch;
+}
+.h-snap::-webkit-scrollbar { display: none; }
+.h-snap > * { scroll-snap-align: start; flex-shrink: 0; }
+
+/* Split-text word reveal — used for hero heading */
+.word-reveal {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+.word-reveal > span {
+  display: inline-block;
+  transform: translateY(110%);
+  animation: word-up 0.9s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+@keyframes word-up {
+  to { transform: translateY(0); }
+}
+
+/* Beam — traveling light across a surface */
+@keyframes beam-travel {
+  0%   { transform: translateX(-110%) skewX(-18deg); opacity: 0; }
+  30%  { opacity: 0.7; }
+  70%  { opacity: 0.7; }
+  100% { transform: translateX(220%) skewX(-18deg); opacity: 0; }
+}
+.beam-sweep {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  animation: beam-travel 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Dot-matrix background — crisp pixel dots (used behind sections) */
+.dot-grid {
+  background-image: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+html[data-theme='light'] .dot-grid {
+  background-image: radial-gradient(rgba(99,102,241,0.18) 1px, transparent 1px);
+}
+
+/* Magnetic pull base — JS sets inline transform */
+.magnetic {
+  display: inline-flex;
+  transition: transform 0.25s cubic-bezier(0.22,1,0.36,1);
+  will-change: transform;
+}
+
+/* Ping halo — used for status dots */
+@keyframes halo-ping {
+  0%   { transform: scale(1); opacity: 0.9; }
+  80%, 100% { transform: scale(2.6); opacity: 0; }
+}
+.halo-dot { position: relative; }
+.halo-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  animation: halo-ping 1.8s cubic-bezier(0,0,0.2,1) infinite;
+  z-index: -1;
+}
+
+/* Reduced motion guards */
+@media (prefers-reduced-motion: reduce) {
+  .aurora-layer,
+  .marquee-track,
+  .text-gradient-shift,
+  .beam-sweep,
+  .ring-conic::before,
+  .halo-dot::after { animation: none !important; }
+}
