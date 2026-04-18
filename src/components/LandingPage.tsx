@@ -46,7 +46,6 @@ import {
   Magnetic,
   MetricsBand,
   SectionDots,
-  SplitText,
   StickyWalkthrough,
   TiltCard,
   TrustMarquee,
@@ -502,15 +501,16 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 </span>
               </motion.div>
 
-              <h1 className="text-[2.5rem] sm:text-6xl lg:text-7xl font-extrabold text-(--color-text-strong) leading-[1.05] tracking-tight">
-                <SplitText text="Terapi" />
+              <motion.h1
+                variants={fadeUp}
+                className="text-[2.5rem] sm:text-6xl lg:text-7xl font-extrabold text-(--color-text-strong) leading-[1.05] tracking-tight"
+              >
+                Terapi
                 <br />
-                <SplitText text="Seanslarını" delay={0.08} />
+                Seanslarını
                 <br />
-                <span className="text-gradient-shift">
-                  <SplitText text="Oyuna Dönüştür" delay={0.18} />
-                </span>
-              </h1>
+                <span className="text-gradient-shift">Oyuna Dönüştür</span>
+              </motion.h1>
 
               <motion.p
                 variants={fadeUp}
