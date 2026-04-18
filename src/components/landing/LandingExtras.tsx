@@ -413,13 +413,20 @@ export function StickyWalkthrough() {
   });
   const [active, setActive] = useState(0);
   const steps = WALKTHROUGH.length;
+  const smoothProgress = useSpring(0, { stiffness: 80, damping: 25, mass: 1 });
 
   useEffect(() => {
     return scrollYProgress.on("change", (v) => {
+      smoothProgress.set(v);
+    });
+  }, [scrollYProgress, smoothProgress]);
+
+  useEffect(() => {
+    return smoothProgress.on("change", (v) => {
       const idx = Math.min(steps - 1, Math.floor(v * steps));
       setActive((prev) => (prev === idx ? prev : idx));
     });
-  }, [scrollYProgress, steps]);
+  }, [smoothProgress, steps]);
 
   return (
     <section id="walkthrough" className="relative">
@@ -1229,7 +1236,7 @@ export function SplitText({
     <span className={className}>
       {words.map((w, i) => (
         <span key={i} className="word-reveal">
-          <span style={{ animationDelay: `${delay + i * 0.06}s` }}>{w}&nbsp;</span>
+          <span style={{ animationDelay: `${delay + i * 0.06}s` } as React.CSSProperties}>{w}&nbsp;</span>
         </span>
       ))}
     </span>

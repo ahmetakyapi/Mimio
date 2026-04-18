@@ -1408,9 +1408,11 @@ html[data-theme='light'] .cursor-spotlight {
 .word-reveal > span {
   display: inline-block;
   transform: translateY(110%);
-  animation: word-up 0.9s cubic-bezier(0.22,1,0.36,1) forwards;
+  animation: word-up 0.9s cubic-bezier(0.22,1,0.36,1) forwards both;
+  will-change: transform;
 }
 @keyframes word-up {
+  from { transform: translateY(110%); }
   to { transform: translateY(0); }
 }
 

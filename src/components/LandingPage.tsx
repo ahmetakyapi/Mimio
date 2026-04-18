@@ -1224,7 +1224,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             </motion.p>
             <motion.div
               variants={fadeUp}
-              className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
+              className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto"
             >
               <Magnetic strength={18}>
                 <button

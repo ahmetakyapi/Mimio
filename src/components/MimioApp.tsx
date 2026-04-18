@@ -1888,7 +1888,13 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               data-tooltip="Profil düzenle"
               data-tooltip-dir="top"
               className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-medium text-(--color-text-muted) hover:text-indigo-400 hover:bg-indigo-500/10 bg-transparent border-none cursor-pointer transition-all"
-              onClick={() => { setTherapistEditDraft({ displayName: activeTherapist?.displayName ?? "", clinicName: activeTherapist?.clinicName ?? "", specialty: activeTherapist?.specialty ?? "" }); setShowEditTherapist(true); }}
+              onClick={() => {
+                if (activeTherapist) {
+                  setTherapistEditDraft({ displayName: activeTherapist.displayName ?? "", clinicName: activeTherapist.clinicName ?? "", specialty: activeTherapist.specialty ?? "" });
+                  setShowEditTherapist(true);
+                }
+              }}
+              disabled={!activeTherapist}
               aria-label="Profil düzenle">
               <Edit2 size={13} />
               <span>Düzenle</span>
