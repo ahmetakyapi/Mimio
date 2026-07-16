@@ -1,26 +1,25 @@
 import { ImageResponse } from "next/og";
 
-export const size = { width: 512, height: 512 };
-export const contentType = "image/png";
+export const dynamic = "force-static";
 
-export default function Icon512() {
+export function GET() {
   return new ImageResponse(
     (
       <div
         style={{
-          width: 512,
-          height: 512,
+          width: 192,
+          height: 192,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           background: "linear-gradient(135deg, #6366f1 0%, #818cf8 100%)",
-          borderRadius: 100,
+          borderRadius: 40,
         }}>
-        <span style={{ fontSize: 220, fontWeight: 900, color: "#fff", letterSpacing: -6 }}>
+        <span style={{ fontSize: 80, fontWeight: 900, color: "#fff", letterSpacing: -2 }}>
           Mi
         </span>
       </div>
     ),
-    { ...size }
+    { width: 192, height: 192 }
   );
 }

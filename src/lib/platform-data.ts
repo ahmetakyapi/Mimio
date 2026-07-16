@@ -108,6 +108,8 @@ export interface SessionInsight {
 }
 
 export interface PlatformOverviewPayload {
+  /** Sunucu, isteğin geçerli bir oturum cookie'si taşıyıp taşımadığını bildirir */
+  authenticated?: boolean;
   database: {
     configured: boolean;
     status: DatabaseStatus;

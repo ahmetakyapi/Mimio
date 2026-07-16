@@ -385,6 +385,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
   function handleLogout() {
     try { window.localStorage.removeItem(ACTIVE_THERAPIST_KEY); } catch { /* ignore */ }
+    // Sunucudaki oturum cookie'sini temizle (sonucu beklemeye gerek yok)
+    void fetch("/api/platform/profiles", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: "logout" }),
+    }).catch(() => { /* çevrimdışı olabilir */ });
     if (onLogout) {
       onLogout();
     } else {
@@ -1037,6 +1043,17 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       const payload = (await response.json()) as PlatformOverviewPayload;
       setPlatformOverview(payload);
       setPlatformStatus(payload.database.status);
+      // Yerelde oturum görünüyor ama sunucu cookie'si geçersizse (süre dolmuş
+      // veya eski sürümden kalma) kullanıcıyı girişe yönlendir.
+      if (payload.authenticated === false) {
+        let hasLocalSession = false;
+        try { hasLocalSession = Boolean(window.localStorage.getItem(ACTIVE_THERAPIST_KEY)); } catch { /* ignore */ }
+        if (hasLocalSession) {
+          try { window.localStorage.removeItem(ACTIVE_THERAPIST_KEY); } catch { /* ignore */ }
+          setActiveTherapistId("");
+          setActiveAppView("login");
+        }
+      }
       return payload;
     } catch {
       setPlatformStatus("error");

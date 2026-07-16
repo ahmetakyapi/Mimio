@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClientNote, deleteClientNote, getClientNotes } from "@/lib/server/platform-db";
+import { getSessionTherapistId } from "@/lib/server/session";
 import type { NoteMode, SoapNoteContent } from "@/lib/platform-data";
 
+const UNAUTHORIZED = { error: "Bu işlem için oturum açmanız gerekiyor." };
+
 export async function GET(req: NextRequest) {
+  if (!(await getSessionTherapistId())) return NextResponse.json(UNAUTHORIZED, { status: 401 });
   const { searchParams } = new URL(req.url);
   const clientId = searchParams.get("clientId");
   if (!clientId) return NextResponse.json({ error: "clientId gerekli" }, { status: 400 });
@@ -11,6 +15,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await getSessionTherapistId())) return NextResponse.json(UNAUTHORIZED, { status: 401 });
   let body: unknown;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Geçersiz JSON" }, { status: 400 }); }
   const { clientId, therapistId, date, content, noteMode, soapContent } = body as {
@@ -26,6 +31,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  if (!(await getSessionTherapistId())) return NextResponse.json(UNAUTHORIZED, { status: 401 });
   const { searchParams } = new URL(req.url);
   const noteId = searchParams.get("noteId");
   if (!noteId) return NextResponse.json({ error: "noteId gerekli" }, { status: 400 });

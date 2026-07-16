@@ -49,7 +49,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#04070d",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#eef2ff" },
+    { media: "(prefers-color-scheme: dark)", color: "#04070d" },
+  ],
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
@@ -61,7 +64,7 @@ export default function RootLayout({ children }: { readonly children: React.Reac
   return (
     <html lang="tr" className={`${plusJakartaSans.variable} ${inter.variable}`}>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('mimio-theme');document.documentElement.setAttribute('data-theme',t==='light'?'light':'dark');}catch(e){}` }} />
+        <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('mimio-theme');var v;if(t==='light'||t==='dark'||t==='high-contrast'){v=t}else{v=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}document.documentElement.setAttribute('data-theme',v);}catch(e){document.documentElement.setAttribute('data-theme','dark');}` }} />
         <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

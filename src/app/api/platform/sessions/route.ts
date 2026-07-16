@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isPlatformGameKey, type SessionCreatePayload } from "@/lib/platform-data";
 import { insertSessionRun, updateSessionSatisfaction } from "@/lib/server/platform-db";
+import { getSessionTherapistId } from "@/lib/server/session";
+
+const UNAUTHORIZED = { ok: false, message: "Bu işlem için oturum açmanız gerekiyor." };
 
 function parsePayload(body: unknown): SessionCreatePayload | null {
   if (!body || typeof body !== "object") {
@@ -38,6 +41,7 @@ function parsePayload(body: unknown): SessionCreatePayload | null {
 }
 
 export async function PATCH(request: NextRequest) {
+  if (!(await getSessionTherapistId())) return NextResponse.json(UNAUTHORIZED, { status: 401 });
   let body: unknown;
   try { body = await request.json(); } catch { return NextResponse.json({ ok: false }, { status: 400 }); }
   const candidate = body as Record<string, unknown>;
@@ -51,6 +55,7 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function POST(request: Request) {
+  if (!(await getSessionTherapistId())) return NextResponse.json(UNAUTHORIZED, { status: 401 });
   const body = await request.json().catch(() => null);
   const payload = parsePayload(body);
 

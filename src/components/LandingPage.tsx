@@ -44,7 +44,6 @@ import {
   FloatingCTA,
   GamesCarousel,
   Magnetic,
-  MetricsBand,
   SectionDots,
   StickyWalkthrough,
   TiltCard,
@@ -139,33 +138,33 @@ const STEPS = [
   },
 ];
 
-const TESTIMONIALS = [
+const PERSONAS = [
   {
-    name: "Dr. Elif Yılmaz",
     role: "Pediatrik Ergoterapist",
-    text: "Mimio ile seanslardaki çocuk katılımı gözle görülür arttı. Dijital takip sistemi klinik raporlamayı çok kolaylaştırdı.",
-    avatar: "EY",
+    text: "Seanslarda çocuğun ilgisini oyunla canlı tutun; skorlar ve seans süreleri kendiliğinden kaydedilsin.",
+    module: "Oyun Alanı",
+    icon: Stethoscope,
     gradient: "from-indigo-500 to-purple-500",
   },
   {
-    name: "Mehmet Kaya",
     role: "Nörolojik Rehabilitasyon Uzmanı",
-    text: "Oyun bazlı terapi yaklaşımı hastalarımın motivasyonunu artırdı. İlerleme grafikleri aileyle paylaşım için mükemmel.",
-    avatar: "MK",
+    text: "El-göz koordinasyonu ve işlem hızı oyunlarıyla motor hedefleri çalışın, gelişimi grafiklerle izleyin.",
+    module: "Raporlar",
+    icon: Brain,
     gradient: "from-cyan-500 to-blue-500",
   },
   {
-    name: "Ayşe Demir",
     role: "Çocuk Gelişim Uzmanı",
-    text: "Kanıta dayalı oyun tasarımları ve kolay arayüzü ile günlük klinik pratiğimin vazgeçilmez aracı oldu.",
-    avatar: "AD",
+    text: "Her danışan için haftalık program oluşturun; 127 hazır aktiviteden ev programına uygun olanları seçin.",
+    module: "Haftalık Plan",
+    icon: Heart,
     gradient: "from-emerald-500 to-teal-500",
   },
   {
-    name: "Prof. Dr. Cem Aksoy",
-    role: "Nörogelişim Araştırmacısı",
-    text: "Kanıta dayalı protokollerle uyumlu domain yapısı, akademik araştırma için de veri toplamayı kolaylaştırıyor.",
-    avatar: "CA",
+    role: "Özel Eğitim Uzmanı",
+    text: "Kanıta dayalı protokolleri takip edin, SOAP formatında not tutun ve hedef bazlı ilerleme kaydedin.",
+    module: "Terapi Programı",
+    icon: Users,
     gradient: "from-amber-500 to-orange-500",
   },
 ];
@@ -185,7 +184,7 @@ const SECTION_DOTS = [
   { id: "how-it-works", label: "Nasıl Çalışır?" },
   { id: "games", label: "Oyunlar" },
   { id: "comparison", label: "Karşılaştır" },
-  { id: "testimonials", label: "Yorumlar" },
+  { id: "testimonials", label: "Kimler İçin" },
   { id: "faq", label: "SSS" },
   { id: "cta", label: "Başla" },
 ] as const;
@@ -216,41 +215,6 @@ const stagger = {
 const staggerFast = {
   visible: { transition: { staggerChildren: 0.07 } },
 };
-
-/* ── Animated Background Orbs ── */
-function BackgroundOrbs() {
-  return (
-    <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-      <motion.div
-        animate={{ x: [0, 30, -20, 0], y: [0, -40, 20, 0] }}
-        transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute -top-40 -left-40 w-[300px] sm:w-[450px] lg:w-[600px] h-[300px] sm:h-[450px] lg:h-[600px] rounded-full opacity-30"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(99,102,241,0.15), transparent 70%)",
-        }}
-      />
-      <motion.div
-        animate={{ x: [0, -40, 30, 0], y: [0, 30, -20, 0] }}
-        transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute -top-20 -right-40 w-[250px] sm:w-[380px] lg:w-[500px] h-[250px] sm:h-[380px] lg:h-[500px] rounded-full opacity-20"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(34,211,238,0.12), transparent 70%)",
-        }}
-      />
-      <motion.div
-        animate={{ x: [0, 20, -30, 0], y: [0, -20, 30, 0] }}
-        transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute top-1/2 -left-20 w-[200px] sm:w-[300px] lg:w-[400px] h-[200px] sm:h-[300px] lg:h-[400px] rounded-full opacity-15"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(139,92,246,0.12), transparent 70%)",
-        }}
-      />
-    </div>
-  );
-}
 
 /* ── Animated Grid Pattern ── */
 function GridPattern() {
@@ -304,6 +268,48 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Mobil menü açıkken: scroll kilidi, Esc ile kapatma, odak tuzağı
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? "hidden" : "";
+    if (!menuOpen) {
+      return () => {
+        document.body.style.overflow = "";
+      };
+    }
+
+    const menuEl = menuRef.current;
+    const focusables = () =>
+      Array.from(
+        menuEl?.querySelectorAll<HTMLElement>("button, a[href]") ?? []
+      );
+    focusables()[0]?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMenuOpen(false);
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const items = focusables();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [menuOpen]);
+
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     setMenuOpen(false);
@@ -312,7 +318,6 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
   return (
     <div id="top" className="min-h-screen bg-(--color-page-bg) font-(--font-sans) relative">
       <ScrollProgress />
-      <BackgroundOrbs />
       <GridPattern />
       <CursorSpotlight />
       <SectionDots sections={SECTION_DOTS} />
@@ -408,6 +413,10 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       <AnimatePresence>
         {menuOpen && (
           <motion.div
+            ref={menuRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Gezinme menüsü"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -658,8 +667,8 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             className="mt-14 md:mt-28 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4"
           >
             {[
-              { value: "6+", label: "Terapi Oyunu", icon: Gamepad2 },
-              { value: "3", label: "Beceri Alanı", icon: Brain },
+              { value: "7", label: "Terapi Oyunu", icon: Gamepad2 },
+              { value: "127+", label: "Hazır Aktivite", icon: Brain },
               { value: "7", label: "Terapi Domainı", icon: Target },
               { value: "∞", label: "Sınırsız Danışan", icon: Users },
             ].map((s) => (
@@ -778,9 +787,6 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
 
       {/* ══════════════════════ STICKY WALKTHROUGH ══════════════════════ */}
       <StickyWalkthrough />
-
-      {/* ══════════════════════ METRICS BAND ══════════════════════ */}
-      <MetricsBand />
 
       {/* ══════════════════════ PLATFORM PREVIEW ══════════════════════ */}
       <section className="py-16 md:py-28 px-4 sm:px-6 relative overflow-hidden">
@@ -1108,7 +1114,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       {/* ══════════════════════ COMPARISON ══════════════════════ */}
       <ComparisonSection />
 
-      {/* ══════════════════════ TESTIMONIALS ══════════════════════ */}
+      {/* ══════════════════════ PERSONAS — KİMLER İÇİN ══════════════════════ */}
       <section id="testimonials" className="py-16 md:py-32 px-4 sm:px-6 relative overflow-hidden">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_70%_40%_at_50%_50%,rgba(139,92,246,0.06),transparent)]" />
         <div className="max-w-7xl mx-auto">
@@ -1123,13 +1129,13 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               variants={fadeUp}
               className="text-4xl md:text-5xl font-extrabold text-(--color-text-strong) mb-4"
             >
-              Uzmanlar Ne Diyor?
+              Kimler İçin Tasarlandı?
             </motion.h2>
             <motion.p
               variants={fadeUp}
               className="text-(--color-text-soft) text-lg"
             >
-              Mimio&apos;yu kullanan ergoterapistlerin deneyimleri.
+              Mimio, farklı uzmanlık alanlarının klinik iş akışına uyum sağlar.
             </motion.p>
           </motion.div>
           <motion.div
@@ -1139,45 +1145,35 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             variants={staggerFast}
             className="grid sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6"
           >
-            {TESTIMONIALS.map((t) => (
-              <motion.div
-                key={t.name}
-                variants={slideRight}
-                whileHover={{ y: -6, transition: { duration: 0.3 } }}
-                className="glass rounded-2xl sm:rounded-3xl p-5 sm:p-6 relative overflow-hidden group"
-              >
-                <div className="absolute top-3 right-5 text-5xl font-serif text-(--color-text-disabled) leading-none select-none">
-                  &ldquo;
-                </div>
-                <div className="flex gap-1 mb-4">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star
-                      key={s}
-                      size={13}
-                      className="text-amber-400 fill-amber-400"
-                    />
-                  ))}
-                </div>
-                <p className="text-sm text-(--color-text-body) leading-relaxed mb-5 relative z-10">
-                  {t.text}
-                </p>
-                <div className="flex items-center gap-3 pt-4 border-t border-(--color-line)">
+            {PERSONAS.map((p) => {
+              const PersonaIcon = p.icon;
+              return (
+                <motion.div
+                  key={p.role}
+                  variants={slideRight}
+                  whileHover={{ y: -6, transition: { duration: 0.3 } }}
+                  className="glass rounded-2xl sm:rounded-3xl p-5 sm:p-6 relative overflow-hidden group flex flex-col"
+                >
                   <div
-                    className={`w-10 h-10 rounded-xl bg-gradient-to-br ${t.gradient} flex items-center justify-center text-white text-xs font-bold`}
+                    className={`w-11 h-11 rounded-xl bg-gradient-to-br ${p.gradient} flex items-center justify-center text-white mb-4 shadow-lg`}
                   >
-                    {t.avatar}
+                    <PersonaIcon size={19} />
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-(--color-text-strong) m-0 truncate">
-                      {t.name}
-                    </p>
-                    <p className="text-xs text-(--color-text-soft) m-0 truncate">
-                      {t.role}
-                    </p>
+                  <h3 className="text-sm font-bold text-(--color-text-strong) mb-2">
+                    {p.role}
+                  </h3>
+                  <p className="text-sm text-(--color-text-soft) leading-relaxed mb-5 flex-1">
+                    {p.text}
+                  </p>
+                  <div className="pt-4 border-t border-(--color-line)">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-(--color-primary) bg-(--color-primary-light) px-2.5 py-1 rounded-full">
+                      <Sparkles size={10} />
+                      {p.module}
+                    </span>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </motion.div>
         </div>
       </section>
@@ -1271,33 +1267,87 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
 
       {/* ══════════════════════ FOOTER ══════════════════════ */}
       <footer
-        className="border-t border-(--color-line) py-8 sm:py-12 px-4 sm:px-6"
+        className="border-t border-(--color-line) px-4 sm:px-6 relative overflow-hidden"
         style={{ background: "var(--color-surface)" }}
       >
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs">
-                M
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent" />
+        <div className="max-w-7xl mx-auto pt-12 sm:pt-16 pb-8">
+          <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr] mb-10 sm:mb-14">
+            {/* Marka */}
+            <div className="flex flex-col gap-4 max-w-sm">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-indigo-500/25">
+                  M
+                </div>
+                <span className="font-extrabold text-(--color-text-strong) text-lg tracking-tight">
+                  Mimio
+                </span>
               </div>
-              <span className="font-extrabold text-(--color-text-strong) text-lg">
-                Mimio
+              <p className="text-sm text-(--color-text-soft) leading-relaxed">
+                Ergoterapistler için oyun temelli seans yönetimi: danışan
+                takibi, haftalık plan, ilerleme raporları ve kanıta dayalı
+                terapi oyunları — tek platformda.
+              </p>
+              <span className="inline-flex w-fit items-center gap-2 text-xs font-semibold text-(--color-text-muted) px-3 py-1.5 rounded-full border border-(--color-line) bg-(--color-surface-elevated)">
+                <span
+                  className="halo-dot w-1.5 h-1.5 rounded-full"
+                  style={{ color: "#10b981", background: "#10b981" }}
+                />
+                Tüm sistemler çalışıyor
               </span>
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
+
+            {/* Keşfet */}
+            <div className="flex flex-col gap-3">
+              <p className="text-xs font-bold uppercase tracking-widest text-(--color-text-muted)">
+                Keşfet
+              </p>
               {NAV_LINKS.map((l) => (
                 <button
                   type="button"
                   key={l.id}
                   onClick={() => scrollTo(l.id)}
-                  className="text-sm text-(--color-text-muted) hover:text-(--color-text-body) transition-colors"
+                  className="w-fit text-sm text-(--color-text-soft) hover:text-(--color-text-strong) transition-colors text-left"
                 >
                   {l.label}
                 </button>
               ))}
             </div>
-            <p className="text-sm text-(--color-text-muted)">
-              © 2026 Mimio. Tüm hakları saklıdır.
+
+            {/* Başlayın */}
+            <div className="flex flex-col gap-3">
+              <p className="text-xs font-bold uppercase tracking-widest text-(--color-text-muted)">
+                Başlayın
+              </p>
+              <p className="text-sm text-(--color-text-soft) leading-relaxed">
+                Kurulum gerektirmez; ilk seansınızı dakikalar içinde
+                başlatın.
+              </p>
+              <div className="flex flex-col sm:flex-row md:flex-col gap-2.5 mt-1">
+                <button
+                  type="button"
+                  onClick={onRegister}
+                  className="text-sm font-semibold bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-5 py-2.5 rounded-xl hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-200 hover:-translate-y-0.5 text-center"
+                >
+                  Ücretsiz Başla
+                </button>
+                <button
+                  type="button"
+                  onClick={onLogin}
+                  className="text-sm font-semibold text-(--color-text-body) hover:text-(--color-text-strong) px-5 py-2.5 rounded-xl border border-(--color-line) hover:border-(--color-primary)/30 transition-all text-center"
+                >
+                  Giriş Yap
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 border-t border-(--color-line-soft)">
+            <p className="text-xs text-(--color-text-muted)">
+              © {new Date().getFullYear()} Mimio. Tüm hakları saklıdır.
+            </p>
+            <p className="text-xs text-(--color-text-muted)">
+              Çocuklar için tasarlandı, terapistler için geliştirildi.
             </p>
           </div>
         </div>

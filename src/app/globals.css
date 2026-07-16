@@ -223,6 +223,11 @@ a {
   text-decoration: none;
 }
 
+/* Başlıklar satır sonlarında dengeli sarsın (tek kelimelik yetim satır olmasın) */
+h1, h2, h3 {
+  text-wrap: balance;
+}
+
 button, input, textarea, select {
   font: inherit;
   -webkit-appearance: none;
@@ -326,12 +331,6 @@ html[data-theme='light'] .section-games {
 .game-tile-matched {
   opacity: 0.4;
   pointer-events: none;
-}
-
-/* ── Shimmer animation for CTA buttons ── */
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
 }
 
 /* ── Skeleton pulse animation ── */
@@ -1088,32 +1087,6 @@ html[data-theme='light'] .section-games {
 }
 .progress-ring-animated {
   animation: progress-ring 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-/* ── Focus visible styles for accessibility ── */
-:focus-visible {
-  outline: 2px solid var(--color-line-focus);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-
-/* ── Skip to content link (accessibility) ── */
-.skip-to-content {
-  position: absolute;
-  top: -100%;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 8px 16px;
-  background: var(--color-primary);
-  color: white;
-  font-weight: 700;
-  font-size: 14px;
-  border-radius: 0 0 8px 8px;
-  z-index: 10000;
-  transition: top 0.2s ease;
-}
-.skip-to-content:focus {
-  top: 0;
 }
 
 /* ─────────────────────────────────────────────

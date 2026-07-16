@@ -9,6 +9,7 @@ import {
   updateTherapistProfile,
   updateClientProfile,
 } from "@/lib/server/platform-db";
+import { clearSessionCookie, getSessionTherapistId, setSessionCookie } from "@/lib/server/session";
 
 function normalizeText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -18,6 +19,7 @@ function parsePayload(body: unknown):
   | { kind: "therapist"; payload: TherapistCreatePayload }
   | { kind: "client"; payload: ClientCreatePayload }
   | { kind: "login"; payload: LoginPayload }
+  | { kind: "logout"; payload: Record<string, never> }
   | { kind: "archive-client"; payload: { clientId: string } }
   | { kind: "update-therapist"; payload: { therapistId: string; displayName?: string; clinicName?: string; specialty?: string } }
   | { kind: "update-client"; payload: { clientId: string; difficultyLevel?: string; displayName?: string; ageGroup?: string; primaryGoal?: string; supportLevel?: string } }
@@ -34,6 +36,10 @@ function parsePayload(body: unknown):
     const password = normalizeText(candidate.password);
     if (!username || !password) return null;
     return { kind, payload: { username, password } };
+  }
+
+  if (kind === "logout") {
+    return { kind, payload: {} };
   }
 
   if (kind === "therapist") {
@@ -132,7 +138,16 @@ function persistErrorMessage(result: Record<string, unknown>): string {
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const sessionTherapistId = await getSessionTherapistId();
   const overview = await getPlatformOverviewFromDatabase();
+  // Oturum yoksa yalnızca veritabanı durumu döner; profil listeleri sızdırılmaz.
+  if (!sessionTherapistId) {
+    return NextResponse.json({
+      database: overview.database,
+      therapists: [],
+      clients: [],
+    });
+  }
   return NextResponse.json({
     database: overview.database,
     therapists: overview.therapists,
@@ -149,6 +164,9 @@ async function handleLogin(payload: LoginPayload) {
         { ok: false, message: result.message },
         { status: loginStatusCode(reason) }
       );
+    }
+    if (result.profile) {
+      await setSessionCookie(result.profile.id);
     }
     return NextResponse.json({ ok: true, profile: result.profile });
   } catch {
@@ -174,6 +192,11 @@ async function handleProfileCreate(
     return NextResponse.json({ ok: false, message }, { status: persistErrorStatusCode(reason) });
   }
 
+  // Yeni terapist kaydı aynı zamanda oturum açar
+  if (kind === "therapist" && result.profile) {
+    await setSessionCookie(result.profile.id);
+  }
+
   return NextResponse.json({ ok: true, profile: result.profile });
 }
 
@@ -192,6 +215,26 @@ export async function POST(request: Request) {
     return handleLogin(parsed.payload as LoginPayload);
   }
 
+  if (parsed.kind === "logout") {
+    await clearSessionCookie();
+    return NextResponse.json({ ok: true });
+  }
+
+  // Bundan sonraki tüm işlemler geçerli bir oturum gerektirir
+  const sessionTherapistId = await getSessionTherapistId();
+
+  if (parsed.kind === "therapist") {
+    // Yeni terapist kaydı oturum gerektirmez
+    return handleProfileCreate(parsed.kind, parsed.payload);
+  }
+
+  if (!sessionTherapistId) {
+    return NextResponse.json(
+      { ok: false, message: "Bu işlem için oturum açmanız gerekiyor." },
+      { status: 401 }
+    );
+  }
+
   if (parsed.kind === "archive-client") {
     const { clientId } = parsed.payload as { clientId: string };
     await archiveClient(clientId);
@@ -207,6 +250,10 @@ export async function POST(request: Request) {
 
   if (parsed.kind === "update-therapist") {
     const { therapistId, ...fields } = parsed.payload as { therapistId: string; displayName?: string; clinicName?: string; specialty?: string };
+    // Terapist yalnızca kendi profilini güncelleyebilir
+    if (therapistId !== sessionTherapistId) {
+      return NextResponse.json({ ok: false, message: "Yalnızca kendi profilinizi güncelleyebilirsiniz." }, { status: 403 });
+    }
     const profile = await updateTherapistProfile(therapistId, fields);
     if (!profile) return NextResponse.json({ ok: false, message: "Profil güncellenemedi." }, { status: 503 });
     return NextResponse.json({ ok: true, profile });

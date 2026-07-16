@@ -17,23 +17,25 @@ import {
 } from "framer-motion";
 import {
   Activity,
-  Award,
   BarChart3,
   Brain,
-  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
-  Clock,
+  Ear,
+  Eye,
   FileText,
   Gamepad2,
+  Hand,
   HeartPulse,
   LayoutDashboard,
   Microscope,
   Minus,
   Play,
   Plus,
+  Puzzle,
   ShieldCheck,
   Sparkles,
-  Stethoscope,
   Target,
   TrendingUp,
   Users,
@@ -220,150 +222,56 @@ export function TiltCard({ children, max = 9, className, glare = true }: TiltCar
 }
 
 /* ════════════════════════════════════════════════════════════════
-   5. TRUST MARQUEE — scrolling strip of clinic / hospital names
+   5. SKILLS MARQUEE — scrolling strip of therapy skill areas
    ════════════════════════════════════════════════════════════════ */
 
-const TRUSTED_BY = [
-  { name: "Nöro-Pedia Kliniği", kind: "Özel Klinik" },
-  { name: "Anadolu Rehabilitasyon", kind: "Rehabilitasyon" },
-  { name: "ADIM ADIM Terapi", kind: "Çocuk Gelişim" },
-  { name: "Mavi Kalem Merkezi", kind: "Özel Eğitim" },
-  { name: "İstanbul Ergo", kind: "Poliklinik" },
-  { name: "Ege Ergoterapi", kind: "Klinik" },
-  { name: "Başkent Gelişim", kind: "Özel Merkez" },
-  { name: "BeyazPapatya", kind: "Çocuk Kliniği" },
+const SKILL_AREAS = [
+  { name: "İnce Motor Beceriler", kind: "Motor", icon: Hand },
+  { name: "El-Göz Koordinasyonu", kind: "Motor", icon: Target },
+  { name: "Çalışma Belleği", kind: "Bilişsel", icon: Brain },
+  { name: "Görsel Algı", kind: "Bilişsel", icon: Eye },
+  { name: "Seçici Dikkat", kind: "Bilişsel", icon: Zap },
+  { name: "İşitsel Dikkat", kind: "Bilişsel", icon: Ear },
+  { name: "Yürütücü İşlevler", kind: "Bilişsel", icon: Puzzle },
+  { name: "Planlama & Problem Çözme", kind: "Bilişsel", icon: ClipboardList },
 ] as const;
 
 export function TrustMarquee() {
-  const items = [...TRUSTED_BY, ...TRUSTED_BY];
+  const items = [...SKILL_AREAS, ...SKILL_AREAS];
   return (
     <section className="py-12 md:py-16 border-y border-(--color-line) relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex flex-col items-center gap-6">
           <div className="flex items-center gap-2 text-[11px] font-bold tracking-[0.2em] text-(--color-text-muted) uppercase">
             <span className="w-6 h-px bg-(--color-line-strong)" />
-            Türkiye&apos;nin Önde Gelen Klinikleri Tarafından Kullanılıyor
+            Oyunlar ve Aktivitelerle Çalışılan Beceri Alanları
             <span className="w-6 h-px bg-(--color-line-strong)" />
           </div>
           <div className="w-full marquee-viewport marquee-mask">
             <div className="marquee-track slow">
-              {items.map((t, i) => (
-                <div
-                  key={`${t.name}-${i}`}
-                  className="flex items-center gap-3 px-5 py-3 rounded-2xl border border-(--color-line) bg-(--color-surface) hover:border-(--color-primary)/30 transition-colors"
-                >
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-600/20 flex items-center justify-center border border-(--color-line)">
-                    <Stethoscope size={15} className="text-(--color-primary)" />
+              {items.map((t, i) => {
+                const Icon = t.icon;
+                return (
+                  <div
+                    key={`${t.name}-${i}`}
+                    className="flex items-center gap-3 px-5 py-3 rounded-2xl border border-(--color-line) bg-(--color-surface) hover:border-(--color-primary)/30 transition-colors"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-600/20 flex items-center justify-center border border-(--color-line)">
+                      <Icon size={15} className="text-(--color-primary)" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold text-(--color-text-strong) tracking-tight whitespace-nowrap">
+                        {t.name}
+                      </span>
+                      <span className="text-[10px] font-semibold text-(--color-text-muted) tracking-wider uppercase whitespace-nowrap">
+                        {t.kind}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-(--color-text-strong) tracking-tight whitespace-nowrap">
-                      {t.name}
-                    </span>
-                    <span className="text-[10px] font-semibold text-(--color-text-muted) tracking-wider uppercase whitespace-nowrap">
-                      {t.kind}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   6. METRICS BAND — giant count-up numbers with scroll reveal
-   ════════════════════════════════════════════════════════════════ */
-
-const METRICS = [
-  { value: 92, suffix: "%", label: "Seans Katılım Artışı", icon: HeartPulse, color: "#f472b6" },
-  { value: 4.9, suffix: "/5", label: "Klinisyen Memnuniyeti", icon: Award, color: "#fbbf24" },
-  { value: 3100, suffix: "+", label: "Tamamlanan Seans", icon: ClipboardList, color: "#34d399" },
-  { value: 64, suffix: "%", label: "Raporlama Süresi Azalması", icon: Clock, color: "#22d3ee" },
-] as const;
-
-function AnimatedNumber({
-  to,
-  duration = 1400,
-  decimals = 0,
-}: { to: number; duration?: number; decimals?: number }) {
-  const ref = useRef<HTMLSpanElement | null>(null);
-  const [val, setVal] = useState(0);
-  const started = useRef(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((en) => {
-          if (en.isIntersecting && !started.current) {
-            started.current = true;
-            const t0 = performance.now();
-            const step = (now: number) => {
-              const p = Math.min(1, (now - t0) / duration);
-              const eased = 1 - Math.pow(1 - p, 3);
-              setVal(to * eased);
-              if (p < 1) requestAnimationFrame(step);
-            };
-            requestAnimationFrame(step);
-          }
-        });
-      },
-      { threshold: 0.3 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [to, duration]);
-
-  return <span ref={ref}>{val.toFixed(decimals)}</span>;
-}
-
-export function MetricsBand() {
-  return (
-    <section className="py-16 md:py-24 px-4 sm:px-6 relative">
-      <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5">
-          {METRICS.map((m) => {
-            const Icon = m.icon;
-            const decimals = Number.isInteger(m.value) ? 0 : 1;
-            return (
-              <motion.div
-                key={m.label}
-                initial={{ opacity: 0, y: 28 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                className="glass rounded-3xl p-5 sm:p-7 relative overflow-hidden group"
-              >
-                <div
-                  className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-20 group-hover:opacity-40 transition-opacity blur-3xl"
-                  style={{ background: m.color }}
-                />
-                <div
-                  className="w-11 h-11 rounded-xl flex items-center justify-center mb-4"
-                  style={{ background: `${m.color}1f`, border: `1px solid ${m.color}33` }}
-                >
-                  <Icon size={19} style={{ color: m.color }} />
-                </div>
-                <div className="flex items-baseline gap-0.5">
-                  <span
-                    className="text-4xl sm:text-5xl font-extrabold text-(--color-text-strong) tracking-tight tabular-nums leading-none"
-                  >
-                    <AnimatedNumber to={m.value} decimals={decimals} />
-                  </span>
-                  <span className="text-2xl sm:text-3xl font-extrabold text-(--color-text-strong)/70">
-                    {m.suffix}
-                  </span>
-                </div>
-                <p className="mt-3 text-sm text-(--color-text-soft) leading-relaxed">
-                  {m.label}
-                </p>
-              </motion.div>
-            );
-          })}
         </div>
       </div>
     </section>
@@ -391,14 +299,14 @@ const WALKTHROUGH = [
   },
   {
     title: "Seansı Oyunlaştırın",
-    body: "Kanıta dayalı oyunları başlatın. Zorluk seviyesi otomatik ayarlanır, veriler anlık kaydedilir.",
+    body: "Yedi terapi oyunundan birini başlatın. Skorlar anlık kaydedilir, zorluk danışan profiline göre seçilir.",
     icon: Gamepad2,
     accent: "#22d3ee",
     preview: "game",
   },
   {
     title: "Gelişimi Raporlayın",
-    body: "Aileyle paylaşılabilir PDF ve grafiklerle ilerlemeyi görselleştirin. Yapay zekâ destekli içgörüler.",
+    body: "Yazdırılabilir raporlar ve grafiklerle ilerlemeyi görselleştirin; seans verilerini CSV olarak dışa aktarın.",
     icon: BarChart3,
     accent: "#34d399",
     preview: "report",
@@ -813,10 +721,10 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
    ════════════════════════════════════════════════════════════════ */
 
 const COMPARISON = [
-  { label: "Seans kayıtları", mimio: "Otomatik dijital", traditional: "El yazısı / kayıp riski" },
-  { label: "Veri görselleştirme", mimio: "Gerçek zamanlı grafik", traditional: "Manuel Excel" },
-  { label: "Çocuk katılımı", mimio: "Oyun tabanlı %92 artış", traditional: "Standart materyal" },
-  { label: "Aile paylaşımı", mimio: "Tek tık PDF + link", traditional: "Sözlü özet" },
+  { label: "Seans kayıtları", mimio: "Otomatik dijital kayıt", traditional: "El yazısı / kayıp riski" },
+  { label: "Veri görselleştirme", mimio: "Anlık skor grafikleri", traditional: "Manuel Excel" },
+  { label: "Çocuk katılımı", mimio: "Oyun tabanlı etkileşim", traditional: "Standart materyal" },
+  { label: "Aile paylaşımı", mimio: "Yazdırılabilir rapor + CSV", traditional: "Sözlü özet" },
   { label: "Klinik standart", mimio: "Kanıta dayalı domainler", traditional: "Kişisel tercih" },
   { label: "Raporlama süresi", mimio: "Dakikalar içinde", traditional: "Saatler" },
 ] as const;
@@ -916,27 +824,27 @@ export function ComparisonSection() {
 const FAQ = [
   {
     q: "Mimio'yu kullanmak için teknik bilgiye ihtiyacım var mı?",
-    a: "Hayır. Arayüz klinik pratiğinizle uyumlu, sürükleyip bırak kadar sade. Hesap açtıktan 5 dakika içinde ilk seansınızı başlatabilirsiniz.",
+    a: "Hayır. Arayüz klinik pratiğinizle uyumlu ve sade tutuldu. Hesap açtıktan dakikalar içinde danışan ekleyip ilk oyun seansınızı başlatabilirsiniz.",
   },
   {
     q: "Danışan verileri nasıl korunuyor?",
-    a: "Veriler KVKK uyumlu, AB veri merkezlerinde, end-to-end şifreleme ve düzenli yedekleme ile korunur. Yetkilendirme bazlı erişim kontrolü mevcuttur.",
+    a: "Veriler şifreli (TLS) bağlantıyla bulut veritabanında saklanır; şifreler geri döndürülemez şekilde hash'lenir ve tüm kayıt işlemleri oturum doğrulaması gerektirir. Danışan profillerinde yalnızca çalışmanız için gereken asgari bilgileri tutmanız yeterlidir.",
   },
   {
     q: "Oyunlar hangi yaş grubuna uygun?",
-    a: "4 yaşından 14 yaşına kadar çocuklar için tasarlandı. Her oyun için yaşa duyarlı zorluk algoritması otomatik ayarlama yapar.",
+    a: "Oyunlar okul öncesi ve okul çağındaki çocuklarla yapılan seanslar düşünülerek tasarlandı. Her danışan için kolay, orta veya zor zorluk seviyesi seçebilir; performansa göre seviye önerisi alabilirsiniz.",
   },
   {
     q: "Raporları aileyle nasıl paylaşırım?",
-    a: "PDF olarak indirebilir, güvenli link ile gönderebilir veya doğrudan e-posta ile paylaşabilirsiniz. Tüm paylaşımlar erişim süresiyle sınırlandırılabilir.",
+    a: "Rapor ekranından yazdırılabilir bir gelişim özeti oluşturabilir, seans ve hedef verilerini CSV olarak dışa aktarabilirsiniz.",
   },
   {
     q: "Ücretlendirme modeli nasıl?",
-    a: "Başlangıç planı ücretsizdir ve sınırsız danışan içerir. Pro planlar gelişmiş raporlama ve ekip çalışması özellikleri sunar.",
+    a: "Mimio şu anda tamamen ücretsiz ve sınırsız danışan içeriyor. İleride ücretli özellikler eklenirse mevcut kullanıcılar önceden bilgilendirilecek.",
   },
   {
-    q: "Kendi oyunumu entegre edebilir miyim?",
-    a: "Pro+ planlarda açık API ile kendi dijital araçlarınızı veya dış ölçek testlerini Mimio ekosistemine bağlayabilirsiniz.",
+    q: "Kendi oyunumu veya ölçeğimi entegre edebilir miyim?",
+    a: "Şu an platformdaki yedi oyun ve 127 hazır aktivite kullanılabilir durumda; dış araç entegrasyonu yol haritamızda. İhtiyacınızı bize iletirseniz önceliklendirirken dikkate alırız.",
   },
 ] as const;
 
@@ -1087,13 +995,15 @@ interface GameEntry {
   color: string;
   icon: typeof Brain;
 }
+// Platformdaki gerçek 7 oyun (GAME_LABELS ile birebir aynı adlar)
 const EXTENDED_GAMES: readonly GameEntry[] = [
-  { key: "memory", label: "Sıra Hafızası", area: "Çalışma Belleği", desc: "Sırayla yanan nesneleri hatırlayarak çalışma belleğini güçlendir.", color: "#6366f1", icon: Brain },
-  { key: "pulse", label: "Mavi Nabız", area: "El-Göz Koordinasyonu", desc: "Hedeflere dokunarak el-göz koordinasyonunu geliştir.", color: "#8b5cf6", icon: Target },
-  { key: "scan", label: "Hedef Tarama", area: "Görsel Algı", desc: "Görsel tarama ve seçici dikkat becerilerini destekle.", color: "#06b6d4", icon: Activity },
-  { key: "sort", label: "Renk Kulesi", area: "Problem Çözme", desc: "Renkleri kurala göre sıralayarak yürütücü işlevleri geliştir.", color: "#f59e0b", icon: Sparkles },
-  { key: "echo", label: "Yankı Seanslarıı", area: "İşitsel Dikkat", desc: "Sesleri doğru sırayla tekrar et, işitsel hafızayı pekiştir.", color: "#ec4899", icon: HeartPulse },
-  { key: "path", label: "Yol Bul", area: "Planlama", desc: "Labirent benzeri patikalarda sıralı plan becerilerini çalış.", color: "#10b981", icon: Target },
+  { key: "memory", label: "Sıra Hafızası", area: "Çalışma Belleği", desc: "Sırayla yanan kutuları hatırlayıp aynı sırayla tekrar et; çalışma belleğini güçlendir.", color: "#6366f1", icon: Brain },
+  { key: "pairs", label: "Kart Eşle", area: "Görsel Hafıza", desc: "Kapalı kartları açarak eşleşen çiftleri bul; görsel hafızayı pekiştir.", color: "#f59e0b", icon: Sparkles },
+  { key: "pulse", label: "Mavi Nabız", area: "El-Göz Koordinasyonu", desc: "Beliren hedeflere hızla dokunarak el-göz koordinasyonunu geliştir.", color: "#8b5cf6", icon: Target },
+  { key: "route", label: "Komut Rotası", area: "Yön & Planlama", desc: "Gösterilen yön komutlarını doğru sırayla uygula; işlem hızını artır.", color: "#10b981", icon: Activity },
+  { key: "difference", label: "Fark Avcısı", area: "Görsel Ayrım", desc: "Benzer kartlar arasından farklı olanı bul; görsel ayrım becerisini destekle.", color: "#ec4899", icon: Eye },
+  { key: "scan", label: "Hedef Tarama", area: "Seçici Dikkat", desc: "Hedef simgeyi ızgara içinde tara ve bul; seçici dikkati çalıştır.", color: "#06b6d4", icon: Zap },
+  { key: "logic", label: "Dizi Mantık", area: "Yürütücü İşlevler", desc: "Matristeki örüntüyü çöz, eksik hücreyi tamamla; akıl yürütmeyi geliştir.", color: "#22d3ee", icon: Puzzle },
 ];
 
 export function GamesCarousel({ onLogin }: { onLogin: () => void }) {
@@ -1141,7 +1051,7 @@ export function GamesCarousel({ onLogin }: { onLogin: () => void }) {
               aria-label="Önceki"
               className="w-11 h-11 rounded-full flex items-center justify-center border border-(--color-games-card-border) bg-(--color-games-badge-bg) text-(--color-games-text) hover:border-(--color-primary)/40 transition-colors"
             >
-              <ChevronDown size={16} className="-rotate-90" />
+              <ChevronLeft size={16} />
             </button>
             <button
               type="button"
@@ -1149,13 +1059,13 @@ export function GamesCarousel({ onLogin }: { onLogin: () => void }) {
               aria-label="Sonraki"
               className="w-11 h-11 rounded-full flex items-center justify-center border border-(--color-games-card-border) bg-(--color-games-badge-bg) text-(--color-games-text) hover:border-(--color-primary)/40 transition-colors"
             >
-              <ChevronDown size={16} className="rotate-[-90deg] scale-x-[-1]" />
+              <ChevronRight size={16} />
             </button>
           </div>
         </div>
 
         <div ref={scrollerRef} className="h-snap">
-          {EXTENDED_GAMES.map((g) => {
+          {EXTENDED_GAMES.map((g, gi) => {
             const Icon = g.icon;
             return (
               <button
@@ -1170,7 +1080,7 @@ export function GamesCarousel({ onLogin }: { onLogin: () => void }) {
                     background: `radial-gradient(circle at 30% 20%, ${g.color}33, transparent 60%), linear-gradient(to bottom right, var(--color-games-tile-from), var(--color-games-tile-to))`,
                   }}
                 >
-                  <span className="beam-sweep" style={{ animationDelay: `${Math.random() * 2}s` }} />
+                  <span className="beam-sweep" style={{ animationDelay: `${(gi * 0.7) % 2}s` }} />
                   <motion.div
                     whileHover={{ scale: 1.08, rotate: -2 }}
                     transition={{ duration: 0.35 }}
@@ -1198,7 +1108,7 @@ export function GamesCarousel({ onLogin }: { onLogin: () => void }) {
                   </p>
                   <div className="flex items-center gap-2 text-xs font-bold text-(--color-primary) group-hover:translate-x-1 transition-transform">
                     Seansı başlat
-                    <ChevronDown size={13} className="-rotate-90" />
+                    <ChevronRight size={13} />
                   </div>
                 </div>
               </button>
