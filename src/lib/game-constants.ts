@@ -8,6 +8,7 @@ import type {
   GameKey,
   GameTab,
   GameCategory,
+  GameCategoryKey,
   Scoreboard,
   SessionSetPreset,
   SymbolVariant,
@@ -81,6 +82,27 @@ export const GAME_CATEGORIES: readonly GameCategory[] = [
   { key: "visualSkills", title: "Görsel Algı Oyunları", kicker: "Algı alanı", icon: "◌", description: "Görsel ayrım, tarama ve seçici dikkat görevleri aynı görsel sistem içinde ilerler." },
   { key: "cognitiveSkills", title: "Bilişsel Beceri Oyunları", kicker: "Mantık alanı", icon: "◈", description: "Tümevarım, örüntü çözme ve soyut akıl yürütme görevleri problem çözme kapasitesini artırır." },
 ];
+
+/**
+ * Beceri alanı vurgu renkleri — tek kaynak.
+ *
+ * Kategori kartı, panel seans akışı, oyun dağılımı çubuğu ve rapor
+ * grafikleri aynı beceri alanını gösteriyorsa aynı rengi taşımalı. Bu
+ * eşleme daha önce dört ayrı dosyada elle yazılıyordu ve birbirini
+ * tutmuyordu (ör. "pairs" bir yerde turkuaz, başka yerde maviydi).
+ */
+export const CATEGORY_ACCENTS: Record<GameCategoryKey, string> = {
+  memorySkills: "var(--color-domain-memory)",
+  motorSkills: "var(--color-domain-motor)",
+  visualSkills: "var(--color-domain-visual)",
+  cognitiveSkills: "var(--color-domain-cognitive)",
+};
+
+/** Bir oyunun beceri alanı rengi. Bilinmeyen anahtarda marka mürekkebi. */
+export function gameAccent(gameKey: string): string {
+  const tab = GAME_TABS.find((g) => g.key === gameKey);
+  return tab ? CATEGORY_ACCENTS[tab.category] : "var(--color-primary)";
+}
 
 // ── Empty / Default Scoreboard ──
 export const EMPTY_SCOREBOARD: Scoreboard = {

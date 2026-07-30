@@ -1,27 +1,30 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Instrument_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Schibsted_Grotesk, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
 /*
- * Üç rol, üç ses:
- *   · Bricolage Grotesque — başlıklar. Hümanist-endüstriyel, hafif tuhaf;
- *     sayfaya karakter veren tek öge. Değişken opsz ekseniyle büyük
- *     boyutlarda sıkışır, küçükte açılır.
- *   · Instrument Sans — arayüz ve gövde. Sessiz, dar, Türkçe aksanlarda net.
+ * İki aile, üç ses.
+ *
+ * Önceki kurgu üç aile taşıyordu (Bricolage Grotesque + Instrument Sans +
+ * IBM Plex Mono). Bricolage'ın hafif tuhaf harf biçimleri klinik bir ölçüm
+ * aracının tonuyla çekişiyordu: sayfa "oyuncu" görünüyor ama ürün bir kayıt
+ * defteri. Tek bir grotesk aileye indirildi.
+ *
+ *   · Schibsted Grotesk — başlıklardan düğme etiketine kadar her şey.
+ *     Değişken ekseni 400-900; kontrast ağırlık, boyut ve harf aralığından
+ *     geliyor, ikinci bir aileden değil. Haber-editoryal kökenli: dar
+ *     apertürleri sıkı başlıkta karakter veriyor, 400'de gövde metni olarak
+ *     sessizleşiyor. latin-ext ile Türkçe aksanlar tam.
  *   · IBM Plex Mono — yalnızca sayısal okumalar. Skor, süre, persentil ve
  *     span değerleri gövde metninden ayrılmalı; klinik veri hizalı okunur.
+ *
+ * Tek ailenin iki değişkeni ayrı ayrı yükleniyor: başlıklar 600-900,
+ * gövde 400-600. Bu, `font-synthesis` kaynaklı sahte kalınlığı önler.
  */
-const display = Bricolage_Grotesque({
+const grotesk = Schibsted_Grotesk({
   subsets: ["latin", "latin-ext"],
-  weight: ["600", "700", "800"],
-  variable: "--font-display-face",
-  display: "swap",
-});
-
-const sans = Instrument_Sans({
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800", "900"],
   variable: "--font-body-face",
   display: "swap",
 });
@@ -80,7 +83,7 @@ export default function RootLayout({ children }: { readonly children: React.Reac
   return (
     // suppressHydrationWarning: aşağıdaki inline script, React hidrasyondan
     // önce data-theme'i yazar; bu kasıtlı sunucu/istemci farkıdır.
-    <html lang="tr" suppressHydrationWarning className={`${display.variable} ${sans.variable} ${mono.variable}`}>
+    <html lang="tr" suppressHydrationWarning className={`${grotesk.variable} ${mono.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('mimio-theme');var v=(t==='dark'||t==='high-contrast')?t:(t==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):'light');document.documentElement.setAttribute('data-theme',v);}catch(e){document.documentElement.setAttribute('data-theme','light');}` }} />
         <link rel="manifest" href="/manifest.json" />

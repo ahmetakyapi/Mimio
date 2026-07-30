@@ -132,36 +132,33 @@ export function SessionReminderBanner({ clients, sessions, onSelectClient }: Ses
   const visibleReminders = showAll ? reminders : reminders.slice(0, 2);
 
   return (
-    <div className="rounded-2xl border overflow-hidden" style={{
-      background: "linear-gradient(135deg, rgba(184, 118, 58,0.04), rgba(168, 57, 44,0.02))",
-      borderColor: "rgba(184, 118, 58,0.15)",
-    }}>
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "rgba(184, 118, 58,0.12)" }}>
-              <Bell size={14} style={{ color: "#b8763a" }} />
-            </div>
-            <div>
-              <h4 className="text-xs font-extrabold text-(--color-text-strong) m-0">Seans Hatırlatıcı</h4>
-              <p className="text-[10px] text-(--color-text-muted) m-0">{reminders.length} danışan için aksiyon gerekiyor</p>
-            </div>
-          </div>
-          <button type="button" onClick={handleDismissAll} className="text-[10px] font-bold text-(--color-text-muted) bg-transparent border-none cursor-pointer hover:text-(--color-text-body)">
-            Tümünü kapat
-          </button>
+    <div className="rounded-2xl overflow-hidden" style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
+      <div className="px-4 py-3 flex items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--color-line)" }}>
+        <div className="flex items-center gap-2">
+          <Bell size={13} style={{ color: "var(--color-signal)" }} />
+          <span className="text-[11px] font-bold uppercase tracking-wider text-(--color-text-muted)">
+            Seans Hatırlatıcı
+          </span>
+          <span className="numeral text-[11px] text-(--color-text-muted)">{reminders.length}</span>
         </div>
+        <button type="button" onClick={handleDismissAll} className="text-[11px] font-semibold text-(--color-text-muted) bg-transparent border-none cursor-pointer hover:text-(--color-text-body)">
+          Tümünü kapat
+        </button>
+      </div>
 
+      <div className="p-4">
         <div className="space-y-2">
           {visibleReminders.map(reminder => (
-            <div key={reminder.clientId} className="flex items-center gap-3 px-3 py-2.5 rounded-xl" style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-extrabold text-white shrink-0"
-                style={{ background: reminder.type === "inactive" ? "linear-gradient(135deg, #b8763a, #8f5626)" : "linear-gradient(135deg, #2a72ac, #1d5a8c)" }}>
-                {reminder.clientName[0]?.toUpperCase() ?? "?"}
+            <div key={reminder.clientId} className="flex items-center gap-3 px-3 py-2.5 rounded-xl" style={{ background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0"
+                style={reminder.type === "inactive"
+                  ? { background: "color-mix(in srgb, var(--color-signal) 14%, transparent)", color: "var(--color-signal)" }
+                  : { background: "var(--color-primary-light)", color: "var(--color-primary)" }}>
+                {reminder.clientName[0]?.toLocaleUpperCase("tr") ?? "?"}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-(--color-text-strong) m-0 truncate">{reminder.clientName}</p>
-                <p className="text-[10px] text-(--color-text-muted) m-0">
+                <p className="text-sm font-semibold text-(--color-text-strong) m-0 truncate">{reminder.clientName}</p>
+                <p className="text-[11px] text-(--color-text-muted) m-0 mt-0.5">
                   {reminder.daysSinceLastSession === -1
                     ? "Henüz seans yapılmadı"
                     : `${reminder.daysSinceLastSession} gündür seans yok${reminder.lastGamePlayed ? ` · Son: ${reminder.lastGamePlayed}` : ""}`
@@ -170,8 +167,8 @@ export function SessionReminderBanner({ clients, sessions, onSelectClient }: Ses
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 <button type="button" onClick={() => { onSelectClient(reminder.clientId); }}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center border-none cursor-pointer"
-                  style={{ background: "rgba(29, 90, 140,0.1)", color: "#4a95cc" }}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center border-none cursor-pointer transition-colors hover:bg-(--color-primary) hover:text-(--color-text-inverse)"
+                  style={{ background: "var(--color-primary-light)", color: "var(--color-primary)" }}
                   title="Seans başlat">
                   <ChevronRight size={14} />
                 </button>

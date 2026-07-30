@@ -49,40 +49,6 @@ const prefersReduced =
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ════════════════════════════════════════════════════════════════
-   1. CURSOR SPOTLIGHT — soft glow following mouse (desktop only)
-   ════════════════════════════════════════════════════════════════ */
-
-export function CursorSpotlight() {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [enabled, setEnabled] = useState(false);
-  const x = useSpring(0, { stiffness: 120, damping: 20, mass: 0.5 });
-  const y = useSpring(0, { stiffness: 120, damping: 20, mass: 0.5 });
-
-  useEffect(() => {
-    const hasFinePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-    if (!hasFinePointer || prefersReduced) return;
-    setEnabled(true);
-    const handle = (e: MouseEvent) => {
-      x.set(e.clientX);
-      y.set(e.clientY);
-    };
-    window.addEventListener("mousemove", handle, { passive: true });
-    return () => window.removeEventListener("mousemove", handle);
-  }, [x, y]);
-
-  if (!enabled) return null;
-
-  return (
-    <motion.div
-      ref={ref}
-      className="cursor-spotlight"
-      style={{ left: x, top: y }}
-      aria-hidden
-    />
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
    2. SIDE SECTION NAV DOTS (desktop only)
    ════════════════════════════════════════════════════════════════ */
 
@@ -257,7 +223,8 @@ export function TrustMarquee() {
                     key={`${t.name}-${i}`}
                     className="flex items-center gap-3 px-5 py-3 rounded-2xl border border-(--color-line) bg-(--color-surface) hover:border-(--color-primary)/30 transition-colors"
                   >
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#2a72ac]/20 to-[#1d5a8c]/20 flex items-center justify-center border border-(--color-line)">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-(--color-line)"
+                      style={{ background: "var(--color-primary-light)" }}>
                       <Icon size={15} className="text-(--color-primary)" />
                     </div>
                     <div className="flex flex-col">
@@ -348,7 +315,6 @@ export function StickyWalkthrough() {
       <div ref={ref} style={{ height: `${steps * 58}vh` }}>
         <div className="sticky top-0 h-screen max-h-[46rem] flex items-center overflow-hidden">
           <div className="absolute inset-0 -z-10 dot-grid opacity-70" />
-          <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_60%_50%_at_50%_50%,rgba(29, 90, 140,0.1),transparent_70%)]" />
 
           <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             {/* Left — step list */}
@@ -360,7 +326,7 @@ export function StickyWalkthrough() {
               <h2 className="text-3xl md:text-5xl font-extrabold text-(--color-text-strong) leading-[1.05] tracking-tight">
                 Dört Adımda
                 <br />
-                <span className="text-gradient-shift">Dijital Terapi Akışı</span>
+                <span className="accent-line">Dijital Terapi Akışı</span>
               </h2>
 
               <div className="mt-4 flex flex-col gap-2">
@@ -438,7 +404,6 @@ export function StickyWalkthrough() {
 
             {/* Right — animated preview */}
             <div className="relative">
-              <div className="absolute -inset-10 bg-[radial-gradient(ellipse_60%_50%_at_60%_50%,rgba(29, 90, 140,0.18),transparent)] blur-3xl pointer-events-none" />
               <div
                 className="relative glass-strong rounded-3xl overflow-hidden aspect-[4/3]"
                 style={{
@@ -754,7 +719,6 @@ export function ComparisonSection() {
   return (
     <section id="comparison" className="section relative overflow-hidden">
       <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_50%,rgba(42, 114, 172,0.06),transparent)]" />
       </div>
       <div className="shell" style={{ maxWidth: "68rem" }}>
         <div className="text-center mb-12 md:mb-16">
@@ -764,7 +728,7 @@ export function ComparisonSection() {
           </span>
           <h2 className="text-3xl md:text-5xl font-extrabold text-(--color-text-strong) leading-tight mb-4">
             Geleneksel vs.{" "}
-            <span className="bg-gradient-to-r from-[#4a95cc] to-[#8ba0b0] bg-clip-text text-transparent">
+            <span className="accent-line">
               Dijital Ergoterapi
             </span>
           </h2>
@@ -780,9 +744,9 @@ export function ComparisonSection() {
               Özellik
             </div>
             <div className="p-4 sm:p-6 relative">
-              <div className="absolute inset-0 bg-gradient-to-b from-[#2a72ac]/10 to-transparent" />
-              <div className="relative flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#2a72ac] to-[#1d5a8c] flex items-center justify-center text-white font-bold text-xs">
+                            <div className="relative flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs"
+                  style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }}>
                   M
                 </div>
                 <span className="font-extrabold text-(--color-text-strong) tracking-tight">
@@ -813,8 +777,7 @@ export function ComparisonSection() {
                 {row.label}
               </div>
               <div className="p-4 sm:p-6 relative">
-                <div className="absolute inset-0 bg-gradient-to-b from-[#2a72ac]/5 to-transparent" />
-                <div className="relative flex items-start gap-2">
+                                <div className="relative flex items-start gap-2">
                   <ShieldCheck
                     size={16}
                     className="shrink-0 mt-0.5 text-[#6fb87f]"
@@ -882,7 +845,7 @@ export function FAQSection() {
           <h2 className="text-3xl md:text-5xl font-extrabold text-(--color-text-strong) leading-tight mb-4">
             Aklınızdaki Soruları
             <br />
-            <span className="bg-gradient-to-r bg-[#4a95cc] bg-clip-text text-transparent">
+            <span className="accent-line">
               Hızlıca Yanıtlayalım
             </span>
           </h2>
@@ -1013,7 +976,8 @@ export function FloatingCTA({ onRegister }: FloatingCTAProps) {
           <button
             type="button"
             onClick={onRegister}
-            className="flex items-center gap-1.5 text-xs font-bold bg-gradient-to-r from-[#2a72ac] to-[#1d5a8c] text-white px-4 py-2 rounded-full hover:shadow-lg hover:shadow-[#2a72ac]/40 transition-shadow"
+            className="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-full transition-shadow hover:shadow-(--shadow-md)"
+            style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }}
           >
             Hesap oluştur
             <Zap size={12} />
@@ -1102,7 +1066,7 @@ export function GamesCarousel({ onLogin }: { onLogin: () => void }) {
             <h2 className="text-3xl md:text-5xl font-extrabold text-(--color-games-text) leading-tight max-w-lg">
               Her Oyun Bir
               <br />
-              <span className="text-gradient-shift">Gelişim Hedefi</span>
+              <span className="accent-line">Gelişim Hedefi</span>
             </h2>
           </div>
           <div className="flex items-center gap-3">
@@ -1233,13 +1197,25 @@ export function useParallax(scrollYProgress: MotionValue<number>, distance: numb
 }
 
 /* ════════════════════════════════════════════════════════════════
-  14. AURORA HERO BACKDROP — layered animated mesh
+  14. KAHRAMAN ZEMİNİ — milimetrik kâğıt + film graini
    ════════════════════════════════════════════════════════════════ */
 
-export function AuroraBackdrop() {
+/**
+ * Eski adı AuroraBackdrop'tı: sürekli hareket eden, 60px bulanık üç renkli
+ * bir mesh. Bej zeminde atmosfer değil leke okunuyordu. Yerine ölçüm
+ * kâğıdının kendisi kondu — sabit, keskin, kılcal.
+ */
+export function PaperBackdrop() {
   return (
-    <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-      <span className="aurora-layer" />
+    /*
+      `-z-10` DEĞİL. Sarmalayıcı `#top` konumlandırılmış ama yığın bağlamı
+      açmıyor; negatif z-index'li çocuk bu yüzden `#top`'un kendi zemin
+      renginin de arkasına düşüyor ve hiç görünmüyordu (eski aurora
+      katmanının aylardır görünmemesinin sebebi de buydu). Katman z-0'da
+      duruyor, içerik DOM'da sonra geldiği için üstte kalıyor.
+    */
+    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+      <span className="paper-grid" />
       <span className="noise-overlay" />
     </div>
   );

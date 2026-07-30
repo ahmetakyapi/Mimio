@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { TrendingUp, TrendingDown, Minus, Calendar, Users, Gamepad2, Target, Clock, BarChart3 } from "lucide-react";
 import type { RecentSessionEntry, PlatformGameKey } from "@/lib/platform-data";
 import { GAME_LABELS } from "@/lib/platform-data";
+import { gameAccent } from "@/lib/game-constants";
 import { formatDuration } from "@/lib/format-utils";
 
 interface DashboardAnalyticsProps {
@@ -37,15 +38,26 @@ export function WeeklySummaryCard({ sessions, totalClients }: DashboardAnalytics
     thisWeek.forEach(s => { gameCounts[s.gameKey] = (gameCounts[s.gameKey] ?? 0) + 1; });
     const topGame = Object.entries(gameCounts).sort((a, b) => b[1] - a[1])[0];
 
-    // Daily breakdown (last 7 days)
-    const dailyCounts: number[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().slice(0, 10);
-      dailyCounts.push(thisWeek.filter(s => s.playedAt.startsWith(dateStr)).length);
-    }
-    const maxDaily = Math.max(...dailyCounts, 1);
+    /* Günlük dağılım — son 7 gün.
+       Önceki sürüm günü `toISOString().slice(0,10)` ile eşliyordu; bu UTC
+       tarihi, `setDate` ise yerel tarih üretiyor. UTC+3'te gece yarısından
+       sonraki seanslar bir önceki güne düşüyordu. Artık karşılaştırma yerel
+       gün sınırlarıyla yapılıyor ve etiket de aynı Date nesnesinden gelir. */
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const start = new Date(now);
+      start.setHours(0, 0, 0, 0);
+      start.setDate(start.getDate() - (6 - i));
+      const end = new Date(start);
+      end.setDate(end.getDate() + 1);
+      return {
+        label: start.toLocaleDateString("tr-TR", { weekday: "short" }),
+        count: sessions.filter((s) => {
+          const t = new Date(s.playedAt);
+          return t >= start && t < end;
+        }).length,
+      };
+    });
+    const maxDaily = Math.max(...days.map((d) => d.count), 1);
 
     return {
       thisWeekCount: thisWeek.length,
@@ -55,118 +67,112 @@ export function WeeklySummaryCard({ sessions, totalClients }: DashboardAnalytics
       thisWeekClients,
       thisWeekDuration,
       topGame: topGame ? { key: topGame[0] as PlatformGameKey, count: topGame[1] } : null,
-      dailyCounts,
+      days,
       maxDaily,
     };
   }, [sessions]);
-
-  const dayLabels = ["Pt", "Sa", "Ça", "Pe", "Cu", "Ct", "Pz"];
-  const today = new Date().getDay(); // 0=Sun
-  const reorderedLabels = [...Array(7)].map((_, i) => {
-    const dayIndex = (today - 6 + i + 7) % 7;
-    return dayLabels[dayIndex === 0 ? 6 : dayIndex - 1]; // Convert JS day (0=Sun) to TR day
-  });
 
   const sessionDelta = analytics.lastWeekCount > 0
     ? Math.round(((analytics.thisWeekCount - analytics.lastWeekCount) / analytics.lastWeekCount) * 100)
     : 0;
 
   return (
-    <div className="rounded-2xl sm:rounded-3xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}>
-      {/* Header gradient bar */}
-      <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #1d5a8c, #2a72ac, #5b7183)" }} />
-
-      <div className="p-4 sm:p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "rgba(29, 90, 140,0.12)" }}>
-              <Calendar size={15} style={{ color: "#4a95cc" }} />
-            </div>
-            <div>
-              <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0">Haftalık Özet</h3>
-              <p className="text-[10px] text-(--color-text-muted) m-0">Son 7 gün</p>
-            </div>
-          </div>
-          {sessionDelta !== 0 && (
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold" style={{
-              background: sessionDelta > 0 ? "rgba(63, 125, 79,0.1)" : "rgba(168, 57, 44,0.1)",
-              color: sessionDelta > 0 ? "#3f7d4f" : "#a8392c",
-              border: `1px solid ${sessionDelta > 0 ? "rgba(63, 125, 79,0.2)" : "rgba(168, 57, 44,0.2)"}`,
-            }}>
-              {sessionDelta > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-              {sessionDelta > 0 ? "+" : ""}{sessionDelta}%
-            </div>
-          )}
+    <div className="rounded-2xl overflow-hidden" style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
+      <div className="px-4 py-3 flex items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--color-line)" }}>
+        <div className="flex items-center gap-2">
+          <Calendar size={13} className="text-(--color-text-muted)" />
+          <span className="text-[11px] font-bold uppercase tracking-wider text-(--color-text-muted)">Haftalık Özet</span>
         </div>
-
-        {/* Quick stats grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-          {[
-            { icon: Gamepad2, label: "Seans", value: analytics.thisWeekCount, color: "#1d5a8c", bg: "rgba(29, 90, 140,0.08)" },
-            { icon: Users, label: "Aktif Danışan", value: analytics.thisWeekClients, color: "#2a72ac", bg: "rgba(42, 114, 172,0.08)" },
-            { icon: Target, label: "Ort. Skor", value: analytics.thisWeekAvg, color: "#5b7183", bg: "rgba(91, 113, 131,0.08)" },
-            { icon: Clock, label: "Toplam Süre", value: formatDuration(analytics.thisWeekDuration), color: "#3f7d4f", bg: "rgba(63, 125, 79,0.08)" },
-          ].map(({ icon: Icon, label, value, color, bg }) => (
-            <div key={label} className="rounded-xl p-3 text-center" style={{ background: bg, border: `1px solid ${color}15` }}>
-              <Icon size={14} className="mx-auto mb-1" style={{ color, opacity: 0.7 }} />
-              <strong className="text-lg font-extrabold block tabular-nums" style={{ color }}>{value}</strong>
-              <span className="text-[10px] text-(--color-text-muted) font-semibold">{label}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Mini bar chart */}
-        <div className="rounded-xl p-3" style={{ background: "var(--color-surface-elevated)", border: "1px solid var(--color-line-soft)" }}>
-          <p className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) m-0 mb-2">Günlük Dağılım</p>
-          <div className="flex items-end justify-between gap-1" style={{ height: 48 }}>
-            {analytics.dailyCounts.map((count, i) => {
-              const height = Math.max(4, (count / analytics.maxDaily) * 44);
-              const isToday = i === 6;
-              return (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="w-full rounded-t-md transition-all duration-500" style={{
-                    height,
-                    background: isToday
-                      ? "linear-gradient(180deg, #1d5a8c, #2a72ac)"
-                      : count > 0 ? "rgba(29, 90, 140,0.35)" : "rgba(255,255,255,0.04)",
-                    boxShadow: isToday && count > 0 ? "0 2px 8px rgba(29, 90, 140,0.4)" : "none",
-                  }} />
-                  <span className={`text-[8px] font-bold ${isToday ? "text-(--color-primary)" : "text-(--color-text-muted)"}`}>
-                    {reorderedLabels[i]}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Top game badge */}
-        {analytics.topGame && (
-          <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: "rgba(29, 90, 140,0.06)", border: "1px solid rgba(29, 90, 140,0.12)" }}>
-            <BarChart3 size={12} style={{ color: "#4a95cc" }} />
-            <span className="text-xs text-(--color-text-soft)">
-              En çok oynanan: <strong className="text-(--color-text-strong)">{GAME_LABELS[analytics.topGame.key]}</strong>
-              <span className="text-(--color-text-muted)"> ({analytics.topGame.count} seans)</span>
-            </span>
-          </div>
+        {sessionDelta !== 0 ? (
+          <span className="numeral flex items-center gap-1 text-[11px] font-bold"
+            style={{ color: sessionDelta > 0 ? "var(--color-accent-green)" : "var(--color-accent-red)" }}>
+            {sessionDelta > 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+            %{Math.abs(sessionDelta)}
+          </span>
+        ) : (
+          <span className="text-[10px] text-(--color-text-muted)">son 7 gün</span>
         )}
+      </div>
 
-        {/* Score trend indicator */}
-        {analytics.scoreDelta !== 0 && (
-          <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-xl" style={{
-            background: analytics.scoreDelta > 0 ? "rgba(63, 125, 79,0.06)" : "rgba(168, 57, 44,0.06)",
-            border: `1px solid ${analytics.scoreDelta > 0 ? "rgba(63, 125, 79,0.12)" : "rgba(168, 57, 44,0.12)"}`,
-          }}>
-            {analytics.scoreDelta > 0 ? <TrendingUp size={12} style={{ color: "#3f7d4f" }} /> : <TrendingDown size={12} style={{ color: "#a8392c" }} />}
-            <span className="text-xs text-(--color-text-soft)">
+      {/* Dört okuma — renkli kutular yerine kılcal ayraçlı ölçek.
+          Ayraçlar `gap-px` + zemin rengiyle çiziliyor; iki sütuna sarınca
+          da doğru kalır, elle border hesabı gerekmez. */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px" style={{ background: "var(--color-line)" }}>
+        {[
+          { icon: Gamepad2, label: "Seans", value: String(analytics.thisWeekCount) },
+          { icon: Users, label: "Aktif Danışan", value: String(analytics.thisWeekClients) },
+          { icon: Target, label: "Ort. Skor", value: String(analytics.thisWeekAvg) },
+          { icon: Clock, label: "Toplam Süre", value: formatDuration(analytics.thisWeekDuration) },
+        ].map(({ icon: Icon, label, value }) => {
+          /* `.numeral` (mono) yalnızca saf sayılara uygulanır. "70 dk 16 sn"
+             gibi birim taşıyan değerler monoda harf aralığı yüzünden
+             dağılıyor; onlar gövde yüzünde tabular rakamla dizilir. */
+          const pureNumber = /^\d+$/.test(value);
+          return (
+            <div key={label} className="px-4 py-3.5" style={{ background: "var(--color-surface-strong)" }}>
+              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-(--color-text-muted)">
+                <Icon size={11} />
+                {label}
+              </span>
+              <strong className={`block font-extrabold leading-none mt-2 text-(--color-text-strong) ${pureNumber ? "numeral text-2xl" : "tabular-nums text-lg"}`}>
+                {value}
+              </strong>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Günlük dağılım — degradesiz, hâlesiz; bugünün sütunu mürekkep,
+          diğerleri açık ton, boş günler kılcal taban çizgisi. */}
+      <div className="px-4 py-4" style={{ borderTop: "1px solid var(--color-line)" }}>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-(--color-text-muted) m-0 mb-3">Günlük Dağılım</p>
+        <div className="flex items-end justify-between gap-1.5" style={{ height: 60 }}>
+          {analytics.days.map((day, i) => {
+            const isToday = i === analytics.days.length - 1;
+            const height = day.count > 0 ? Math.max(6, (day.count / analytics.maxDaily) * 44) : 2;
+            return (
+              <div key={day.label + i} className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
+                <span className="numeral text-[10px] text-(--color-text-muted)">{day.count > 0 ? day.count : ""}</span>
+                <span className="w-full max-w-[3.5rem] rounded-[2px]"
+                  style={{
+                    height,
+                    background: day.count === 0
+                      ? "var(--color-line-strong)"
+                      : isToday ? "var(--color-primary)" : "color-mix(in srgb, var(--color-primary) 32%, transparent)",
+                  }} />
+                <span className={`text-[10px] ${isToday ? "font-bold text-(--color-text-body)" : "text-(--color-text-muted)"}`}>
+                  {day.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {(analytics.topGame || analytics.scoreDelta !== 0) && (
+        <div className="px-4 py-3 flex flex-col gap-1.5" style={{ borderTop: "1px solid var(--color-line)" }}>
+          {analytics.topGame && (
+            <span className="flex items-center gap-2 text-xs text-(--color-text-soft)">
+              <BarChart3 size={12} className="text-(--color-text-muted) shrink-0" />
+              En çok oynanan: <strong className="text-(--color-text-strong) font-semibold">{GAME_LABELS[analytics.topGame.key]}</strong>
+              <span className="text-(--color-text-muted)">
+                <span className="numeral">{analytics.topGame.count}</span> seans
+              </span>
+            </span>
+          )}
+          {analytics.scoreDelta !== 0 && (
+            <span className="flex items-center gap-2 text-xs text-(--color-text-soft)">
+              {analytics.scoreDelta > 0
+                ? <TrendingUp size={12} className="shrink-0" style={{ color: "var(--color-accent-green)" }} />
+                : <TrendingDown size={12} className="shrink-0" style={{ color: "var(--color-accent-red)" }} />}
               Skor ortalaması geçen haftaya göre{" "}
-              <strong style={{ color: analytics.scoreDelta > 0 ? "#3f7d4f" : "#a8392c" }}>
+              <strong className="font-semibold" style={{ color: analytics.scoreDelta > 0 ? "var(--color-accent-green)" : "var(--color-accent-red)" }}>
                 %{Math.abs(analytics.scoreDelta)} {analytics.scoreDelta > 0 ? "arttı" : "düştü"}
               </strong>
             </span>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -190,38 +196,35 @@ export function GameDistributionChart({ sessions }: GameRadarProps) {
     return stats;
   }, [sessions]);
 
-  const GAME_COLORS: Record<string, string> = {
-    memory: "#4a95cc", pairs: "#6fb87f", pulse: "#e2705f",
-    route: "#dda05e", difference: "#8ba0b0", scan: "#4a95cc", logic: "#dda05e",
-  };
-
   const entries = Object.entries(gameStats).sort((a, b) => b[1].count - a[1].count);
   const maxCount = Math.max(...entries.map(e => e[1].count), 1);
 
   if (entries.length === 0) return null;
 
   return (
-    <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}>
-      <div className="p-4">
-        <p className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) m-0 mb-3">Oyun Dağılımı</p>
-        <div className="space-y-2">
-          {entries.map(([key, data]) => {
-            const pct = Math.round((data.count / maxCount) * 100);
-            const color = GAME_COLORS[key] ?? "#8fa1b2";
-            return (
-              <div key={key} className="flex items-center gap-3">
-                <span className="text-xs font-bold text-(--color-text-soft) w-20 truncate">{GAME_LABELS[key as PlatformGameKey] ?? key}</span>
-                <div className="flex-1 h-5 rounded-full overflow-hidden relative" style={{ background: "rgba(255,255,255,0.04)" }}>
-                  <div className="h-full rounded-full transition-all duration-700 flex items-center justify-end pr-2"
-                    style={{ width: `${Math.max(pct, 8)}%`, background: `linear-gradient(90deg, ${color}66, ${color})` }}>
-                    <span className="text-[9px] font-extrabold text-white/80">{data.count}</span>
-                  </div>
-                </div>
-                <span className="text-[10px] font-bold tabular-nums w-10 text-right" style={{ color }}>ort. {data.avgScore}</span>
+    <div className="rounded-2xl overflow-hidden" style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
+      <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--color-line)" }}>
+        <span className="text-[11px] font-bold uppercase tracking-wider text-(--color-text-muted)">Oyun Dağılımı</span>
+      </div>
+      <div className="p-4 space-y-2.5">
+        {entries.map(([key, data]) => {
+          const pct = Math.round((data.count / maxCount) * 100);
+          /* Renk oyunun beceri alanından gelir; elle yazılmış oyun-renk
+             tablosu uygulamanın geri kalanıyla çelişiyordu. */
+          const color = gameAccent(key);
+          return (
+            <div key={key} className="flex items-center gap-3">
+              <span className="text-xs font-medium text-(--color-text-body) w-24 truncate shrink-0">
+                {GAME_LABELS[key as PlatformGameKey] ?? key}
+              </span>
+              <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "var(--color-surface-elevated)" }}>
+                <div className="h-full rounded-full" style={{ width: `${Math.max(pct, 4)}%`, background: color }} />
               </div>
-            );
-          })}
-        </div>
+              <span className="numeral text-[11px] font-bold text-(--color-text-strong) w-6 text-right shrink-0">{data.count}</span>
+              <span className="numeral text-[11px] text-(--color-text-muted) w-16 text-right shrink-0">ort. {data.avgScore}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -255,34 +258,35 @@ export function ClientActivityOverview({ sessions, clientNames }: ClientActivity
   if (clientStats.length === 0) return null;
 
   return (
-    <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}>
-      <div className="p-4">
-        <p className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) m-0 mb-3">En Aktif Danışanlar</p>
-        <div className="space-y-2">
-          {clientStats.map((client, i) => {
-            const daysSince = client.lastPlayed ? Math.floor((Date.now() - new Date(client.lastPlayed).getTime()) / (1000 * 60 * 60 * 24)) : null;
-            return (
-              <div key={client.id} className="flex items-center gap-3 px-3 py-2 rounded-xl" style={{ background: "var(--color-surface-elevated)" }}>
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-extrabold text-white shrink-0"
-                  style={{ background: `linear-gradient(135deg, ${["#1d5a8c","#2a72ac","#5b7183","#3f7d4f","#b8763a"][i]}, ${["#17456e","#17456e","#465a6b","#33663f","#8f5626"][i]})` }}>
-                  {client.name[0]?.toUpperCase() ?? "?"}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-(--color-text-strong) m-0 truncate">{client.name}</p>
-                  <p className="text-[10px] text-(--color-text-muted) m-0">{client.sessions} seans · ort. {client.avgScore}p</p>
-                </div>
-                {daysSince !== null && (
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0" style={{
-                    background: daysSince === 0 ? "rgba(63, 125, 79,0.1)" : daysSince <= 3 ? "rgba(29, 90, 140,0.1)" : "rgba(184, 118, 58,0.1)",
-                    color: daysSince === 0 ? "#3f7d4f" : daysSince <= 3 ? "#4a95cc" : "#b8763a",
-                  }}>
-                    {daysSince === 0 ? "Bugün" : `${daysSince}g önce`}
-                  </span>
-                )}
+    <div className="rounded-2xl overflow-hidden" style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
+      <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--color-line)" }}>
+        <span className="text-[11px] font-bold uppercase tracking-wider text-(--color-text-muted)">En Aktif Danışanlar</span>
+      </div>
+      <div className="flex flex-col">
+        {clientStats.map((client, i) => {
+          const daysSince = client.lastPlayed ? Math.floor((Date.now() - new Date(client.lastPlayed).getTime()) / (1000 * 60 * 60 * 24)) : null;
+          return (
+            <div key={client.id} className="flex items-center gap-3 px-4 py-3"
+              style={{ borderTop: i > 0 ? "1px solid var(--color-line-soft)" : undefined }}>
+              <span className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
+                style={{ background: "var(--color-primary-light)", color: "var(--color-primary)" }}>
+                {client.name[0]?.toLocaleUpperCase("tr") ?? "?"}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-(--color-text-strong) m-0 truncate">{client.name}</p>
+                <p className="text-[11px] text-(--color-text-muted) m-0 mt-0.5">
+                  <span className="numeral">{client.sessions}</span> seans · ort. <span className="numeral">{client.avgScore}</span> puan
+                </p>
               </div>
-            );
-          })}
-        </div>
+              {daysSince !== null && (
+                <span className="text-[11px] shrink-0"
+                  style={{ color: daysSince <= 3 ? "var(--color-text-soft)" : "var(--color-signal)" }}>
+                  {daysSince === 0 ? "Bugün" : `${daysSince} gün önce`}
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

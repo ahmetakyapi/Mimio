@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   motion,
   AnimatePresence,
+  useReducedMotion,
   useScroll,
   useSpring as useSpringFM,
   useTransform,
@@ -39,27 +40,34 @@ import { HeroSessionCard } from "./landing/HeroSessionCard";
 import { BlockMark, BrandLockup } from "./brand/BlockMark";
 import { HERO_STATS, PLATFORM_STATS } from "@/lib/platform-stats";
 import {
-  AuroraBackdrop,
   ComparisonSection,
-  CursorSpotlight,
   FAQSection,
   FloatingCTA,
   GamesCarousel,
   Magnetic,
+  PaperBackdrop,
   SectionDots,
   StickyWalkthrough,
   TiltCard,
   TrustMarquee,
 } from "./landing/LandingExtras";
 
+/*
+ * Kaydırmaya bağlı her hareket aynı yayı kullanır. Tek bir katsayı seti,
+ * sayfanın her yerinde aynı ağırlık hissini verir; farklı bölümlerin
+ * birbirinden bağımsız hızlarda "yüzmesini" engeller.
+ */
+const SCROLL_SPRING = { stiffness: 90, damping: 26, mass: 0.35, restDelta: 0.0005 } as const;
+
 /* ── Scroll Progress Bar ── */
 function ScrollProgress() {
   const { scrollYProgress } = useScroll();
-  const scaleX = useSpringFM(scrollYProgress, { stiffness: 200, damping: 30 });
+  const scaleX = useSpringFM(scrollYProgress, SCROLL_SPRING);
   return (
     <motion.div
-      style={{ scaleX }}
-      className="fixed top-0 left-0 right-0 z-[200] h-[2px] bg-gradient-to-r from-[#2a72ac] via-[#2a72ac] to-[#8ba0b0] origin-left pointer-events-none"
+      style={{ scaleX, background: "var(--color-primary)" }}
+      className="fixed top-0 left-0 right-0 z-[200] h-[2px] origin-left pointer-events-none"
+      aria-hidden
     />
   );
 }
@@ -146,28 +154,28 @@ const PERSONAS = [
     text: "Seanslarda çocuğun ilgisini oyunla canlı tutun; skorlar ve seans süreleri kendiliğinden kaydedilsin.",
     module: "Oyun Alanı",
     icon: Stethoscope,
-    gradient: "bg-[#2a72ac]",
+    accent: "#1d5a8c",
   },
   {
     role: "Nörolojik Rehabilitasyon Uzmanı",
     text: "El-göz koordinasyonu ve işlem hızı oyunlarıyla motor hedefleri çalışın, gelişimi grafiklerle izleyin.",
     module: "Raporlar",
     icon: Brain,
-    gradient: "bg-[#5b7183]",
+    accent: "#5b7183",
   },
   {
     role: "Çocuk Gelişim Uzmanı",
     text: `Her danışan için haftalık program oluşturun; ${PLATFORM_STATS.activityCount} hazır aktiviteden ${PLATFORM_STATS.homeExerciseCount} tanesi ev programına uygun.`,
     module: "Haftalık Plan",
     icon: Heart,
-    gradient: "from-[#3f7d4f] to-[#1d5a8c]",
+    accent: "#3f7d4f",
   },
   {
     role: "Özel Eğitim Uzmanı",
     text: "Kanıta dayalı protokolleri takip edin, SOAP formatında not tutun ve hedef bazlı ilerleme kaydedin.",
     module: "Terapi Programı",
     icon: Users,
-    gradient: "from-[#b8763a] to-[#b8503f]",
+    accent: "#b8763a",
   },
 ];
 
@@ -195,6 +203,14 @@ const SECTION_DOTS = [
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
+/*
+ * Tek bir görünüm eşiği. Önceden bölümler -60px ve -80px arasında
+ * gidip geliyordu; art arda gelen iki bölüm birbirinden farklı anlarda
+ * açılınca kaydırma düzensiz hissettiriyordu. `amount` eklendi ki tetik
+ * bölümün yüksekliğinden bağımsız olsun.
+ */
+const REVEAL_VIEWPORT = { once: true, margin: "-72px", amount: 0.15 } as const;
+
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease } },
@@ -218,32 +234,6 @@ const staggerFast = {
   visible: { transition: { staggerChildren: 0.07 } },
 };
 
-/* ── Animated Grid Pattern ── */
-function GridPattern() {
-  return (
-    <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none opacity-[0.03]">
-      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <pattern
-            id="grid"
-            width="60"
-            height="60"
-            patternUnits="userSpaceOnUse"
-          >
-            <path
-              d="M 60 0 L 0 0 0 60"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1"
-            />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#grid)" />
-      </svg>
-    </div>
-  );
-}
-
 /* ══════════════════════════════════════════════════════════════ */
 /*  MAIN COMPONENT                                               */
 /* ══════════════════════════════════════════════════════════════ */
@@ -253,15 +243,25 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
   const { theme, toggle: toggleTheme } = useTheme();
   const [scrolled, setScrolled] = useState(false);
 
+  /*
+   * Kahraman paralaksı.
+   *
+   * Önceki kurgu üç dönüşümü birlikte uyguluyordu: y, scale ve opacity.
+   * Ölçek değişimi kaydırma sırasında büyük başlığı bulanıklaştırıyor,
+   * 0.35'e inen opaklık ise içerik hâlâ ekrandayken metni okunmaz hâle
+   * getiriyordu. Kalan iki dönüşüm de yaya sarıldı: `useScroll` ham değeri
+   * kaydırma olaylarıyla birlikte sıçrar, yay bunu sürekli hâle getirir.
+   */
   const heroRef = useRef<HTMLDivElement | null>(null);
+  const reducedMotion = useReducedMotion();
   const { scrollYProgress: heroProgress } = useScroll({
     target: heroRef,
     offset: ["start start", "end start"],
   });
-  const heroY = useTransform(heroProgress, [0, 1], [0, -120]);
-  const heroScale = useTransform(heroProgress, [0, 1], [1, 0.94]);
-  const heroOpacity = useTransform(heroProgress, [0, 1], [1, 0.35]);
-  const parallaxMockY = useTransform(heroProgress, [0, 1], [0, 80]);
+  const heroEased = useSpringFM(heroProgress, SCROLL_SPRING);
+  const heroY = useTransform(heroEased, [0, 1], [0, reducedMotion ? 0 : -72]);
+  const heroOpacity = useTransform(heroEased, [0, 1], [1, reducedMotion ? 1 : 0.62]);
+  const parallaxMockY = useTransform(heroEased, [0, 1], [0, reducedMotion ? 0 : 54]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -319,8 +319,6 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
   return (
     <div id="top" className="min-h-screen bg-(--color-page-bg) font-(--font-sans) relative">
       <ScrollProgress />
-      <GridPattern />
-      <CursorSpotlight />
       <SectionDots sections={SECTION_DOTS} />
       <FloatingCTA onRegister={onRegister} />
 
@@ -378,7 +376,8 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               <button
                 type="button"
                 onClick={onRegister}
-                className="text-sm font-semibold bg-gradient-to-r from-[#2a72ac] to-[#1d5a8c] text-white px-5 py-2.5 rounded-xl hover:shadow-lg hover:shadow-[#2a72ac]/25 transition-all duration-200 hover:-translate-y-0.5"
+                className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-(--shadow-md)"
+                style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }}
               >
                 Hemen Başla
               </button>
@@ -463,7 +462,8 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                   setMenuOpen(false);
                   onRegister();
                 }}
-                className="w-full py-3.5 text-center font-semibold bg-gradient-to-r from-[#2a72ac] to-[#1d5a8c] text-white rounded-xl"
+                className="w-full py-3.5 text-center font-semibold rounded-xl"
+                style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }}
               >
                 Hemen Başla
               </button>
@@ -473,48 +473,60 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       </AnimatePresence>
 
       {/* ══════════════════════ HERO ══════════════════════ */}
+      {/*
+        Kahraman bölümü, iki sütunu eşit ağırlıkta tutar: solda tez, sağda
+        ürünün ürettiği asıl şey — bir seans kaydı. Önceki kurguda kart
+        `max-w-[26rem]` ile sağ sütunun içinde küçücük kalıyor, aradaki
+        ~220px'lik boşluk kompozisyonu ikiye bölüyordu. Artık kart kendi
+        sütununu doldurur ve iki sütun aynı tabana oturur.
+      */}
       <section
         ref={heroRef}
-        className="pt-24 md:pt-32 pb-14 md:pb-20 relative overflow-hidden"
+        className="pt-24 md:pt-28 pb-12 md:pb-16 relative overflow-hidden"
       >
-        <AuroraBackdrop />
+        <PaperBackdrop />
 
         <motion.div
-          style={{ y: heroY, scale: heroScale, opacity: heroOpacity }}
+          style={{ y: heroY, opacity: heroOpacity }}
           className="shell shell-wide relative"
         >
-          <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-            {/* Left */}
+          <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-y-12 lg:gap-x-14 xl:gap-x-20 items-center">
+            {/* Sol — tez */}
             <motion.div
               initial="hidden"
               animate="visible"
               variants={stagger}
-              className="flex flex-col gap-7"
+              className="flex flex-col items-start gap-6"
             >
-              <motion.div variants={fadeUp}>
-                <span className="inline-flex items-center gap-2.5 text-xs font-bold text-(--color-primary) bg-(--color-primary-light) px-4 py-2 rounded-full border border-(--color-primary)/15 backdrop-blur-sm">
-                  <span
-                    className="halo-dot w-1.5 h-1.5 rounded-full"
-                    style={{ color: "#1d5a8c", background: "#1d5a8c" }}
-                  />
-                  Ergoterapistler için Yeni Nesil Platform
-                </span>
-              </motion.div>
+              <motion.span
+                variants={fadeUp}
+                className="inline-flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-(--color-primary) px-3.5 py-1.5 rounded-full"
+                style={{
+                  background: "var(--color-primary-light)",
+                  border: "1px solid var(--color-line-strong)",
+                }}
+              >
+                <span
+                  className="halo-dot w-1.5 h-1.5 rounded-full"
+                  style={{ color: "#1d5a8c", background: "#1d5a8c" }}
+                />
+                Ölçüm temelli ergoterapi platformu
+              </motion.span>
 
               <motion.h1
                 variants={fadeUp}
-                className="text-[2.5rem] sm:text-6xl lg:text-7xl font-extrabold text-(--color-text-strong) leading-[1.05] tracking-tight"
+                className="text-[2.75rem] sm:text-6xl lg:text-[4.25rem] xl:text-7xl font-extrabold text-(--color-text-strong) leading-[1.02] m-0"
               >
                 Terapi
                 <br />
                 Seanslarını
                 <br />
-                <span className="text-gradient-shift">Oyuna Dönüştür</span>
+                <span className="accent-line">Oyuna Dönüştür</span>
               </motion.h1>
 
               <motion.p
                 variants={fadeUp}
-                className="text-lg md:text-xl text-(--color-text-soft) leading-relaxed max-w-lg"
+                className="text-lg md:text-xl text-(--color-text-soft) leading-relaxed max-w-[34rem] m-0"
               >
                 Çocukların bilişsel ve motor becerilerini geliştirirken
                 eğlenmelerini sağlayın. İlerlemeyi dijital olarak takip edin,
@@ -523,15 +535,20 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
 
               <motion.div
                 variants={fadeUp}
-                className="flex items-center gap-4 flex-wrap"
+                className="flex items-center gap-3 flex-wrap w-full sm:w-auto"
               >
                 <Magnetic strength={14}>
                   <button
                     type="button"
                     onClick={onRegister}
-                    className="group relative flex items-center justify-center gap-2.5 bg-gradient-to-r from-[#2a72ac] to-[#1d5a8c] text-white font-semibold px-8 py-4 rounded-2xl hover:shadow-xl hover:shadow-[#2a72ac]/25 transition-all duration-300 hover:-translate-y-0.5 text-sm w-full sm:w-auto overflow-hidden"
+                    className="group relative flex items-center justify-center gap-2.5 font-semibold px-7 py-3.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 text-sm w-full sm:w-auto overflow-hidden"
+                    style={{
+                      background: "var(--color-primary)",
+                      color: "var(--color-text-inverse)",
+                      boxShadow: "var(--shadow-md)",
+                    }}
                   >
-                    <span className="beam-sweep opacity-60" />
+                    <span className="beam-sweep opacity-40" />
                     <span className="relative z-10 flex items-center gap-2.5">
                       Ücretsiz Başla
                       <ArrowRight
@@ -544,31 +561,29 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 <button
                   type="button"
                   onClick={() => scrollTo("games")}
-                  className="flex items-center justify-center gap-2.5 bg-(--color-surface) text-(--color-text-body) font-semibold px-8 py-4 rounded-2xl border border-(--color-line) hover:border-(--color-primary)/30 hover:bg-(--color-surface-elevated) transition-all duration-200 text-sm backdrop-blur-sm w-full sm:w-auto"
+                  className="flex items-center justify-center gap-2.5 font-semibold px-7 py-3.5 rounded-xl text-sm w-full sm:w-auto transition-colors duration-200 hover:bg-(--color-surface-elevated)"
+                  style={{
+                    background: "var(--color-surface)",
+                    color: "var(--color-text-body)",
+                    border: "1px solid var(--color-line-strong)",
+                  }}
                 >
                   <Play size={14} />
                   Oyunları İncele
                 </button>
               </motion.div>
 
-              <motion.div
+              {/*
+                Üç ayrı rozet ("Güvenli veri / Anında başla / Ücretsiz")
+                yerine tek satır. Rozetler belirsiz bir güven hissi
+                satıyordu; bu satır somut bir bilgi veriyor.
+              */}
+              <motion.p
                 variants={fadeUp}
-                className="flex items-center gap-4 sm:gap-6 mt-2 flex-wrap"
+                className="text-xs text-(--color-text-muted) m-0"
               >
-                {[
-                  { icon: Shield, text: "Güvenli veri" },
-                  { icon: Zap, text: "Anında başla" },
-                  { icon: Heart, text: "Ücretsiz" },
-                ].map((b) => (
-                  <span
-                    key={b.text}
-                    className="flex items-center gap-1.5 text-xs text-(--color-text-muted)"
-                  >
-                    <b.icon size={13} className="text-(--color-text-soft)" />
-                    {b.text}
-                  </span>
-                ))}
-              </motion.div>
+                Ücretsiz — kredi kartı istemez, kurulum gerektirmez.
+              </motion.p>
             </motion.div>
 
             {/* Sağ — seans kaydı kartı. Sahte tarayıcı penceresi + tanıtım
@@ -585,22 +600,27 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
           </div>
 
           {/* Rakamlarla Mimio — her değer platform verisinden türetilir,
-              elle yazılmış sayı yoktur (bkz. lib/platform-stats.ts). */}
+              elle yazılmış sayı yoktur (bkz. lib/platform-stats.ts).
+              Kutulanmış ızgara yerine editoryal ölçek: üstte tek bir
+              kılcal çizgi, sütunlar arasında dikey ayraç. */}
           <motion.div
             initial="hidden"
             animate="visible"
             variants={stagger}
-            className="mt-12 md:mt-16 grid grid-cols-2 lg:grid-cols-4 gap-px rounded-2xl overflow-hidden"
-            style={{ background: "var(--color-line)" }}
+            className="mt-14 md:mt-20 pt-7 grid grid-cols-2 lg:grid-cols-4"
+            style={{ borderTop: "1px solid var(--color-line-strong)" }}
           >
-            {HERO_STATS.map((stat) => (
+            {HERO_STATS.map((stat, i) => (
               <motion.div
                 key={stat.label}
                 variants={fadeUp}
-                className="flex flex-col gap-1 p-4 sm:p-5"
-                style={{ background: "var(--color-page-bg)" }}
+                className="flex flex-col gap-1.5 py-2 px-0 lg:px-6 first:lg:pl-0 last:lg:pr-0"
+                style={{
+                  borderLeft: i > 0 ? "1px solid var(--color-line)" : undefined,
+                  paddingLeft: i > 0 ? "1.5rem" : undefined,
+                }}
               >
-                <p className="numeral text-3xl sm:text-4xl font-extrabold text-(--color-text-strong) leading-none m-0">
+                <p className="numeral text-4xl sm:text-[2.75rem] font-extrabold text-(--color-text-strong) leading-none m-0">
                   {stat.value}
                 </p>
                 <p className="text-sm font-semibold text-(--color-text-body) m-0">
@@ -624,7 +644,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
           <motion.div
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={REVEAL_VIEWPORT}
             variants={stagger}
             className="text-center mb-10 sm:mb-16"
           >
@@ -641,7 +661,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             >
               İhtiyacınız Olan
               <br />
-              <span className="text-gradient-shift">Her Şey Tek Yerde</span>
+              <span className="accent-line">Her Şey Tek Yerde</span>
             </motion.h2>
             <motion.p
               variants={fadeUp}
@@ -655,7 +675,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
           <motion.div
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-60px" }}
+            viewport={REVEAL_VIEWPORT}
             variants={stagger}
             className="grid sm:grid-cols-2 md:grid-cols-4 gap-4"
           >
@@ -712,13 +732,12 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       {/* ══════════════════════ PLATFORM PREVIEW ══════════════════════ */}
       <section className="section relative overflow-hidden">
         <div className="absolute inset-0 -z-10">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[900px] h-[400px] sm:h-[600px] bg-[radial-gradient(ellipse,rgba(29, 90, 140,0.08),transparent_65%)]" />
         </div>
         <div className="shell">
           <motion.div
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={REVEAL_VIEWPORT}
             variants={stagger}
             className="text-center mb-14"
           >
@@ -734,7 +753,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               className="text-3xl md:text-4xl font-extrabold text-(--color-text-strong) mb-4"
             >
               Güçlü Araçlar,{" "}
-              <span className="bg-gradient-to-r from-[#4a95cc] to-[#8ba0b0] bg-clip-text text-transparent">
+              <span className="accent-line">
                 Sade Arayüz
               </span>
             </motion.h2>
@@ -750,11 +769,10 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
+            viewport={REVEAL_VIEWPORT}
             transition={{ duration: 0.7, ease }}
             className="relative"
           >
-            <div className="absolute -inset-8 bg-[radial-gradient(ellipse_60%_50%_at_50%_40%,rgba(29, 90, 140,0.12),transparent)] blur-2xl pointer-events-none" />
             <TiltCard max={4}>
               <div
                 className="relative glass-strong rounded-2xl md:rounded-3xl overflow-hidden"
@@ -763,8 +781,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                     "0 25px 60px rgba(0,0,0,0.2), 0 0 80px rgba(29, 90, 140,0.08)",
                 }}
               >
-                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#2a72ac]/30 to-transparent" />
-
+                
                 <div
                   className="flex items-center gap-2 px-5 py-3 border-b border-(--color-line)"
                   style={{ background: "var(--color-surface)" }}
@@ -792,7 +809,8 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                     className="hidden sm:flex w-14 border-r border-(--color-line) flex-col items-center py-4 gap-2 shrink-0"
                     style={{ background: "var(--color-sidebar)" }}
                   >
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#2a72ac] to-[#1d5a8c] flex items-center justify-center text-white font-bold text-[10px] mb-3">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-[10px] mb-3"
+                      style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }}>
                       M
                     </div>
                     {[
@@ -969,7 +987,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
           <motion.div
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={REVEAL_VIEWPORT}
             variants={stagger}
             className="section-head section-head-center"
           >
@@ -983,7 +1001,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
           <motion.ol
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-60px" }}
+            viewport={REVEAL_VIEWPORT}
             variants={stagger}
             className="grid md:grid-cols-3 gap-4 list-none p-0 m-0"
           >
@@ -1036,12 +1054,11 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
 
       {/* ══════════════════════ PERSONAS — KİMLER İÇİN ══════════════════════ */}
       <section id="testimonials" className="section relative overflow-hidden">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_70%_40%_at_50%_50%,rgba(42, 114, 172,0.06),transparent)]" />
         <div className="shell shell-wide">
           <motion.div
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={REVEAL_VIEWPORT}
             variants={stagger}
             className="text-center mb-16"
           >
@@ -1061,7 +1078,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
           <motion.div
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-60px" }}
+            viewport={REVEAL_VIEWPORT}
             variants={staggerFast}
             className="grid sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6"
           >
@@ -1075,7 +1092,8 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                   className="glass rounded-2xl sm:rounded-3xl p-5 sm:p-6 relative overflow-hidden group flex flex-col"
                 >
                   <div
-                    className={`w-11 h-11 rounded-xl bg-gradient-to-br ${p.gradient} flex items-center justify-center text-white mb-4 shadow-lg`}
+                    className="w-11 h-11 rounded-xl flex items-center justify-center mb-4"
+                    style={{ background: p.accent, color: "#fff" }}
                   >
                     <PersonaIcon size={19} />
                   </div>
@@ -1102,17 +1120,15 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       <FAQSection />
 
       {/* ══════════════════════ CTA ══════════════════════ */}
+      {/* Kapanış bölümünde milimetrik kâğıt bilinçli olarak yok: ızgara
+          kahraman bölümünün imzası, sayfanın ortasında tekrar edince hem
+          etkisini yitiriyor hem de bölüm sınırında sert bir kenar bırakıyor. */}
       <section id="cta" className="section relative overflow-hidden">
-        <AuroraBackdrop />
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_100%,rgba(29, 90, 140,0.1),transparent)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_50%_at_50%_0%,rgba(42, 114, 172,0.06),transparent)]" />
-        </div>
-        <div className="max-w-3xl mx-auto text-center">
+        <div className="relative max-w-3xl mx-auto text-center">
           <motion.div
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={REVEAL_VIEWPORT}
             variants={stagger}
             className="flex flex-col items-center gap-8"
           >
@@ -1129,7 +1145,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             >
               Klinik Süreçlerinizi
               <br />
-              <span className="text-gradient-shift">Bugün Dijitalleştirin</span>
+              <span className="accent-line">Bugün Dijitalleştirin</span>
             </motion.h2>
             <motion.p
               variants={fadeUp}
@@ -1146,9 +1162,13 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 <button
                   type="button"
                   onClick={onRegister}
-                  className="group relative flex items-center gap-2.5 text-white font-semibold px-10 py-4 rounded-2xl text-base transition-all duration-300 hover:-translate-y-0.5 overflow-hidden w-full sm:w-auto justify-center"
+                  className="group relative flex items-center gap-2.5 font-semibold px-10 py-4 rounded-xl text-base transition-all duration-300 hover:-translate-y-0.5 overflow-hidden w-full sm:w-auto justify-center"
+                  style={{
+                    background: "var(--color-primary)",
+                    color: "var(--color-text-inverse)",
+                    boxShadow: "var(--shadow-md)",
+                  }}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#2a72ac] via-[#2a72ac] to-[#2a72ac] bg-[length:200%_100%] animate-[shimmer_3s_ease-in-out_infinite]" />
                   <span className="relative z-10 flex items-center gap-2.5">
                     Ücretsiz Hesabını Oluştur
                     <ArrowRight
@@ -1190,8 +1210,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
         className="border-t border-(--color-line) px-4 sm:px-6 relative overflow-hidden"
         style={{ background: "var(--color-surface)" }}
       >
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#2a72ac]/30 to-transparent" />
-        <div className="max-w-7xl mx-auto pt-12 sm:pt-16 pb-8">
+                <div className="max-w-7xl mx-auto pt-12 sm:pt-16 pb-8">
           <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr] mb-10 sm:mb-14">
             {/* Marka */}
             <div className="flex flex-col gap-4 max-w-sm">
@@ -1242,7 +1261,8 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 <button
                   type="button"
                   onClick={onRegister}
-                  className="text-sm font-semibold bg-gradient-to-r from-[#2a72ac] to-[#1d5a8c] text-white px-5 py-2.5 rounded-xl hover:shadow-lg hover:shadow-[#2a72ac]/25 transition-all duration-200 hover:-translate-y-0.5 text-center"
+                  className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-(--shadow-md) text-center"
+                  style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }}
                 >
                   Ücretsiz Başla
                 </button>

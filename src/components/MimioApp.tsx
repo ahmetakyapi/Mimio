@@ -7,7 +7,7 @@ import {
   Baby, Zap, Puzzle, PersonStanding, Briefcase, Handshake,
   Target, ClipboardList, Home, Tag, FlaskConical, Lightbulb, BookOpen, BarChart3, Search, RefreshCw, Map, CalendarDays, TrendingUp, Grid3X3,
   Bell, FileText, Award, Activity, ChevronRight, Star, Flame, Trophy, ArrowUpRight, ArrowDownRight,
-  Plus, Check, Archive, Edit2, Timer, X, Download, Upload, CreditCard, Printer,
+  Plus, Check, Archive, Edit2, Timer, X, Download, Upload, CreditCard, Printer, Cake,
   type LucideIcon,
 } from "lucide-react";
 import { printClientReport, exportSessionsCSV as exportSessionsCSVUtil, exportGoalsCSV } from "@/lib/export-utils";
@@ -79,7 +79,7 @@ import {
   STORAGE_KEY, SESSION_CONTEXT_KEY, ACTIVE_THERAPIST_KEY, NOTES_KEY, WEEKLY_PLANS_KEY,
   MEMORY_START_LENGTH, PULSE_TOTAL_ROUNDS, ROUTE_TOTAL_ROUNDS, DIFFERENCE_TOTAL_ROUNDS, SCAN_TOTAL_ROUNDS, TOTAL_PAIR_MATCHES,
   MEMORY_TILES, PULSE_LABELS, ROUTE_COMMANDS, SYMBOL_LIBRARY,
-  SESSION_SET_PRESETS, GAME_TABS, GAME_CATEGORIES, EMPTY_SCOREBOARD,
+  SESSION_SET_PRESETS, GAME_TABS, GAME_CATEGORIES, CATEGORY_ACCENTS, gameAccent, EMPTY_SCOREBOARD,
   PHASE_LABELS, DAY_KEYS, DAY_LABELS,
   DIFFICULTY_LABELS, DIFFICULTY_COLORS, GAME_DIFF_CONFIG,
   LOGIC_SHAPES, LOGIC_COLORS,
@@ -143,36 +143,100 @@ function DomainIcon({ iconKey, size = 20, color, className }: { iconKey: string;
 }
 
 
+/**
+ * Ölçüm kartı.
+ *
+ * Önceki sürüm her kartı kendi renginde bir degradeyle boyuyor, dışına
+ * 48px'lik renkli bir hâle koyuyor, sağ alta da bir kıvılcım grafiği
+ * çiziyordu. Grafik `points="0,14 8,10 16,11 24,5 32,7 40,2"` sabitiydi —
+ * dört kartın dördünde aynı, veriyle hiç ilgisi olmayan bir çizgi. Klinik
+ * bir araçta uydurma grafik olmaz; ya gerçek veriyi çizer ya hiçbir şey.
+ *
+ * Yeni kart bir gösterge paneli hücresi gibi davranır: tek yüzey, kılcal
+ * çerçeve, büyük mono rakam. Renk yalnızca ikon karesinde ve — varsa —
+ * gerçek seri grafiğinde görünür.
+ */
 interface StatCardProps {
-  v: number; l: string; sub: string; tooltip: string;
-  gradient: string; border: string; glow: string; color: string;
-  Icon: typeof LayoutDashboard; iconBg: string; iconColor: string;
-  sparkColor: string; trend: string;
+  v: number;
+  l: string;
+  sub: string;
+  tooltip: string;
+  accent: string;
+  Icon: typeof LayoutDashboard;
+  /** Gerçek veriden türetilmiş seri. Yoksa grafik çizilmez. */
+  series?: readonly number[];
+  /** Önceki döneme göre fark. null ise rozet gösterilmez. */
+  delta?: number | null;
+  deltaUnit?: string;
 }
-function StatCard({ v, l, sub, tooltip, gradient, border, glow, color, Icon, iconBg, iconColor, sparkColor, trend }: StatCardProps) {
+function StatCard({ v, l, sub, tooltip, accent, Icon, series, delta, deltaUnit }: StatCardProps) {
   const animated = useCountUp(v, 900);
+
+  /* Seri en az iki nokta ve bir miktar değişim taşımıyorsa çizmiyoruz:
+     düz bir çizgi bilgi değil gürültüdür. */
+  const chart = (() => {
+    if (!series || series.length < 3) return null;
+    const max = Math.max(...series);
+    const min = Math.min(...series);
+    if (max === min) return null;
+    const w = 100;
+    const h = 26;
+    const step = w / (series.length - 1);
+    return series
+      .map((val, i) => `${i === 0 ? "M" : "L"}${(i * step).toFixed(1)} ${(h - ((val - min) / (max - min)) * h).toFixed(1)}`)
+      .join(" ");
+  })();
+
   return (
     <div
       data-tooltip={tooltip}
       data-tooltip-dir="bottom"
-      className="rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 relative overflow-hidden card-hover cursor-default"
-      style={{ background: gradient, border: `1px solid ${border}`, boxShadow: glow }}
+      className="rounded-2xl p-4 lg:p-5 relative flex flex-col gap-3 transition-colors duration-200 cursor-default hover:border-(--color-line-strong)"
+      style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}
       aria-label={`${l}: ${v} ${sub}`}>
-      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: `linear-gradient(90deg,transparent,${border},transparent)` }} />
-      <div className="absolute top-3 right-3 sm:top-4 sm:right-4 w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center" style={{ background: iconBg }}>
-        <Icon size={14} style={{ color: iconColor }} />
+      <div className="flex items-start justify-between gap-2">
+        <span
+          className="w-8 h-8 lg:w-9 lg:h-9 rounded-lg flex items-center justify-center shrink-0"
+          style={{ background: `color-mix(in srgb, ${accent} 13%, transparent)` }}>
+          <Icon size={15} style={{ color: accent }} />
+        </span>
+        {typeof delta === "number" && delta !== 0 && (
+          <span
+            className="numeral text-[11px] font-bold flex items-center gap-0.5 shrink-0"
+            style={{ color: delta > 0 ? "var(--color-accent-green)" : "var(--color-accent-red)" }}>
+            {delta > 0 ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />}
+            {delta > 0 ? "+" : "−"}{Math.abs(delta)}
+            {deltaUnit ? <span className="font-medium text-(--color-text-muted)"> {deltaUnit}</span> : null}
+          </span>
+        )}
       </div>
-      {trend === "up" && (
-        <div className="absolute top-3 right-11 sm:top-4 sm:right-[52px] flex items-center gap-0.5" style={{ color: sparkColor }}>
-          <ArrowUpRight size={10} />
-        </div>
+
+      <div>
+        <strong className="numeral text-3xl lg:text-[2.5rem] font-extrabold block leading-none text-(--color-text-strong)">
+          {animated}
+        </strong>
+        <span className="text-(--color-text-body) text-xs lg:text-sm font-semibold block leading-tight mt-2">{l}</span>
+        <span className="text-(--color-text-muted) text-[11px] block leading-tight mt-0.5">{sub}</span>
+      </div>
+
+      {chart && (
+        <svg
+          viewBox="0 0 100 26"
+          preserveAspectRatio="none"
+          className="w-full h-6 mt-auto"
+          aria-hidden="true">
+          <path
+            d={chart}
+            fill="none"
+            stroke={accent}
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
+            opacity={0.65}
+          />
+        </svg>
       )}
-      <strong className="text-2xl sm:text-3xl lg:text-4xl font-extrabold block mt-0.5 sm:mt-1 mb-0.5 sm:mb-1 tabular-nums leading-none" style={{ color }}>{animated}</strong>
-      <span className="text-(--color-text-strong) text-xs sm:text-sm font-semibold block leading-tight">{l}</span>
-      <span className="text-(--color-text-muted) text-[10px] sm:text-xs hidden sm:inline">{sub}</span>
-      <svg className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 opacity-30" width="40" height="16" viewBox="0 0 40 16" aria-hidden="true">
-        <polyline points="0,14 8,10 16,11 24,5 32,7 40,2" fill="none" stroke={sparkColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
     </div>
   );
 }
@@ -2341,32 +2405,31 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         {activeAppView === "dashboard" && (
           <div className="app-shell p-4 lg:p-6 space-y-5 lg:space-y-8">
 
-            {/* Header */}
+            {/* Header — degrade metin ve emoji kaldırıldı. Bir klinik
+                aracın ana ekranı selamlaşma değil, günün durumu ile
+                açılmalı: tarih, bağlantı durumu, sonra kim olduğun. */}
             <div className="flex items-start justify-between pt-1 gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-(--color-text-muted) hidden sm:inline">{formatDate(getTodayString())}</span>
                   <span className="w-1 h-1 rounded-full bg-(--color-text-muted) hidden sm:inline-block" />
                   <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest"
-                    style={{ color: platformStatus === "online" ? "#3f7d4f" : "#b8763a" }}>
+                    style={{ color: platformStatus === "online" ? "var(--color-accent-green)" : "var(--color-signal)" }}>
                     <span className="w-1.5 h-1.5 rounded-full"
-                      style={{ background: platformStatus === "online" ? "#3f7d4f" : "#b8763a", boxShadow: `0 0 5px ${platformStatus === "online" ? "rgba(63, 125, 79,0.6)" : "rgba(184, 118, 58,0.6)"}` }} />
+                      style={{ background: platformStatus === "online" ? "var(--color-accent-green)" : "var(--color-signal)" }} />
                     {getDatabaseStatusLabel(platformStatus)}
                   </span>
                 </div>
-                <h1 className="text-2xl lg:text-4xl font-extrabold m-0 leading-tight truncate" style={{
-                  background: "linear-gradient(135deg, var(--color-text-strong) 0%, #7db8e0 55%, #4a95cc 100%)",
-                  WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
-                }}>
-                  Merhaba, {activeTherapist?.displayName?.split(" ")[0] ?? "Terapist"} 👋
+                <h1 className="text-2xl lg:text-4xl font-extrabold m-0 leading-tight truncate text-(--color-text-strong)">
+                  Merhaba, {activeTherapist?.displayName?.split(" ")[0] ?? "Terapist"}
                 </h1>
                 <p className="text-(--color-text-soft) text-xs lg:text-sm mt-1.5 m-0">
                   {clientOptions.length} danışan · {effectiveSessionCount} toplam seans
                 </p>
               </div>
               <button type="button"
-                className="flex items-center gap-2 px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl text-xs lg:text-sm font-semibold text-white border-none cursor-pointer transition-all hover:scale-105 shrink-0"
-                style={{ background: "linear-gradient(135deg, #1d5a8c, #4a95cc)", boxShadow: "0 4px 14px rgba(29, 90, 140,0.4)" }}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs lg:text-sm font-semibold border-none cursor-pointer transition-all hover:-translate-y-0.5 shrink-0"
+                style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)", boxShadow: "var(--shadow-sm)" }}
                 onClick={() => setActiveAppView("games")}>
                 <Gamepad2 size={14} /> <span className="hidden sm:inline">Oyun Başlat</span><span className="sm:hidden">Oyna</span>
               </button>
@@ -2374,64 +2437,73 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
             {/* Stats */}
             {(() => {
-              const isLight = theme === "light";
               const avgScore = effectiveSessionCount > 0
                 ? Math.round(platformOverview.totals.totalScore / effectiveSessionCount)
                 : 0;
+
+              /* ── Kart grafikleri gerçek seans kaydından türetilir ──
+                 Son 14 günün günlük seans sayısı ve günlük ortalama skoru.
+                 Veri yoksa StatCard grafiği hiç çizmez. */
+              const DAY_MS = 86_400_000;
+              const todayStart = new Date();
+              todayStart.setHours(0, 0, 0, 0);
+              const dayBuckets = Array.from({ length: 14 }, (_, i) => {
+                const start = todayStart.getTime() - (13 - i) * DAY_MS;
+                const sessions = platformOverview.recentSessions.filter((s) => {
+                  const t = new Date(s.playedAt).getTime();
+                  return t >= start && t < start + DAY_MS;
+                });
+                return {
+                  count: sessions.length,
+                  avg: sessions.length > 0
+                    ? sessions.reduce((sum, s) => sum + s.score, 0) / sessions.length
+                    : 0,
+                };
+              });
+              const countSeries = dayBuckets.map((d) => d.count);
+              /* Ortalama skor serisinde boş günler seriyi sıfıra çekip
+                 grafiği yanıltıyordu; yalnızca seans olan günler alınıyor. */
+              const scoreSeries = dayBuckets.filter((d) => d.count > 0).map((d) => Math.round(d.avg));
+
+              /* Geçen haftaya göre seans farkı — uydurma "trend: up" oku
+                 yerine gerçek bir karşılaştırma. */
+              const nowMs = Date.now();
+              const lastWeekCount = platformOverview.recentSessions.filter((s) => {
+                const age = nowMs - new Date(s.playedAt).getTime();
+                return age >= 7 * DAY_MS && age < 14 * DAY_MS;
+              }).length;
+              const weekDelta = lastWeekCount > 0 || thisWeekCount > 0 ? thisWeekCount - lastWeekCount : null;
+
               const statItems = [
                 {
                   v: effectiveSessionCount, l: "Toplam Seans", sub: "tüm zamanlar",
                   tooltip: "Tüm zamanlarda kaydedilen toplam oyun seansı sayısı",
                   Icon: Gamepad2,
-                  gradient: isLight ? "linear-gradient(135deg,rgba(29, 90, 140,0.14),rgba(29, 90, 140,0.04))" : "linear-gradient(135deg,rgba(29, 90, 140,0.22),rgba(23, 69, 110,0.05))",
-                  border: isLight ? "rgba(29, 90, 140,0.28)" : "rgba(29, 90, 140,0.32)",
-                  glow: isLight ? "none" : "0 0 48px rgba(29, 90, 140,0.15),0 2px 8px rgba(0,0,0,0.3)",
-                  color: isLight ? "#17456e" : "#7db8e0",
-                  iconBg: isLight ? "rgba(29, 90, 140,0.14)" : "rgba(29, 90, 140,0.2)",
-                  iconColor: isLight ? "#123252" : "#4a95cc",
-                  sparkColor: "#4a95cc",
-                  trend: thisWeekCount > 0 ? "up" : "flat",
+                  accent: "var(--color-domain-motor)",
+                  series: countSeries,
                 },
                 {
                   v: clientOptions.length, l: "Danışan", sub: "kayıtlı profil",
                   tooltip: "Sisteme kayıtlı toplam danışan profili",
                   Icon: Users,
-                  gradient: isLight ? "linear-gradient(135deg,rgba(63, 125, 79,0.14),rgba(63, 125, 79,0.04))" : "linear-gradient(135deg,rgba(63, 125, 79,0.22),rgba(51, 102, 63,0.05))",
-                  border: isLight ? "rgba(63, 125, 79,0.28)" : "rgba(63, 125, 79,0.32)",
-                  glow: isLight ? "none" : "0 0 48px rgba(63, 125, 79,0.12),0 2px 8px rgba(0,0,0,0.3)",
-                  color: isLight ? "#2a5334" : "#a8d4b2",
-                  iconBg: isLight ? "rgba(63, 125, 79,0.14)" : "rgba(63, 125, 79,0.2)",
-                  iconColor: isLight ? "#33663f" : "#6fb87f",
-                  sparkColor: "#6fb87f",
-                  trend: clientOptions.length > 0 ? "up" : "flat",
+                  accent: "var(--color-accent-green)",
                 },
                 {
                   v: thisWeekCount, l: "Bu Hafta", sub: "son 7 gün",
-                  tooltip: "Son 7 gün içinde oynanan seans sayısı",
+                  tooltip: "Son 7 gün içinde oynanan seans sayısı; rozet geçen haftayla farkı gösterir",
                   Icon: TrendingUp,
-                  gradient: isLight ? "linear-gradient(135deg,rgba(184, 118, 58,0.14),rgba(184, 118, 58,0.04))" : "linear-gradient(135deg,rgba(184, 118, 58,0.22),rgba(217,119,6,0.05))",
-                  border: isLight ? "rgba(184, 118, 58,0.3)" : "rgba(184, 118, 58,0.32)",
-                  glow: isLight ? "none" : "0 0 48px rgba(184, 118, 58,0.12),0 2px 8px rgba(0,0,0,0.3)",
-                  color: isLight ? "#8f5626" : "#ecc493",
-                  iconBg: isLight ? "rgba(184, 118, 58,0.14)" : "rgba(184, 118, 58,0.2)",
-                  iconColor: isLight ? "#8f5626" : "#b8763a",
-                  sparkColor: "#b8763a",
-                  trend: thisWeekCount > 0 ? "up" : "flat",
+                  accent: "var(--color-signal)",
+                  series: countSeries.slice(7),
+                  delta: weekDelta,
+                  deltaUnit: "seans",
                 },
                 {
                   v: avgScore, l: "Ort. Skor", sub: "seans başına",
                   tooltip: "Tüm seansların skor ortalaması",
                   Icon: Award,
-                  /* Nötr mavi-gri: ortalama skor bir uyarı değil, bir okuma.
-                     Önceki kızıl ton kartı "hata" gibi gösteriyordu. */
-                  gradient: isLight ? "linear-gradient(135deg,rgba(91, 113, 131,0.14),rgba(91, 113, 131,0.04))" : "linear-gradient(135deg,rgba(91, 113, 131,0.22),rgba(70, 90, 107,0.05))",
-                  border: isLight ? "rgba(91, 113, 131,0.28)" : "rgba(91, 113, 131,0.32)",
-                  glow: isLight ? "none" : "0 0 48px rgba(91, 113, 131,0.12),0 2px 8px rgba(0,0,0,0.3)",
-                  color: isLight ? "#465a6b" : "#b6c4cf",
-                  iconBg: isLight ? "rgba(91, 113, 131,0.14)" : "rgba(91, 113, 131,0.2)",
-                  iconColor: isLight ? "#465a6b" : "#8ba0b0",
-                  sparkColor: "#8ba0b0",
-                  trend: avgScore > 0 ? "up" : "flat",
+                  /* Nötr mavi-gri: ortalama skor bir uyarı değil, bir okuma. */
+                  accent: "var(--color-accent-teal)",
+                  series: scoreSeries,
                 },
               ];
               return (
@@ -2443,65 +2515,60 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               );
             })()}
 
-            {/* Quick Actions */}
+            {/* Quick Actions —
+                Kartlar artık degrade yıkanmış renkli kutular değil; tek
+                yüzey, kılcal çerçeve ve renkli bir ikon karesi. Renk yalnız
+                hangi modüle gittiğini söyler, kartı boyamaz. */}
             {(() => {
-              const isLight = theme === "light";
               const actions = [
                 {
                   Icon: UserPlus, title: "Yeni Danışan Ekle", sub: "Profil oluştur ve seans başlat",
                   action: () => { setShowAddClient(true); setActiveAppView("clients"); },
-                  gradient: isLight ? "linear-gradient(135deg,rgba(63, 125, 79,0.1),rgba(63, 125, 79,0.03))" : "linear-gradient(135deg,rgba(63, 125, 79,0.14),rgba(63, 125, 79,0.03))",
-                  border: isLight ? "rgba(63, 125, 79,0.3)" : "rgba(63, 125, 79,0.25)",
-                  iconBg: isLight ? "rgba(63, 125, 79,0.14)" : "rgba(63, 125, 79,0.2)",
-                  iconColor: isLight ? "#33663f" : "#6fb87f",
-                  badge: null as string | null,
+                  accent: "var(--color-accent-green)",
+                  meta: null as string | null,
                 },
                 {
-                  Icon: Gamepad2, title: "Oyun Alanını Aç", sub: "6 modülle seans çalışma alanı",
+                  Icon: Gamepad2, title: "Oyun Alanını Aç", sub: "Seans çalışma alanı",
                   action: () => setActiveAppView("games"),
-                  gradient: isLight ? "linear-gradient(135deg,rgba(29, 90, 140,0.1),rgba(29, 90, 140,0.03))" : "linear-gradient(135deg,rgba(29, 90, 140,0.14),rgba(29, 90, 140,0.03))",
-                  border: isLight ? "rgba(29, 90, 140,0.28)" : "rgba(29, 90, 140,0.25)",
-                  iconBg: isLight ? "rgba(29, 90, 140,0.14)" : "rgba(29, 90, 140,0.2)",
-                  iconColor: isLight ? "#123252" : "#4a95cc",
-                  badge: "6 Oyun" as string | null,
+                  accent: "var(--color-domain-motor)",
+                  /* Sayı GAME_TABS'tan gelir; elle yazılan "6 Oyun" rozeti
+                     oyun eklenince yanlışa düşüyordu. */
+                  meta: `${GAME_TABS.length} oyun` as string | null,
                 },
                 {
                   Icon: Stethoscope, title: "Terapi Programı", sub: "Aktivite önerileri ve haftalık plan",
                   action: () => setActiveAppView("therapy-program"),
-                  gradient: isLight ? "linear-gradient(135deg,rgba(91, 113, 131,0.1),rgba(91, 113, 131,0.03))" : "linear-gradient(135deg,rgba(91, 113, 131,0.14),rgba(91, 113, 131,0.03))",
-                  border: isLight ? "rgba(91, 113, 131,0.3)" : "rgba(91, 113, 131,0.25)",
-                  iconBg: isLight ? "rgba(91, 113, 131,0.14)" : "rgba(91, 113, 131,0.2)",
-                  iconColor: isLight ? "#465a6b" : "#8ba0b0",
-                  badge: null as string | null,
+                  accent: "var(--color-accent-teal)",
+                  meta: null as string | null,
                 },
                 {
                   Icon: BarChart3, title: "Raporlar & Analitik", sub: "Skor grafikleri, danışan gelişimi",
                   action: () => setActiveAppView("reports"),
-                  gradient: isLight ? "linear-gradient(135deg,rgba(184, 118, 58,0.1),rgba(184, 118, 58,0.03))" : "linear-gradient(135deg,rgba(184, 118, 58,0.14),rgba(184, 118, 58,0.03))",
-                  border: isLight ? "rgba(184, 118, 58,0.3)" : "rgba(184, 118, 58,0.25)",
-                  iconBg: isLight ? "rgba(184, 118, 58,0.14)" : "rgba(184, 118, 58,0.2)",
-                  iconColor: isLight ? "#8f5626" : "#dda05e",
-                  badge: "YENİ" as string | null,
+                  accent: "var(--color-signal)",
+                  meta: null as string | null,
                 },
               ] as const;
               return (
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
-                  {actions.map(({ Icon, title, sub, action, gradient, border, iconBg, iconColor, badge }) => (
+                  {actions.map(({ Icon, title, sub, action, accent, meta }) => (
                     <button key={title} type="button" onClick={action}
-                      data-tooltip={sub}
-                      data-tooltip-dir="bottom"
                       aria-label={`${title} — ${sub}`}
-                      className="flex flex-col gap-1.5 sm:gap-2 p-3 sm:p-4 lg:p-5 rounded-xl sm:rounded-2xl border text-left cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-(--shadow-elevated) group relative overflow-hidden active:scale-[0.98]"
-                      style={{ background: gradient, borderColor: border }}>
-                      {badge && (
-                        <span className="absolute top-2 right-2 sm:top-3 sm:right-3 text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-full text-white" style={{ background: "linear-gradient(135deg,#b8763a,#a8392c)" }}>{badge}</span>
-                      )}
-                      <span className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center mb-0.5 sm:mb-1 transition-transform duration-200 group-hover:scale-110"
-                        style={{ background: iconBg }}>
-                        <Icon size={18} style={{ color: iconColor }} />
+                      className="flex flex-col gap-2 p-4 lg:p-5 rounded-2xl text-left cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:border-(--color-line-strong) hover:shadow-(--shadow-sm) group relative active:translate-y-0"
+                      style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
+                      <span className="flex items-center justify-between gap-2">
+                        <span className="w-9 h-9 lg:w-10 lg:h-10 rounded-lg flex items-center justify-center shrink-0"
+                          style={{ background: `color-mix(in srgb, ${accent} 13%, transparent)` }}>
+                          <Icon size={17} style={{ color: accent }} />
+                        </span>
+                        <ArrowUpRight
+                          size={15}
+                          className="shrink-0 text-(--color-text-disabled) transition-all duration-200 group-hover:text-(--color-text-soft) group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                        />
                       </span>
-                      <strong className="text-(--color-text-strong) text-xs sm:text-sm font-semibold leading-tight">{title}</strong>
-                      <span className="text-(--color-text-soft) text-[10px] sm:text-xs leading-snug hidden sm:block">{sub}</span>
+                      <strong className="text-(--color-text-strong) text-sm font-semibold leading-tight mt-1">{title}</strong>
+                      <span className="text-(--color-text-muted) text-[11px] lg:text-xs leading-snug">
+                        {sub}{meta ? ` · ${meta}` : ""}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -2516,56 +2583,28 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   Tümünü gör →
                 </button>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 lg:gap-4">
+              {/* Kategori kartları hızlı eylemlerle aynı dili konuşur:
+                  tek yüzey, kılcal çerçeve, renkli ikon karesi. Kategori
+                  rengi alan jetonlarından gelir — uygulamanın her yerinde
+                  aynı beceri alanı aynı rengi taşır. */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
                 {GAME_CATEGORIES.map((cat, catIdx) => {
                   const count = GAME_TABS.filter((g) => g.category === cat.key).length;
                   const CatIcon = CATEGORY_ICONS[cat.key];
-                  const isLight = theme === "light";
-                  const catStyles = [
-                    {
-                      bg: isLight ? "rgba(42, 114, 172,0.12)" : "rgba(42, 114, 172,0.16)",
-                      color: isLight ? "#17456e" : "#b3d6ee",
-                      border: isLight ? "rgba(42, 114, 172,0.28)" : "rgba(42, 114, 172,0.3)",
-                      glow: isLight ? "none" : "0 0 32px rgba(42, 114, 172,0.1)",
-                      labelBg: isLight ? "rgba(42, 114, 172,0.12)" : "rgba(42, 114, 172,0.18)",
-                      labelColor: isLight ? "#123252" : "#4a95cc",
-                      gradLine: "rgba(42, 114, 172,0.4)",
-                    },
-                    {
-                      bg: isLight ? "rgba(184, 118, 58,0.12)" : "rgba(184, 118, 58,0.16)",
-                      color: isLight ? "#8f5626" : "#ecc493",
-                      border: isLight ? "rgba(184, 118, 58,0.28)" : "rgba(184, 118, 58,0.3)",
-                      glow: isLight ? "none" : "0 0 32px rgba(184, 118, 58,0.1)",
-                      labelBg: isLight ? "rgba(184, 118, 58,0.12)" : "rgba(184, 118, 58,0.18)",
-                      labelColor: isLight ? "#8f5626" : "#b8763a",
-                      gradLine: "rgba(184, 118, 58,0.4)",
-                    },
-                    {
-                      bg: isLight ? "rgba(91, 113, 131,0.12)" : "rgba(91, 113, 131,0.16)",
-                      color: isLight ? "#465a6b" : "#7db8e0",
-                      border: isLight ? "rgba(91, 113, 131,0.28)" : "rgba(91, 113, 131,0.3)",
-                      glow: isLight ? "none" : "0 0 32px rgba(91, 113, 131,0.1)",
-                      labelBg: isLight ? "rgba(91, 113, 131,0.12)" : "rgba(91, 113, 131,0.18)",
-                      labelColor: isLight ? "#465a6b" : "#5b7183",
-                      gradLine: "rgba(91, 113, 131,0.4)",
-                    },
-                  ][catIdx] ?? { bg: "rgba(29, 90, 140,0.12)", color: isLight ? "#123252" : "#4a95cc", border: "rgba(29, 90, 140,0.22)", glow: "none", labelBg: "rgba(29, 90, 140,0.12)", labelColor: isLight ? "#17456e" : "#1d5a8c", gradLine: "rgba(29, 90, 140,0.4)" };
+                  const accent = CATEGORY_ACCENTS[cat.key];
                   return (
                     <button key={cat.key} type="button"
-                      className="flex sm:flex-col flex-row items-center sm:items-start gap-3 sm:gap-2 p-3.5 sm:p-5 rounded-2xl border text-left cursor-pointer transition-all duration-200 hover:-translate-y-0.5 sm:hover:-translate-y-1 bg-(--color-surface-strong) group relative overflow-hidden"
-                      style={{ borderColor: catStyles.border, boxShadow: catStyles.glow }}
+                      className="flex sm:flex-col flex-row items-center sm:items-start gap-3 sm:gap-2.5 p-3.5 sm:p-5 rounded-2xl text-left cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:border-(--color-line-strong) hover:shadow-(--shadow-sm) group relative"
+                      style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}
                       onClick={() => { openCategory(cat.key); }}>
-                      {/* Top shimmer line */}
-                      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${catStyles.gradLine}, transparent)` }} />
-                      <span className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 sm:mb-1 transition-transform duration-200 group-hover:scale-110"
-                        style={{ background: catStyles.bg }}>
-                        <CatIcon size={19} style={{ color: catStyles.color }} />
+                      <span className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                        style={{ background: `color-mix(in srgb, ${accent} 13%, transparent)` }}>
+                        <CatIcon size={18} style={{ color: accent }} />
                       </span>
-                      <div className="flex flex-col gap-1 min-w-0 flex-1">
+                      <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                         <strong className="text-(--color-text-strong) text-sm font-semibold">{cat.title}</strong>
-                        <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full self-start"
-                          style={{ background: catStyles.labelBg, color: catStyles.labelColor }}>
-                          {count} oyun
+                        <span className="text-[11px] text-(--color-text-muted)">
+                          <span className="numeral">{count}</span> oyun
                         </span>
                       </div>
                     </button>
@@ -2588,35 +2627,36 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               const countDelta = thisWeekSessions.length - lastWeekSessions.length;
               const avgDelta = thisAvg - lastAvg;
               const cols = [
-                { label: "Bu Hafta Seans", this: thisWeekSessions.length, last: lastWeekSessions.length, delta: countDelta, unit: "seans", color: "#4a95cc" },
-                { label: "Bu Hafta Ort. Skor", this: thisAvg, last: lastAvg, delta: avgDelta, unit: "puan", color: "#6fb87f" },
+                { label: "Bu Hafta Seans", this: thisWeekSessions.length, last: lastWeekSessions.length, delta: countDelta, unit: "seans" },
+                { label: "Bu Hafta Ort. Skor", this: thisAvg, last: lastAvg, delta: avgDelta, unit: "puan" },
               ];
               return (
-                <div className="relative overflow-hidden rounded-2xl border" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}>
-                  <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg,#4a95cc,#6fb87f,transparent)" }} />
-                  <div className="px-4 py-3 flex items-center justify-between border-b" style={{ borderColor: "var(--color-line)" }}>
+                <div className="rounded-2xl overflow-hidden" style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
+                  <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid var(--color-line)" }}>
                     <div className="flex items-center gap-2">
-                      <CalendarDays size={13} style={{ color: "#4a95cc" }} />
-                      <span className="text-xs font-extrabold uppercase tracking-wider text-(--color-text-muted)">Haftalık Karşılaştırma</span>
+                      <CalendarDays size={13} className="text-(--color-text-muted)" />
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-(--color-text-muted)">Haftalık Karşılaştırma</span>
                     </div>
-                    <span className="text-[10px] text-(--color-text-muted)">Bu hafta vs geçen hafta</span>
+                    <span className="text-[10px] text-(--color-text-muted)">Bu hafta / geçen hafta</span>
                   </div>
-                  <div className="grid grid-cols-2 divide-x" style={{ borderColor: "var(--color-line)" }}>
-                    {cols.map(col => (
-                      <div key={col.label} className="p-4 space-y-1">
+                  <div className="grid grid-cols-2">
+                    {cols.map((col, i) => (
+                      <div key={col.label} className="p-4 space-y-1.5" style={{ borderLeft: i > 0 ? "1px solid var(--color-line)" : undefined }}>
                         <p className="text-[10px] font-bold uppercase tracking-wider text-(--color-text-muted) m-0">{col.label}</p>
                         <div className="flex items-end gap-2">
-                          <strong className="text-2xl font-extrabold tabular-nums" style={{ color: col.color }}>{col.this}</strong>
+                          <strong className="numeral text-3xl font-extrabold leading-none text-(--color-text-strong)">{col.this}</strong>
                           <div className="flex items-center gap-1 pb-0.5">
                             {col.delta !== 0 && (
-                              <span className="text-[10px] font-bold" style={{ color: col.delta > 0 ? "#3f7d4f" : "#a8392c" }}>
-                                {col.delta > 0 ? "▲" : "▼"} {Math.abs(col.delta)} {col.unit}
+                              <span className="numeral text-[11px] font-bold" style={{ color: col.delta > 0 ? "var(--color-accent-green)" : "var(--color-accent-red)" }}>
+                                {col.delta > 0 ? "+" : "−"}{Math.abs(col.delta)} <span className="font-medium text-(--color-text-muted)">{col.unit}</span>
                               </span>
                             )}
-                            {col.delta === 0 && col.last > 0 && <span className="text-[10px] text-(--color-text-muted)">→ aynı</span>}
+                            {col.delta === 0 && col.last > 0 && <span className="text-[10px] text-(--color-text-muted)">değişmedi</span>}
                           </div>
                         </div>
-                        <p className="text-[10px] text-(--color-text-muted) m-0">Geçen hafta: {col.last} {col.unit}</p>
+                        <p className="text-[10px] text-(--color-text-muted) m-0">
+                          Geçen hafta <span className="numeral">{col.last}</span> {col.unit}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -2645,15 +2685,21 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               }).sort((a, b) => a.daysUntil - b.daysUntil);
               if (upcoming.length === 0) return null;
               return (
-                <div className="rounded-2xl border overflow-hidden" style={{ background: "rgba(184, 80, 63,0.06)", borderColor: "rgba(184, 80, 63,0.2)" }}>
-                  <div className="h-0.5" style={{ background: "linear-gradient(90deg,#b8503f,#e2705f,transparent)" }} />
+                <div className="rounded-2xl overflow-hidden" style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
+                  <div className="px-4 py-2.5 flex items-center gap-2" style={{ borderBottom: "1px solid var(--color-line)" }}>
+                    <Cake size={13} style={{ color: "var(--color-signal)" }} />
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-(--color-text-muted)">Yaklaşan Doğum Günleri</span>
+                  </div>
                   <div className="px-4 py-3 space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-widest m-0" style={{ color: "#b8503f" }}>🎂 Yaklaşan Doğum Günleri</p>
                     {upcoming.map(c => (
-                      <div key={c.id} className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-(--color-text-body)">{c.displayName}</span>
-                        <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(184, 80, 63,0.12)", color: "#b8503f" }}>
-                          {c.daysUntil === 0 ? "🎉 Bugün!" : `${c.daysUntil} gün kaldı`}
+                      <div key={c.id} className="flex items-center justify-between gap-3">
+                        <span className="text-sm font-semibold text-(--color-text-body) truncate">{c.displayName}</span>
+                        <span className="text-[11px] font-bold px-2.5 py-1 rounded-md shrink-0"
+                          style={{
+                            background: c.daysUntil === 0 ? "var(--color-signal-light)" : "var(--color-surface-elevated)",
+                            color: c.daysUntil === 0 ? "var(--color-signal)" : "var(--color-text-muted)",
+                          }}>
+                          {c.daysUntil === 0 ? "Bugün" : `${c.daysUntil} gün kaldı`}
                         </span>
                       </div>
                     ))}
@@ -2662,21 +2708,31 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               );
             })()}
 
-            {/* ── Streak widget ── */}
+            {/* ── Streak widget ──
+                Emoji üçlüsü (🏆/🔥/⚡) ve tebrik cümleleri kaldırıldı:
+                bir klinik aracın ana ekranı terapisti tebrik etmez, ritmini
+                gösterir. Kalan şey son yedi günün nokta dizisi ve sayı. */}
             {sessionStreak > 0 && (
-              <div className="relative overflow-hidden rounded-2xl border flex items-center gap-4 px-4 py-3" style={{ background: sessionStreak >= 7 ? "rgba(221, 160, 94,0.08)" : "rgba(29, 90, 140,0.07)", borderColor: sessionStreak >= 7 ? "rgba(221, 160, 94,0.25)" : "rgba(29, 90, 140,0.2)" }}>
-                <span className="text-3xl select-none">{sessionStreak >= 14 ? "🏆" : sessionStreak >= 7 ? "🔥" : "⚡"}</span>
-                <div className="flex-1">
-                  <p className="m-0 text-sm font-extrabold" style={{ color: sessionStreak >= 7 ? "#dda05e" : "#4a95cc" }}>
-                    {sessionStreak} günlük seans serisi
+              <div className="rounded-2xl flex items-center gap-4 px-4 py-3.5"
+                style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
+                <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: "color-mix(in srgb, var(--color-signal) 13%, transparent)" }}>
+                  <Flame size={16} style={{ color: "var(--color-signal)" }} />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="m-0 text-sm font-semibold text-(--color-text-strong)">
+                    <span className="numeral">{sessionStreak}</span> günlük seans serisi
                   </p>
-                  <p className="m-0 text-[11px] text-(--color-text-muted)">
-                    {sessionStreak >= 14 ? "İnanılmaz! Ritim mükemmel." : sessionStreak >= 7 ? "Harika tempo, devam et!" : "İyi başlangıç, ritmi koru!"}
+                  <p className="m-0 text-[11px] text-(--color-text-muted) mt-0.5">
+                    Art arda seans kaydı girilen gün sayısı
                   </p>
                 </div>
-                <div className="flex gap-0.5 shrink-0">
-                  {Array.from({ length: Math.min(sessionStreak, 7) }).map((_, i) => (
-                    <div key={i} className="w-2 h-2 rounded-full" style={{ background: sessionStreak >= 7 ? "#dda05e" : "#4a95cc", opacity: 1 - (Math.min(sessionStreak, 7) - 1 - i) * 0.12 }} />
+                <div className="flex gap-1 shrink-0" aria-hidden="true">
+                  {Array.from({ length: 7 }).map((_, i) => (
+                    <span key={i} className="w-1.5 h-4 rounded-full"
+                      style={{
+                        background: i < Math.min(sessionStreak, 7) ? "var(--color-signal)" : "var(--color-line-strong)",
+                      }} />
                   ))}
                 </div>
               </div>
@@ -2729,8 +2785,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 <div className="rounded-2xl border border-(--color-line) p-10 text-center flex flex-col items-center gap-4"
                   style={{ background: "var(--color-surface-strong)" }}>
                   <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                    style={{ background: "rgba(29, 90, 140,0.1)", border: "1px solid rgba(29, 90, 140,0.2)" }}>
-                    <Gamepad2 size={24} strokeWidth={1.5} style={{ color: "#4a95cc" }} />
+                    style={{ background: "var(--color-primary-light)" }}>
+                    <Gamepad2 size={24} strokeWidth={1.5} style={{ color: "var(--color-primary)" }} />
                   </div>
                   <div>
                     <p className="text-(--color-text-strong) text-sm font-semibold m-0 mb-1">Henüz seans kaydı yok</p>
@@ -2739,86 +2795,66 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   <button type="button" className={btnPrimary} onClick={() => setActiveAppView("games")}>Oyun Alanını Aç</button>
                 </div>
               ) : (
-                /* ── Premium Vertical Timeline ── */
-                <div className="relative rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
-                  {/* Top shimmer accent */}
-                  <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg,transparent,rgba(29, 90, 140,0.4),transparent)" }} />
-                  {/* Vertical line */}
-                  <div className="absolute left-[52px] top-6 bottom-6 w-px" style={{ background: "linear-gradient(180deg,rgba(29, 90, 140,0.3),rgba(42, 114, 172,0.15),rgba(91, 113, 131,0.1))" }} />
+                /*
+                  Seans akışı.
+
+                  Önceki sürümde her satırın rengi elle yazılmış bir tablodan
+                  geliyordu; "pairs" turkuaz bir zemin ile mavi bir metni
+                  eşleştiriyor, "memory" ile "difference" ise birbirinin aynısı
+                  oluyordu. Renk artık oyunun kendi beceri alanından türüyor —
+                  kategori kartlarındakiyle aynı üç jeton. İkon da öyle: her
+                  satırda aynı gamepad yerine alanın simgesi.
+                */
+                <div className="rounded-2xl overflow-hidden" style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
                   <div className="flex flex-col">
                     {recentSessionFeed.map((session, idx) => {
-                      const isLight = theme === "light";
-                      // Per-game accent colour
-                      const gameAccents: Record<string, { color: string; bg: string; border: string }> = {
-                        memory:     { color: "#4a95cc", bg: "rgba(74, 149, 204,0.12)", border: "rgba(74, 149, 204,0.2)" },
-                        pairs:      { color: "#4a95cc", bg: "rgba(45,212,191,0.12)",  border: "rgba(45,212,191,0.2)"  },
-                        pulse:      { color: "#8ba0b0", bg: "rgba(139, 160, 176,0.12)",  border: "rgba(139, 160, 176,0.2)"  },
-                        route:      { color: "#1d5a8c", bg: "rgba(29, 90, 140,0.12)",  border: "rgba(29, 90, 140,0.2)"  },
-                        difference: { color: "#4a95cc", bg: "rgba(74, 149, 204,0.12)", border: "rgba(74, 149, 204,0.2)" },
-                        scan:       { color: "#6fb87f", bg: "rgba(111, 184, 127,0.12)",  border: "rgba(111, 184, 127,0.2)"  },
-                      };
-                      const accent = gameAccents[session.gameKey ?? ""] ?? { color: isLight ? "#123252" : "#4a95cc", bg: isLight ? "rgba(29, 90, 140,0.08)" : "rgba(29, 90, 140,0.12)", border: "rgba(29, 90, 140,0.18)" };
+                      const tab = GAME_TABS.find((g) => g.key === session.gameKey);
+                      const accent = tab ? CATEGORY_ACCENTS[tab.category] : "var(--color-primary)";
+                      const RowIcon = tab ? CATEGORY_ICONS[tab.category] : Gamepad2;
                       const isLast = idx === recentSessionFeed.length - 1;
                       return (
                         <div key={session.id}
-                          className="relative flex items-start gap-4 px-4 py-4 transition-all duration-150 hover:bg-(--color-surface-elevated) group cursor-pointer"
+                          className="relative flex items-center gap-3.5 px-4 py-3.5 transition-colors duration-150 hover:bg-(--color-surface-elevated) group cursor-pointer"
                           style={{ borderBottom: !isLast ? "1px solid var(--color-line-soft)" : "none" }}
                           onClick={() => { const c = clientOptions.find(cl => cl.id === session.clientId); if (c) handleSelectClient(c.id); }}>
-                          {/* Timeline dot + icon */}
-                          <div className="relative flex flex-col items-center shrink-0 mt-0.5">
-                            {/* Connector dot on the line */}
-                            <div className="absolute left-1/2 -translate-x-1/2 w-2 h-2 rounded-full ring-2 ring-(--color-surface-strong) z-10"
-                              style={{ background: accent.color, boxShadow: `0 0 8px ${accent.color}80`, top: "11px" }} />
-                            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110"
-                              style={{ background: accent.bg, border: `1px solid ${accent.border}` }}>
-                              <Gamepad2 size={15} style={{ color: accent.color }} />
-                            </div>
-                          </div>
-                          {/* Content */}
+                          <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                            style={{ background: `color-mix(in srgb, ${accent} 13%, transparent)` }}>
+                            <RowIcon size={15} style={{ color: accent }} />
+                          </span>
+
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1 min-w-0">
-                                <strong className="text-(--color-text-strong) text-sm font-semibold block truncate leading-tight">{session.gameLabel}</strong>
-                                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                  <span className="flex items-center gap-1 text-(--color-text-muted) text-xs font-medium">
-                                    <span className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-bold text-white shrink-0"
-                                      style={{ background: accent.color }}>
-                                      {session.clientName?.[0]?.toUpperCase() ?? "?"}
-                                    </span>
-                                    {session.clientName}
-                                  </span>
-                                  {session.durationSeconds && (
-                                    <span className="flex items-center gap-0.5 text-(--color-text-muted) text-[11px]">
-                                      <Clock size={9} />
-                                      {formatDuration(session.durationSeconds)}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              {/* Right side — score + time */}
-                              <div className="flex flex-col items-end gap-1 shrink-0">
-                                <div className="flex items-baseline gap-0.5 px-2.5 py-1 rounded-lg"
-                                  style={{ background: accent.bg, border: `1px solid ${accent.border}` }}>
-                                  <strong className="text-base font-extrabold tabular-nums leading-none" style={{ color: accent.color }}>{session.score}</strong>
-                                  <span className="text-[9px] font-bold text-(--color-text-muted) uppercase ml-0.5">puan</span>
-                                </div>
-                                <span className="text-[11px] text-(--color-text-muted)">{formatPlayedAt(session.playedAt)}</span>
-                              </div>
+                            <strong className="text-(--color-text-strong) text-sm font-semibold block truncate leading-tight">{session.gameLabel}</strong>
+                            <div className="flex items-center gap-2.5 mt-1 flex-wrap">
+                              <span className="text-(--color-text-muted) text-xs">{session.clientName}</span>
+                              {session.durationSeconds && (
+                                <span className="flex items-center gap-1 text-(--color-text-muted) text-[11px] tabular-nums">
+                                  <Clock size={9} />
+                                  {formatDuration(session.durationSeconds)}
+                                </span>
+                              )}
                             </div>
                           </div>
-                          {/* Hover arrow */}
-                          <ChevronRight size={13} className="text-(--color-text-muted) opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
+
+                          <div className="flex flex-col items-end gap-0.5 shrink-0">
+                            <span className="flex items-baseline gap-1">
+                              <strong className="numeral text-base font-bold leading-none text-(--color-text-strong)">{session.score}</strong>
+                              <span className="text-[10px] text-(--color-text-muted)">puan</span>
+                            </span>
+                            <span className="text-[11px] text-(--color-text-muted)">{formatPlayedAt(session.playedAt)}</span>
+                          </div>
+
+                          <ChevronRight size={14} className="text-(--color-text-disabled) opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                         </div>
                       );
                     })}
                   </div>
-                  {/* Footer CTA */}
-                  <div className="px-4 py-3 flex items-center justify-between border-t border-(--color-line)"
-                    style={{ background: "rgba(255,255,255,0.015)" }}>
-                    <span className="text-xs text-(--color-text-muted)">{effectiveSessionCount} toplam seans kaydı</span>
+                  <div className="px-4 py-3 flex items-center justify-between" style={{ borderTop: "1px solid var(--color-line)" }}>
+                    <span className="text-xs text-(--color-text-muted)">
+                      <span className="numeral">{effectiveSessionCount}</span> toplam seans kaydı
+                    </span>
                     <button type="button"
-                      className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border cursor-pointer transition-all hover:scale-105"
-                      style={{ background: "rgba(29, 90, 140,0.08)", borderColor: "rgba(29, 90, 140,0.2)", color: "#4a95cc" }}
+                      className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer transition-colors hover:bg-(--color-surface-elevated)"
+                      style={{ background: "transparent", border: "1px solid var(--color-line-strong)", color: "var(--color-text-body)" }}
                       onClick={() => setActiveAppView("reports")}>
                       <BarChart3 size={11} /> Tam Raporu Gör
                     </button>
@@ -5734,10 +5770,6 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
         {/* ── Reports & Analytics ── */}
         {activeAppView === "reports" && (() => {
-          const GAME_COLORS: Record<string, string> = {
-            memory: "#4a95cc", pairs: "#4a95cc", pulse: "#8ba0b0",
-            route: "#1d5a8c", difference: "#4a95cc", scan: "#6fb87f",
-          };
           const allGameKeys = Object.keys(GAME_LABELS) as Array<keyof typeof GAME_LABELS>;
           const scoreEntries = allGameKeys.map((key) => {
             const rs = platformOverview.remoteScores[key];
@@ -5745,7 +5777,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             const best = Math.max(rs?.best ?? 0, local.best);
             const plays = Math.max(rs?.sessions ?? 0, local.plays);
             const last = rs?.last ?? local.last;
-            return { key, label: GAME_LABELS[key], best, plays, last, color: GAME_COLORS[key] };
+            /* Renk oyunun beceri alanından türer; buradaki elle yazılmış
+               tablo "logic" oyununu hiç tanımıyor, iki oyuna da aynı mavi
+               veriyordu. */
+            return { key, label: GAME_LABELS[key], best, plays, last, color: gameAccent(key) };
           });
           const totalSessions = scoreEntries.reduce((s, e) => s + e.plays, 0);
           const topGame = [...scoreEntries].sort((a, b) => b.plays - a.plays)[0];
@@ -5769,7 +5804,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             return {
               key,
               label: GAME_LABELS[key],
-              color: GAME_COLORS[key] ?? "var(--color-primary)",
+              color: gameAccent(key),
               plays: runs.length,
               recentAvg,
               scaleMax,
@@ -5860,25 +5895,30 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               <div className="flex-1 overflow-y-auto">
                 <div className="app-shell p-4 lg:p-6 space-y-6 lg:space-y-8">
 
-                {/* ── KPI strip ── */}
+                {/* ── KPI strip ──
+                    Emoji ikonlar (🎮 👥 🏆 📅), degrade üst şerit ve renkli
+                    hap rozetleri kaldırıldı; panel kartlarıyla aynı dil. */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
                   {[
-                    { label: "Toplam Seans", value: totalSessions, icon: "🎮", color: "#4a95cc", sub: "kayıt" },
-                    { label: "Aktif Danışan", value: clientOptions.length, icon: "👥", color: "#6fb87f", sub: "profil" },
-                    { label: "En Çok Oynanan", value: topGame?.label ?? "—", icon: "🏆", color: "#dda05e", sub: "oyun", isText: true },
-                    { label: "Bu Hafta", value: thisWeekCount, icon: "📅", color: "#e2705f", sub: "seans" },
-                  ].map(({ label, value, icon, color, sub, isText }) => (
-                    <div key={label} className="relative overflow-hidden rounded-2xl border border-(--color-line) p-3.5 lg:p-5" style={{ background: "var(--color-surface-strong)" }}>
-                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg,${color},transparent)` }} />
-                      <div className="flex items-start justify-between mb-2 lg:mb-3">
-                        <span className="text-xl lg:text-2xl">{icon}</span>
-                        <span className="text-[9px] lg:text-[10px] font-bold px-1.5 lg:px-2 py-0.5 rounded-full text-white" style={{ background: color }}>{sub}</span>
+                    { label: "Toplam Seans", value: String(totalSessions), sub: "kayıt", Icon: Gamepad2, accent: "var(--color-domain-motor)", isText: false },
+                    { label: "Aktif Danışan", value: String(clientOptions.length), sub: "profil", Icon: Users, accent: "var(--color-accent-green)", isText: false },
+                    { label: "En Çok Oynanan", value: topGame?.label ?? "—", sub: "oyun", Icon: Trophy, accent: "var(--color-signal)", isText: true },
+                    { label: "Bu Hafta", value: String(thisWeekCount), sub: "seans", Icon: CalendarDays, accent: "var(--color-accent-teal)", isText: false },
+                  ].map(({ label, value, sub, Icon, accent, isText }) => (
+                    <div key={label} className="rounded-2xl p-4 lg:p-5 flex flex-col gap-3"
+                      style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
+                      <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                        style={{ background: `color-mix(in srgb, ${accent} 13%, transparent)` }}>
+                        <Icon size={15} style={{ color: accent }} />
+                      </span>
+                      <div>
+                        {isText
+                          ? <p className="text-base lg:text-lg font-bold m-0 leading-tight text-(--color-text-strong)">{value}</p>
+                          : <strong className="numeral text-3xl lg:text-[2.5rem] font-extrabold block leading-none text-(--color-text-strong)">{value}</strong>
+                        }
+                        <span className="text-(--color-text-body) text-xs lg:text-sm font-semibold block mt-2">{label}</span>
+                        <span className="text-(--color-text-muted) text-[11px] block mt-0.5">{sub}</span>
                       </div>
-                      {isText
-                        ? <p className="text-sm lg:text-lg font-extrabold m-0 leading-tight" style={{ color }}>{value}</p>
-                        : <strong className="text-3xl lg:text-4xl font-extrabold tabular-nums block mb-0.5" style={{ color }}>{value}</strong>
-                      }
-                      <span className="text-(--color-text-muted) text-[10px] lg:text-xs">{label}</span>
                     </div>
                   ))}
                 </div>
@@ -6027,7 +6067,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         {/* Vertical line */}
                         <div className="absolute left-9 top-5 bottom-5 w-px" style={{ background: "var(--color-line)" }} />
                         {recentFeed.map((session, i) => {
-                          const gc = GAME_COLORS[session.gameKey] ?? "#4a95cc";
+                          const gc = gameAccent(session.gameKey ?? "");
                           const timeAgo = (() => {
                             const d = new Date(session.playedAt);
                             const diff = Math.floor((Date.now() - d.getTime()) / 60000);
@@ -6141,10 +6181,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                             const pct = entry && globalMax > 0 ? Math.round((entry.best / globalMax) * 100) : 0;
                             return (
                               <div key={d.key} className="flex items-center gap-2.5 p-2.5 rounded-xl border" style={{ background: "var(--color-surface-elevated)", borderColor: "var(--color-line)" }}>
-                                <div className="w-1 h-8 rounded-full shrink-0" style={{ background: `${GAME_COLORS[d.key]}` }} />
+                                <div className="w-1 h-8 rounded-full shrink-0" style={{ background: gameAccent(d.key) }} />
                                 <div className="min-w-0">
                                   <p className="text-[10px] font-bold text-(--color-text-muted) m-0 uppercase tracking-wide truncate">{d.label}</p>
-                                  <p className="text-sm font-extrabold m-0" style={{ color: GAME_COLORS[d.key] }}>{entry?.best ?? 0} <span className="text-[9px] font-normal text-(--color-text-muted)">({pct}%)</span></p>
+                                  <p className="text-sm font-extrabold m-0" style={{ color: gameAccent(d.key) }}>{entry?.best ?? 0} <span className="text-[9px] font-normal text-(--color-text-muted)">({pct}%)</span></p>
                                 </div>
                               </div>
                             );

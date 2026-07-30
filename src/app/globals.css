@@ -80,9 +80,13 @@
   --color-games-badge-bg: rgba(255, 255, 255, 0.10);
   --color-games-badge-border: rgba(255, 255, 255, 0.20);
 
-  /* ── Font ── */
-  --font-sans: var(--font-body-face), "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-display-face), "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  /* ── Font ──
+     Tek grotesk aile (Schibsted Grotesk) + sayısal okumalar için mono.
+     `--font-display` ile `--font-sans` aynı aileyi işaret eder; ayrım
+     ağırlık ve harf aralığından gelir, ikinci bir aileden değil.
+     Bkz. app/layout.tsx başındaki gerekçe. */
+  --font-sans: var(--font-body-face), "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-body-face), "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-numeric: var(--font-mono-face), "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* ── Radius ── */
@@ -260,10 +264,19 @@
 html {
   font-family: var(--font-sans);
   scroll-behavior: smooth;
+  /* Sabit başlık yüksekliği + nefes payı. Bu olmadan bölüm bağlantıları
+     hedefi başlığın altına gizliyor, sayfa "yanlış yerden" başlıyordu. */
+  scroll-padding-top: 6.5rem;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   color-scheme: dark;
   transition: color 0.3s ease, background-color 0.3s ease;
+}
+
+/* Bölüm çapaları — programatik scrollIntoView için de aynı pay. */
+section[id],
+div[id="top"] {
+  scroll-margin-top: 6.5rem;
 }
 
 /* ── Light theme overrides ── */
@@ -423,12 +436,19 @@ a {
   text-decoration: none;
 }
 
-/* Başlıklar satır sonlarında dengeli sarsın (tek kelimelik yetim satır olmasın) */
-h1, h2, h3, .font-display {
+/* Başlıklar satır sonlarında dengeli sarsın (tek kelimelik yetim satır olmasın).
+   Gövdeyle aynı aileyi kullandığımız için başlığı ayıran şey optik sıkılık:
+   punto büyüdükçe harf aralığı daralır, küçük başlıklarda normale döner.
+   Ağırlık bilinçli olarak burada belirtilmiyor — bileşenlerdeki sınıflar
+   (font-bold / font-extrabold) tek yetkili kalsın. */
+h1, h2, h3, h4, .font-display {
   font-family: var(--font-display);
   text-wrap: balance;
   letter-spacing: -0.025em;
 }
+h1 { letter-spacing: -0.04em; }
+h2 { letter-spacing: -0.034em; }
+h4 { letter-spacing: -0.018em; }
 
 button, input, textarea, select {
   font: inherit;
@@ -1632,31 +1652,40 @@ html[data-theme='light'] .section-games {
    ─────────────────────────────────────────────── */
 
 /* Aurora — slowly morphing mesh gradient used behind hero + CTA */
-@keyframes aurora-shift {
-  0%   { transform: translate3d(0, 0, 0) scale(1); }
-  33%  { transform: translate3d(4%, -3%, 0) scale(1.08); }
-  66%  { transform: translate3d(-3%, 4%, 0) scale(0.96); }
-  100% { transform: translate3d(0, 0, 0) scale(1); }
-}
-.aurora-layer {
+/*
+ * Zemin dokusu.
+ *
+ * Eskiden burada 60px bulanıklıkta, sürekli hareket eden üç renkli bir
+ * "aurora" vardı. Bej kâğıt zeminde bu atmosfer değil leke okunuyordu —
+ * özellikle imleci takip eden ikinci bir bulanık daireyle üst üste
+ * bindiğinde. İkisi de kaldırıldı.
+ *
+ * Yerine milimetrik kâğıt: sabit, keskin, ölçüm dilinin parçası. Kaba
+ * ızgara 96px, ince ızgara 16px; ikisi de kılcal ve neredeyse görünmez —
+ * varlığını ancak zemine bakınca fark edersiniz, tıpkı gerçek bir
+ * değerlendirme formu gibi.
+ */
+.paper-grid {
   position: absolute;
-  inset: -20%;
+  inset: 0;
   pointer-events: none;
-  filter: blur(60px);
-  opacity: 0.55;
-  background:
-    radial-gradient(42% 36% at 22% 28%, rgba(29, 90, 140, 0.30), transparent 62%),
-    radial-gradient(34% 30% at 78% 18%, rgba(184, 118, 58, 0.16), transparent 66%),
-    radial-gradient(45% 40% at 62% 78%, rgba(91, 113, 131, 0.18), transparent 62%);
-  animation: aurora-shift 22s ease-in-out infinite;
-  will-change: transform;
+  /* Kılcal ızgara tonları bilinçli olarak `--color-line*` yerine burada
+     tanımlı: çizgi jetonları kart kenarları için ayarlı, zeminde tam bir
+     ton daha koyu olmaları gerekiyor yoksa hiç görünmüyorlar. */
+  /* Tek bir ızgara. İnce+kalın iki katman denendi; ince olan görünür
+     olacak kadar koyulaştırıldığında zemin gürültülü, görünmez kalacak
+     kadar açıldığında ise anlamsızdı. Kalan tek ızgara 112px'te ve
+     gerçekten görülüyor — niyet buydu. */
+  --paper-rule: color-mix(in srgb, var(--color-text-strong) 11%, transparent);
+  background-image:
+    linear-gradient(to right, var(--paper-rule) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--paper-rule) 1px, transparent 1px);
+  background-size: 112px 112px, 112px 112px;
+  mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.45) 62%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.45) 62%, transparent 100%);
 }
-html[data-theme='light'] .aurora-layer {
-  opacity: 0.4;
-  background:
-    radial-gradient(42% 36% at 22% 28%, rgba(29, 90, 140, 0.14), transparent 62%),
-    radial-gradient(34% 30% at 78% 18%, rgba(143, 86, 38, 0.10), transparent 66%),
-    radial-gradient(45% 40% at 62% 78%, rgba(53, 112, 143, 0.10), transparent 62%);
+html[data-theme='dark'] .paper-grid {
+  --paper-rule: rgba(255, 255, 255, 0.06);
 }
 
 /* Noise overlay — subtle film grain for that "tactile" feel */
@@ -1699,37 +1728,21 @@ html[data-theme='light'] .noise-overlay {
 }
 .marquee-viewport:hover .marquee-track { animation-play-state: paused; }
 
-/* Animated gradient text — slow hue shift across brand gradient */
-@keyframes gradient-shift {
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
 /*
- * Eski tasarımın en jenerik ögesi animasyonlu degrade başlıktı.
- * Yerine: düz mürekkep + altında meşe rengi bir cetvel çentiği.
- * Motif, ürünün ölçüm yapan bir araç olduğunu söyler.
+ * Başlık vurgu satırı.
+ *
+ * Üç kuşak geçirdi: animasyonlu degrade → mürekkep + cetvel çentiği →
+ * yalnızca mürekkep. Çentikler dekoratifti; hiçbir şeyi ölçmüyor, yalnızca
+ * ölçüyormuş gibi duruyorlardı. Ölçüm motifi artık yalnızca gerçek veri
+ * taşıdığı yerde kullanılıyor (kahraman kartındaki tepki izi ekseni).
+ * Vurgu satırında kalan tek şey renk — ve o yeter.
  */
-.text-gradient-shift {
-  position: relative;
+.accent-line {
   color: var(--color-primary);
   white-space: nowrap;
 }
-.text-gradient-shift::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -0.12em;
-  height: 0.14em;
-  background:
-    repeating-linear-gradient(90deg, var(--color-signal) 0 2px, transparent 2px 7px);
-  opacity: 0.9;
-  border-radius: 1px;
-}
 @media (max-width: 640px) {
-  .text-gradient-shift { white-space: normal; }
-  .text-gradient-shift::after { display: none; }
+  .accent-line { white-space: normal; }
 }
 
 /* 3D tilt base — JS sets --rx / --ry via motion values */
@@ -1875,28 +1888,9 @@ html[data-theme='light'] .floating-cta {
   box-shadow: 0 20px 48px rgba(29, 90, 140,0.18), 0 0 0 1px rgba(255,255,255,0.9) inset;
 }
 
-/* Cursor spotlight — large soft glow following the mouse (desktop only) */
-.cursor-spotlight {
-  position: fixed;
-  pointer-events: none;
-  z-index: 40;
-  width: 520px;
-  height: 520px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(29, 90, 140,0.18), rgba(42, 114, 172,0.08) 40%, transparent 70%);
-  mix-blend-mode: screen;
-  transform: translate3d(-50%, -50%, 0);
-  will-change: transform, opacity;
-  transition: opacity 0.3s ease;
-  filter: blur(4px);
-}
-html[data-theme='light'] .cursor-spotlight {
-  mix-blend-mode: multiply;
-  background: radial-gradient(circle, rgba(29, 90, 140,0.14), rgba(42, 114, 172,0.06) 40%, transparent 70%);
-}
-@media (hover: none) and (pointer: coarse) {
-  .cursor-spotlight { display: none !important; }
-}
+/* İmleç spotu (.cursor-spotlight) kaldırıldı: 520px'lik bulanık daire,
+   açık temada `mix-blend-mode: multiply` ile zemine gri bir leke basıyor,
+   metnin üzerinden geçince başlığı kirletiyordu. Bkz. .paper-grid. */
 
 /* Accordion — height transition via grid trick */
 .acc-item { display: grid; grid-template-rows: auto 0fr; transition: grid-template-rows 0.45s cubic-bezier(0.22,1,0.36,1); }
@@ -1999,9 +1993,7 @@ html[data-theme='light'] .dot-grid {
 
 /* Reduced motion guards */
 @media (prefers-reduced-motion: reduce) {
-  .aurora-layer,
   .marquee-track,
-  .text-gradient-shift,
   .beam-sweep,
   .ring-conic::before,
   .halo-dot::after { animation: none !important; }
