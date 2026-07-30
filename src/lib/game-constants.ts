@@ -44,16 +44,38 @@ export const ROUTE_COMMANDS = [
   { key: "left" as const, label: "Sol", icon: "←" },
 ];
 
-export const SYMBOL_LIBRARY: SymbolVariant[] = [
-  { label: "Bulut", icon: "☁", accent: "#8ba0b0", background: "linear-gradient(180deg, rgba(10,22,20,0.92), rgba(7,15,14,0.78))", pattern: "rings" },
-  { label: "Damlacık", icon: "◔", accent: "#75899b", background: "linear-gradient(180deg, rgba(9,20,18,0.92), rgba(6,13,12,0.80))", pattern: "grid" },
-  { label: "Kırık Çizgi", icon: "〰", accent: "#75899b", background: "linear-gradient(180deg, rgba(11,21,19,0.92), rgba(8,16,15,0.78))", pattern: "wave" },
-  { label: "Halka", icon: "◎", accent: "#9db0be", background: "linear-gradient(180deg, rgba(10,23,21,0.92), rgba(7,17,16,0.78))", pattern: "rings" },
-  { label: "Işık", icon: "✦", accent: "#b6c4cf", background: "linear-gradient(180deg, rgba(12,25,22,0.92), rgba(9,19,17,0.78))", pattern: "grid" },
-  { label: "Dalga", icon: "≈", accent: "#8ba0b0", background: "linear-gradient(180deg, rgba(9,21,19,0.92), rgba(6,14,13,0.82))", pattern: "wave" },
-  { label: "Çember", icon: "○", accent: "#5b7183", background: "linear-gradient(180deg, rgba(8,21,19,0.92), rgba(6,15,14,0.82))", pattern: "rings" },
-  { label: "Kare", icon: "□", accent: "#75899b", background: "linear-gradient(180deg, rgba(10,20,18,0.92), rgba(7,15,14,0.80))", pattern: "grid" },
+/**
+ * Oyun sembolleri.
+ *
+ * Önceki set iki sorunla geliyordu. Birincisi renkler: sekiz sembolün
+ * altısı birbirinden ayırt edilemeyen gri-mavi tonlarındaydı (#8ba0b0,
+ * #75899b, #9db0be…) — oysa hafıza ve eşleme oyunlarının tek görevi
+ * sembolleri birbirinden ayırt etmek. İkincisi zemin: `rgba(10,22,20,0.92)`
+ * neredeyse siyah ve yeşile çalıyordu; lacivert tahtanın üzerinde kutular
+ * kart değil delik gibi duruyor, üzerlerindeki yazı okunmuyordu.
+ *
+ * Yeni sette her sembolün kendi belirgin rengi var ve zemin o renkten
+ * türetiliyor: kutu bir kart gibi kalkıyor, sembol öne çıkıyor.
+ */
+function symbolSurface(accent: string): string {
+  return `linear-gradient(180deg, color-mix(in srgb, ${accent} 17%, transparent), color-mix(in srgb, ${accent} 6%, transparent))`;
+}
+
+const SYMBOL_SEED: ReadonlyArray<Omit<SymbolVariant, "background">> = [
+  { label: "Bulut", icon: "☁", accent: "#7db8e0", pattern: "rings" },
+  { label: "Damlacık", icon: "◔", accent: "#a8d4b2", pattern: "grid" },
+  { label: "Kırık Çizgi", icon: "〰", accent: "#ecc493", pattern: "wave" },
+  { label: "Halka", icon: "◎", accent: "#b3d6ee", pattern: "rings" },
+  { label: "Işık", icon: "✦", accent: "#f0dcbb", pattern: "grid" },
+  { label: "Dalga", icon: "≈", accent: "#dda05e", pattern: "wave" },
+  { label: "Çember", icon: "○", accent: "#eda393", pattern: "rings" },
+  { label: "Kare", icon: "□", accent: "#b6c4cf", pattern: "grid" },
 ];
+
+export const SYMBOL_LIBRARY: SymbolVariant[] = SYMBOL_SEED.map((s) => ({
+  ...s,
+  background: symbolSurface(s.accent),
+}));
 
 // ── Session Set Presets ──
 export const SESSION_SET_PRESETS: readonly SessionSetPreset[] = [

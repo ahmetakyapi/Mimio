@@ -76,9 +76,12 @@ export function getDatabaseStatusLabel(status: DatabaseStatus | "loading"): stri
 }
 
 export function patternStyle(tile: SymbolVariant): CSSProperties {
-  if (tile.pattern === "grid") return { backgroundImage: "linear-gradient(90deg, rgba(17,84,137,0.08) 1px, transparent 1px), linear-gradient(180deg, rgba(17,84,137,0.08) 1px, transparent 1px)", backgroundSize: "22px 22px" };
-  if (tile.pattern === "wave") return { backgroundImage: "radial-gradient(circle at 0 100%, transparent 18px, rgba(17,84,137,0.1) 19px, rgba(17,84,137,0.1) 22px, transparent 23px), radial-gradient(circle at 24px 0, transparent 18px, rgba(17,84,137,0.1) 19px, rgba(17,84,137,0.1) 22px, transparent 23px)", backgroundSize: "48px 48px" };
-  return { backgroundImage: "radial-gradient(circle, rgba(17,84,137,0.1) 2px, transparent 3px), radial-gradient(circle, rgba(17,84,137,0.06) 14px, transparent 15px)", backgroundSize: "22px 22px, 64px 64px" };
+  /* Desen çizgileri koyu maviydi (`rgba(17,84,137,…)`) — koyu tahtanın
+     üzerinde tamamen kayboluyordu. Artık beyaz-alfa: her zeminde görünür
+     ama sembolün önüne geçmeyecek kadar hafif. */
+  if (tile.pattern === "grid") return { backgroundImage: "linear-gradient(90deg, rgba(255,255,255,0.055) 1px, transparent 1px), linear-gradient(180deg, rgba(255,255,255,0.055) 1px, transparent 1px)", backgroundSize: "22px 22px" };
+  if (tile.pattern === "wave") return { backgroundImage: "radial-gradient(circle at 0 100%, transparent 18px, rgba(255,255,255,0.07) 19px, rgba(255,255,255,0.07) 22px, transparent 23px), radial-gradient(circle at 24px 0, transparent 18px, rgba(255,255,255,0.07) 19px, rgba(255,255,255,0.07) 22px, transparent 23px)", backgroundSize: "48px 48px" };
+  return { backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.07) 2px, transparent 3px), radial-gradient(circle, rgba(255,255,255,0.04) 14px, transparent 15px)", backgroundSize: "22px 22px, 64px 64px" };
 }
 
 export function parseSessionNotes(value: unknown): SessionNote[] {

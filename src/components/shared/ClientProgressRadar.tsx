@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import type { RecentSessionEntry, PlatformGameKey } from "@/lib/platform-data";
 import { GAME_LABELS } from "@/lib/platform-data";
+import { gameAccent } from "@/lib/game-constants";
 
 interface ClientProgressRadarProps {
   sessions: RecentSessionEntry[];
@@ -63,10 +64,8 @@ export function ClientProgressRadar({ sessions, clientId }: ClientProgressRadarP
     return `${p.x},${p.y}`;
   }).join(" ");
 
-  const GAME_COLORS: Record<string, string> = {
-    memory: "#4a95cc", pairs: "#6fb87f", pulse: "#e2705f",
-    route: "#dda05e", difference: "#8ba0b0", scan: "#4a95cc", logic: "#dda05e",
-  };
+  /* Renk oyunun beceri alanından türer; elle yazılmış tablo "memory" ile
+     "scan"e aynı maviyi, "route" ile "logic"e aynı amberi veriyordu. */
 
   return (
     <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}>
@@ -117,8 +116,8 @@ export function ClientProgressRadar({ sessions, clientId }: ClientProgressRadarP
               const pRecent = getPoint(i, g.recentAvg);
               return (
                 <g key={g.key}>
-                  <circle cx={pBest.x} cy={pBest.y} r="3" fill="#1d5a8c" stroke="var(--color-surface-strong)" strokeWidth="1.5" />
-                  <circle cx={pRecent.x} cy={pRecent.y} r="2.5" fill="#3f7d4f" stroke="var(--color-surface-strong)" strokeWidth="1" />
+                  <circle cx={pBest.x} cy={pBest.y} r="3" fill="var(--color-primary)" stroke="var(--color-surface-strong)" strokeWidth="1.5" />
+                  <circle cx={pRecent.x} cy={pRecent.y} r="2.5" fill="var(--color-accent-green)" stroke="var(--color-surface-strong)" strokeWidth="1" />
                 </g>
               );
             })}
@@ -129,7 +128,7 @@ export function ClientProgressRadar({ sessions, clientId }: ClientProgressRadarP
               const labelR = maxR + 22;
               const x = cx + labelR * Math.cos(angle);
               const y = cy + labelR * Math.sin(angle);
-              const color = GAME_COLORS[g.key] ?? "#8fa1b2";
+              const color = gameAccent(g.key);
               return (
                 <g key={`label-${g.key}`}>
                   <text x={x} y={y - 4} textAnchor="middle" fontSize="8" fontWeight="700" fill={color}>
@@ -147,13 +146,13 @@ export function ClientProgressRadar({ sessions, clientId }: ClientProgressRadarP
         {/* Stats grid below radar */}
         <div className="grid grid-cols-4 gap-1.5 mt-2">
           {gameStats.filter(g => g.count > 0).slice(0, 4).map(g => {
-            const color = GAME_COLORS[g.key] ?? "#8fa1b2";
+            const color = gameAccent(g.key);
             const trend = g.recentAvg > g.avg ? "up" : g.recentAvg < g.avg * 0.85 ? "down" : "stable";
             return (
               <div key={g.key} className="text-center rounded-lg p-1.5" style={{ background: `${color}08` }}>
                 <strong className="text-sm font-extrabold tabular-nums block" style={{ color }}>{g.best}</strong>
                 <span className="text-[8px] text-(--color-text-muted) block">{g.label.split(" ")[0]}</span>
-                <span className="text-[8px] font-bold" style={{ color: trend === "up" ? "#3f7d4f" : trend === "down" ? "#a8392c" : "#b8763a" }}>
+                <span className="text-[8px] font-bold" style={{ color: trend === "up" ? "var(--color-accent-green)" : trend === "down" ? "var(--color-accent-red)" : "var(--color-text-muted)" }}>
                   {trend === "up" ? "↑" : trend === "down" ? "↓" : "→"}
                 </span>
               </div>
