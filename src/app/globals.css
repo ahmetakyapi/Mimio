@@ -161,15 +161,41 @@
  * Tam genişlikli başlık şeridi olan görünümlerde (Terapi, Raporlar) şerit
  * kenardan kenara uzanır, içindeki metin yine bu hizaya oturur.
  */
+/* Menü satırı — hesap menüsündeki tüm eylemler aynı yükseklik ve hizada */
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border: none;
+  border-radius: 0.625rem;
+  background: transparent;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-body);
+  cursor: pointer;
+  transition: background-color 0.14s ease, color 0.14s ease;
+}
+.menu-row:hover { background: var(--color-surface-elevated); color: var(--color-text-strong); }
+.menu-row:disabled { opacity: 0.45; cursor: not-allowed; }
+.menu-row-danger { color: var(--color-accent-red); }
+.menu-row-danger:hover {
+  color: var(--color-accent-red);
+  background: color-mix(in srgb, var(--color-accent-red) 10%, transparent);
+}
+
 .app-shell {
   width: 100%;
   max-width: 72rem;
-  margin-inline: auto;
+  /* Sola yaslı: kenar çubuğu zaten solda sabit; kalan alanda içeriği
+     ortalamak geniş ekranda içeriği sağa kaydırıp kopuk gösteriyordu. */
+  margin-inline: 0 auto;
 }
 .app-shell-bleed > * {
   width: 100%;
   max-width: 72rem;
-  margin-inline: auto;
+  margin-inline: 0 auto;
 }
 
 /* Bölüm başlığı bloğu — eyebrow + başlık + açıklama tek ritimde */
