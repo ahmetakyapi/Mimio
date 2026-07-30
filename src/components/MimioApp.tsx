@@ -11,6 +11,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { printClientReport, exportSessionsCSV as exportSessionsCSVUtil, exportGoalsCSV } from "@/lib/export-utils";
+import { motion } from "framer-motion";
 import { GameArena } from "./game/GameArena";
 import { BlockMark } from "./brand/BlockMark";
 import { SessionTrendChart } from "./shared/SessionTrendChart";
@@ -109,7 +110,6 @@ import { QuickSessionStart } from "@/components/shared/QuickSessionStart";
 import { ClientProgressRadar } from "@/components/shared/ClientProgressRadar";
 import { SessionReminderBanner } from "@/components/shared/SessionReminder";
 import { ClientComparison } from "@/components/shared/ClientComparison";
-import { Breadcrumb, getBreadcrumbItems } from "@/components/shared/Breadcrumb";
 import { OnboardingTour } from "@/components/shared/OnboardingTour";
 import { WeeklyProgressReport } from "@/components/shared/WeeklyProgressReport";
 import { useCountUp } from "@/hooks/useCountUp";
@@ -2002,7 +2002,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 onClick={() => setAccountMenuOpen(false)}
               />
               <div
-                className="absolute bottom-full left-3 right-3 mb-2 z-50 rounded-xl overflow-hidden"
+                className="absolute bottom-full left-3 right-3 mb-2 z-50 rounded-2xl overflow-hidden"
                 style={{
                   background: "var(--color-surface-strong)",
                   border: "1px solid var(--color-line-strong)",
@@ -2010,77 +2010,122 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 }}
                 role="menu"
               >
-                <div className="px-3.5 py-3" style={{ borderBottom: "1px solid var(--color-line)" }}>
-                  <p className="text-sm font-bold text-(--color-text-strong) m-0 truncate">
-                    {activeTherapist?.displayName ?? "Terapist"}
-                  </p>
-                  <p className="text-xs text-(--color-text-muted) m-0 truncate">
-                    {activeTherapist?.specialty || activeTherapist?.clinicName || "Uzmanlık girilmemiş"}
-                  </p>
+                {/* Kimlik — avatar menünün içinde de görünür, bağlam kopmasın */}
+                <div className="flex items-center gap-3 px-3.5 py-3.5">
+                  <span
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0"
+                    style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }}
+                  >
+                    {activeTherapist?.displayName?.[0]?.toLocaleUpperCase("tr") ?? "T"}
+                  </span>
+                  <span className="min-w-0">
+                    <strong className="block text-sm font-bold text-(--color-text-strong) truncate leading-tight">
+                      {activeTherapist?.displayName ?? "Terapist"}
+                    </strong>
+                    <span className="block text-[11px] text-(--color-text-muted) truncate leading-tight mt-0.5">
+                      {activeTherapist?.specialty || activeTherapist?.clinicName || "Uzmanlık girilmemiş"}
+                    </span>
+                  </span>
                 </div>
 
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm font-medium text-(--color-text-body) hover:bg-(--color-surface-elevated) bg-transparent border-none cursor-pointer text-left transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  disabled={!activeTherapist}
-                  onClick={() => {
-                    if (!activeTherapist) return;
-                    setTherapistEditDraft({
-                      displayName: activeTherapist.displayName ?? "",
-                      clinicName: activeTherapist.clinicName ?? "",
-                      specialty: activeTherapist.specialty ?? "",
-                    });
-                    setShowEditTherapist(true);
-                    setAccountMenuOpen(false);
+                {/*
+                  Cetvel çentiği ayracı — marka motifi. Düz çizgi yerine
+                  ölçüm dilini menüye de taşır.
+                */}
+                <div
+                  aria-hidden="true"
+                  className="h-[3px] mx-3.5"
+                  style={{
+                    background:
+                      "repeating-linear-gradient(90deg, var(--color-signal) 0 1.5px, transparent 1.5px 6px)",
+                    opacity: 0.32,
                   }}
-                >
-                  <Edit2 size={15} className="shrink-0 text-(--color-text-muted)" />
-                  Profili düzenle
-                </button>
+                />
 
-                <div className="px-3.5 pt-2.5 pb-1">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-(--color-text-muted)">Görünüm</span>
-                </div>
-                <div className="flex gap-1 px-3 pb-2">
-                  {([
-                    { key: "light", label: "Açık", Icon: Sun },
-                    { key: "dark", label: "Koyu", Icon: Moon },
-                    { key: "high-contrast", label: "Yüksek", Icon: Eye },
-                  ] as const).map(({ key, label, Icon }) => {
-                    const on = theme === key;
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        role="menuitemradio"
-                        aria-checked={on}
-                        title={key === "high-contrast" ? "Yüksek kontrast" : `${label} tema`}
-                        className="flex-1 flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-bold cursor-pointer transition-colors"
-                        style={{
-                          background: on ? "var(--color-primary)" : "transparent",
-                          color: on ? "var(--color-text-inverse)" : "var(--color-text-soft)",
-                          border: `1px solid ${on ? "var(--color-primary)" : "var(--color-line)"}`,
-                        }}
-                        onClick={() => setTheme(key)}
-                      >
-                        <Icon size={14} />
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
+                <div className="p-1.5">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-sm font-medium text-(--color-text-body) hover:bg-(--color-surface-elevated) bg-transparent border-none cursor-pointer text-left transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    disabled={!activeTherapist}
+                    onClick={() => {
+                      if (!activeTherapist) return;
+                      setTherapistEditDraft({
+                        displayName: activeTherapist.displayName ?? "",
+                        clinicName: activeTherapist.clinicName ?? "",
+                        specialty: activeTherapist.specialty ?? "",
+                      });
+                      setShowEditTherapist(true);
+                      setAccountMenuOpen(false);
+                    }}
+                  >
+                    <Edit2 size={14} className="shrink-0 text-(--color-text-muted)" />
+                    Profili Düzenle
+                  </button>
 
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm font-medium bg-transparent border-none cursor-pointer text-left transition-colors hover:bg-(--color-accent-red)/10"
-                  style={{ color: "var(--color-accent-red)", borderTop: "1px solid var(--color-line)" }}
-                  onClick={() => { setAccountMenuOpen(false); handleLogout(); }}
-                >
-                  <LogOut size={15} className="shrink-0" />
-                  Çıkış yap
-                </button>
+                  {/*
+                    Tema seçici — üç iri kutu yerine tek parçalı segment.
+                    Seçili olan kayan bir kapsülle işaretlenir; menü sakinleşir.
+                  */}
+                  <div className="px-2.5 pt-3 pb-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-(--color-text-muted)">
+                      Görünüm
+                    </span>
+                  </div>
+                  <div
+                    className="relative mx-1 flex p-0.5 rounded-xl"
+                    style={{ background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}
+                    role="radiogroup"
+                    aria-label="Tema"
+                  >
+                    {([
+                      { key: "light", label: "Açık", Icon: Sun },
+                      { key: "dark", label: "Koyu", Icon: Moon },
+                      { key: "high-contrast", label: "Yüksek kontrast", Icon: Eye },
+                    ] as const).map(({ key, label, Icon }) => {
+                      const on = theme === key;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          role="radio"
+                          aria-checked={on}
+                          title={key === "high-contrast" ? "Yüksek kontrast" : `${label} tema`}
+                          onClick={() => setTheme(key)}
+                          /* Aktif segment etiketini gösterip genişler, diğerleri
+                             yalnızca ikon kalır: dar sidebar'da üç etiket
+                             yan yana sığmıyor ve taşıyordu. */
+                          className={`relative flex items-center justify-center gap-1.5 py-1.5 rounded-[0.6rem] text-[11px] font-semibold cursor-pointer border-none bg-transparent transition-all ${
+                            on ? "flex-1" : "px-2.5"
+                          }`}
+                          style={{ color: on ? "var(--color-text-inverse)" : "var(--color-text-soft)" }}
+                        >
+                          {on && (
+                            <motion.span
+                              layoutId="theme-pill"
+                              transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                              className="absolute inset-0 rounded-[0.6rem]"
+                              style={{ background: "var(--color-primary)" }}
+                            />
+                          )}
+                          <Icon size={13} className="relative shrink-0" />
+                          {on && <span className="relative whitespace-nowrap">{label}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 mt-2 rounded-xl text-sm font-medium bg-transparent border-none cursor-pointer text-left transition-colors hover:bg-(--color-accent-red)/10"
+                    style={{ color: "var(--color-accent-red)" }}
+                    onClick={() => { setAccountMenuOpen(false); handleLogout(); }}
+                  >
+                    <LogOut size={14} className="shrink-0" />
+                    Çıkış Yap
+                  </button>
+                </div>
               </div>
             </>
           )}
@@ -2231,21 +2276,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         style={{ paddingLeft: "env(safe-area-inset-left, 0px)", paddingRight: "env(safe-area-inset-right, 0px)" }}
       >
 
-        {/* ── Breadcrumb Navigation ──
-            Oyun alanında gizli: hemen altındaki başlık zaten aynı bilgiyi veriyor
-            ve seans ekranında her piksel tahtaya ait. */}
-        {activeAppView !== "games" && (
-          <div className="px-4 lg:px-8 pt-3 lg:pt-4 max-w-5xl mx-auto">
-            <Breadcrumb
-              items={getBreadcrumbItems(activeAppView, selectedClient?.displayName)}
-              onNavigate={setActiveAppView}
-            />
-          </div>
-        )}
-
         {/* ── Dashboard ── */}
         {activeAppView === "dashboard" && (
-          <div className="p-4 lg:p-8 max-w-5xl mx-auto space-y-5 lg:space-y-8">
+          <div className="app-shell p-4 lg:p-6 space-y-5 lg:space-y-8">
 
             {/* Header */}
             <div className="flex items-start justify-between pt-1 gap-3">
@@ -2739,7 +2772,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
         {/* ── Clients List ── */}
         {activeAppView === "clients" && (
-          <div className="p-4 lg:p-6 max-w-5xl mx-auto space-y-5 lg:space-y-6">
+          <div className="app-shell p-4 lg:p-6 space-y-5 lg:space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between pt-1">
               <div>
@@ -3100,7 +3133,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           const clientSessions = platformOverview.recentSessions.filter((s) => s.clientId === selectedClientId);
           const bestScore = clientSessions.length > 0 ? Math.max(...clientSessions.map((s) => s.score)) : 0;
           return (
-            <div className="p-4 sm:p-5 lg:p-8 max-w-3xl mx-auto space-y-4 sm:space-y-6">
+            <div className="app-shell p-4 sm:p-5 lg:p-6 space-y-4 sm:space-y-6">
 
               {/* ── Back button ── */}
               <button type="button" className="flex items-center gap-2 text-sm font-bold px-3 py-1.5 rounded-xl border cursor-pointer transition-all hover:opacity-80" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)", color: "var(--color-primary)" }} onClick={() => setActiveAppView("clients")}>
@@ -5685,16 +5718,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           return (
             <div className="flex flex-col flex-1 min-h-0 overflow-hidden page-enter">
               {/* Header */}
-              <div className="relative flex items-center justify-between gap-3 px-4 lg:px-6 py-3.5 lg:py-5 border-b border-(--color-line) overflow-hidden shrink-0" style={{ background: "var(--color-chrome-section)", backdropFilter: "blur(20px)" }}>
+              <div className="relative border-b border-(--color-line) overflow-hidden shrink-0" style={{ background: "var(--color-chrome-section)", backdropFilter: "blur(20px)" }}>
+                <div className="app-shell flex items-center justify-between gap-3 px-4 lg:px-6 py-3.5 lg:py-5">
                 <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 80% at 0% 50%, rgba(184, 118, 58,0.06), transparent)" }} />
-                <div className="relative flex items-center gap-2.5 lg:gap-3">
-                  <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg,#b8763a,#a8392c)", boxShadow: "0 4px 14px rgba(184, 118, 58,0.4)" }}>
-                    <BarChart3 size={15} className="text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-lg lg:text-xl font-extrabold text-(--color-text-strong) m-0 tracking-tight">Raporlar & Analitik</h1>
-                    <p className="text-(--color-text-soft) text-xs lg:text-sm m-0 hidden sm:block">Seans verileri, oyun performansı ve danışan ilerleme özeti.</p>
-                  </div>
+                <div className="relative">
+                  <h1 className="text-lg lg:text-xl font-extrabold text-(--color-text-strong) m-0 tracking-tight">Raporlar & Analitik</h1>
+                  <p className="text-(--color-text-soft) text-xs lg:text-sm m-0 hidden sm:block">Seans verileri, oyun performansı ve danışan ilerleme özeti.</p>
                 </div>
                 <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                   {platformOverview.recentSessions.length > 0 && (
@@ -5751,9 +5780,11 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     <RefreshCw size={13} /> <span className="hidden sm:inline">Yenile</span>
                   </button>
                 </div>
+                </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6 lg:space-y-8">
+              <div className="flex-1 overflow-y-auto">
+                <div className="app-shell p-4 lg:p-6 space-y-6 lg:space-y-8">
 
                 {/* ── KPI strip ── */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
@@ -6185,6 +6216,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   );
                 })()}
 
+                </div>
               </div>
             </div>
           );
@@ -6194,16 +6226,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         {activeAppView === "therapy-program" && (
           <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
             {/* ── Premium Header ── */}
-            <div className="relative flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4 px-4 lg:px-6 py-4 lg:py-5 border-b border-(--color-line) overflow-hidden" style={{ background: "var(--color-chrome-section)", backdropFilter: "blur(20px)" }}>
+            <div className="relative border-b border-(--color-line) overflow-hidden" style={{ background: "var(--color-chrome-section)", backdropFilter: "blur(20px)" }}>
+              <div className="app-shell flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4 px-4 lg:px-6 py-4 lg:py-5">
               {/* Background glow */}
               <div className="absolute top-0 left-0 w-64 h-32 rounded-full pointer-events-none" style={{ background: "var(--color-primary)", opacity: 0.04, filter: "blur(50px)", transform: "translate(-20%,-40%)" }} />
               <div className="relative">
-                <div className="flex items-center gap-2.5 mb-1">
-                  <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, var(--color-primary), #2a72ac)", boxShadow: "0 2px 8px var(--color-primary)/30" }}>
-                    <Stethoscope size={13} className="text-white" />
-                  </div>
-                  <h1 className="text-lg lg:text-xl font-extrabold text-(--color-text-strong) m-0 tracking-tight">Terapi Programı</h1>
-                </div>
+                <h1 className="text-lg lg:text-xl font-extrabold text-(--color-text-strong) m-0 mb-1 tracking-tight">Terapi Programı</h1>
                 <p className="text-(--color-text-soft) text-xs lg:text-sm m-0 max-w-lg leading-relaxed hidden sm:block">Kanıta dayalı ergoterapi alanlarına göre kişiselleştirilmiş aktivite önerileri ve oyun eşlemeleri.</p>
               </div>
               {clientOptions.length > 0 && (
@@ -6215,10 +6243,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   </select>
                 </div>
               )}
+              </div>
             </div>
 
             {/* ── Premium Tabs ── */}
-            <div className="tab-scroll flex gap-1 px-3 lg:px-4 py-2 lg:py-2.5 border-b border-(--color-line)" style={{ background: "var(--color-chrome-section)" }}>
+            <div className="border-b border-(--color-line)" style={{ background: "var(--color-chrome-section)" }}>
+            <div className="app-shell tab-scroll flex gap-1 px-3 lg:px-4 py-2 lg:py-2.5">
               {([
                 {key: "domains" as const, label: "Alanlar", labelFull: "Terapi Alanları", Icon: Stethoscope, disabled: false},
                 {key: "activities" as const, label: "Aktivite", labelFull: "Aktiviteler", Icon: ClipboardList, disabled: !tpSelectedDomain},
@@ -6240,6 +6270,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   <span className="sm:hidden">{label}</span>
                 </button>
               ))}
+            </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 lg:p-6">

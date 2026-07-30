@@ -151,6 +151,27 @@
 }
 .shell-wide { max-width: 88rem; }
 
+/*
+ * Uygulama içi içerik genişliği.
+ *
+ * Görünümler arasında 48rem / 64rem / tam genişlik arasında zıplıyordu;
+ * sekme değiştirince başlıklar farklı yerden başlıyor, sayfa "kayıyor"
+ * hissi veriyordu. Tek değer: hepsi aynı hizada başlar.
+ *
+ * Tam genişlikli başlık şeridi olan görünümlerde (Terapi, Raporlar) şerit
+ * kenardan kenara uzanır, içindeki metin yine bu hizaya oturur.
+ */
+.app-shell {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+}
+.app-shell-bleed > * {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+}
+
 /* Bölüm başlığı bloğu — eyebrow + başlık + açıklama tek ritimde */
 .section-head {
   display: flex;
