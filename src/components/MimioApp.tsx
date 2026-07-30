@@ -291,6 +291,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const [archiveTargetId, setArchiveTargetId] = useState<string | null>(null);
   const [showEditTherapist, setShowEditTherapist] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [savingTherapist, setSavingTherapist] = useState(false);
+  const announcedAchievementsRef = useRef<Set<string>>(new Set());
   const [therapistEditDraft, setTherapistEditDraft] = useState({ displayName: "", clinicName: "", specialty: "" });
   const [postGameNote, setPostGameNote] = useState("");
   const [isNotesLoading, setIsNotesLoading] = useState(false);
@@ -664,7 +666,21 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
   // ── Update therapist profile ──
   async function handleUpdateTherapist() {
-    if (!activeTherapistId) return;
+    /*
+     * Önceki sürüm oturum yoksa sessizce return ediyor, hatalı yanıtta da
+     * hiçbir şey söylemiyordu: düğmeye basınca "hiçbir işlem olmuyor" gibi
+     * görünmesinin sebebi buydu. Artık her yol bir geri bildirim üretir.
+     */
+    const name = therapistEditDraft.displayName.trim();
+    if (!activeTherapistId) {
+      showToast("Oturum bilgisi okunamadı. Çıkış yapıp tekrar girin.", "warning");
+      return;
+    }
+    if (!name) {
+      showToast("Ad soyad boş bırakılamaz.", "warning");
+      return;
+    }
+    setSavingTherapist(true);
     try {
       const res = await fetch("/api/platform/profiles", {
         method: "POST",
@@ -672,18 +688,24 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         body: JSON.stringify({
           kind: "update-therapist",
           therapistId: activeTherapistId,
-          displayName: therapistEditDraft.displayName.trim() || undefined,
+          displayName: name,
           clinicName: therapistEditDraft.clinicName,
           specialty: therapistEditDraft.specialty,
         }),
       });
-      if (res.ok) {
-        const { profile } = (await res.json()) as { profile: TherapistProfile };
-        await loadPlatformOverview();
-        setShowEditTherapist(false);
-        showToast(`✅ Profil güncellendi — ${profile.displayName}`, "success");
+      const payload = (await res.json().catch(() => null)) as { profile?: TherapistProfile; message?: string } | null;
+      if (!res.ok) {
+        showToast(payload?.message ?? "Profil güncellenemedi.", "warning");
+        return;
       }
-    } catch { showToast("Profil güncellenemedi", "warning"); }
+      await loadPlatformOverview();
+      setShowEditTherapist(false);
+      showToast(`Profil güncellendi — ${payload?.profile?.displayName ?? name}`, "success");
+    } catch {
+      showToast("Sunucuya ulaşılamadı, profil güncellenemedi.", "warning");
+    } finally {
+      setSavingTherapist(false);
+    }
   }
 
   // ── Post-game note handler ──
@@ -1550,13 +1572,20 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   }, [activeGame, activeAppView, differenceCursor, differenceState, logicCursor, logicState, memoryCursor, memoryState, pairsCursor, pairsState, pulseCursor, pulseState, routeCursor, routeState, scanCursor, scanState]);
 
   // ── Achievement handler ──
+  /*
+   * Bildirim, tekrar koruması olan state güncellemesinin dışındaydı:
+   * StrictMode'da efekt iki kez koştuğunda aynı başarım için iki toast
+   * düşüyordu. Duyuru artık ref ile bir kez yapılır.
+   */
   function handleEarnAchievement(achievementId: string) {
+    if (announcedAchievementsRef.current.has(achievementId)) return;
+    announcedAchievementsRef.current.add(achievementId);
     setEarnedAchievements(prev => {
       if (prev.some(e => e.id === achievementId)) return prev;
       return [...prev, { id: achievementId, earnedAt: new Date().toISOString() }];
     });
     const ach = ACHIEVEMENTS.find(a => a.id === achievementId);
-    if (ach) showToast(`🏅 Başarım: ${ach.title}`, "success");
+    if (ach) showToast(`Başarım kazanıldı — ${ach.title}`, "success");
   }
 
   // ── Derived values ──
@@ -7568,14 +7597,32 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
       {/* ── Achievement Panel Modal ── */}
       {showAchievements && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)" }} onClick={() => setShowAchievements(false)}>
-          <div className="w-full max-w-md max-h-[80vh] overflow-y-auto rounded-3xl border" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }} onClick={e => e.stopPropagation()}>
-            <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #1d5a8c, #b8763a, #b8503f)" }} />
-            <div className="p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0">Başarımlar</h3>
-                <button type="button" onClick={() => setShowAchievements(false)} className="w-8 h-8 rounded-xl flex items-center justify-center bg-(--color-surface) border-none cursor-pointer text-(--color-text-muted) hover:text-(--color-text-body)">✕</button>
-              </div>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6" style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)" }} onClick={() => setShowAchievements(false)}>
+          {/*
+            Geniş, iki sütunlu panel. Önceki hâli max-w-md idi; on iki rozet
+            dar bir sütuna sıkışıyor, etiketler satır atlıyor ve hepsi kilitli
+            gri ikonlar olarak görünüyordu.
+          */}
+          <div
+            className="w-full max-w-3xl max-h-[86vh] flex flex-col rounded-2xl overflow-hidden"
+            style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}
+            onClick={e => e.stopPropagation()}
+            role="dialog"
+            aria-label="Başarımlar"
+          >
+            <header className="flex items-center gap-3 px-5 sm:px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--color-line)" }}>
+              <Award size={17} className="shrink-0" style={{ color: "var(--color-signal)" }} />
+              <h3 className="font-display text-base font-extrabold text-(--color-text-strong) m-0 tracking-tight flex-1">Başarımlar</h3>
+              <button
+                type="button"
+                onClick={() => setShowAchievements(false)}
+                aria-label="Kapat"
+                className="w-8 h-8 rounded-lg flex items-center justify-center border-none cursor-pointer bg-transparent text-(--color-text-muted) hover:text-(--color-text-strong) hover:bg-(--color-surface-elevated) transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </header>
+            <div className="flex-1 min-h-0 overflow-y-auto px-5 sm:px-6 py-5">
               <AchievementPanel stats={achievementStats} earned={earnedAchievements} onEarn={handleEarnAchievement} />
             </div>
           </div>
@@ -7687,7 +7734,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       {/* Profil düzenleme — görünümden bağımsız, üst seviyede.
           Önceden `activeAppView === "clients"` bloğunun içindeydi; sidebar'daki
           "Profili düzenle" düğmesi diğer sekmelerde sessizce hiçbir şey yapmıyordu. */}
-      {showEditTherapist && activeTherapist && (
+      {showEditTherapist && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={() => setShowEditTherapist(false)}>
           <div className="rounded-2xl sm:rounded-3xl border p-5 sm:p-6 max-w-sm w-full space-y-4" style={{ background: "var(--color-surface-strong)", borderColor: "rgba(29, 90, 140,0.25)" }} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
@@ -7705,6 +7752,13 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 <X size={16} />
               </button>
             </div>
+            {!activeTherapistId && (
+              <div className="rounded-xl px-3 py-2.5 text-xs leading-relaxed"
+                style={{ background: "color-mix(in srgb, var(--color-accent-amber) 10%, transparent)", color: "var(--color-text-body)", border: "1px solid color-mix(in srgb, var(--color-accent-amber) 30%, transparent)" }}>
+                Oturum bilgisi okunamadı, bu yüzden kayıt yapılamaz. Çıkış yapıp
+                yeniden giriş yaptıktan sonra tekrar deneyin.
+              </div>
+            )}
             <div className="space-y-3">
               <div>
                 <label className="text-[10px] text-(--color-text-muted) font-bold uppercase tracking-wider mb-1 block">Ad Soyad</label>
@@ -7724,10 +7778,11 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             </div>
             <div className="flex gap-2 pt-1">
               <button type="button"
-                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white border-none cursor-pointer transition-all hover:opacity-90"
-                style={{ background: "linear-gradient(135deg, #1d5a8c, #4a95cc)" }}
+                disabled={!activeTherapistId || !therapistEditDraft.displayName.trim() || savingTherapist}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold border-none cursor-pointer transition-all hover:opacity-90 disabled:opacity-45 disabled:cursor-not-allowed"
+                style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }}
                 onClick={() => void handleUpdateTherapist()}>
-                Kaydet
+                {savingTherapist ? "Kaydediliyor…" : "Kaydet"}
               </button>
               <button type="button"
                 className="flex-1 py-2.5 rounded-xl text-sm font-bold border cursor-pointer"
