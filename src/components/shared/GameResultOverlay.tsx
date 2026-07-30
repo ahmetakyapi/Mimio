@@ -110,10 +110,10 @@ export function GameResultOverlay({ accent, gradFrom, gradTo, gameName, score, b
             )}
             {sessionAvg !== undefined && sessionAvg > 0 && (
               <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                <TrendingUp size={11} style={{ color: score >= sessionAvg ? "#7aac3a" : "#de8265", opacity: 0.8 }} />
+                <TrendingUp size={11} style={{ color: score >= sessionAvg ? "#3f7d4f" : "#e2705f", opacity: 0.8 }} />
                 <div>
                   <p className="text-white/35 text-[9px] uppercase tracking-wider font-bold m-0">Geçmiş Ort.</p>
-                  <p className="text-xs font-bold m-0" style={{ color: score >= sessionAvg ? "#7aac3a" : "#de8265" }}>
+                  <p className="text-xs font-bold m-0" style={{ color: score >= sessionAvg ? "#3f7d4f" : "#e2705f" }}>
                     {score >= sessionAvg ? "↑" : "↓"} {Math.abs(score - sessionAvg)}p fark
                   </p>
                 </div>

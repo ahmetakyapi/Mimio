@@ -257,7 +257,7 @@ export function TrustMarquee() {
                     key={`${t.name}-${i}`}
                     className="flex items-center gap-3 px-5 py-3 rounded-2xl border border-(--color-line) bg-(--color-surface) hover:border-(--color-primary)/30 transition-colors"
                   >
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#14847a]/20 to-[#0f6e63]/20 flex items-center justify-center border border-(--color-line)">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#2a72ac]/20 to-[#1d5a8c]/20 flex items-center justify-center border border-(--color-line)">
                       <Icon size={15} className="text-(--color-primary)" />
                     </div>
                     <div className="flex flex-col">
@@ -288,28 +288,28 @@ const WALKTHROUGH = [
     title: "Danışanı Tanıyın",
     body: "Demografik, klinik not ve değerlendirme verilerini tek ekranda toplayın. Her danışan için bir hafıza merkezi.",
     icon: Users,
-    accent: "#35b0a0",
+    accent: "#4a95cc",
     preview: "clients",
   },
   {
     title: "Haftalık Planı Oluşturun",
     body: "Terapi hedeflerine göre domainleri (motor, bilişsel, duyusal) seçin. Akıllı öneri motoru günün programını hazırlar.",
     icon: LayoutDashboard,
-    accent: "#35b0a0",
+    accent: "#4a95cc",
     preview: "plan",
   },
   {
     title: "Seansı Oyunlaştırın",
     body: `${PLATFORM_STATS.gameCount} terapi oyunundan birini başlatın. Skorlar anlık kaydedilir, zorluk danışan profiline göre seçilir.`,
     icon: Gamepad2,
-    accent: "#7fb2cc",
+    accent: "#8ba0b0",
     preview: "game",
   },
   {
     title: "Gelişimi Raporlayın",
     body: "Yazdırılabilir raporlar ve grafiklerle ilerlemeyi görselleştirin; seans verilerini CSV olarak dışa aktarın.",
     icon: BarChart3,
-    accent: "#9cc65e",
+    accent: "#6fb87f",
     preview: "report",
   },
 ] as const;
@@ -348,7 +348,7 @@ export function StickyWalkthrough() {
       <div ref={ref} style={{ height: `${steps * 58}vh` }}>
         <div className="sticky top-0 h-screen max-h-[46rem] flex items-center overflow-hidden">
           <div className="absolute inset-0 -z-10 dot-grid opacity-70" />
-          <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_60%_50%_at_50%_50%,rgba(15, 110, 99,0.1),transparent_70%)]" />
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_60%_50%_at_50%_50%,rgba(29, 90, 140,0.1),transparent_70%)]" />
 
           <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             {/* Left — step list */}
@@ -438,7 +438,7 @@ export function StickyWalkthrough() {
 
             {/* Right — animated preview */}
             <div className="relative">
-              <div className="absolute -inset-10 bg-[radial-gradient(ellipse_60%_50%_at_60%_50%,rgba(15, 110, 99,0.18),transparent)] blur-3xl pointer-events-none" />
+              <div className="absolute -inset-10 bg-[radial-gradient(ellipse_60%_50%_at_60%_50%,rgba(29, 90, 140,0.18),transparent)] blur-3xl pointer-events-none" />
               <div
                 className="relative glass-strong rounded-3xl overflow-hidden aspect-[4/3]"
                 style={{
@@ -608,7 +608,7 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
           <div className="flex items-center gap-1.5">
             <span
               className="halo-dot w-2 h-2 rounded-full"
-              style={{ color: "#d1503c", background: "#d1503c" }}
+              style={{ color: "#a8392c", background: "#a8392c" }}
             />
             <span className="text-[10px] font-bold text-(--color-text-body)">CANLI</span>
           </div>
@@ -714,8 +714,8 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
           </p>
           <div className="flex items-center gap-2">
             <span className="text-lg font-extrabold text-(--color-text-strong)">86</span>
-            <TrendingUp size={13} style={{ color: "#9cc65e" }} />
-            <span className="text-[10px] font-bold" style={{ color: "#9cc65e" }}>
+            <TrendingUp size={13} style={{ color: "#6fb87f" }} />
+            <span className="text-[10px] font-bold" style={{ color: "#6fb87f" }}>
               +12
             </span>
           </div>
@@ -726,8 +726,8 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
           </p>
           <div className="flex items-center gap-2">
             <span className="text-lg font-extrabold text-(--color-text-strong)">79</span>
-            <TrendingUp size={13} style={{ color: "#9cc65e" }} />
-            <span className="text-[10px] font-bold" style={{ color: "#9cc65e" }}>
+            <TrendingUp size={13} style={{ color: "#6fb87f" }} />
+            <span className="text-[10px] font-bold" style={{ color: "#6fb87f" }}>
               +8
             </span>
           </div>
@@ -754,7 +754,7 @@ export function ComparisonSection() {
   return (
     <section id="comparison" className="section relative overflow-hidden">
       <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_50%,rgba(20, 132, 122,0.06),transparent)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_50%,rgba(42, 114, 172,0.06),transparent)]" />
       </div>
       <div className="shell" style={{ maxWidth: "68rem" }}>
         <div className="text-center mb-12 md:mb-16">
@@ -764,7 +764,7 @@ export function ComparisonSection() {
           </span>
           <h2 className="text-3xl md:text-5xl font-extrabold text-(--color-text-strong) leading-tight mb-4">
             Geleneksel vs.{" "}
-            <span className="bg-gradient-to-r from-[#35b0a0] to-[#7fb2cc] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#4a95cc] to-[#8ba0b0] bg-clip-text text-transparent">
               Dijital Ergoterapi
             </span>
           </h2>
@@ -780,9 +780,9 @@ export function ComparisonSection() {
               Özellik
             </div>
             <div className="p-4 sm:p-6 relative">
-              <div className="absolute inset-0 bg-gradient-to-b from-[#14847a]/10 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-b from-[#2a72ac]/10 to-transparent" />
               <div className="relative flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#14847a] to-[#0f6e63] flex items-center justify-center text-white font-bold text-xs">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#2a72ac] to-[#1d5a8c] flex items-center justify-center text-white font-bold text-xs">
                   M
                 </div>
                 <span className="font-extrabold text-(--color-text-strong) tracking-tight">
@@ -813,11 +813,11 @@ export function ComparisonSection() {
                 {row.label}
               </div>
               <div className="p-4 sm:p-6 relative">
-                <div className="absolute inset-0 bg-gradient-to-b from-[#14847a]/5 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-b from-[#2a72ac]/5 to-transparent" />
                 <div className="relative flex items-start gap-2">
                   <ShieldCheck
                     size={16}
-                    className="shrink-0 mt-0.5 text-[#9cc65e]"
+                    className="shrink-0 mt-0.5 text-[#6fb87f]"
                   />
                   <span className="text-sm font-semibold text-(--color-text-strong)">
                     {row.mimio}
@@ -882,7 +882,7 @@ export function FAQSection() {
           <h2 className="text-3xl md:text-5xl font-extrabold text-(--color-text-strong) leading-tight mb-4">
             Aklınızdaki Soruları
             <br />
-            <span className="bg-gradient-to-r bg-[#35b0a0] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r bg-[#4a95cc] bg-clip-text text-transparent">
               Hızlıca Yanıtlayalım
             </span>
           </h2>
@@ -1006,14 +1006,14 @@ export function FloatingCTA({ onRegister }: FloatingCTAProps) {
           <span className="hidden sm:flex items-center gap-2 text-xs font-bold text-(--color-text-body) pr-1">
             <span
               className="halo-dot w-2 h-2 rounded-full"
-              style={{ color: "#7aac3a", background: "#7aac3a" }}
+              style={{ color: "#3f7d4f", background: "#3f7d4f" }}
             />
             Ücretsiz
           </span>
           <button
             type="button"
             onClick={onRegister}
-            className="flex items-center gap-1.5 text-xs font-bold bg-gradient-to-r from-[#14847a] to-[#0f6e63] text-white px-4 py-2 rounded-full hover:shadow-lg hover:shadow-[#14847a]/40 transition-shadow"
+            className="flex items-center gap-1.5 text-xs font-bold bg-gradient-to-r from-[#2a72ac] to-[#1d5a8c] text-white px-4 py-2 rounded-full hover:shadow-lg hover:shadow-[#2a72ac]/40 transition-shadow"
           >
             Hesap oluştur
             <Zap size={12} />
@@ -1046,13 +1046,13 @@ interface GameEntry {
 }
 // Platformdaki gerçek 7 oyun (GAME_LABELS ile birebir aynı adlar)
 const EXTENDED_GAMES: readonly GameEntry[] = [
-  { key: "memory", label: "Sıra Hafızası", area: "Çalışma Belleği", desc: "Sırayla yanan kutuları hatırlayıp aynı sırayla tekrar et; çalışma belleğini güçlendir.", color: "#0f6e63", icon: Brain },
-  { key: "pairs", label: "Kart Eşle", area: "Görsel Hafıza", desc: "Kapalı kartları açarak eşleşen çiftleri bul; görsel hafızayı pekiştir.", color: "#c07c2c", icon: Sparkles },
-  { key: "pulse", label: "Mavi Nabız", area: "El-Göz Koordinasyonu", desc: "Beliren hedeflere hızla dokunarak el-göz koordinasyonunu geliştir.", color: "#14847a", icon: Target },
-  { key: "route", label: "Komut Rotası", area: "Yön & Planlama", desc: "Gösterilen yön komutlarını doğru sırayla uygula; işlem hızını artır.", color: "#7aac3a", icon: Activity },
-  { key: "difference", label: "Fark Avcısı", area: "Görsel Ayrım", desc: "Benzer kartlar arasından farklı olanı bul; görsel ayrım becerisini destekle.", color: "#c4614a", icon: Eye },
-  { key: "scan", label: "Hedef Tarama", area: "Seçici Dikkat", desc: "Hedef simgeyi ızgara içinde tara ve bul; seçici dikkati çalıştır.", color: "#4f93b5", icon: Zap },
-  { key: "logic", label: "Dizi Mantık", area: "Yürütücü İşlevler", desc: "Matristeki örüntüyü çöz, eksik hücreyi tamamla; akıl yürütmeyi geliştir.", color: "#7fb2cc", icon: Puzzle },
+  { key: "memory", label: "Sıra Hafızası", area: "Çalışma Belleği", desc: "Sırayla yanan kutuları hatırlayıp aynı sırayla tekrar et; çalışma belleğini güçlendir.", color: "#1d5a8c", icon: Brain },
+  { key: "pairs", label: "Kart Eşle", area: "Görsel Hafıza", desc: "Kapalı kartları açarak eşleşen çiftleri bul; görsel hafızayı pekiştir.", color: "#b8763a", icon: Sparkles },
+  { key: "pulse", label: "Mavi Nabız", area: "El-Göz Koordinasyonu", desc: "Beliren hedeflere hızla dokunarak el-göz koordinasyonunu geliştir.", color: "#2a72ac", icon: Target },
+  { key: "route", label: "Komut Rotası", area: "Yön & Planlama", desc: "Gösterilen yön komutlarını doğru sırayla uygula; işlem hızını artır.", color: "#3f7d4f", icon: Activity },
+  { key: "difference", label: "Fark Avcısı", area: "Görsel Ayrım", desc: "Benzer kartlar arasından farklı olanı bul; görsel ayrım becerisini destekle.", color: "#b8503f", icon: Eye },
+  { key: "scan", label: "Hedef Tarama", area: "Seçici Dikkat", desc: "Hedef simgeyi ızgara içinde tara ve bul; seçici dikkati çalıştır.", color: "#5b7183", icon: Zap },
+  { key: "logic", label: "Dizi Mantık", area: "Yürütücü İşlevler", desc: "Matristeki örüntüyü çöz, eksik hücreyi tamamla; akıl yürütmeyi geliştir.", color: "#8ba0b0", icon: Puzzle },
 ];
 
 export function GamesCarousel({ onLogin }: { onLogin: () => void }) {

@@ -23,7 +23,7 @@ export function GET(req: NextRequest) {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#04070d',
+          background: '#0c1620',
           fontFamily: 'sans-serif',
           padding: '80px',
           position: 'relative',
@@ -32,7 +32,7 @@ export function GET(req: NextRequest) {
         {/* Radial gradients */}
         <div style={{
           position: 'absolute', inset: 0,
-          background: 'radial-gradient(circle at 20% 20%, rgba(15, 110, 99,0.22) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(11, 85, 76,0.12) 0%, transparent 50%)',
+          background: 'radial-gradient(circle at 20% 20%, rgba(29, 90, 140,0.22) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(23, 69, 110,0.12) 0%, transparent 50%)',
         }} />
 
         {/* M logo */}
@@ -43,7 +43,7 @@ export function GET(req: NextRequest) {
           width: 72,
           height: 72,
           borderRadius: 18,
-          background: 'linear-gradient(135deg, #0f6e63, #0b554c)',
+          background: 'linear-gradient(135deg, #1d5a8c, #17456e)',
           marginBottom: 40,
           fontSize: 36,
           fontWeight: 800,
@@ -57,7 +57,7 @@ export function GET(req: NextRequest) {
         <div style={{
           fontSize: 64,
           fontWeight: 800,
-          color: '#f1f5f9',
+          color: '#eef4fa',
           textAlign: 'center',
           lineHeight: 1.1,
           marginBottom: 24,
@@ -82,7 +82,7 @@ export function GET(req: NextRequest) {
           position: 'absolute',
           bottom: 48,
           fontSize: 20,
-          color: 'rgba(15, 110, 99,0.7)',
+          color: 'rgba(29, 90, 140,0.7)',
         }}>
           mimio.app
         </div>

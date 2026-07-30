@@ -36,7 +36,7 @@ export function showToast(message: string, type: ToastItem["type"] = "success") 
 export function ToastContainer() {
   const toasts = useToasts();
   if (toasts.length === 0) return null;
-  const colors = { success: "#7aac3a", info: "#0f6e63", warning: "#c07c2c" };
+  const colors = { success: "#3f7d4f", info: "#1d5a8c", warning: "#b8763a" };
   const icons = { success: "✓", info: "ℹ", warning: "⚠" };
   return (
     <div

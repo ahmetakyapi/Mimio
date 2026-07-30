@@ -36,8 +36,9 @@ function resolveTheme(pref: ThemePreference): Theme {
 }
 
 export function ThemeProvider({ children }: { readonly children: React.ReactNode }) {
-  const [preference, setPreference] = useState<ThemePreference>("dark");
-  const [theme, setThemeState] = useState<Theme>("dark");
+  /* Varsayılan açık tema: terapist gündüz, aydınlık bir odada çalışır. */
+  const [preference, setPreference] = useState<ThemePreference>("light");
+  const [theme, setThemeState] = useState<Theme>("light");
 
   // Initialize from localStorage or system preference
   useEffect(() => {
@@ -47,8 +48,8 @@ export function ThemeProvider({ children }: { readonly children: React.ReactNode
       if (saved && (VALID_THEMES.includes(saved as Theme) || saved === "system")) {
         initial = saved;
       } else {
-        // First visit: respect OS preference
-        initial = "system";
+        // İlk ziyaret: açık tema. Sistem tercihi kullanıcı seçince devreye girer.
+        initial = "light";
       }
       setPreference(initial);
       const resolved = resolveTheme(initial);

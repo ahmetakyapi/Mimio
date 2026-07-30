@@ -89,14 +89,14 @@ export function ClientComparison({ clientA, clientB, sessions, onClose }: Client
   const metricsA = useMemo(() => computeMetrics(sessions.filter(s => s.clientId === clientA.id)), [sessions, clientA.id]);
   const metricsB = useMemo(() => computeMetrics(sessions.filter(s => s.clientId === clientB.id)), [sessions, clientB.id]);
 
-  const colorA = "#0f6e63";
-  const colorB = "#c4614a";
+  const colorA = "#1d5a8c";
+  const colorB = "#b8503f";
 
   const allGames: PlatformGameKey[] = ["memory", "pairs", "pulse", "route", "difference", "scan", "logic"];
   const commonGames = allGames.filter(g => metricsA.gameScores[g] && metricsB.gameScores[g]);
 
   const trendIcons = { improving: TrendingUp, stable: Minus, declining: TrendingDown };
-  const trendColors = { improving: "#7aac3a", stable: "#c07c2c", declining: "#d1503c" };
+  const trendColors = { improving: "#3f7d4f", stable: "#b8763a", declining: "#a8392c" };
   const trendLabels = { improving: "Gelişiyor", stable: "Stabil", declining: "Düşüş" };
 
   return (

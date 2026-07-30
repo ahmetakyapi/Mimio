@@ -250,7 +250,7 @@ export const THERAPY_DOMAINS: TherapyDomain[] = [
     key: "pediatric",
     label: "Pediatrik Ergoterapi",
     icon: "baby",
-    color: "#4f93b5",
+    color: "#5b7183",
     description: "Çocuklarda motor gelişim, duyusal işleme, günlük yaşam becerileri ve oyun katılımını destekleyen terapi yaklaşımı.",
     goals: [
       { id: "ped-g1", label: "İnce motor beceri gelişimi", description: "Kalem tutma, makasla kesme, düğme ilikleme gibi el becerilerini geliştirme" },
@@ -410,7 +410,7 @@ export const THERAPY_DOMAINS: TherapyDomain[] = [
     key: "mental-health",
     label: "Ruh Sağlığı Ergoterapisi",
     icon: "brain",
-    color: "#14847a",
+    color: "#2a72ac",
     description: "Anksiyete, depresyon, stres ve psikiyatrik durumlarda aktivite katılımı ve yaşam kalitesini artıran ergoterapi yaklaşımı.",
     goals: [
       { id: "mh-g1", label: "Duygu düzenleme becerisi", description: "Duyguları tanıma, ifade etme ve uygun başa çıkma stratejileri geliştirme" },
@@ -550,7 +550,7 @@ export const THERAPY_DOMAINS: TherapyDomain[] = [
     key: "neurological",
     label: "Nörolojik Rehabilitasyon",
     icon: "zap",
-    color: "#c07c2c",
+    color: "#b8763a",
     description: "İnme, travmatik beyin hasarı ve nörodejeneratif hastalıklarda fonksiyonel bağımsızlığı yeniden kazandırmayı amaçlayan ergoterapi.",
     goals: [
       { id: "nr-g1", label: "Üst ekstremite fonksiyonunu yeniden kazanma", description: "Etkilenen kol ve el fonksiyonlarını tedavi edici aktivitelerle geri kazandırma" },
@@ -671,7 +671,7 @@ export const THERAPY_DOMAINS: TherapyDomain[] = [
     key: "neurodiversity",
     label: "Nöroçeşitlilik ve Otizm",
     icon: "puzzle",
-    color: "#4f93b5",
+    color: "#5b7183",
     description: "Otizm spektrum, DEHB, öğrenme güçlüğü gibi nörogelişimsel farklılıklarda katılım ve bağımsızlığı destekleyen ergoterapi.",
     goals: [
       { id: "nd-g1", label: "Duyusal düzenleme", description: "Duyusal işleme farklılıklarını yönetme ve adaptif yanıtlar geliştirme" },
@@ -793,7 +793,7 @@ export const THERAPY_DOMAINS: TherapyDomain[] = [
     key: "geriatric",
     label: "Geriatrik Ergoterapi",
     icon: "person-standing",
-    color: "#7aac3a",
+    color: "#3f7d4f",
     description: "Yaşlanmaya bağlı fonksiyonel kayıpları azaltma, düşme riskini yönetme ve yaşam kalitesini korumaya yönelik ergoterapi.",
     goals: [
       { id: "ge-g1", label: "Düşme riskini azaltma", description: "Denge eğitimi, ev düzenlemesi ve güvenli hareket stratejileri" },
@@ -914,7 +914,7 @@ export const THERAPY_DOMAINS: TherapyDomain[] = [
     key: "work-productivity",
     label: "İş & Okul Katılımı",
     icon: "briefcase",
-    color: "#c4614a",
+    color: "#b8503f",
     description: "İş yerinde verimlilik, ergonomik düzenleme, akademik performans ve meslek rehabilitasyonunu destekleyen ergoterapi.",
     goals: [
       { id: "wp-g1", label: "İş yeri/okul performansını artırma", description: "Dikkat süresi, organizasyon ve görev tamamlama becerilerini geliştirme" },
@@ -1015,7 +1015,7 @@ export const THERAPY_DOMAINS: TherapyDomain[] = [
     key: "community-social",
     label: "Toplum ve Sosyal Katılım",
     icon: "handshake",
-    color: "#f97316",
+    color: "#b8763a",
     description: "Bireylerin toplumsal yaşama aktif katılımını, sosyal rolleri sürdürmesini ve toplumsal engelleri aşmasını destekleyen ergoterapi.",
     goals: [
       { id: "cs-g1", label: "Toplumsal erişim becerisi", description: "Toplu taşıma, alışveriş, banka işlemleri gibi toplum içi görevleri bağımsız gerçekleştirme" },

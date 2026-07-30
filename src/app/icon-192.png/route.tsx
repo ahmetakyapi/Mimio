@@ -12,7 +12,7 @@ export function GET() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #0f6e63 0%, #35b0a0 100%)",
+          background: "linear-gradient(135deg, #1d5a8c 0%, #4a95cc 100%)",
           borderRadius: 40,
         }}>
         <span style={{ fontSize: 80, fontWeight: 900, color: "#fff", letterSpacing: -2 }}>
