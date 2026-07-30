@@ -1,19 +1,35 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans, Inter } from "next/font/google";
+import { Bricolage_Grotesque, Instrument_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-plus-jakarta",
+/*
+ * Üç rol, üç ses:
+ *   · Bricolage Grotesque — başlıklar. Hümanist-endüstriyel, hafif tuhaf;
+ *     sayfaya karakter veren tek öge. Değişken opsz ekseniyle büyük
+ *     boyutlarda sıkışır, küçükte açılır.
+ *   · Instrument Sans — arayüz ve gövde. Sessiz, dar, Türkçe aksanlarda net.
+ *   · IBM Plex Mono — yalnızca sayısal okumalar. Skor, süre, persentil ve
+ *     span değerleri gövde metninden ayrılmalı; klinik veri hizalı okunur.
+ */
+const display = Bricolage_Grotesque({
+  subsets: ["latin", "latin-ext"],
+  weight: ["600", "700", "800"],
+  variable: "--font-display-face",
   display: "swap",
 });
 
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-inter",
+const sans = Instrument_Sans({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-body-face",
+  display: "swap",
+});
+
+const mono = IBM_Plex_Mono({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-mono-face",
   display: "swap",
 });
 
@@ -62,7 +78,9 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { readonly children: React.ReactNode }) {
   return (
-    <html lang="tr" className={`${plusJakartaSans.variable} ${inter.variable}`}>
+    // suppressHydrationWarning: aşağıdaki inline script, React hidrasyondan
+    // önce data-theme'i yazar; bu kasıtlı sunucu/istemci farkıdır.
+    <html lang="tr" suppressHydrationWarning className={`${display.variable} ${sans.variable} ${mono.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('mimio-theme');var v;if(t==='light'||t==='dark'||t==='high-contrast'){v=t}else{v=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}document.documentElement.setAttribute('data-theme',v);}catch(e){document.documentElement.setAttribute('data-theme','dark');}` }} />
         <link rel="manifest" href="/manifest.json" />
@@ -70,7 +88,7 @@ export default function RootLayout({ children }: { readonly children: React.Reac
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
-      <body className={plusJakartaSans.className}>
+      <body>
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

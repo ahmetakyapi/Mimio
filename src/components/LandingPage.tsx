@@ -36,6 +36,8 @@ import {
   BarChart3,
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
+import { BlockMark, BrandLockup } from "./brand/BlockMark";
+import { HERO_STATS, PLATFORM_STATS } from "@/lib/platform-stats";
 import {
   AuroraBackdrop,
   ComparisonSection,
@@ -57,7 +59,7 @@ function ScrollProgress() {
   return (
     <motion.div
       style={{ scaleX }}
-      className="fixed top-0 left-0 right-0 z-[200] h-[2px] bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-400 origin-left pointer-events-none"
+      className="fixed top-0 left-0 right-0 z-[200] h-[2px] bg-gradient-to-r from-[#14847a] via-[#14847a] to-[#7fb2cc] origin-left pointer-events-none"
     />
   );
 }
@@ -74,42 +76,42 @@ const FEATURES = [
     icon: Users,
     title: "Danışan Yönetimi",
     body: "Tüm hastalarınızın bilgilerini, seans geçmişlerini ve kişisel notlarınızı güvenle saklayın.",
-    color: "#818cf8",
+    color: "#35b0a0",
     size: "large" as const,
   },
   {
     icon: Gamepad2,
     title: "İnteraktif Oyunlar",
-    body: "6 farklı bilişsel ve motor beceri oyunuyla çocukların seanslara katılımını artırın.",
-    color: "#c084fc",
+    body: `${PLATFORM_STATS.gameCount} bilişsel ve motor beceri oyunuyla çocukların seanslara katılımını artırın.`,
+    color: "#5bc6b8",
     size: "small" as const,
   },
   {
     icon: CalendarDays,
     title: "Haftalık Plan",
     body: "Her danışan için kişiselleştirilmiş terapi programları oluşturun.",
-    color: "#22d3ee",
+    color: "#7fb2cc",
     size: "small" as const,
   },
   {
     icon: TrendingUp,
     title: "İlerleme Analizi",
     body: "Oyun skorları ve seans verileriyle danışan gelişimini grafikler üzerinden takip edin.",
-    color: "#fcd34d",
+    color: "#efc98c",
     size: "large" as const,
   },
   {
     icon: FileText,
     title: "Seans Notları",
     body: "Her seansın detaylı gözlemlerini kolayca kaydedin ve geçmişe dönük inceleyin.",
-    color: "#6ee7b7",
+    color: "#c2dd95",
     size: "small" as const,
   },
   {
     icon: ShieldCheck,
     title: "Güvenli & Gizli",
     body: "Klinik standartlara uygun veri güvenliği ile danışan bilgileriniz koruma altında.",
-    color: "#f9a8d4",
+    color: "#eaa78f",
     size: "small" as const,
   },
 ];
@@ -120,21 +122,21 @@ const STEPS = [
     title: "Hesap Oluşturun",
     body: "Klinik veya bireysel profilinizi saniyeler içinde oluşturun.",
     icon: Sparkles,
-    color: "#818cf8",
+    color: "#35b0a0",
   },
   {
     num: "02",
     title: "Danışan Ekleyin",
     body: "Hizmet verdiğiniz kişilerin bilgilerini ve terapi hedeflerini girin.",
     icon: Users,
-    color: "#22d3ee",
+    color: "#7fb2cc",
   },
   {
     num: "03",
     title: "Oynayın & Takip Edin",
     body: "Seanslarda oyunları açın, sonuçları otomatik kaydedin.",
     icon: Play,
-    color: "#10b981",
+    color: "#7aac3a",
   },
 ];
 
@@ -144,28 +146,28 @@ const PERSONAS = [
     text: "Seanslarda çocuğun ilgisini oyunla canlı tutun; skorlar ve seans süreleri kendiliğinden kaydedilsin.",
     module: "Oyun Alanı",
     icon: Stethoscope,
-    gradient: "from-indigo-500 to-purple-500",
+    gradient: "bg-[#14847a]",
   },
   {
     role: "Nörolojik Rehabilitasyon Uzmanı",
     text: "El-göz koordinasyonu ve işlem hızı oyunlarıyla motor hedefleri çalışın, gelişimi grafiklerle izleyin.",
     module: "Raporlar",
     icon: Brain,
-    gradient: "from-cyan-500 to-blue-500",
+    gradient: "bg-[#4f93b5]",
   },
   {
     role: "Çocuk Gelişim Uzmanı",
-    text: "Her danışan için haftalık program oluşturun; 127 hazır aktiviteden ev programına uygun olanları seçin.",
+    text: `Her danışan için haftalık program oluşturun; ${PLATFORM_STATS.activityCount} hazır aktiviteden ${PLATFORM_STATS.homeExerciseCount} tanesi ev programına uygun.`,
     module: "Haftalık Plan",
     icon: Heart,
-    gradient: "from-emerald-500 to-teal-500",
+    gradient: "from-[#7aac3a] to-[#0f6e63]",
   },
   {
     role: "Özel Eğitim Uzmanı",
     text: "Kanıta dayalı protokolleri takip edin, SOAP formatında not tutun ve hedef bazlı ilerleme kaydedin.",
     module: "Terapi Programı",
     icon: Users,
-    gradient: "from-amber-500 to-orange-500",
+    gradient: "from-[#c07c2c] to-[#c4614a]",
   },
 ];
 
@@ -343,12 +345,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             onClick={() => scrollTo("top")}
             className="flex items-center gap-2.5"
           >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-indigo-500/25">
-              M
-            </div>
-            <span className="font-extrabold text-(--color-text-strong) text-lg tracking-tight">
-              Mimio
-            </span>
+            <BrandLockup size={30} animated />
           </button>
           <nav className="hidden md:flex items-center gap-1">
             {NAV_LINKS.map((l) => (
@@ -382,7 +379,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               <button
                 type="button"
                 onClick={onRegister}
-                className="text-sm font-semibold bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-5 py-2.5 rounded-xl hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-200 hover:-translate-y-0.5"
+                className="text-sm font-semibold bg-gradient-to-r from-[#14847a] to-[#0f6e63] text-white px-5 py-2.5 rounded-xl hover:shadow-lg hover:shadow-[#14847a]/25 transition-all duration-200 hover:-translate-y-0.5"
               >
                 Hemen Başla
               </button>
@@ -426,12 +423,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
           >
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
-                  M
-                </div>
-                <span className="font-extrabold text-(--color-text-strong) text-lg">
-                  Mimio
-                </span>
+                <BrandLockup size={30} />
               </div>
               <button
                 type="button"
@@ -472,7 +464,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                   setMenuOpen(false);
                   onRegister();
                 }}
-                className="w-full py-3.5 text-center font-semibold bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl"
+                className="w-full py-3.5 text-center font-semibold bg-gradient-to-r from-[#14847a] to-[#0f6e63] text-white rounded-xl"
               >
                 Hemen Başla
               </button>
@@ -484,13 +476,13 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       {/* ══════════════════════ HERO ══════════════════════ */}
       <section
         ref={heroRef}
-        className="pt-24 md:pt-36 pb-16 md:pb-28 px-4 sm:px-6 relative overflow-hidden"
+        className="pt-24 md:pt-32 pb-14 md:pb-20 relative overflow-hidden"
       >
         <AuroraBackdrop />
 
         <motion.div
           style={{ y: heroY, scale: heroScale, opacity: heroOpacity }}
-          className="max-w-7xl mx-auto relative"
+          className="shell shell-wide relative"
         >
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             {/* Left */}
@@ -504,7 +496,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 <span className="inline-flex items-center gap-2.5 text-xs font-bold text-(--color-primary) bg-(--color-primary-light) px-4 py-2 rounded-full border border-(--color-primary)/15 backdrop-blur-sm">
                   <span
                     className="halo-dot w-1.5 h-1.5 rounded-full"
-                    style={{ color: "#6366f1", background: "#6366f1" }}
+                    style={{ color: "#0f6e63", background: "#0f6e63" }}
                   />
                   Ergoterapistler için Yeni Nesil Platform
                 </span>
@@ -538,7 +530,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                   <button
                     type="button"
                     onClick={onRegister}
-                    className="group relative flex items-center justify-center gap-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold px-8 py-4 rounded-2xl hover:shadow-xl hover:shadow-indigo-500/25 transition-all duration-300 hover:-translate-y-0.5 text-sm w-full sm:w-auto overflow-hidden"
+                    className="group relative flex items-center justify-center gap-2.5 bg-gradient-to-r from-[#14847a] to-[#0f6e63] text-white font-semibold px-8 py-4 rounded-2xl hover:shadow-xl hover:shadow-[#14847a]/25 transition-all duration-300 hover:-translate-y-0.5 text-sm w-full sm:w-auto overflow-hidden"
                   >
                     <span className="beam-sweep opacity-60" />
                     <span className="relative z-10 flex items-center gap-2.5">
@@ -589,7 +581,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               className="relative"
             >
               {/* Glow halo */}
-              <div className="absolute -inset-8 bg-[radial-gradient(ellipse_70%_60%_at_60%_50%,rgba(99,102,241,0.14),transparent)] blur-3xl pointer-events-none" />
+              <div className="absolute -inset-8 bg-[radial-gradient(ellipse_70%_60%_at_60%_50%,rgba(15, 110, 99,0.14),transparent)] blur-3xl pointer-events-none" />
 
               {/* Floating accent pills */}
               <motion.div
@@ -599,7 +591,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               >
                 <span
                   className="halo-dot w-2 h-2 rounded-full"
-                  style={{ color: "#10b981", background: "#10b981" }}
+                  style={{ color: "#7aac3a", background: "#7aac3a" }}
                 />
                 <span className="text-[11px] font-bold text-(--color-text-strong)">
                   +12 gelişim skoru
@@ -615,7 +607,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 }}
                 className="hidden sm:flex absolute -bottom-6 -right-5 z-20 items-center gap-2 px-3.5 py-2 rounded-2xl border glass"
               >
-                <Star size={13} className="fill-amber-400 text-amber-400" />
+                <Star size={13} className="fill-[#e3a75c] text-[#e3a75c]" />
                 <span className="text-[11px] font-bold text-(--color-text-strong)">
                   Yeni rekor!
                 </span>
@@ -626,7 +618,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 className="relative w-full rounded-2xl overflow-hidden border border-(--color-line) ring-conic"
                 style={{
                   boxShadow:
-                    "0 2px 0 0 rgba(255,255,255,0.06) inset, 0 24px 64px rgba(99,102,241,0.14), 0 8px 28px rgba(0,0,0,0.16)",
+                    "0 2px 0 0 rgba(255,255,255,0.06) inset, 0 24px 64px rgba(15, 110, 99,0.14), 0 8px 28px rgba(0,0,0,0.16)",
                 }}
               >
                 {/* Chrome bar */}
@@ -635,9 +627,9 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                   style={{ background: "var(--color-surface)" }}
                 >
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <div className="w-3 h-3 rounded-full bg-red-400/70" />
-                    <div className="w-3 h-3 rounded-full bg-amber-400/70" />
-                    <div className="w-3 h-3 rounded-full bg-emerald-400/70" />
+                    <div className="w-3 h-3 rounded-full bg-[#de8265]/70" />
+                    <div className="w-3 h-3 rounded-full bg-[#e3a75c]/70" />
+                    <div className="w-3 h-3 rounded-full bg-[#9cc65e]/70" />
                   </div>
                   <div className="flex-1 mx-2 max-w-xs">
                     <div className="h-6 rounded-md bg-(--color-surface-elevated) border border-(--color-line) flex items-center justify-center gap-1.5 px-3">
@@ -659,35 +651,31 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             </motion.div>
           </div>
 
-          {/* Stats Strip */}
+          {/* Rakamlarla Mimio — her değer platform verisinden türetilir,
+              elle yazılmış sayı yoktur (bkz. lib/platform-stats.ts). */}
           <motion.div
             initial="hidden"
             animate="visible"
             variants={stagger}
-            className="mt-14 md:mt-28 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4"
+            className="mt-12 md:mt-16 grid grid-cols-2 lg:grid-cols-4 gap-px rounded-2xl overflow-hidden"
+            style={{ background: "var(--color-line)" }}
           >
-            {[
-              { value: "7", label: "Terapi Oyunu", icon: Gamepad2 },
-              { value: "127+", label: "Hazır Aktivite", icon: Brain },
-              { value: "7", label: "Terapi Domainı", icon: Target },
-              { value: "∞", label: "Sınırsız Danışan", icon: Users },
-            ].map((s) => (
+            {HERO_STATS.map((stat) => (
               <motion.div
-                key={s.label}
+                key={stat.label}
                 variants={fadeUp}
-                className="glass rounded-2xl p-3.5 sm:p-5 flex items-center gap-3 sm:gap-4 hover:border-(--color-primary)/20 transition-colors"
+                className="flex flex-col gap-1 p-4 sm:p-5"
+                style={{ background: "var(--color-page-bg)" }}
               >
-                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-(--color-primary-light) flex items-center justify-center shrink-0">
-                  <s.icon size={18} className="text-(--color-primary)" />
-                </div>
-                <div>
-                  <p className="text-xl sm:text-2xl font-extrabold text-(--color-text-strong) leading-none">
-                    {s.value}
-                  </p>
-                  <p className="text-xs text-(--color-text-soft) mt-0.5">
-                    {s.label}
-                  </p>
-                </div>
+                <p className="numeral text-3xl sm:text-4xl font-extrabold text-(--color-text-strong) leading-none m-0">
+                  {stat.value}
+                </p>
+                <p className="text-sm font-semibold text-(--color-text-body) m-0">
+                  {stat.label}
+                </p>
+                <p className="text-xs text-(--color-text-muted) leading-snug m-0">
+                  {stat.hint}
+                </p>
               </motion.div>
             ))}
           </motion.div>
@@ -698,8 +686,8 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       <TrustMarquee />
 
       {/* ══════════════════════ FEATURES — BENTO GRID w/ TILT ══════════════════════ */}
-      <section id="features" className="py-16 md:py-32 px-4 sm:px-6 relative">
-        <div className="max-w-7xl mx-auto">
+      <section id="features" className="section relative">
+        <div className="shell shell-wide">
           <motion.div
             initial="hidden"
             whileInView="visible"
@@ -789,11 +777,11 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       <StickyWalkthrough />
 
       {/* ══════════════════════ PLATFORM PREVIEW ══════════════════════ */}
-      <section className="py-16 md:py-28 px-4 sm:px-6 relative overflow-hidden">
+      <section className="section relative overflow-hidden">
         <div className="absolute inset-0 -z-10">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[900px] h-[400px] sm:h-[600px] bg-[radial-gradient(ellipse,rgba(99,102,241,0.08),transparent_65%)]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[900px] h-[400px] sm:h-[600px] bg-[radial-gradient(ellipse,rgba(15, 110, 99,0.08),transparent_65%)]" />
         </div>
-        <div className="max-w-6xl mx-auto">
+        <div className="shell">
           <motion.div
             initial="hidden"
             whileInView="visible"
@@ -813,7 +801,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               className="text-3xl md:text-4xl font-extrabold text-(--color-text-strong) mb-4"
             >
               Güçlü Araçlar,{" "}
-              <span className="bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-[#35b0a0] to-[#7fb2cc] bg-clip-text text-transparent">
                 Sade Arayüz
               </span>
             </motion.h2>
@@ -833,25 +821,25 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             transition={{ duration: 0.7, ease }}
             className="relative"
           >
-            <div className="absolute -inset-8 bg-[radial-gradient(ellipse_60%_50%_at_50%_40%,rgba(99,102,241,0.12),transparent)] blur-2xl pointer-events-none" />
+            <div className="absolute -inset-8 bg-[radial-gradient(ellipse_60%_50%_at_50%_40%,rgba(15, 110, 99,0.12),transparent)] blur-2xl pointer-events-none" />
             <TiltCard max={4}>
               <div
                 className="relative glass-strong rounded-2xl md:rounded-3xl overflow-hidden"
                 style={{
                   boxShadow:
-                    "0 25px 60px rgba(0,0,0,0.2), 0 0 80px rgba(99,102,241,0.08)",
+                    "0 25px 60px rgba(0,0,0,0.2), 0 0 80px rgba(15, 110, 99,0.08)",
                 }}
               >
-                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent" />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#14847a]/30 to-transparent" />
 
                 <div
                   className="flex items-center gap-2 px-5 py-3 border-b border-(--color-line)"
                   style={{ background: "var(--color-surface)" }}
                 >
                   <div className="flex gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-400/60" />
-                    <div className="w-3 h-3 rounded-full bg-amber-400/60" />
-                    <div className="w-3 h-3 rounded-full bg-emerald-400/60" />
+                    <div className="w-3 h-3 rounded-full bg-[#de8265]/60" />
+                    <div className="w-3 h-3 rounded-full bg-[#e3a75c]/60" />
+                    <div className="w-3 h-3 rounded-full bg-[#9cc65e]/60" />
                   </div>
                   <div className="flex-1 mx-4 max-w-sm">
                     <div className="h-6 rounded-lg bg-(--color-surface-elevated) border border-(--color-line) flex items-center justify-center">
@@ -871,7 +859,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                     className="hidden sm:flex w-14 border-r border-(--color-line) flex-col items-center py-4 gap-2 shrink-0"
                     style={{ background: "var(--color-sidebar)" }}
                   >
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-[10px] mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#14847a] to-[#0f6e63] flex items-center justify-center text-white font-bold text-[10px] mb-3">
                       M
                     </div>
                     {[
@@ -901,7 +889,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                           className="h-5 rounded-full w-40"
                           style={{
                             background:
-                              "linear-gradient(90deg, var(--color-primary), rgba(139,92,246,0.6))",
+                              "linear-gradient(90deg, var(--color-primary), rgba(20, 132, 122,0.6))",
                             opacity: 0.7,
                           }}
                         />
@@ -922,29 +910,29 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                         {
                           label: "Toplam Seans",
                           value: "24",
-                          bg: "rgba(99,102,241,0.12)",
-                          color: "rgba(99,102,241,0.6)",
+                          bg: "rgba(15, 110, 99,0.12)",
+                          color: "rgba(15, 110, 99,0.6)",
                           icon: CalendarDays,
                         },
                         {
                           label: "Danışanlar",
                           value: "8",
-                          bg: "rgba(16,185,129,0.12)",
-                          color: "rgba(16,185,129,0.6)",
+                          bg: "rgba(122, 172, 58,0.12)",
+                          color: "rgba(122, 172, 58,0.6)",
                           icon: Users,
                         },
                         {
                           label: "Ort. Skor",
                           value: "84",
-                          bg: "rgba(245,158,11,0.12)",
-                          color: "rgba(245,158,11,0.6)",
+                          bg: "rgba(192, 124, 44,0.12)",
+                          color: "rgba(192, 124, 44,0.6)",
                           icon: TrendingUp,
                         },
                         {
                           label: "Bu Hafta",
                           value: "6",
-                          bg: "rgba(6,182,212,0.12)",
-                          color: "rgba(6,182,212,0.6)",
+                          bg: "rgba(79, 147, 181,0.12)",
+                          color: "rgba(79, 147, 181,0.6)",
                           icon: Target,
                         },
                       ].map((s) => (
@@ -975,19 +963,19 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                           name: "Ela Selin",
                           game: "Sıra Hafızası",
                           score: 92,
-                          color: "#6366f1",
+                          color: "#0f6e63",
                         },
                         {
                           name: "Tuna Akarsu",
                           game: "Mavi Nabız",
                           score: 78,
-                          color: "#8b5cf6",
+                          color: "#14847a",
                         },
                         {
                           name: "Asya Demir",
                           game: "Hedef Tarama",
                           score: 85,
-                          color: "#06b6d4",
+                          color: "#4f93b5",
                         },
                       ].map((s) => (
                         <div
@@ -1039,72 +1027,71 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
         </div>
       </section>
 
-      {/* ══════════════════════ HOW IT WORKS ══════════════════════ */}
-      <section id="how-it-works" className="py-16 md:py-32 px-4 sm:px-6 relative">
-        <div className="max-w-5xl mx-auto">
+      {/* ══════════════════════ HOW IT WORKS ══════════════════════
+          Numaralandırma burada gerçek bir sıra bildiriyor: hesap açmadan
+          danışan eklenemez, danışan olmadan seans oynanamaz. Bu yüzden
+          adımlar yatay bir akış olarak, aralarında ok ile gösteriliyor. */}
+      <section id="how-it-works" className="section-tight relative">
+        <div className="shell" style={{ maxWidth: "68rem" }}>
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-80px" }}
             variants={stagger}
-            className="text-center mb-12 md:mb-20"
+            className="section-head section-head-center"
           >
-            <motion.h2
-              variants={fadeUp}
-              className="text-4xl md:text-5xl font-extrabold text-(--color-text-strong) mb-4"
-            >
-              Nasıl Çalışır?
+            <motion.h2 variants={fadeUp} className="section-title">
+              Üç adımda başlayın
             </motion.h2>
-            <motion.p
-              variants={fadeUp}
-              className="text-(--color-text-soft) text-lg"
-            >
-              Sadece 3 adımda dijital terapi süreçlerinize başlayın.
+            <motion.p variants={fadeUp} className="section-sub">
+              Kurulum yok, kart bilgisi yok. Hesabı açtığınız gün ilk seansı oynatabilirsiniz.
             </motion.p>
           </motion.div>
-          <motion.div
+          <motion.ol
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-60px" }}
             variants={stagger}
-            className="relative"
+            className="grid md:grid-cols-3 gap-4 list-none p-0 m-0"
           >
-            <div className="hidden md:block absolute top-1/2 left-0 right-0 h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-(--color-line) to-transparent" />
-            <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
-              {STEPS.map((step) => {
-                const StepIcon = step.icon;
-                return (
-                  <motion.div
-                    key={step.num}
-                    variants={fadeUp}
-                    whileHover={{ y: -6 }}
-                    transition={{ duration: 0.3 }}
-                    className="flex flex-col items-center text-center gap-4 sm:gap-5 relative"
+            {STEPS.map((step, i) => {
+              const StepIcon = step.icon;
+              return (
+                <motion.li
+                  key={step.num}
+                  variants={fadeUp}
+                  className="surface surface-interactive relative flex items-start gap-4 p-5"
+                >
+                  <div
+                    className="w-12 h-12 shrink-0 rounded-xl flex items-center justify-center"
+                    style={{ background: `${step.color}18`, border: `1px solid ${step.color}30` }}
                   >
-                    <div className="relative z-10">
-                      <div
-                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl flex items-center justify-center border border-(--color-line) shadow-(--shadow-card)"
-                        style={{ background: `${step.color}12` }}
-                      >
-                        <StepIcon size={28} style={{ color: step.color }} />
-                      </div>
-                      <span className="absolute -top-2 -right-2 w-7 h-7 rounded-lg bg-(--color-primary) text-white text-xs font-bold flex items-center justify-center shadow-lg shadow-(--color-primary)/25">
+                    <StepIcon size={22} style={{ color: step.color }} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="numeral text-[11px] font-extrabold tracking-widest" style={{ color: step.color }}>
                         {step.num}
                       </span>
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-(--color-text-strong) text-lg mb-2">
+                      <h3 className="font-bold text-(--color-text-strong) text-base m-0">
                         {step.title}
                       </h3>
-                      <p className="text-sm text-(--color-text-soft) leading-relaxed max-w-xs mx-auto">
-                        {step.body}
-                      </p>
                     </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </motion.div>
+                    <p className="text-sm text-(--color-text-soft) leading-relaxed m-0">
+                      {step.body}
+                    </p>
+                  </div>
+                  {i < STEPS.length - 1 && (
+                    <ArrowRight
+                      size={16}
+                      aria-hidden="true"
+                      className="hidden md:block absolute top-1/2 -right-3 -translate-y-1/2 text-(--color-text-disabled)"
+                    />
+                  )}
+                </motion.li>
+              );
+            })}
+          </motion.ol>
         </div>
       </section>
 
@@ -1115,9 +1102,9 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       <ComparisonSection />
 
       {/* ══════════════════════ PERSONAS — KİMLER İÇİN ══════════════════════ */}
-      <section id="testimonials" className="py-16 md:py-32 px-4 sm:px-6 relative overflow-hidden">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_70%_40%_at_50%_50%,rgba(139,92,246,0.06),transparent)]" />
-        <div className="max-w-7xl mx-auto">
+      <section id="testimonials" className="section relative overflow-hidden">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_70%_40%_at_50%_50%,rgba(20, 132, 122,0.06),transparent)]" />
+        <div className="shell shell-wide">
           <motion.div
             initial="hidden"
             whileInView="visible"
@@ -1182,11 +1169,11 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       <FAQSection />
 
       {/* ══════════════════════ CTA ══════════════════════ */}
-      <section id="cta" className="py-20 md:py-36 px-4 sm:px-6 relative overflow-hidden">
+      <section id="cta" className="section relative overflow-hidden">
         <AuroraBackdrop />
         <div className="absolute inset-0 -z-10">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_100%,rgba(99,102,241,0.1),transparent)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_50%_at_50%_0%,rgba(139,92,246,0.06),transparent)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_100%,rgba(15, 110, 99,0.1),transparent)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_50%_at_50%_0%,rgba(20, 132, 122,0.06),transparent)]" />
         </div>
         <div className="max-w-3xl mx-auto text-center">
           <motion.div
@@ -1228,7 +1215,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                   onClick={onRegister}
                   className="group relative flex items-center gap-2.5 text-white font-semibold px-10 py-4 rounded-2xl text-base transition-all duration-300 hover:-translate-y-0.5 overflow-hidden w-full sm:w-auto justify-center"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 bg-[length:200%_100%] animate-[shimmer_3s_ease-in-out_infinite]" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#14847a] via-[#14847a] to-[#14847a] bg-[length:200%_100%] animate-[shimmer_3s_ease-in-out_infinite]" />
                   <span className="relative z-10 flex items-center gap-2.5">
                     Ücretsiz Hesabını Oluştur
                     <ArrowRight
@@ -1270,18 +1257,13 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
         className="border-t border-(--color-line) px-4 sm:px-6 relative overflow-hidden"
         style={{ background: "var(--color-surface)" }}
       >
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#14847a]/30 to-transparent" />
         <div className="max-w-7xl mx-auto pt-12 sm:pt-16 pb-8">
           <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr] mb-10 sm:mb-14">
             {/* Marka */}
             <div className="flex flex-col gap-4 max-w-sm">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-indigo-500/25">
-                  M
-                </div>
-                <span className="font-extrabold text-(--color-text-strong) text-lg tracking-tight">
-                  Mimio
-                </span>
+                <BrandLockup size={30} />
               </div>
               <p className="text-sm text-(--color-text-soft) leading-relaxed">
                 Ergoterapistler için oyun temelli seans yönetimi: danışan
@@ -1291,7 +1273,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               <span className="inline-flex w-fit items-center gap-2 text-xs font-semibold text-(--color-text-muted) px-3 py-1.5 rounded-full border border-(--color-line) bg-(--color-surface-elevated)">
                 <span
                   className="halo-dot w-1.5 h-1.5 rounded-full"
-                  style={{ color: "#10b981", background: "#10b981" }}
+                  style={{ color: "#7aac3a", background: "#7aac3a" }}
                 />
                 Tüm sistemler çalışıyor
               </span>
@@ -1327,7 +1309,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 <button
                   type="button"
                   onClick={onRegister}
-                  className="text-sm font-semibold bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-5 py-2.5 rounded-xl hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-200 hover:-translate-y-0.5 text-center"
+                  className="text-sm font-semibold bg-gradient-to-r from-[#14847a] to-[#0f6e63] text-white px-5 py-2.5 rounded-xl hover:shadow-lg hover:shadow-[#14847a]/25 transition-all duration-200 hover:-translate-y-0.5 text-center"
                 >
                   Ücretsiz Başla
                 </button>

@@ -87,9 +87,9 @@ export function GameLoadingSkeleton() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[300px] gap-4 p-6" role="status" aria-label="Oyun yükleniyor">
       <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-        style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)" }}>
+        style={{ background: "rgba(15, 110, 99,0.1)", border: "1px solid rgba(15, 110, 99,0.2)" }}>
         <div className="w-6 h-6 rounded-full border-2 border-t-transparent spin-refresh"
-          style={{ borderColor: "rgba(99,102,241,0.4)", borderTopColor: "transparent" }} />
+          style={{ borderColor: "rgba(15, 110, 99,0.4)", borderTopColor: "transparent" }} />
       </div>
       <Skeleton width={180} height={16} />
       <Skeleton width={120} height={12} />

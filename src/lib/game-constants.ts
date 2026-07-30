@@ -44,14 +44,14 @@ export const ROUTE_COMMANDS = [
 ];
 
 export const SYMBOL_LIBRARY: SymbolVariant[] = [
-  { label: "Bulut", icon: "☁", accent: "#23b8ff", background: "linear-gradient(180deg, rgba(6,22,48,0.92), rgba(4,14,34,0.78))", pattern: "rings" },
-  { label: "Damlacık", icon: "◔", accent: "#0da7ff", background: "linear-gradient(180deg, rgba(5,18,42,0.92), rgba(3,12,30,0.80))", pattern: "grid" },
-  { label: "Kırık Çizgi", icon: "〰", accent: "#2ca8ff", background: "linear-gradient(180deg, rgba(7,20,46,0.92), rgba(5,14,36,0.78))", pattern: "wave" },
-  { label: "Halka", icon: "◎", accent: "#54ccff", background: "linear-gradient(180deg, rgba(6,24,50,0.92), rgba(4,16,38,0.78))", pattern: "rings" },
-  { label: "Işık", icon: "✦", accent: "#78dbff", background: "linear-gradient(180deg, rgba(8,26,52,0.92), rgba(5,18,40,0.78))", pattern: "grid" },
-  { label: "Dalga", icon: "≈", accent: "#49b8ff", background: "linear-gradient(180deg, rgba(5,20,44,0.92), rgba(3,14,32,0.82))", pattern: "wave" },
-  { label: "Çember", icon: "○", accent: "#0cc8e4", background: "linear-gradient(180deg, rgba(4,22,40,0.92), rgba(3,16,30,0.82))", pattern: "rings" },
-  { label: "Kare", icon: "□", accent: "#3daaee", background: "linear-gradient(180deg, rgba(6,20,44,0.92), rgba(4,14,34,0.80))", pattern: "grid" },
+  { label: "Bulut", icon: "☁", accent: "#7fb2cc", background: "linear-gradient(180deg, rgba(10,22,20,0.92), rgba(7,15,14,0.78))", pattern: "rings" },
+  { label: "Damlacık", icon: "◔", accent: "#6aa6c4", background: "linear-gradient(180deg, rgba(9,20,18,0.92), rgba(6,13,12,0.80))", pattern: "grid" },
+  { label: "Kırık Çizgi", icon: "〰", accent: "#6aa6c4", background: "linear-gradient(180deg, rgba(11,21,19,0.92), rgba(8,16,15,0.78))", pattern: "wave" },
+  { label: "Halka", icon: "◎", accent: "#8fbdd6", background: "linear-gradient(180deg, rgba(10,23,21,0.92), rgba(7,17,16,0.78))", pattern: "rings" },
+  { label: "Işık", icon: "✦", accent: "#a9d1e2", background: "linear-gradient(180deg, rgba(12,25,22,0.92), rgba(9,19,17,0.78))", pattern: "grid" },
+  { label: "Dalga", icon: "≈", accent: "#7fb2cc", background: "linear-gradient(180deg, rgba(9,21,19,0.92), rgba(6,14,13,0.82))", pattern: "wave" },
+  { label: "Çember", icon: "○", accent: "#4f93b5", background: "linear-gradient(180deg, rgba(8,21,19,0.92), rgba(6,15,14,0.82))", pattern: "rings" },
+  { label: "Kare", icon: "□", accent: "#6aa6c4", background: "linear-gradient(180deg, rgba(10,20,18,0.92), rgba(7,15,14,0.80))", pattern: "grid" },
 ];
 
 // ── Session Set Presets ──
@@ -65,13 +65,13 @@ export const SESSION_SET_PRESETS: readonly SessionSetPreset[] = [
 
 // ── Game Tabs ──
 export const GAME_TABS: readonly GameTab[] = [
-  { key: "memory", category: "memorySkills", title: "Sıra Hafızası", kicker: "Çalışma belleği", blurb: "Art arda yanan mavi alanları aynı sırayla tekrar et. Her doğru tur sekansı bir adım daha uzatır.", goals: ["Sekans hafızası", "Odak sürdürme", "Görsel izleme"], teaser: "Kısa süreli hatırlama için katmanlı sekans oyunu.", accent: "#13b8ff", preview: ["Deseni izle", "Aynı sırayı gir", "Seriyi büyüt"] },
-  { key: "pairs", category: "memorySkills", title: "Kart Eşle", kicker: "Görsel hatırlama", blurb: "On iki kart içindeki eş çiftleri en az hamleyle bul. Açılan kartların konumunu akılda tutman gerekir.", goals: ["Kısa süreli hatırlama", "Görsel yer bellek", "Planlı seçim"], teaser: "Kapalı kartlar arasında eş çift bulmaya odaklanan hafıza görevi.", accent: "#5dd3ff", preview: ["Kart aç", "Konumu hatırla", "Çiftleri tamamla"] },
-  { key: "pulse", category: "motorSkills", title: "Mavi Nabız", kicker: "Hedefe dokunma", blurb: "Işıklanan hedefe hızlı ama kontrollü dokun. Doğruluk ve seri performansı birlikte puan üretir.", goals: ["El-göz koordinasyonu", "Hedefleme", "Tepki kalitesi"], teaser: "Ritim ve doğruluğu bir arada tutan dinamik hedef oyunu.", accent: "#39c6ff", preview: ["Hedef görünür", "Doğru kareye dokun", "Seriyi koru"] },
-  { key: "route", category: "motorSkills", title: "Komut Rotası", kicker: "Motor yanıt", blurb: "Ekranda verilen yön komutuna uygun oka bas. Hızlı karar verme ile kontrollü yön seçimi aynı oyunda birleşir.", goals: ["Motor planlama", "Yön komutu takibi", "Hızlı karar"], teaser: "Dört yönlü pad ile çalışan kontrollü komut oyunu.", accent: "#4acfff", preview: ["Komutu gör", "Doğru yönü seç", "Seriyi uzat"] },
-  { key: "difference", category: "visualSkills", title: "Fark Avcısı", kicker: "Görsel ayrım", blurb: "Benzer kartlar içinden farklı olanı bul. Dikkatli tarama ve hızlı karşılaştırma gerekir.", goals: ["Görsel ayrım", "Figür-zemin farkı", "Tarama rutini"], teaser: "Benzer kartlar arasında tek farkı bulmaya odaklanan görev.", accent: "#69d4ff", preview: ["Kartları tara", "Farkı ayıkla", "Turu tamamla"] },
-  { key: "scan", category: "visualSkills", title: "Hedef Tarama", kicker: "Seçici dikkat", blurb: "Üstte gösterilen hedef simgeyi kalabalık ızgara içinde seç. Her tur yeni hedef gelir ve dikkat filtrelemesi gerekir.", goals: ["Seçici dikkat", "Tarama hızı", "Hedef bulma"], teaser: "Belirli simgeyi ızgara içinde aratan dikkat oyunu.", accent: "#8be2ff", preview: ["Hedefi gör", "Izgarayı tara", "Doğru simgeyi seç"] },
-  { key: "logic", category: "cognitiveSkills", title: "Dizi Mantık", kicker: "Örüntü tamamlama", blurb: "3×3 matristeki şekil-renk örüntüsünü analiz et, eksik hücreyi 4 seçenek arasından bul. Her tur yeni bir kural, yeni bir zorluk.", goals: ["Tümevarımsal akıl yürütme", "Örüntü tanıma", "Çalışma belleği"], teaser: "Şekil ve renk kurallarını çözerek eksik hücreyi tamamlayan mantık oyunu.", accent: "#a78bfa", preview: ["Matrisi incele", "Kuralı çöz", "Doğru seçeneği seç"] },
+  { key: "memory", category: "memorySkills", title: "Sıra Hafızası", kicker: "Çalışma belleği", blurb: "Art arda yanan mavi alanları aynı sırayla tekrar et. Her doğru tur sekansı bir adım daha uzatır.", goals: ["Sekans hafızası", "Odak sürdürme", "Görsel izleme"], teaser: "Kısa süreli hatırlama için katmanlı sekans oyunu.", accent: "#7fb2cc", preview: ["Deseni izle", "Aynı sırayı gir", "Seriyi büyüt"] },
+  { key: "pairs", category: "memorySkills", title: "Kart Eşle", kicker: "Görsel hatırlama", blurb: "On iki kart içindeki eş çiftleri en az hamleyle bul. Açılan kartların konumunu akılda tutman gerekir.", goals: ["Kısa süreli hatırlama", "Görsel yer bellek", "Planlı seçim"], teaser: "Kapalı kartlar arasında eş çift bulmaya odaklanan hafıza görevi.", accent: "#8fbdd6", preview: ["Kart aç", "Konumu hatırla", "Çiftleri tamamla"] },
+  { key: "pulse", category: "motorSkills", title: "Mavi Nabız", kicker: "Hedefe dokunma", blurb: "Işıklanan hedefe hızlı ama kontrollü dokun. Doğruluk ve seri performansı birlikte puan üretir.", goals: ["El-göz koordinasyonu", "Hedefleme", "Tepki kalitesi"], teaser: "Ritim ve doğruluğu bir arada tutan dinamik hedef oyunu.", accent: "#7fb2cc", preview: ["Hedef görünür", "Doğru kareye dokun", "Seriyi koru"] },
+  { key: "route", category: "motorSkills", title: "Komut Rotası", kicker: "Motor yanıt", blurb: "Ekranda verilen yön komutuna uygun oka bas. Hızlı karar verme ile kontrollü yön seçimi aynı oyunda birleşir.", goals: ["Motor planlama", "Yön komutu takibi", "Hızlı karar"], teaser: "Dört yönlü pad ile çalışan kontrollü komut oyunu.", accent: "#8fbdd6", preview: ["Komutu gör", "Doğru yönü seç", "Seriyi uzat"] },
+  { key: "difference", category: "visualSkills", title: "Fark Avcısı", kicker: "Görsel ayrım", blurb: "Benzer kartlar içinden farklı olanı bul. Dikkatli tarama ve hızlı karşılaştırma gerekir.", goals: ["Görsel ayrım", "Figür-zemin farkı", "Tarama rutini"], teaser: "Benzer kartlar arasında tek farkı bulmaya odaklanan görev.", accent: "#9ac7dc", preview: ["Kartları tara", "Farkı ayıkla", "Turu tamamla"] },
+  { key: "scan", category: "visualSkills", title: "Hedef Tarama", kicker: "Seçici dikkat", blurb: "Üstte gösterilen hedef simgeyi kalabalık ızgara içinde seç. Her tur yeni hedef gelir ve dikkat filtrelemesi gerekir.", goals: ["Seçici dikkat", "Tarama hızı", "Hedef bulma"], teaser: "Belirli simgeyi ızgara içinde aratan dikkat oyunu.", accent: "#a9d1e2", preview: ["Hedefi gör", "Izgarayı tara", "Doğru simgeyi seç"] },
+  { key: "logic", category: "cognitiveSkills", title: "Dizi Mantık", kicker: "Örüntü tamamlama", blurb: "3×3 matristeki şekil-renk örüntüsünü analiz et, eksik hücreyi 4 seçenek arasından bul. Her tur yeni bir kural, yeni bir zorluk.", goals: ["Tümevarımsal akıl yürütme", "Örüntü tanıma", "Çalışma belleği"], teaser: "Şekil ve renk kurallarını çözerek eksik hücreyi tamamlayan mantık oyunu.", accent: "#35b0a0", preview: ["Matrisi incele", "Kuralı çöz", "Doğru seçeneği seç"] },
 ];
 
 // ── Game Categories ──
@@ -107,7 +107,7 @@ export const DAY_LABELS: Record<typeof DAY_KEYS[number], string> = {
 
 // ── Difficulty Config ──
 export const DIFFICULTY_LABELS: Record<1 | 2 | 3, string> = { 1: "Kolay", 2: "Orta", 3: "Zor" };
-export const DIFFICULTY_COLORS: Record<1 | 2 | 3, string> = { 1: "#10b981", 2: "#f59e0b", 3: "#ef4444" };
+export const DIFFICULTY_COLORS: Record<1 | 2 | 3, string> = { 1: "#7aac3a", 2: "#c07c2c", 3: "#d1503c" };
 
 export const GAME_DIFF_CONFIG = {
   memory:     { startLength: [2, 3, 4] as const },
@@ -119,6 +119,36 @@ export const GAME_DIFF_CONFIG = {
   logic:      { rounds:      [8,  12, 16] as const },
 } as const;
 
+/**
+ * Her oyunun skor ölçeği.
+ *
+ * Oyunların puanlaması aynı birimde değil: "Sıra Hafızası" ulaşılan dizi
+ * uzunluğunu (≈3-12) verirken "Kart Eşle" hamle cezasından türeyen bir puan
+ * (50-280) üretir. Bu yüzden iki oyunun skoru doğrudan karşılaştırılamaz ve
+ * "3 puan arttı" ifadesi oyundan oyuna farklı anlam taşır.
+ *
+ * `typicalMax`, skorları 0–1 aralığına indirmek için kullanılır; böylece
+ * eğilim analizi ve alanlar arası karşılaştırma tek bir ölçekte yapılır.
+ * Değerler oyun mantığındaki puanlama formüllerinden ve üç yıldız
+ * eşiklerinden türetilmiştir.
+ */
+export const GAME_SCORE_SCALE: Record<GameKey, { typicalMax: number; unit: string }> = {
+  memory:     { typicalMax: 12,  unit: "dizi uzunluğu" },
+  pairs:      { typicalMax: 280, unit: "puan" },
+  pulse:      { typicalMax: 200, unit: "puan" },
+  route:      { typicalMax: 200, unit: "puan" },
+  difference: { typicalMax: 16,  unit: "doğru tur" },
+  scan:       { typicalMax: 20,  unit: "doğru tur" },
+  logic:      { typicalMax: 128, unit: "puan" },
+};
+
+/** Skoru 0–1 aralığına indirger; oyunlar arası karşılaştırmayı mümkün kılar. */
+export function normalizeScore(gameKey: GameKey, score: number): number {
+  const scale = GAME_SCORE_SCALE[gameKey];
+  if (!scale || scale.typicalMax <= 0) return 0;
+  return Math.max(0, Math.min(1, score / scale.typicalMax));
+}
+
 // ── Logic Game Constants ──
 export const LOGIC_SHAPES: readonly ("circle" | "square" | "triangle" | "diamond")[] = ["circle", "square", "triangle", "diamond"];
-export const LOGIC_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#a78bfa", "#ef4444"];
+export const LOGIC_COLORS = ["#4f93b5", "#7aac3a", "#c07c2c", "#35b0a0", "#d1503c"];

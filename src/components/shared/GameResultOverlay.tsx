@@ -41,7 +41,7 @@ export function GameResultOverlay({ accent, gradFrom, gradTo, gameName, score, b
   return (
     <div
       className="result-overlay-in absolute inset-0 z-20 flex flex-col items-center justify-center overflow-hidden rounded-3xl"
-      style={{ background: "rgba(4,8,18,0.97)", backdropFilter: "blur(2px)" }}
+      style={{ background: "rgba(8,13,12,0.97)", backdropFilter: "blur(2px)" }}
     >
       {/* Confetti */}
       <div className="absolute inset-x-0 top-0 h-32 overflow-hidden pointer-events-none">
@@ -110,10 +110,10 @@ export function GameResultOverlay({ accent, gradFrom, gradTo, gameName, score, b
             )}
             {sessionAvg !== undefined && sessionAvg > 0 && (
               <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                <TrendingUp size={11} style={{ color: score >= sessionAvg ? "#10b981" : "#f87171", opacity: 0.8 }} />
+                <TrendingUp size={11} style={{ color: score >= sessionAvg ? "#7aac3a" : "#de8265", opacity: 0.8 }} />
                 <div>
                   <p className="text-white/35 text-[9px] uppercase tracking-wider font-bold m-0">Geçmiş Ort.</p>
-                  <p className="text-xs font-bold m-0" style={{ color: score >= sessionAvg ? "#10b981" : "#f87171" }}>
+                  <p className="text-xs font-bold m-0" style={{ color: score >= sessionAvg ? "#7aac3a" : "#de8265" }}>
                     {score >= sessionAvg ? "↑" : "↓"} {Math.abs(score - sessionAvg)}p fark
                   </p>
                 </div>

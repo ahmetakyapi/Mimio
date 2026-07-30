@@ -60,7 +60,7 @@ export function ConfirmDialog({
       {/* Backdrop */}
       <div
         className="absolute inset-0"
-        style={{ background: "rgba(4,8,18,0.8)", backdropFilter: "blur(4px)" }}
+        style={{ background: "rgba(8,13,12,0.8)", backdropFilter: "blur(4px)" }}
         onClick={onCancel}
       />
 
@@ -91,12 +91,12 @@ export function ConfirmDialog({
               className="flex-1 py-2.5 rounded-xl text-sm font-bold border-none cursor-pointer transition-all active:scale-95"
               style={{
                 background: isDanger
-                  ? "linear-gradient(135deg, #ef4444, #dc2626)"
-                  : "linear-gradient(135deg, #6366f1, #818cf8)",
+                  ? "linear-gradient(135deg, #d1503c, #a03526)"
+                  : "linear-gradient(135deg, #0f6e63, #35b0a0)",
                 color: "#fff",
                 boxShadow: isDanger
-                  ? "0 4px 14px rgba(239,68,68,0.3)"
-                  : "0 4px 14px rgba(99,102,241,0.3)",
+                  ? "0 4px 14px rgba(209, 80, 60,0.3)"
+                  : "0 4px 14px rgba(15, 110, 99,0.3)",
               }}>
               {confirmLabel}
             </button>

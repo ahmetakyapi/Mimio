@@ -41,6 +41,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import { PLATFORM_STATS } from "@/lib/platform-stats";
 
 const prefersReduced =
   typeof window !== "undefined" &&
@@ -214,7 +215,7 @@ export function TiltCard({ children, max = 9, className, glare = true }: TiltCar
   }, [max]);
 
   return (
-    <div ref={ref} className={`tilt-3d relative ${className ?? ""}`}>
+    <div ref={ref} className={`tilt-3d relative h-full ${className ?? ""}`}>
       {children}
       {glare && <span className="tilt-shine" />}
     </div>
@@ -239,8 +240,8 @@ const SKILL_AREAS = [
 export function TrustMarquee() {
   const items = [...SKILL_AREAS, ...SKILL_AREAS];
   return (
-    <section className="py-12 md:py-16 border-y border-(--color-line) relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+    <section className="section-tight border-y border-(--color-line) relative overflow-hidden">
+      <div className="shell shell-wide">
         <div className="flex flex-col items-center gap-6">
           <div className="flex items-center gap-2 text-[11px] font-bold tracking-[0.2em] text-(--color-text-muted) uppercase">
             <span className="w-6 h-px bg-(--color-line-strong)" />
@@ -256,7 +257,7 @@ export function TrustMarquee() {
                     key={`${t.name}-${i}`}
                     className="flex items-center gap-3 px-5 py-3 rounded-2xl border border-(--color-line) bg-(--color-surface) hover:border-(--color-primary)/30 transition-colors"
                   >
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-600/20 flex items-center justify-center border border-(--color-line)">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#14847a]/20 to-[#0f6e63]/20 flex items-center justify-center border border-(--color-line)">
                       <Icon size={15} className="text-(--color-primary)" />
                     </div>
                     <div className="flex flex-col">
@@ -287,28 +288,28 @@ const WALKTHROUGH = [
     title: "Danışanı Tanıyın",
     body: "Demografik, klinik not ve değerlendirme verilerini tek ekranda toplayın. Her danışan için bir hafıza merkezi.",
     icon: Users,
-    accent: "#818cf8",
+    accent: "#35b0a0",
     preview: "clients",
   },
   {
     title: "Haftalık Planı Oluşturun",
     body: "Terapi hedeflerine göre domainleri (motor, bilişsel, duyusal) seçin. Akıllı öneri motoru günün programını hazırlar.",
     icon: LayoutDashboard,
-    accent: "#a78bfa",
+    accent: "#35b0a0",
     preview: "plan",
   },
   {
     title: "Seansı Oyunlaştırın",
-    body: "Yedi terapi oyunundan birini başlatın. Skorlar anlık kaydedilir, zorluk danışan profiline göre seçilir.",
+    body: `${PLATFORM_STATS.gameCount} terapi oyunundan birini başlatın. Skorlar anlık kaydedilir, zorluk danışan profiline göre seçilir.`,
     icon: Gamepad2,
-    accent: "#22d3ee",
+    accent: "#7fb2cc",
     preview: "game",
   },
   {
     title: "Gelişimi Raporlayın",
     body: "Yazdırılabilir raporlar ve grafiklerle ilerlemeyi görselleştirin; seans verilerini CSV olarak dışa aktarın.",
     icon: BarChart3,
-    accent: "#34d399",
+    accent: "#9cc65e",
     preview: "report",
   },
 ] as const;
@@ -338,10 +339,16 @@ export function StickyWalkthrough() {
 
   return (
     <section id="walkthrough" className="relative">
-      <div ref={ref} style={{ height: `${steps * 110}vh` }}>
-        <div className="sticky top-0 h-screen flex items-center overflow-hidden">
+      {/*
+        Adım başına ayrılan kaydırma payı. Dört adım × 110vh, ekranın üçte
+        birini neredeyse boş geçiyordu: adım listesi zaten tamamen görünür,
+        kaydırma yalnızca sağdaki önizlemeyi değiştiriyor. 58vh, her adıma
+        kendi anını veren en kısa mesafe.
+      */}
+      <div ref={ref} style={{ height: `${steps * 58}vh` }}>
+        <div className="sticky top-0 h-screen max-h-[46rem] flex items-center overflow-hidden">
           <div className="absolute inset-0 -z-10 dot-grid opacity-70" />
-          <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_60%_50%_at_50%_50%,rgba(99,102,241,0.1),transparent_70%)]" />
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_60%_50%_at_50%_50%,rgba(15, 110, 99,0.1),transparent_70%)]" />
 
           <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             {/* Left — step list */}
@@ -361,14 +368,28 @@ export function StickyWalkthrough() {
                   const Icon = w.icon;
                   const isActive = active === i;
                   return (
-                    <motion.div
+                    <motion.button
                       key={w.title}
+                      type="button"
+                      aria-current={isActive}
+                      onClick={() => {
+                        /* Adıma tıklamak o adımın kaydırma konumuna götürür —
+                           bölüm yalnızca kaydırmaya bağlı kalmaz. */
+                        const el = ref.current;
+                        if (!el) return;
+                        const start = el.offsetTop;
+                        const span = el.offsetHeight - window.innerHeight;
+                        window.scrollTo({
+                          top: start + (span * (i + 0.5)) / steps,
+                          behavior: "smooth",
+                        });
+                      }}
                       animate={{
-                        opacity: isActive ? 1 : 0.45,
+                        opacity: isActive ? 1 : 0.5,
                         x: isActive ? 0 : -6,
                       }}
                       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                      className="relative flex gap-4 rounded-2xl border p-4 sm:p-5"
+                      className="relative flex gap-4 rounded-2xl border p-4 sm:p-5 text-left w-full cursor-pointer"
                       style={{
                         borderColor: isActive ? `${w.accent}55` : "var(--color-line)",
                         background: isActive
@@ -409,7 +430,7 @@ export function StickyWalkthrough() {
                           {w.body}
                         </p>
                       </div>
-                    </motion.div>
+                    </motion.button>
                   );
                 })}
               </div>
@@ -417,7 +438,7 @@ export function StickyWalkthrough() {
 
             {/* Right — animated preview */}
             <div className="relative">
-              <div className="absolute -inset-10 bg-[radial-gradient(ellipse_60%_50%_at_60%_50%,rgba(99,102,241,0.18),transparent)] blur-3xl pointer-events-none" />
+              <div className="absolute -inset-10 bg-[radial-gradient(ellipse_60%_50%_at_60%_50%,rgba(15, 110, 99,0.18),transparent)] blur-3xl pointer-events-none" />
               <div
                 className="relative glass-strong rounded-3xl overflow-hidden aspect-[4/3]"
                 style={{
@@ -587,7 +608,7 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
           <div className="flex items-center gap-1.5">
             <span
               className="halo-dot w-2 h-2 rounded-full"
-              style={{ color: "#ef4444", background: "#ef4444" }}
+              style={{ color: "#d1503c", background: "#d1503c" }}
             />
             <span className="text-[10px] font-bold text-(--color-text-body)">CANLI</span>
           </div>
@@ -693,8 +714,8 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
           </p>
           <div className="flex items-center gap-2">
             <span className="text-lg font-extrabold text-(--color-text-strong)">86</span>
-            <TrendingUp size={13} style={{ color: "#34d399" }} />
-            <span className="text-[10px] font-bold" style={{ color: "#34d399" }}>
+            <TrendingUp size={13} style={{ color: "#9cc65e" }} />
+            <span className="text-[10px] font-bold" style={{ color: "#9cc65e" }}>
               +12
             </span>
           </div>
@@ -705,8 +726,8 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
           </p>
           <div className="flex items-center gap-2">
             <span className="text-lg font-extrabold text-(--color-text-strong)">79</span>
-            <TrendingUp size={13} style={{ color: "#34d399" }} />
-            <span className="text-[10px] font-bold" style={{ color: "#34d399" }}>
+            <TrendingUp size={13} style={{ color: "#9cc65e" }} />
+            <span className="text-[10px] font-bold" style={{ color: "#9cc65e" }}>
               +8
             </span>
           </div>
@@ -731,11 +752,11 @@ const COMPARISON = [
 
 export function ComparisonSection() {
   return (
-    <section id="comparison" className="py-16 md:py-28 px-4 sm:px-6 relative overflow-hidden">
+    <section id="comparison" className="section relative overflow-hidden">
       <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_50%,rgba(139,92,246,0.06),transparent)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_50%,rgba(20, 132, 122,0.06),transparent)]" />
       </div>
-      <div className="max-w-5xl mx-auto">
+      <div className="shell" style={{ maxWidth: "68rem" }}>
         <div className="text-center mb-12 md:mb-16">
           <span className="inline-flex items-center gap-2 text-xs font-bold tracking-widest text-(--color-primary) uppercase mb-4 bg-(--color-primary-light) px-4 py-2 rounded-full">
             <Microscope size={12} />
@@ -743,7 +764,7 @@ export function ComparisonSection() {
           </span>
           <h2 className="text-3xl md:text-5xl font-extrabold text-(--color-text-strong) leading-tight mb-4">
             Geleneksel vs.{" "}
-            <span className="bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#35b0a0] to-[#7fb2cc] bg-clip-text text-transparent">
               Dijital Ergoterapi
             </span>
           </h2>
@@ -759,9 +780,9 @@ export function ComparisonSection() {
               Özellik
             </div>
             <div className="p-4 sm:p-6 relative">
-              <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/10 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-b from-[#14847a]/10 to-transparent" />
               <div className="relative flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#14847a] to-[#0f6e63] flex items-center justify-center text-white font-bold text-xs">
                   M
                 </div>
                 <span className="font-extrabold text-(--color-text-strong) tracking-tight">
@@ -792,11 +813,11 @@ export function ComparisonSection() {
                 {row.label}
               </div>
               <div className="p-4 sm:p-6 relative">
-                <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-b from-[#14847a]/5 to-transparent" />
                 <div className="relative flex items-start gap-2">
                   <ShieldCheck
                     size={16}
-                    className="shrink-0 mt-0.5 text-emerald-400"
+                    className="shrink-0 mt-0.5 text-[#9cc65e]"
                   />
                   <span className="text-sm font-semibold text-(--color-text-strong)">
                     {row.mimio}
@@ -844,15 +865,15 @@ const FAQ = [
   },
   {
     q: "Kendi oyunumu veya ölçeğimi entegre edebilir miyim?",
-    a: "Şu an platformdaki yedi oyun ve 127 hazır aktivite kullanılabilir durumda; dış araç entegrasyonu yol haritamızda. İhtiyacınızı bize iletirseniz önceliklendirirken dikkate alırız.",
+    a: `Şu an platformdaki ${PLATFORM_STATS.gameCount} oyun ve ${PLATFORM_STATS.activityCount} hazır aktivite kullanılabilir durumda; dış araç entegrasyonu yol haritamızda. İhtiyacınızı bize iletirseniz önceliklendirirken dikkate alırız.`,
   },
 ] as const;
 
 export function FAQSection() {
   const [open, setOpen] = useState<number | null>(0);
   return (
-    <section id="faq" className="py-16 md:py-28 px-4 sm:px-6 relative">
-      <div className="max-w-4xl mx-auto">
+    <section id="faq" className="section relative">
+      <div className="shell" style={{ maxWidth: "56rem" }}>
         <div className="text-center mb-10 md:mb-14">
           <span className="inline-flex items-center gap-2 text-xs font-bold tracking-widest text-(--color-primary) uppercase mb-4 bg-(--color-primary-light) px-4 py-2 rounded-full">
             <HelpCircleFallback />
@@ -861,7 +882,7 @@ export function FAQSection() {
           <h2 className="text-3xl md:text-5xl font-extrabold text-(--color-text-strong) leading-tight mb-4">
             Aklınızdaki Soruları
             <br />
-            <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r bg-[#35b0a0] bg-clip-text text-transparent">
               Hızlıca Yanıtlayalım
             </span>
           </h2>
@@ -936,21 +957,41 @@ function HelpCircleFallback() {
 interface FloatingCTAProps {
   onRegister: () => void;
 }
+/**
+ * Sayfanın sağ alt köşesine tutunan kayıt kısayolu.
+ *
+ * Önceden ekranın alt-ortasında duruyor ve okuma sütununu kalıcı olarak
+ * kapatıyordu. Artık: köşede durur, kapatılabilir ve sayfanın kendi CTA
+ * bölümü görünürken kendini gizler — aynı çağrıyı iki kez yapmaz.
+ */
 export function FloatingCTA({ onRegister }: FloatingCTAProps) {
-  const [visible, setVisible] = useState(false);
+  const [scrolledPastHero, setScrolledPastHero] = useState(false);
+  const [ctaInView, setCtaInView] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     const handle = () => {
       const y = window.scrollY;
-      const doc = document.documentElement;
-      const max = doc.scrollHeight - window.innerHeight;
-      const nearBottom = max - y < 240;
-      setVisible(y > 720 && !nearBottom);
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      setScrolledPastHero(y > 720 && max - y > 240);
     };
     window.addEventListener("scroll", handle, { passive: true });
     handle();
     return () => window.removeEventListener("scroll", handle);
   }, []);
+
+  useEffect(() => {
+    const target = document.getElementById("cta");
+    if (!target) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setCtaInView(entry.isIntersecting),
+      { rootMargin: "0px 0px -20% 0px" }
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, []);
+
+  const visible = scrolledPastHero && !ctaInView && !dismissed;
 
   return (
     <AnimatePresence>
@@ -962,20 +1003,28 @@ export function FloatingCTA({ onRegister }: FloatingCTAProps) {
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           className="floating-cta"
         >
-          <span className="flex items-center gap-2 text-xs font-bold text-(--color-text-body) pr-1">
+          <span className="hidden sm:flex items-center gap-2 text-xs font-bold text-(--color-text-body) pr-1">
             <span
               className="halo-dot w-2 h-2 rounded-full"
-              style={{ color: "#10b981", background: "#10b981" }}
+              style={{ color: "#7aac3a", background: "#7aac3a" }}
             />
-            Ücretsiz başlayın
+            Ücretsiz
           </span>
           <button
             type="button"
             onClick={onRegister}
-            className="flex items-center gap-1.5 text-xs font-bold bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-full hover:shadow-lg hover:shadow-indigo-500/40 transition-shadow"
+            className="flex items-center gap-1.5 text-xs font-bold bg-gradient-to-r from-[#14847a] to-[#0f6e63] text-white px-4 py-2 rounded-full hover:shadow-lg hover:shadow-[#14847a]/40 transition-shadow"
           >
-            Hemen dene
+            Hesap oluştur
             <Zap size={12} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setDismissed(true)}
+            aria-label="Bu kısayolu kapat"
+            className="w-6 h-6 rounded-full flex items-center justify-center text-(--color-text-muted) hover:text-(--color-text-strong) hover:bg-(--color-surface-elevated) transition-colors"
+          >
+            <Minus size={12} />
           </button>
         </motion.div>
       )}
@@ -997,41 +1046,53 @@ interface GameEntry {
 }
 // Platformdaki gerçek 7 oyun (GAME_LABELS ile birebir aynı adlar)
 const EXTENDED_GAMES: readonly GameEntry[] = [
-  { key: "memory", label: "Sıra Hafızası", area: "Çalışma Belleği", desc: "Sırayla yanan kutuları hatırlayıp aynı sırayla tekrar et; çalışma belleğini güçlendir.", color: "#6366f1", icon: Brain },
-  { key: "pairs", label: "Kart Eşle", area: "Görsel Hafıza", desc: "Kapalı kartları açarak eşleşen çiftleri bul; görsel hafızayı pekiştir.", color: "#f59e0b", icon: Sparkles },
-  { key: "pulse", label: "Mavi Nabız", area: "El-Göz Koordinasyonu", desc: "Beliren hedeflere hızla dokunarak el-göz koordinasyonunu geliştir.", color: "#8b5cf6", icon: Target },
-  { key: "route", label: "Komut Rotası", area: "Yön & Planlama", desc: "Gösterilen yön komutlarını doğru sırayla uygula; işlem hızını artır.", color: "#10b981", icon: Activity },
-  { key: "difference", label: "Fark Avcısı", area: "Görsel Ayrım", desc: "Benzer kartlar arasından farklı olanı bul; görsel ayrım becerisini destekle.", color: "#ec4899", icon: Eye },
-  { key: "scan", label: "Hedef Tarama", area: "Seçici Dikkat", desc: "Hedef simgeyi ızgara içinde tara ve bul; seçici dikkati çalıştır.", color: "#06b6d4", icon: Zap },
-  { key: "logic", label: "Dizi Mantık", area: "Yürütücü İşlevler", desc: "Matristeki örüntüyü çöz, eksik hücreyi tamamla; akıl yürütmeyi geliştir.", color: "#22d3ee", icon: Puzzle },
+  { key: "memory", label: "Sıra Hafızası", area: "Çalışma Belleği", desc: "Sırayla yanan kutuları hatırlayıp aynı sırayla tekrar et; çalışma belleğini güçlendir.", color: "#0f6e63", icon: Brain },
+  { key: "pairs", label: "Kart Eşle", area: "Görsel Hafıza", desc: "Kapalı kartları açarak eşleşen çiftleri bul; görsel hafızayı pekiştir.", color: "#c07c2c", icon: Sparkles },
+  { key: "pulse", label: "Mavi Nabız", area: "El-Göz Koordinasyonu", desc: "Beliren hedeflere hızla dokunarak el-göz koordinasyonunu geliştir.", color: "#14847a", icon: Target },
+  { key: "route", label: "Komut Rotası", area: "Yön & Planlama", desc: "Gösterilen yön komutlarını doğru sırayla uygula; işlem hızını artır.", color: "#7aac3a", icon: Activity },
+  { key: "difference", label: "Fark Avcısı", area: "Görsel Ayrım", desc: "Benzer kartlar arasından farklı olanı bul; görsel ayrım becerisini destekle.", color: "#c4614a", icon: Eye },
+  { key: "scan", label: "Hedef Tarama", area: "Seçici Dikkat", desc: "Hedef simgeyi ızgara içinde tara ve bul; seçici dikkati çalıştır.", color: "#4f93b5", icon: Zap },
+  { key: "logic", label: "Dizi Mantık", area: "Yürütücü İşlevler", desc: "Matristeki örüntüyü çöz, eksik hücreyi tamamla; akıl yürütmeyi geliştir.", color: "#7fb2cc", icon: Puzzle },
 ];
 
 export function GamesCarousel({ onLogin }: { onLogin: () => void }) {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
-  const [progress, setProgress] = useState(0);
+  /* Yüzde yerine kaçıncı kartta olduğunu göster — okur bunu kullanabilir. */
+  const [index, setIndex] = useState(0);
+  const [atStart, setAtStart] = useState(true);
+  const [atEnd, setAtEnd] = useState(false);
 
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
     const handle = () => {
       const max = el.scrollWidth - el.clientWidth;
-      if (max <= 0) return;
-      setProgress(el.scrollLeft / max);
+      const card = el.firstElementChild as HTMLElement | null;
+      const step = card ? card.offsetWidth + 16 : 356;
+      setIndex(Math.min(EXTENDED_GAMES.length - 1, Math.round(el.scrollLeft / step)));
+      setAtStart(el.scrollLeft <= 4);
+      setAtEnd(max - el.scrollLeft <= 4);
     };
     el.addEventListener("scroll", handle, { passive: true });
+    window.addEventListener("resize", handle);
     handle();
-    return () => el.removeEventListener("scroll", handle);
+    return () => {
+      el.removeEventListener("scroll", handle);
+      window.removeEventListener("resize", handle);
+    };
   }, []);
 
   const scrollBy = (dir: 1 | -1) => {
     const el = scrollerRef.current;
     if (!el) return;
-    el.scrollBy({ left: dir * 360, behavior: "smooth" });
+    const card = el.firstElementChild as HTMLElement | null;
+    const step = card ? card.offsetWidth + 16 : 356;
+    el.scrollBy({ left: dir * step, behavior: "smooth" });
   };
 
   return (
-    <section id="games" className="py-16 md:py-32 section-games relative">
-      <div className="max-w-7xl mx-auto">
+    <section id="games" className="section section-games relative">
+      <div className="shell shell-wide">
         <div className="flex items-end justify-between gap-6 flex-wrap px-4 sm:px-6 mb-8 sm:mb-10">
           <div>
             <span className="inline-flex items-center gap-2 text-xs font-bold tracking-widest text-(--color-primary) uppercase mb-4 bg-(--color-primary-light) px-4 py-2 rounded-full">
@@ -1044,23 +1105,30 @@ export function GamesCarousel({ onLogin }: { onLogin: () => void }) {
               <span className="text-gradient-shift">Gelişim Hedefi</span>
             </h2>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => scrollBy(-1)}
-              aria-label="Önceki"
-              className="w-11 h-11 rounded-full flex items-center justify-center border border-(--color-games-card-border) bg-(--color-games-badge-bg) text-(--color-games-text) hover:border-(--color-primary)/40 transition-colors"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollBy(1)}
-              aria-label="Sonraki"
-              className="w-11 h-11 rounded-full flex items-center justify-center border border-(--color-games-card-border) bg-(--color-games-badge-bg) text-(--color-games-text) hover:border-(--color-primary)/40 transition-colors"
-            >
-              <ChevronRight size={16} />
-            </button>
+          <div className="flex items-center gap-3">
+            <span className="numeral text-xs font-bold text-(--color-games-text-soft)">
+              {index + 1} / {EXTENDED_GAMES.length}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => scrollBy(-1)}
+                disabled={atStart}
+                aria-label="Önceki oyun"
+                className="w-11 h-11 rounded-full flex items-center justify-center border border-(--color-games-card-border) bg-(--color-games-badge-bg) text-(--color-games-text) hover:border-(--color-primary)/40 transition-all disabled:opacity-35 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollBy(1)}
+                disabled={atEnd}
+                aria-label="Sonraki oyun"
+                className="w-11 h-11 rounded-full flex items-center justify-center border border-(--color-games-card-border) bg-(--color-games-badge-bg) text-(--color-games-text) hover:border-(--color-primary)/40 transition-all disabled:opacity-35 disabled:cursor-not-allowed"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1116,16 +1184,19 @@ export function GamesCarousel({ onLogin }: { onLogin: () => void }) {
           })}
         </div>
 
-        <div className="px-4 sm:px-6 mt-6 flex items-center gap-3 max-w-sm">
-          <div className="flex-1 h-1 rounded-full bg-(--color-games-card-border) overflow-hidden">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-[width] duration-300"
-              style={{ width: `${Math.max(10, progress * 100)}%` }}
+        {/* Konum göstergesi — hangi karttayız, kaç kart var */}
+        <div className="flex items-center gap-1.5 mt-1">
+          {EXTENDED_GAMES.map((g, i) => (
+            <span
+              key={g.key}
+              aria-hidden="true"
+              className="h-1 rounded-full transition-all duration-300"
+              style={{
+                width: i === index ? 28 : 10,
+                background: i === index ? "var(--color-primary)" : "var(--color-games-card-border)",
+              }}
             />
-          </div>
-          <span className="text-[11px] font-bold tabular-nums text-(--color-games-text-soft) shrink-0">
-            {Math.round(progress * 100)}%
-          </span>
+          ))}
         </div>
       </div>
     </section>

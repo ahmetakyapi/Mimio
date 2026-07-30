@@ -6,7 +6,27 @@
 
 import { GAME_LABELS, type ClientProfile, type RecentSessionEntry } from "@/lib/platform-data";
 import type { GameAnalysis, GameKey, GameTrend, TherapySuggestion } from "@/lib/game-types";
+import { normalizeScore } from "@/lib/game-constants";
 import { THERAPY_PROTOCOLS, GOAL_PROTOCOL_MAP } from "@/lib/therapy-protocols";
+
+/**
+ * Eğilim eşiği: son üç seansın ortalaması, önceki seansların ortalamasından
+ * en az bu oranda saparsa "gelişiyor" / "geriliyor" denir.
+ *
+ * Sabit puan farkı kullanılamaz: 3 puanlık değişim "Sıra Hafızası"nda
+ * (ölçek ≈12) belirgin bir sıçramayken "Kart Eşle"de (ölçek 280) ölçüm
+ * gürültüsüdür. Bu yüzden karşılaştırma normalize skor üzerinden, göreli
+ * olarak yapılır.
+ */
+const TREND_RELATIVE_THRESHOLD = 0.1;
+
+/** Anlamlı bir eğilim için gereken en az seans sayısı. */
+const MIN_SESSIONS_FOR_TREND = 4;
+
+function mean(values: readonly number[]): number {
+  if (values.length === 0) return 0;
+  return values.reduce((total, value) => total + value, 0) / values.length;
+}
 
 export function analyzeClientGames(
   clientId: string,
@@ -22,17 +42,25 @@ export function analyzeClientGames(
       .sort((a, b) => new Date(b.playedAt).getTime() - new Date(a.playedAt).getTime());
 
     const plays = gameSessions.length;
-    const best = plays > 0 ? Math.max(...gameSessions.map(s => s.score)) : 0;
-    const last3 = gameSessions.slice(0, 3).map(s => s.score);
-    const last5 = gameSessions.slice(0, 5).map(s => s.score);
-    const last3Avg = last3.length > 0 ? last3.reduce((a, b) => a + b, 0) / last3.length : 0;
-    const last5Avg = last5.length > 0 ? last5.reduce((a, b) => a + b, 0) / last5.length : 0;
+    const scores = gameSessions.map(s => s.score);
+    const best = plays > 0 ? Math.max(...scores) : 0;
+    const last3Avg = mean(scores.slice(0, 3));
+    const last5Avg = mean(scores.slice(0, 5));
 
+    /*
+     * Eğilim: son 3 seans ile ondan önceki seanslar karşılaştırılır.
+     * Önceki kod son 3'ü, son 5'in içinde son 3'ü de barındıran ortalamayla
+     * kıyaslıyordu; bu, gerçek değişimi sistematik olarak küçültüyordu.
+     */
     let trend: GameTrend = "new";
-    if (plays >= 5) {
-      const diff = last3Avg - last5Avg;
-      if (diff > 1.5) trend = "improving";
-      else if (diff < -1.5) trend = "declining";
+    if (plays >= MIN_SESSIONS_FOR_TREND) {
+      const recentMean = mean(scores.slice(0, 3));
+      const priorMean = mean(scores.slice(3));
+      const recentNorm = normalizeScore(gameKey, recentMean);
+      const priorNorm = normalizeScore(gameKey, priorMean);
+      const delta = recentNorm - priorNorm;
+      if (delta > TREND_RELATIVE_THRESHOLD) trend = "improving";
+      else if (delta < -TREND_RELATIVE_THRESHOLD) trend = "declining";
       else trend = "stable";
     } else if (plays >= 2) {
       trend = "stable";
@@ -41,8 +69,8 @@ export function analyzeClientGames(
     const lastPlayedAt = gameSessions.length > 0 ? new Date(gameSessions[0].playedAt).getTime() : null;
     const daysSinceLastPlay = lastPlayedAt !== null ? Math.floor((now - lastPlayedAt) / (1000 * 60 * 60 * 24)) : null;
 
-    const maxPotential = 20;
-    const relativeScore = best > 0 ? Math.min(1, best / maxPotential) : 0;
+    /* Oyunun kendi ölçeğine göre 0–1; alanlar arası karşılaştırma için. */
+    const relativeScore = normalizeScore(gameKey, last3Avg);
 
     return { gameKey, label: GAME_LABELS[gameKey], plays, best, last3Avg, last5Avg, trend, relativeScore, daysSinceLastPlay };
   });
@@ -118,19 +146,24 @@ export function generateTherapySuggestions(
     improvingCount > decliningCount ? "improving" :
     decliningCount > improvingCount ? "declining" : "stable";
 
-  const avgScore = playedGames.length > 0
-    ? Math.round(playedGames.reduce((sum, a) => sum + a.last3Avg, 0) / playedGames.length)
+  /*
+   * Alanlar arası genel başarı, ham skorların ortalaması olamaz — oyunların
+   * puan ölçekleri farklı. Her oyunun normalize skoru (0–1) ortalanır ve
+   * yüzde olarak sunulur.
+   */
+  const overallPercent = playedGames.length > 0
+    ? Math.round((playedGames.reduce((sum, a) => sum + a.relativeScore, 0) / playedGames.length) * 100)
     : 0;
   const trendLabel = overallTrend === "improving" ? "gelişme gösteriyor" : overallTrend === "declining" ? "geri düşüş görülüyor" : "stabil seyrediyor";
-  const performanceSummary = `${client.displayName}, ${playedGames.length} oyun alanında toplam ${totalPlays} seans tamamladı. Genel performans ${trendLabel}. Ortalama skor: ${avgScore}.`;
+  const performanceSummary = `${client.displayName}, ${playedGames.length} oyun alanında toplam ${totalPlays} seans tamamladı. Genel performans ${trendLabel}. Alanlar arası ortalama başarı: %${overallPercent}.`;
 
-  const strengthList = strengths.map(s => `${s.label} (ort. ${Math.round(s.last3Avg)})`).join(", ");
+  const strengthList = strengths.map(s => `${s.label} (son 3 seans ort. ${Math.round(s.last3Avg)})`).join(", ");
   const attentionList = attentionAreas.slice(0, 2).map(a => a.label).join(", ");
   const recSetLabels = recSet.map(k => GAME_LABELS[k]).join(", ");
 
   const soapDraft = {
     s: `Danışan ${client.displayName} seans için hazır. ${client.primaryGoal ? `Birincil hedef: ${client.primaryGoal}.` : ""} Danışanın genel motivasyonu ve katılım düzeyi değerlendirildi.`,
-    o: `Son ${totalPlays} seans verisi analiz edildi. Güçlü alanlar: ${strengthList || "henüz yok"}. Dikkat gereken alanlar: ${attentionList || "yok"}. Genel skor ortalaması: ${avgScore}.`,
+    o: `Son ${totalPlays} seans verisi analiz edildi. Güçlü alanlar: ${strengthList || "henüz yok"}. Dikkat gereken alanlar: ${attentionList || "yok"}. Alanlar arası ortalama başarı: %${overallPercent}.`,
     a: `${performanceSummary} ${strengths.length > 0 ? `${strengths[0].label} alanında tutarlı başarı görülüyor.` : ""} ${attentionAreas.length > 0 ? `${attentionAreas[0].label} alanında ek çalışma öneriliyor.` : ""}`,
     p: `Önerilen bir sonraki seans seti: ${recSetLabels}. ${matchedProto ? `Uzun vadeli protokol önerisi: ${matchedProto.name} (${matchedProto.duration} hafta).` : ""} Güçlü alanlarda zorluk kademeli artırılabilir.`,
   };

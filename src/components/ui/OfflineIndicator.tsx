@@ -40,8 +40,8 @@ export function OfflineIndicator() {
       className="fixed top-0 left-0 right-0 z-[9999] flex items-center justify-center gap-2 py-2 px-4 text-xs font-bold transition-all"
       style={{
         background: isOnline
-          ? "linear-gradient(90deg, rgba(16,185,129,0.95), rgba(5,150,105,0.95))"
-          : "linear-gradient(90deg, rgba(239,68,68,0.95), rgba(220,38,38,0.95))",
+          ? "linear-gradient(90deg, rgba(122, 172, 58,0.95), rgba(79, 122, 34,0.95))"
+          : "linear-gradient(90deg, rgba(209, 80, 60,0.95), rgba(220,38,38,0.95))",
         color: "#fff",
         backdropFilter: "blur(8px)",
       }}

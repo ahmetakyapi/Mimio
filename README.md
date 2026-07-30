@@ -32,7 +32,7 @@ Tüm oyunlar **AOTA Uygulama Çerçevesi (4. Baskı)** ve **WHO ICF** referans a
 | Alan | Açıklama |
 |---|---|
 | **Danışan Yönetimi** | Profil oluşturma, yaş grubu, birincil hedef ve bağımsızlık düzeyi takibi |
-| **İnteraktif Oyunlar** | 6 farklı oyun — her biri belirli bir bilişsel veya motor alanı hedefler |
+| **İnteraktif Oyunlar** | 7 farklı oyun — her biri belirli bir bilişsel veya motor alanı hedefler |
 | **Haftalık Plan** | Danışan bazında kişisel terapi programı, günlük aktivite ataması |
 | **Seans Notları** | Oyun sonrası veya bağımsız seans gözlemi kayıt sistemi |
 | **İlerleme Analizi** | Oyun skorları ve seans verileri üzerinden danışan gelişimi |
@@ -49,12 +49,13 @@ Mimio'daki her oyun, ergoterapi literatüründe doğrulanmış bir bilişsel ya 
 
 | Oyun | Alan | Paradigma | Zorluk |
 |---|---|---|---|
-| **Sıra Hafızası** | Hafıza | Corsi Blok Testi — çalışma belleği ve sıralama | Kolay → Zor |
+| **Sıra Hafızası** | Hafıza | Corsi Blok Testi — görsel-uzamsal çalışma belleği | Kolay → Zor |
 | **Kart Eşle** | Görsel-Uzamsal Bellek | Görsel eşleştirme, sistematik arama stratejisi | Kolay → Orta |
-| **Mavi Nabız** | Motor Beceri | Fitts Yasası — hedefleme doğruluğu ve zamanlama | Orta → Zor |
+| **Mavi Nabız** | Motor Beceri | Fitts (1954) hız–doğruluk değiş tokuşu | Orta → Zor |
 | **Komut Rotası** | Yürütücü İşlev | Yön komutu işleme, motor yanıt seçimi, inhibisyon | Orta → Zor |
 | **Fark Avcısı** | Görsel Algı | Figür-zemin ayrımı, hemineglect rehabilitasyonu | Kolay → Orta |
-| **Hedef Tarama** | Seçici Dikkat | Visual Search paradigması, dikkat dağıtıcılar arası hedef seçimi | Orta → Zor |
+| **Hedef Tarama** | Seçici Dikkat | Visual Search paradigması (Treisman & Gelade, 1980) | Orta → Zor |
+| **Dizi Mantık** | Akıl Yürütme | 3×3 matris örüntü tamamlama — tümevarımsal akıl yürütme | Orta → Zor |
 
 ---
 

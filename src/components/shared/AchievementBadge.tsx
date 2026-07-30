@@ -36,26 +36,26 @@ export interface EarnedAchievement {
 
 export const ACHIEVEMENTS: AchievementDef[] = [
   // Session milestones
-  { id: "first-session", title: "İlk Adım", description: "İlk seans tamamlandı", icon: Star, color: "#10b981", gradient: "linear-gradient(135deg, #10b981, #059669)", category: "session", check: (s) => s.totalSessions >= 1 },
-  { id: "ten-sessions", title: "Düzenli Terapist", description: "10 seans tamamlandı", icon: Award, color: "#6366f1", gradient: "linear-gradient(135deg, #6366f1, #4f46e5)", category: "session", check: (s) => s.totalSessions >= 10 },
-  { id: "fifty-sessions", title: "Deneyimli Uzman", description: "50 seans tamamlandı", icon: Trophy, color: "#f59e0b", gradient: "linear-gradient(135deg, #f59e0b, #d97706)", category: "session", check: (s) => s.totalSessions >= 50 },
-  { id: "hundred-sessions", title: "Yüzüncü Seans", description: "100 seans başarıyla tamamlandı!", icon: Trophy, color: "#ec4899", gradient: "linear-gradient(135deg, #ec4899, #db2777)", category: "milestone", check: (s) => s.totalSessions >= 100 },
+  { id: "first-session", title: "İlk Adım", description: "İlk seans tamamlandı", icon: Star, color: "#7aac3a", gradient: "linear-gradient(135deg, #7aac3a, #4f7a22)", category: "session", check: (s) => s.totalSessions >= 1 },
+  { id: "ten-sessions", title: "Düzenli Terapist", description: "10 seans tamamlandı", icon: Award, color: "#0f6e63", gradient: "linear-gradient(135deg, #0f6e63, #0b554c)", category: "session", check: (s) => s.totalSessions >= 10 },
+  { id: "fifty-sessions", title: "Deneyimli Uzman", description: "50 seans tamamlandı", icon: Trophy, color: "#c07c2c", gradient: "linear-gradient(135deg, #c07c2c, #9c5f18)", category: "session", check: (s) => s.totalSessions >= 50 },
+  { id: "hundred-sessions", title: "Yüzüncü Seans", description: "100 seans başarıyla tamamlandı!", icon: Trophy, color: "#c4614a", gradient: "linear-gradient(135deg, #c4614a, #a03526)", category: "milestone", check: (s) => s.totalSessions >= 100 },
 
   // Score achievements
-  { id: "high-scorer", title: "Yüksek Performans", description: "Tek seansta 200+ puan", icon: Zap, color: "#f59e0b", gradient: "linear-gradient(135deg, #f59e0b, #ea580c)", category: "score", check: (s) => s.bestScore >= 200 },
-  { id: "perfect-game", title: "Kusursuz Oyun", description: "Bir oyunda tüm turlar doğru", icon: Sparkles, color: "#8b5cf6", gradient: "linear-gradient(135deg, #8b5cf6, #7c3aed)", category: "score", check: (s) => s.perfectGames >= 1 },
+  { id: "high-scorer", title: "Yüksek Performans", description: "Tek seansta 200+ puan", icon: Zap, color: "#c07c2c", gradient: "linear-gradient(135deg, #c07c2c, #ea580c)", category: "score", check: (s) => s.bestScore >= 200 },
+  { id: "perfect-game", title: "Kusursuz Oyun", description: "Bir oyunda tüm turlar doğru", icon: Sparkles, color: "#14847a", gradient: "linear-gradient(135deg, #14847a, #0b554c)", category: "score", check: (s) => s.perfectGames >= 1 },
 
   // Streak achievements
-  { id: "three-day-streak", title: "Üç Gün Serisi", description: "3 gün üst üste seans yapıldı", icon: Flame, color: "#ef4444", gradient: "linear-gradient(135deg, #ef4444, #dc2626)", category: "streak", check: (s) => s.sessionStreak >= 3 },
+  { id: "three-day-streak", title: "Üç Gün Serisi", description: "3 gün üst üste seans yapıldı", icon: Flame, color: "#d1503c", gradient: "linear-gradient(135deg, #d1503c, #a03526)", category: "streak", check: (s) => s.sessionStreak >= 3 },
   { id: "week-streak", title: "Haftalık Seri", description: "7 gün üst üste seans yapıldı", icon: Flame, color: "#f97316", gradient: "linear-gradient(135deg, #f97316, #ea580c)", category: "streak", check: (s) => s.sessionStreak >= 7 },
 
   // Diversity achievements
-  { id: "explorer", title: "Kaşif", description: "Tüm oyun türlerini denedi", icon: Target, color: "#06b6d4", gradient: "linear-gradient(135deg, #06b6d4, #0891b2)", category: "milestone", check: (s) => s.uniqueGamesPlayed >= 7 },
+  { id: "explorer", title: "Kaşif", description: "Tüm oyun türlerini denedi", icon: Target, color: "#4f93b5", gradient: "linear-gradient(135deg, #4f93b5, #0891b2)", category: "milestone", check: (s) => s.uniqueGamesPlayed >= 7 },
 
   // Therapist achievements
-  { id: "caring-therapist", title: "İlgili Terapist", description: "10+ seans notu yazıldı", icon: Heart, color: "#ec4899", gradient: "linear-gradient(135deg, #ec4899, #be185d)", category: "special", check: (s) => s.notesWritten >= 10 },
-  { id: "goal-setter", title: "Hedef Odaklı", description: "5 hedef tamamlandı", icon: TrendingUp, color: "#10b981", gradient: "linear-gradient(135deg, #10b981, #047857)", category: "special", check: (s) => s.goalsCompleted >= 5 },
-  { id: "weekly-warrior", title: "Haftalık Savaşçı", description: "Bir haftada 10+ seans", icon: Clock, color: "#8b5cf6", gradient: "linear-gradient(135deg, #8b5cf6, #6d28d9)", category: "milestone", check: (s) => s.thisWeekSessions >= 10 },
+  { id: "caring-therapist", title: "İlgili Terapist", description: "10+ seans notu yazıldı", icon: Heart, color: "#c4614a", gradient: "linear-gradient(135deg, #c4614a, #be185d)", category: "special", check: (s) => s.notesWritten >= 10 },
+  { id: "goal-setter", title: "Hedef Odaklı", description: "5 hedef tamamlandı", icon: TrendingUp, color: "#7aac3a", gradient: "linear-gradient(135deg, #7aac3a, #047857)", category: "special", check: (s) => s.goalsCompleted >= 5 },
+  { id: "weekly-warrior", title: "Haftalık Savaşçı", description: "Bir haftada 10+ seans", icon: Clock, color: "#14847a", gradient: "linear-gradient(135deg, #14847a, #6d28d9)", category: "milestone", check: (s) => s.thisWeekSessions >= 10 },
 ];
 
 // ── Badge component ──
@@ -133,11 +133,11 @@ export function AchievementPanel({ stats, earned, onEarn }: AchievementPanelProp
   const progressPct = Math.round((earnedCount / ACHIEVEMENTS.length) * 100);
 
   const categories = [
-    { key: "session" as const, label: "Seans", color: "#6366f1" },
-    { key: "score" as const, label: "Skor", color: "#f59e0b" },
-    { key: "streak" as const, label: "Seri", color: "#ef4444" },
-    { key: "milestone" as const, label: "Dönüm Noktası", color: "#8b5cf6" },
-    { key: "special" as const, label: "Özel", color: "#ec4899" },
+    { key: "session" as const, label: "Seans", color: "#0f6e63" },
+    { key: "score" as const, label: "Skor", color: "#c07c2c" },
+    { key: "streak" as const, label: "Seri", color: "#d1503c" },
+    { key: "milestone" as const, label: "Dönüm Noktası", color: "#14847a" },
+    { key: "special" as const, label: "Özel", color: "#c4614a" },
   ];
 
   return (
@@ -149,7 +149,7 @@ export function AchievementPanel({ stats, earned, onEarn }: AchievementPanelProp
           <span className="text-sm font-extrabold" style={{ color: "var(--color-primary)" }}>{earnedCount}/{ACHIEVEMENTS.length}</span>
         </div>
         <div className="h-2.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
-          <div className="h-full rounded-full transition-all duration-700" style={{ width: `${progressPct}%`, background: "linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899)" }} />
+          <div className="h-full rounded-full transition-all duration-700" style={{ width: `${progressPct}%`, background: "linear-gradient(90deg, #0f6e63, #14847a, #c4614a)" }} />
         </div>
         <p className="text-[10px] text-(--color-text-muted) mt-1.5 m-0">%{progressPct} tamamlandı</p>
       </div>

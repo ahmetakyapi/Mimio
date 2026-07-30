@@ -32,7 +32,7 @@ export function GET(req: NextRequest) {
         {/* Radial gradients */}
         <div style={{
           position: 'absolute', inset: 0,
-          background: 'radial-gradient(circle at 20% 20%, rgba(99,102,241,0.22) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(79,70,229,0.12) 0%, transparent 50%)',
+          background: 'radial-gradient(circle at 20% 20%, rgba(15, 110, 99,0.22) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(11, 85, 76,0.12) 0%, transparent 50%)',
         }} />
 
         {/* M logo */}
@@ -43,7 +43,7 @@ export function GET(req: NextRequest) {
           width: 72,
           height: 72,
           borderRadius: 18,
-          background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+          background: 'linear-gradient(135deg, #0f6e63, #0b554c)',
           marginBottom: 40,
           fontSize: 36,
           fontWeight: 800,
@@ -82,7 +82,7 @@ export function GET(req: NextRequest) {
           position: 'absolute',
           bottom: 48,
           fontSize: 20,
-          color: 'rgba(99,102,241,0.7)',
+          color: 'rgba(15, 110, 99,0.7)',
         }}>
           mimio.app
         </div>

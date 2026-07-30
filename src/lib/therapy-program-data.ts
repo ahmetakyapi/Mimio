@@ -147,7 +147,7 @@ export interface ProgressEntry {
 
 // ── Game Therapy Mapping ──
 // Kaynak: AOTA (2020), Klingberg (2010) Nat Rev Neurosci, Schmidt & Lee (2011) Motor Control,
-// Warren (1993) AJOT, Cicerone et al. (2019) Arch Phys Med Rehabil, Spector et al. (2003) BJPT
+// Warren (1993) AJOT, Cicerone et al. (2019) Arch Phys Med Rehabil, Spector et al. (2003) Br J Psychiatry
 
 export const GAME_THERAPY_MAPPINGS: GameMapping[] = [
   {
@@ -156,7 +156,7 @@ export const GAME_THERAPY_MAPPINGS: GameMapping[] = [
     suitableDomains: ["pediatric", "neurological", "neurodiversity", "geriatric", "mental-health"],
     difficultyFit: ["kolay", "orta", "zor"],
     therapeuticRationale: "Çalışma belleği (working memory) kapasitesini ve sıralama becerisini doğrudan çalıştırır. Sekans uzunluğu kademeli artırılarak zorluk yönetilir; bu yaklaşım kognitif yük teorisiyle örtüşür.",
-    researchBasis: "Corsi Blok Testi'nden türetilen sıralı hafıza paradigması (Milner, 1971). Klingberg ve ark. (2005, JCNS) çalışma belleği eğitiminin nöroplastisiteyi artırdığını, DEHB'de prefrontal aktivasyonu iyileştirdiğini göstermiştir. Cicerone ve ark. (2019) nörolojik rehabilitasyonda bilişsel antrenmanı Kanıt Düzeyi A olarak destekler.",
+    researchBasis: "Corsi Blok Testi'nden türetilen sıralı hafıza paradigması (Milner, 1971). Klingberg ve ark. (2005, JAACAP 44:177-186) çalışma belleği eğitiminin nöroplastisiteyi artırdığını, DEHB'de prefrontal aktivasyonu iyileştirdiğini göstermiştir. Cicerone ve ark. (2019) nörolojik rehabilitasyonda bilişsel antrenmanı Kanıt Düzeyi A olarak destekler. Referans aralık: sağlıklı yetişkinlerde ileri Corsi açıklığı tipik olarak 5-7 blok (ort. ≈6,2; SS 1,3); çocuklarda kapasite yaşla birlikte doğrusal artar ve genç erişkinlikte yetişkin düzeyine ulaşır (Kessels ve ark., 2000, Appl Neuropsychol 7:252-258).",
     sessionDosage: {
       minutesPerSession: 10,
       sessionsPerWeek: 3,
@@ -171,7 +171,7 @@ export const GAME_THERAPY_MAPPINGS: GameMapping[] = [
     suitableDomains: ["pediatric", "neurological", "geriatric", "neurodiversity"],
     difficultyFit: ["kolay", "orta"],
     therapeuticRationale: "Görsel-uzamsal bellek, eşleştirme stratejisi ve sistematik arama planlamasını çalıştırır. Danışanın stratejik yaklaşım geliştirmesini – rastgele değil sistematik tarama – destekler.",
-    researchBasis: "Bilişsel stimülasyon terapisinde kart eşleme görevleri Alzheimer erken dönemde etkin olarak kullanılmaktadır (Spector et al., 2003, BJPT). Nöropsikiyatrik değerlendirmelerde (WAIS-IV, MoCA) yüz-isim eşleştirme görevleri standarttır. Pediatrik alanda görsel bellek oyunları ince motor ve bilişsel gelişimi destekler (Case-Smith & O'Brien, 2015).",
+    researchBasis: "Bilişsel stimülasyon terapisinde kart eşleme görevleri Alzheimer erken dönemde etkin olarak kullanılmaktadır (Spector et al., 2003, Br J Psychiatry 183:248-254). Nöropsikiyatrik değerlendirmelerde (WAIS-IV, MoCA) yüz-isim eşleştirme görevleri standarttır. Pediatrik alanda görsel bellek oyunları ince motor ve bilişsel gelişimi destekler (Case-Smith & O'Brien, 2015).",
     sessionDosage: {
       minutesPerSession: 15,
       sessionsPerWeek: 2,
@@ -201,7 +201,7 @@ export const GAME_THERAPY_MAPPINGS: GameMapping[] = [
     suitableDomains: ["pediatric", "neurological", "neurodiversity", "geriatric"],
     difficultyFit: ["orta", "zor"],
     therapeuticRationale: "Yön komutu işleme, motor yanıt seçimi ve hızlı karar verme süreçlerini aynı anda çalıştırır. Yürütücü işlevin 'planlama ve inhibisyon' bileşenlerini doğrudan hedefler.",
-    researchBasis: "Luria'nın frontal lob işlev modeli (1973) yön-eylem planlamasının prefrontal kortekste işlendiğini ortaya koyar. Tower of London testi gibi planlama görevlerinin nörorehabilitasyonda etkinliği gösterilmiştir (Cicerone et al., 2019). DEHB'de yürütücü işlev eğitimi meta-analizlerde olumlu etkiler gösterir (Cortese et al., 2015, Lancet Psychiatry).",
+    researchBasis: "Luria'nın frontal lob işlev modeli (1973) yön-eylem planlamasının prefrontal kortekste işlendiğini ortaya koyar. Tower of London testi gibi planlama görevlerinin nörorehabilitasyonda etkinliği gösterilmiştir (Cicerone et al., 2019). DEHB'de yürütücü işlev eğitimi meta-analizlerde olumlu etkiler gösterir (Cortese et al., 2015, JAACAP 54:164-174).",
     sessionDosage: {
       minutesPerSession: 15,
       sessionsPerWeek: 2,
@@ -231,7 +231,7 @@ export const GAME_THERAPY_MAPPINGS: GameMapping[] = [
     suitableDomains: ["pediatric", "neurological", "neurodiversity", "work-productivity", "geriatric"],
     difficultyFit: ["orta", "zor"],
     therapeuticRationale: "Seçici dikkat, görsel tarama hızı ve hedef bulma becerilerini çalıştırır; dikkat dağıtıcılar arasından hedef seçimi (target-among-distractors) paradigması kullanır. Bu paradigma günlük yaşam dikkat gereksinimlerini simüle eder.",
-    researchBasis: "Visual Search paradigması (Treisman & Gelade, 1980) seçici dikkatin temel mekanizmasını açıklar. Robertson ve ark. (1994, Neuropsychologia) hasarlı dikkat fonksiyonlarının onarılabilir olduğunu göstermiştir. Attention Process Training (APT; Sohlberg & Mateer, 2001) görsel tarama hızını temel bir çıktı ölçütü olarak kullanır.",
+    researchBasis: "Visual Search paradigması (Treisman & Gelade, 1980) seçici dikkatin temel mekanizmasını açıklar. Robertson ve ark. (1995, J Clin Exp Neuropsychol 17:416-430) hasarlı dikkat fonksiyonlarının onarılabilir olduğunu göstermiştir. Attention Process Training (APT; Sohlberg & Mateer, 2001) görsel tarama hızını temel bir çıktı ölçütü olarak kullanır.",
     sessionDosage: {
       minutesPerSession: 10,
       sessionsPerWeek: 3,
@@ -250,7 +250,7 @@ export const THERAPY_DOMAINS: TherapyDomain[] = [
     key: "pediatric",
     label: "Pediatrik Ergoterapi",
     icon: "baby",
-    color: "#3b82f6",
+    color: "#4f93b5",
     description: "Çocuklarda motor gelişim, duyusal işleme, günlük yaşam becerileri ve oyun katılımını destekleyen terapi yaklaşımı.",
     goals: [
       { id: "ped-g1", label: "İnce motor beceri gelişimi", description: "Kalem tutma, makasla kesme, düğme ilikleme gibi el becerilerini geliştirme" },
@@ -358,7 +358,7 @@ export const THERAPY_DOMAINS: TherapyDomain[] = [
         materials: ["Denge tahtası / tahterevalli", "Küçük toplar veya nesneler"],
         homeExercise: false,
         goals: ["ped-g4", "ped-g5"],
-        evidenceBase: "Vestibüler uyarım postüral tonus, dikkat düzenleme ve motor planlamayı olumlu etkiler (Ayres, 1979). Denge eğitimi motor koordinasyon bozukluğunda (DCD) etkindir (Zwicker et al., 2012, Dev Med Child Neurol).",
+        evidenceBase: "Vestibüler uyarım postüral tonus, dikkat düzenleme ve motor planlamayı olumlu etkiler (Ayres, 1979). Denge eğitimi motor koordinasyon bozukluğunda (DCD) etkindir (Zwicker et al., 2012, Eur J Paediatr Neurol 16:573-581).",
         therapistTips: [
           "Güvenlik için serbest denge öncesi el desteği ile başlayın.",
           "Nesne taşıma görevi dual-task bileşeni ekleyerek yürütücü işlevi çalıştırır.",
@@ -410,7 +410,7 @@ export const THERAPY_DOMAINS: TherapyDomain[] = [
     key: "mental-health",
     label: "Ruh Sağlığı Ergoterapisi",
     icon: "brain",
-    color: "#8b5cf6",
+    color: "#14847a",
     description: "Anksiyete, depresyon, stres ve psikiyatrik durumlarda aktivite katılımı ve yaşam kalitesini artıran ergoterapi yaklaşımı.",
     goals: [
       { id: "mh-g1", label: "Duygu düzenleme becerisi", description: "Duyguları tanıma, ifade etme ve uygun başa çıkma stratejileri geliştirme" },
@@ -550,7 +550,7 @@ export const THERAPY_DOMAINS: TherapyDomain[] = [
     key: "neurological",
     label: "Nörolojik Rehabilitasyon",
     icon: "zap",
-    color: "#f59e0b",
+    color: "#c07c2c",
     description: "İnme, travmatik beyin hasarı ve nörodejeneratif hastalıklarda fonksiyonel bağımsızlığı yeniden kazandırmayı amaçlayan ergoterapi.",
     goals: [
       { id: "nr-g1", label: "Üst ekstremite fonksiyonunu yeniden kazanma", description: "Etkilenen kol ve el fonksiyonlarını tedavi edici aktivitelerle geri kazandırma" },
@@ -619,7 +619,7 @@ export const THERAPY_DOMAINS: TherapyDomain[] = [
         materials: ["Tarama yaprakları", "Renkli işaretleyici kalem", "Çizgi ve okuma egzersizleri"],
         homeExercise: true,
         goals: ["nr-g4"],
-        evidenceBase: "Görsel tarama eğitimi hemineglect rehabilitasyonunda kanıtlanmış etkiye sahiptir (Robertson et al., 1990, J Neurol). Kırmızı çizgi ipucu yöntemi (red line cue) sol ihmal tedavisinde etkindir.",
+        evidenceBase: "Görsel tarama eğitimi hemineglect rehabilitasyonunda kanıtlanmış etkiye sahiptir (Robertson et al., 1995, J Clin Exp Neuropsychol 17:416-430). Kırmızı çizgi ipucu yöntemi (red line cue) sol ihmal tedavisinde etkindir.",
         therapistTips: [
           "Sol kenara kırmızı dikey çizgi çizin; taramaya hep bu çizgiden başlatın.",
           "Baş çevirme + göz hareketi kombinasyonunu teşvik edin.",
@@ -671,7 +671,7 @@ export const THERAPY_DOMAINS: TherapyDomain[] = [
     key: "neurodiversity",
     label: "Nöroçeşitlilik ve Otizm",
     icon: "puzzle",
-    color: "#06b6d4",
+    color: "#4f93b5",
     description: "Otizm spektrum, DEHB, öğrenme güçlüğü gibi nörogelişimsel farklılıklarda katılım ve bağımsızlığı destekleyen ergoterapi.",
     goals: [
       { id: "nd-g1", label: "Duyusal düzenleme", description: "Duyusal işleme farklılıklarını yönetme ve adaptif yanıtlar geliştirme" },
@@ -723,7 +723,7 @@ export const THERAPY_DOMAINS: TherapyDomain[] = [
         materials: ["Sosyal hikaye şablonu", "Resim kartları veya çizimler"],
         homeExercise: true,
         goals: ["nd-g2", "nd-g5"],
-        evidenceBase: "Social Stories™ (Gray, 1993) otizm spektrumunda sosyal anlayışı artırmak için kanıt temelli bir stratejidir. Çoklu sistematik inceleme sosyal hikayenin sosyal becerilere etkisini destekler (Karkhaneh et al., 2010, Pediatrics).",
+        evidenceBase: "Social Stories™ (Gray, 1993) otizm spektrumunda sosyal anlayışı artırmak için kanıt temelli bir stratejidir. Çoklu sistematik inceleme sosyal hikayenin sosyal becerilere etkisini destekler (Karkhaneh et al., 2010, Autism 14:641-662).",
         therapistTips: [
           "Hikayeyi olumlu, birinci şahıs ve geniş zaman kullanarak yazın.",
           "Çocukla birlikte hikayeyi oluşturun – katılım anlayışı artırır.",
@@ -741,7 +741,7 @@ export const THERAPY_DOMAINS: TherapyDomain[] = [
         materials: ["Kırmızı / yeşil sinyal kartları", "Ses efektleri veya zil"],
         homeExercise: false,
         goals: ["nd-g3"],
-        evidenceBase: "Go/No-Go paradigması yürütücü işlev araştırmalarında temel inhibisyon ölçütü olarak kullanılır (Aron, 2007). DEHB'de inhibisyon eğitiminin yürütücü işlev üzerindeki etkisi desteklenmiştir (Cortese et al., 2015, Lancet Psychiatry).",
+        evidenceBase: "Go/No-Go paradigması yürütücü işlev araştırmalarında temel inhibisyon ölçütü olarak kullanılır (Aron, 2007). DEHB'de inhibisyon eğitiminin yürütücü işlev üzerindeki etkisi desteklenmiştir (Cortese et al., 2015, JAACAP 54:164-174).",
         therapistTips: [
           "Başlangıçta belirgin sinyal farkı (kırmızı/yeşil); ilerleme ile daha ince ayrımlar ekleyin.",
           "Oyun ortamını neşeli tutun; hata anksiyetesini azaltmak için 'beyin yanılgısı' çerçevesi kullanın.",
@@ -777,7 +777,7 @@ export const THERAPY_DOMAINS: TherapyDomain[] = [
         materials: ["Görsel takvim panosu", "Sembol/fotoğraf kartlar", "Görsel zamanlayıcı"],
         homeExercise: true,
         goals: ["nd-g5"],
-        evidenceBase: "Görsel destek sistemleri otizmde davranış yönetimi ve bağımsızlık için kanıt temelli bir uygulamadır (Mesibov & Shea, TEACCH metodolojisi; Hume et al., 2021, AJOT). Görsel zamanlayıcı geçiş tepkisini azaltır.",
+        evidenceBase: "Görsel destek sistemleri otizmde davranış yönetimi ve bağımsızlık için kanıt temelli bir uygulamadır (Mesibov & Shea, TEACCH metodolojisi; Hume et al., 2021, J Autism Dev Disord 51:4013-4032). Görsel zamanlayıcı geçiş tepkisini azaltır.",
         therapistTips: [
           "Takvimi çocuğun göz hizasına yerleştirin.",
           "Her etkinlik öncesi 5-2-1 dakika sayaç uyarısı yapın.",
@@ -793,7 +793,7 @@ export const THERAPY_DOMAINS: TherapyDomain[] = [
     key: "geriatric",
     label: "Geriatrik Ergoterapi",
     icon: "person-standing",
-    color: "#10b981",
+    color: "#7aac3a",
     description: "Yaşlanmaya bağlı fonksiyonel kayıpları azaltma, düşme riskini yönetme ve yaşam kalitesini korumaya yönelik ergoterapi.",
     goals: [
       { id: "ge-g1", label: "Düşme riskini azaltma", description: "Denge eğitimi, ev düzenlemesi ve güvenli hareket stratejileri" },
@@ -826,7 +826,7 @@ export const THERAPY_DOMAINS: TherapyDomain[] = [
         materials: ["Sandalye", "Hafif direnç bandı", "Kısa ağırlık yastığı"],
         homeExercise: true,
         goals: ["ge-g1"],
-        evidenceBase: "Kuvvet eğitimi yaşlı bireylerde düşme riskini azaltır (Sherrington et al., 2019, Cochrane – 159 çalışma, güçlü kanıt). OT'nin düşme önleme programları ev değerlendirmesiyle entegre edildiğinde etki artar.",
+        evidenceBase: "Kuvvet eğitimi yaşlı bireylerde düşme riskini azaltır (Sherrington et al., 2019, Cochrane CD012424 – 108 RKÇ, 23.407 katılımcı). OT'nin düşme önleme programları ev değerlendirmesiyle entegre edildiğinde etki artar.",
         therapistTips: [
           "Oturma-kalkma fonksiyonu (sit-to-stand) düşme riski için kritik; haftada 2x pratik yapın.",
           "Demir bir sandalye veya yüksek koltuk tercih edin.",
@@ -862,7 +862,7 @@ export const THERAPY_DOMAINS: TherapyDomain[] = [
         materials: ["Adaptif mutfak ekipman seti (açacak, kaymaz altlık, kavrama yardımcı)"],
         homeExercise: true,
         goals: ["ge-g3"],
-        evidenceBase: "Enerji koruma eğitimi kalp yetmezliği, KOAH ve kanser tanılı bireylerde yorgunluğu anlamlı azaltır (Mathiowetz et al., 2005, AJOT). ADL ev modifikasyonu düşme ve kaza riskini azaltır.",
+        evidenceBase: "Enerji koruma eğitimi multipl sklerozda yorgunluk etkisini ve yaşam kalitesini anlamlı iyileştirir (Mathiowetz et al., 2005, Mult Scler 11:592-601). ADL ev modifikasyonu düşme ve kaza riskini azaltır.",
         therapistTips: [
           "İş simplifikasyonu: sık kullanılan malzemeleri erişilebilir raflara koyun.",
           "Oturarak hazırlama alternatifleri gösterin (mutfak taburesi).",
@@ -914,7 +914,7 @@ export const THERAPY_DOMAINS: TherapyDomain[] = [
     key: "work-productivity",
     label: "İş & Okul Katılımı",
     icon: "briefcase",
-    color: "#ec4899",
+    color: "#c4614a",
     description: "İş yerinde verimlilik, ergonomik düzenleme, akademik performans ve meslek rehabilitasyonunu destekleyen ergoterapi.",
     goals: [
       { id: "wp-g1", label: "İş yeri/okul performansını artırma", description: "Dikkat süresi, organizasyon ve görev tamamlama becerilerini geliştirme" },

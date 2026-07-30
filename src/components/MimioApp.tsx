@@ -11,6 +11,21 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { printClientReport, exportSessionsCSV as exportSessionsCSVUtil, exportGoalsCSV } from "@/lib/export-utils";
+import { GameArena } from "./game/GameArena";
+import { BlockMark } from "./brand/BlockMark";
+import { SessionTrendChart } from "./shared/SessionTrendChart";
+import {
+  ARENA_KEYBOARD_HINT,
+  differenceCue,
+  feedbackCue,
+  logicCue,
+  memoryCue,
+  pairsCue,
+  pulseCue,
+  routeCue,
+  scanCue,
+  type GameCue,
+} from "@/lib/game-cues";
 import { useTheme } from "./ThemeProvider";
 import {
   EMPTY_PLATFORM_OVERVIEW,
@@ -35,14 +50,20 @@ import {
   THERAPY_DOMAINS,
   GAME_THERAPY_MAPPINGS,
   INDEPENDENCE_LEVELS,
+  AGE_GROUPS,
+  ENVIRONMENT_OPTIONS,
   GAME_PURPOSE_LABELS,
   generateWeeklyPlanSuggestion,
   getGameMappingsForDomain,
+  type AgeGroupKey,
+  type EnvironmentType,
   type TherapyDomainKey,
   type TherapyPlanSuggestion,
   type DifficultyLevel,
   type ProgressEntry,
 } from "@/lib/therapy-program-data";
+import { buildTherapyPlan, type ClientContext } from "@/lib/therapy-matching";
+import { MEASURE_KIND_LABELS } from "@/lib/outcome-measures";
 
 // ── Extracted modules ──
 import type {
@@ -61,6 +82,7 @@ import {
   PHASE_LABELS, DAY_KEYS, DAY_LABELS,
   DIFFICULTY_LABELS, DIFFICULTY_COLORS, GAME_DIFF_CONFIG,
   LOGIC_SHAPES, LOGIC_COLORS,
+  GAME_SCORE_SCALE,
 } from "@/lib/game-constants";
 import {
   randomIndex, shuffleArray, createMemorySequence, getDifficultyLevel,
@@ -193,6 +215,11 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const [tpActiveTab, setTpActiveTab] = useState<"domains" | "activities" | "games" | "plan" | "progress" | "protocols">("domains");
   const [tpDifficultyFilter, setTpDifficultyFilter] = useState<DifficultyLevel | "all">("all");
   const [tpGeneratedPlan, setTpGeneratedPlan] = useState<TherapyPlanSuggestion | null>(null);
+  /* Plan girdileri — danışan profilinden türetilir, terapist elle değiştirebilir. */
+  const [tpAgeOverride, setTpAgeOverride] = useState<AgeGroupKey | null>(null);
+  const [tpIndependence, setTpIndependence] = useState<number | null>(null);
+  const [tpEnvironments, setTpEnvironments] = useState<EnvironmentType[]>(["klinik"]);
+  const [tpSessionsPerWeek, setTpSessionsPerWeek] = useState<number>(3);
   const [tpProgressEntries, setTpProgressEntries] = useState<ProgressEntry[]>([]);
   const [tpProgressForm, setTpProgressForm] = useState({ goalId: "", value: 50, note: "" });
   const [tpShowProgressForm, setTpShowProgressForm] = useState(false);
@@ -694,11 +721,11 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
     const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Mimio Rapor — ${client.displayName}</title><style>
       body{font-family:'Segoe UI',Arial,sans-serif;color:#1a1a2e;margin:0;padding:24px;font-size:13px}
-      h1{font-size:22px;margin:0 0 4px}h2{font-size:14px;font-weight:700;margin:20px 0 8px;color:#6366f1;text-transform:uppercase;letter-spacing:.05em}
-      .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #6366f1;padding-bottom:12px;margin-bottom:20px}
-      .meta{font-size:11px;color:#666;line-height:1.6}.badge{display:inline-block;background:#ede9fe;color:#6366f1;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;margin-right:4px;margin-bottom:4px}
-      table{width:100%;border-collapse:collapse;margin-bottom:8px}td,th{padding:6px 10px;border:1px solid #e5e7eb;text-align:left;font-size:12px}th{background:#f5f3ff;font-weight:700;color:#4f46e5}
-      .stat-row{display:flex;gap:16px;margin-bottom:16px}.stat{background:#f5f3ff;border:1px solid #ede9fe;border-radius:12px;padding:12px 18px;text-align:center;flex:1}.stat-val{font-size:28px;font-weight:900;color:#6366f1}.stat-lbl{font-size:11px;color:#888;font-weight:600}
+      h1{font-size:22px;margin:0 0 4px}h2{font-size:14px;font-weight:700;margin:20px 0 8px;color:#0f6e63;text-transform:uppercase;letter-spacing:.05em}
+      .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #0f6e63;padding-bottom:12px;margin-bottom:20px}
+      .meta{font-size:11px;color:#666;line-height:1.6}.badge{display:inline-block;background:#ede9fe;color:#0f6e63;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;margin-right:4px;margin-bottom:4px}
+      table{width:100%;border-collapse:collapse;margin-bottom:8px}td,th{padding:6px 10px;border:1px solid #e5e7eb;text-align:left;font-size:12px}th{background:#f5f3ff;font-weight:700;color:#0b554c}
+      .stat-row{display:flex;gap:16px;margin-bottom:16px}.stat{background:#f5f3ff;border:1px solid #ede9fe;border-radius:12px;padding:12px 18px;text-align:center;flex:1}.stat-val{font-size:28px;font-weight:900;color:#0f6e63}.stat-lbl{font-size:11px;color:#888;font-weight:600}
       .no-data{color:#999;font-style:italic;font-size:12px}.footer{margin-top:24px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:10px;color:#aaa;text-align:center}
       @media print{body{padding:0}button{display:none}}
     </style></head><body>
@@ -759,17 +786,17 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       @page{size:105mm 148mm;margin:0}
       *{box-sizing:border-box;margin:0;padding:0}
       body{font-family:'Segoe UI',Arial,sans-serif;width:105mm;height:148mm;background:#fff;color:#1a1a2e;padding:6mm;display:flex;flex-direction:column;gap:3mm}
-      .top-bar{height:2mm;background:linear-gradient(90deg,#6366f1,#8b5cf6,#06b6d4);border-radius:1mm;flex-shrink:0}
+      .top-bar{height:2mm;background:linear-gradient(90deg,#0f6e63,#14847a,#4f93b5);border-radius:1mm;flex-shrink:0}
       .header{display:flex;align-items:flex-start;gap:3mm}
-      .avatar{width:11mm;height:11mm;border-radius:3mm;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-weight:900;font-size:5mm;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+      .avatar{width:11mm;height:11mm;border-radius:3mm;background:linear-gradient(135deg,#0f6e63,#14847a);color:#fff;font-weight:900;font-size:5mm;display:flex;align-items:center;justify-content:center;flex-shrink:0}
       .name{font-size:5.5mm;font-weight:900;color:#1a1a2e;line-height:1.1}
       .sub{font-size:2.8mm;color:#666;margin-top:0.5mm}
       .tags{display:flex;flex-wrap:wrap;gap:1mm;margin-top:1.5mm}
-      .tag{background:#ede9fe;color:#6366f1;font-size:2.5mm;font-weight:700;padding:0.5mm 2mm;border-radius:10mm}
+      .tag{background:#ede9fe;color:#0f6e63;font-size:2.5mm;font-weight:700;padding:0.5mm 2mm;border-radius:10mm}
       .divider{height:0.3mm;background:#e5e7eb;flex-shrink:0}
       .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:2mm}
       .stat{background:#f5f3ff;border-radius:2mm;padding:2mm;text-align:center}
-      .stat-val{font-size:5mm;font-weight:900;color:#6366f1;line-height:1}
+      .stat-val{font-size:5mm;font-weight:900;color:#0f6e63;line-height:1}
       .stat-lbl{font-size:2.3mm;color:#888;font-weight:600;margin-top:0.5mm}
       .row{display:flex;gap:2mm}
       .info-box{flex:1;background:#f9fafb;border:0.3mm solid #e5e7eb;border-radius:2mm;padding:2mm}
@@ -798,7 +825,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         <div class="info-box"><div class="info-label">Tamamlanan Hedef</div><div class="info-val">${completedGoals}/${clientGoals.length || 0}</div></div>
         <div class="info-box"><div class="info-label">Destek</div><div class="info-val">${client.supportLevel || "—"}</div></div>
       </div>
-      ${client.difficultyLevel ? `<div class="info-box" style="background:#fffbeb;border-color:#fde68a"><div class="info-label" style="color:#92400e">Zorluk Seviyesi</div><div class="info-val" style="color:#d97706">${client.difficultyLevel}</div></div>` : ""}
+      ${client.difficultyLevel ? `<div class="info-box" style="background:#fffbeb;border-color:#f4dcb4"><div class="info-label" style="color:#92400e">Zorluk Seviyesi</div><div class="info-val" style="color:#9c5f18">${client.difficultyLevel}</div></div>` : ""}
       <div class="footer">
         <span>Mimio Ergoterapi</span>
         <span>${therapistName}</span>
@@ -1118,6 +1145,49 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   }
 
   function resetSessionClock() { setSessionStartedAt(Date.now()); setGameTimerKey(0); setGameElapsed(0); setSessionWarningDismissed(false); setProfileFeedback("Seans süresi sıfırlandı."); }
+
+  /**
+   * Danışan profilini plan motorunun girdisine çevirir.
+   *
+   * Danışan kaydındaki serbest metin alanları ("6-8", "Sözel İpucu") normalize
+   * edilir; terapistin panelden yaptığı seçimler kayıttaki değeri ezer.
+   */
+  function buildPlanContext(client: ClientProfile | null): ClientContext {
+    /* Danışan kaydındaki yaş aralığı ("6-8", "9-12") ile terapi kataloğunun
+       yaş grupları ("6-12") aynı kırılımda değil; alt sınırdan eşleştirilir. */
+    function toAgeGroup(raw: string | undefined): AgeGroupKey | null {
+      if (!raw) return null;
+      const lower = Number(raw.split(/[-–+]/)[0]);
+      if (!Number.isFinite(lower)) return null;
+      if (lower < 3) return "0-3";
+      if (lower < 6) return "3-6";
+      if (lower < 12) return "6-12";
+      if (lower < 18) return "12-18";
+      if (lower < 30) return "18-30";
+      if (lower < 50) return "30-50";
+      if (lower < 65) return "50-65";
+      return "65+";
+    }
+
+    function toIndependence(raw: string | undefined): number | null {
+      if (!raw) return null;
+      const normalized = raw.toLocaleLowerCase("tr").replace(/\s+/g, "_");
+      const match = INDEPENDENCE_LEVELS.find(
+        (level) => level.key === normalized || level.label.toLocaleLowerCase("tr") === raw.toLocaleLowerCase("tr"),
+      );
+      return match?.score ?? null;
+    }
+
+    return {
+      clientId: client?.id ?? "",
+      displayName: client?.displayName ?? "Danışan seçilmedi",
+      ageGroup: tpAgeOverride ?? toAgeGroup(client?.ageGroup),
+      independenceScore: tpIndependence ?? toIndependence(client?.supportLevel),
+      environments: tpEnvironments,
+      sessionsPerWeek: tpSessionsPerWeek,
+      primaryGoal: client?.primaryGoal ?? "",
+    };
+  }
 
   async function syncScoreToBackend(game: GameKey, nextScore: number, metadata: Record<string, unknown>, sessionEntry: RecentSessionEntry) {
     const nextPlatformStatus = await resolvePlatformStatus();
@@ -1567,20 +1637,20 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       <div className="min-h-dvh flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden" style={{ background: "var(--color-page-bg)" }}>
         {/* Animated background orbs */}
         <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute w-[min(600px,100vw)] h-[min(600px,100vw)] rounded-full" style={{ background: "radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)", top: "-20%", left: "50%", transform: "translateX(-50%)" }} />
-          <div className="absolute w-[min(400px,80vw)] h-[min(400px,80vw)] rounded-full" style={{ background: "radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%)", bottom: "-10%", right: "10%" }} />
-          <div className="absolute w-[min(300px,70vw)] h-[min(300px,70vw)] rounded-full" style={{ background: "radial-gradient(circle, rgba(236,72,153,0.06) 0%, transparent 70%)", bottom: "20%", left: "5%" }} />
+          <div className="absolute w-[min(600px,100vw)] h-[min(600px,100vw)] rounded-full" style={{ background: "radial-gradient(circle, rgba(15, 110, 99,0.12) 0%, transparent 70%)", top: "-20%", left: "50%", transform: "translateX(-50%)" }} />
+          <div className="absolute w-[min(400px,80vw)] h-[min(400px,80vw)] rounded-full" style={{ background: "radial-gradient(circle, rgba(20, 132, 122,0.08) 0%, transparent 70%)", bottom: "-10%", right: "10%" }} />
+          <div className="absolute w-[min(300px,70vw)] h-[min(300px,70vw)] rounded-full" style={{ background: "radial-gradient(circle, rgba(196, 97, 74,0.06) 0%, transparent 70%)", bottom: "20%", left: "5%" }} />
         </div>
 
         {/* Logo */}
         <button type="button" onClick={onLogout} className="flex flex-col items-center gap-2.5 mb-8 bg-transparent border-none cursor-pointer group">
-          <div className="w-14 h-14 rounded-3xl flex items-center justify-center text-white font-black text-xl shadow-lg group-hover:scale-105 transition-transform" style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", boxShadow: "0 8px 24px rgba(99,102,241,0.4)" }}>Mi</div>
+          <div className="w-14 h-14 rounded-3xl flex items-center justify-center transition-transform group-hover:scale-105" style={{ background: "var(--color-surface-elevated)", border: "1px solid var(--color-line-strong)" }}><BlockMark size={34} animated dimColor="var(--color-primary)" /></div>
           <span className="font-extrabold text-(--color-text-strong) text-xl tracking-tight">Mimio</span>
         </button>
 
         {/* Card */}
         <div className="w-full max-w-md rounded-2xl sm:rounded-3xl border border-(--color-line) p-5 sm:p-8 relative overflow-hidden" style={{ background: "var(--color-surface-strong)", backdropFilter: "blur(24px)", boxShadow: "0 24px 64px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.06)" }}>
-          <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899)" }} />
+          <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg, #0f6e63, #14847a, #c4614a)" }} />
           {/* Badge */}
           <div className="flex justify-center mb-5">
             <span className="inline-flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-full" style={{ background: "var(--color-primary)/10", color: "var(--color-primary)", border: "1px solid var(--color-primary)/20" }}>
@@ -1592,7 +1662,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           <p className="text-(--color-text-soft) text-sm text-center mb-6">Dakikalar içinde başlayın, danışanlarınızla çalışmaya başlayın.</p>
 
           {loginError && (
-            <div role="alert" className="rounded-2xl px-4 py-3 mb-4 text-sm flex items-center gap-2" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171" }}>
+            <div role="alert" className="rounded-2xl px-4 py-3 mb-4 text-sm flex items-center gap-2" style={{ background: "rgba(209, 80, 60,0.08)", border: "1px solid rgba(209, 80, 60,0.2)", color: "#de8265" }}>
               <span aria-hidden="true">⚠️</span>{loginError}
             </div>
           )}
@@ -1644,7 +1714,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 <input value={therapistDraft.specialty} onChange={(e) => setTherapistDraft((c) => ({ ...c, specialty: e.target.value }))} placeholder="opsiyonel" className={authInp} />
               </label>
             </div>
-            <button type="submit" className="relative w-full text-white font-bold py-3.5 rounded-2xl transition-all text-sm border-none cursor-pointer mt-1 overflow-hidden hover:opacity-90 active:scale-[0.98]" style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", boxShadow: "0 6px 20px rgba(99,102,241,0.4)" }}>
+            <button type="submit" className="relative w-full text-white font-bold py-3.5 rounded-2xl transition-all text-sm border-none cursor-pointer mt-1 overflow-hidden hover:opacity-90 active:scale-[0.98]" style={{ background: "linear-gradient(135deg, #0f6e63, #14847a)", boxShadow: "0 6px 20px rgba(15, 110, 99,0.4)" }}>
               Hesabı Oluştur ve Gir →
             </button>
           </form>
@@ -1675,24 +1745,24 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       <div className="min-h-dvh flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden" style={{ background: "var(--color-page-bg)" }}>
         {/* Animated background orbs */}
         <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute w-[min(700px,100vw)] h-[min(700px,100vw)] rounded-full" style={{ background: "radial-gradient(circle, rgba(99,102,241,0.10) 0%, transparent 70%)", top: "-30%", left: "50%", transform: "translateX(-50%)" }} />
-          <div className="absolute w-[min(400px,80vw)] h-[min(400px,80vw)] rounded-full" style={{ background: "radial-gradient(circle, rgba(139,92,246,0.07) 0%, transparent 70%)", bottom: "0%", right: "15%" }} />
+          <div className="absolute w-[min(700px,100vw)] h-[min(700px,100vw)] rounded-full" style={{ background: "radial-gradient(circle, rgba(15, 110, 99,0.10) 0%, transparent 70%)", top: "-30%", left: "50%", transform: "translateX(-50%)" }} />
+          <div className="absolute w-[min(400px,80vw)] h-[min(400px,80vw)] rounded-full" style={{ background: "radial-gradient(circle, rgba(20, 132, 122,0.07) 0%, transparent 70%)", bottom: "0%", right: "15%" }} />
         </div>
 
         {/* Logo */}
         <button type="button" onClick={onLogout} className="flex flex-col items-center gap-2.5 mb-8 bg-transparent border-none cursor-pointer group">
-          <div className="w-14 h-14 rounded-3xl flex items-center justify-center text-white font-black text-xl group-hover:scale-105 transition-transform" style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", boxShadow: "0 8px 24px rgba(99,102,241,0.4)" }}>Mi</div>
+          <div className="w-14 h-14 rounded-3xl flex items-center justify-center transition-transform group-hover:scale-105" style={{ background: "var(--color-surface-elevated)", border: "1px solid var(--color-line-strong)" }}><BlockMark size={34} animated dimColor="var(--color-primary)" /></div>
           <span className="font-extrabold text-(--color-text-strong) text-xl tracking-tight">Mimio</span>
         </button>
 
         {/* Card */}
         <div className="w-full max-w-sm rounded-2xl sm:rounded-3xl border border-(--color-line) p-5 sm:p-8 relative overflow-hidden" style={{ background: "var(--color-surface-strong)", backdropFilter: "blur(24px)", boxShadow: "0 24px 64px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.06)" }}>
-          <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899)" }} />
+          <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg, #0f6e63, #14847a, #c4614a)" }} />
           <h2 className="text-2xl font-extrabold text-(--color-text-strong) text-center mb-1 tracking-tight">Tekrar Hoş Geldiniz</h2>
           <p className="text-(--color-text-soft) text-sm text-center mb-7">Hesabınıza giriş yapın ve çalışmaya devam edin.</p>
 
           {loginError && (
-            <div role="alert" className="rounded-2xl px-4 py-3 mb-4 text-sm flex items-center gap-2" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171" }}>
+            <div role="alert" className="rounded-2xl px-4 py-3 mb-4 text-sm flex items-center gap-2" style={{ background: "rgba(209, 80, 60,0.08)", border: "1px solid rgba(209, 80, 60,0.2)", color: "#de8265" }}>
               <span aria-hidden="true">⚠️</span>{loginError}
             </div>
           )}
@@ -1727,7 +1797,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               <span className="text-xs font-semibold text-(--color-text-soft)">Şifre</span>
               <input type="password" value={loginPassword} onChange={(e) => { setLoginError(""); setLoginPassword(e.target.value); }} placeholder="şifreniz" className={authInp} required autoComplete="current-password" />
             </label>
-            <button type="submit" className="relative w-full text-white font-bold py-3.5 rounded-2xl transition-all text-sm border-none cursor-pointer mt-1 overflow-hidden hover:opacity-90 active:scale-[0.98]" style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", boxShadow: "0 6px 20px rgba(99,102,241,0.4)" }}>
+            <button type="submit" className="relative w-full text-white font-bold py-3.5 rounded-2xl transition-all text-sm border-none cursor-pointer mt-1 overflow-hidden hover:opacity-90 active:scale-[0.98]" style={{ background: "linear-gradient(135deg, #0f6e63, #14847a)", boxShadow: "0 6px 20px rgba(15, 110, 99,0.4)" }}>
               Giriş Yap →
             </button>
           </form>
@@ -1754,7 +1824,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 mt-6 sm:mt-8 text-[10px] sm:text-xs text-(--color-text-muted)">
           {["Ücretsiz başla", "Kurulum yok", "Veri güvenliği"].map((t) => (
             <span key={t} className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#7aac3a]" aria-hidden="true" />
               {t}
             </span>
           ))}
@@ -1791,24 +1861,21 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         }}>
         {/* Subtle gradient top glow */}
         <div className="absolute top-0 left-0 right-0 h-32 pointer-events-none"
-          style={{ background: "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.12), transparent)" }} />
+          style={{ background: "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(15, 110, 99,0.12), transparent)" }} />
 
         {/* Logo area */}
         <div className="relative flex items-center gap-3 px-5 py-5" style={{ borderBottom: "1px solid var(--color-line)" }}>
-          <div className="relative w-9 h-9 shrink-0">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-extrabold text-sm"
-              style={{ background: "linear-gradient(135deg, #6366f1 0%, #818cf8 100%)", boxShadow: "0 4px 14px rgba(99,102,241,0.45)" }}>
-              Mi
-            </div>
+          <div className="relative w-9 h-9 shrink-0 flex items-center justify-center">
+            <BlockMark size={32} dimColor="var(--color-primary)" />
           </div>
           <div>
             <p className="font-extrabold text-(--color-text-strong) text-sm leading-tight m-0 tracking-tight">Mimio</p>
             <p className="text-(--color-text-muted) text-[11px] m-0 font-medium">Ergoterapi platformu</p>
           </div>
           <div className="ml-auto flex items-center gap-1 px-2 py-0.5 rounded-full"
-            style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)" }}>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" style={{ boxShadow: "0 0 6px rgba(16,185,129,0.7)" }} />
-            <span className="text-[10px] font-bold text-emerald-400">Aktif</span>
+            style={{ background: "rgba(122, 172, 58,0.1)", border: "1px solid rgba(122, 172, 58,0.2)" }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#9cc65e]" style={{ boxShadow: "0 0 6px rgba(122, 172, 58,0.7)" }} />
+            <span className="text-[10px] font-bold text-[#9cc65e]">Aktif</span>
           </div>
         </div>
 
@@ -1826,7 +1893,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 {/* Active left bar */}
                 {isActive && (
                   <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full bg-(--color-primary)"
-                    style={{ boxShadow: "0 0 8px rgba(99,102,241,0.6)" }} />
+                    style={{ boxShadow: "0 0 8px rgba(15, 110, 99,0.6)" }} />
                 )}
                 <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all duration-150 ${isActive ? "bg-(--color-primary)/15" : "bg-transparent group-hover:bg-(--color-surface-elevated)"}`}>
                   <Icon size={15} />
@@ -1835,16 +1902,16 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 {badge !== undefined && !isActive && (
                   <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 tabular-nums"
                     style={{
-                      background: view === "reports" ? "rgba(245,158,11,0.15)" : view === "clients" ? "rgba(16,185,129,0.12)" : "rgba(99,102,241,0.12)",
-                      color: view === "reports" ? "#f59e0b" : view === "clients" ? "#34d399" : "#818cf8",
-                      border: `1px solid ${view === "reports" ? "rgba(245,158,11,0.2)" : view === "clients" ? "rgba(16,185,129,0.18)" : "rgba(99,102,241,0.18)"}`,
+                      background: view === "reports" ? "rgba(192, 124, 44,0.15)" : view === "clients" ? "rgba(122, 172, 58,0.12)" : "rgba(15, 110, 99,0.12)",
+                      color: view === "reports" ? "#c07c2c" : view === "clients" ? "#9cc65e" : "#35b0a0",
+                      border: `1px solid ${view === "reports" ? "rgba(192, 124, 44,0.2)" : view === "clients" ? "rgba(122, 172, 58,0.18)" : "rgba(15, 110, 99,0.18)"}`,
                     }}>
                     {badge}
                   </span>
                 )}
                 {isActive && (
                   <span className="ml-auto w-1.5 h-1.5 rounded-full bg-(--color-primary) shrink-0"
-                    style={{ boxShadow: "0 0 6px rgba(99,102,241,0.5)" }} />
+                    style={{ boxShadow: "0 0 6px rgba(15, 110, 99,0.5)" }} />
                 )}
               </button>
             );
@@ -1862,7 +1929,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             <span className="font-semibold text-sm flex-1">Başarımlar</span>
             {earnedAchievementCount > 0 && (
               <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 tabular-nums"
-                style={{ background: "rgba(245,158,11,0.15)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.2)" }}>
+                style={{ background: "rgba(192, 124, 44,0.15)", color: "#c07c2c", border: "1px solid rgba(192, 124, 44,0.2)" }}>
                 {earnedAchievementCount}
               </span>
             )}
@@ -1875,7 +1942,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
             style={{ background: "rgba(255,255,255,0.03)" }}>
             <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
-              style={{ background: "linear-gradient(135deg, #6366f1, #818cf8)", boxShadow: "0 2px 8px rgba(99,102,241,0.35)" }}>
+              style={{ background: "linear-gradient(135deg, #0f6e63, #35b0a0)", boxShadow: "0 2px 8px rgba(15, 110, 99,0.35)" }}>
               {activeTherapist?.displayName?.[0]?.toUpperCase() ?? "T"}
             </div>
             <div className="flex flex-col flex-1 min-w-0">
@@ -1904,7 +1971,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             <button type="button"
               data-tooltip="Profil düzenle"
               data-tooltip-dir="top"
-              className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-medium text-(--color-text-muted) hover:text-indigo-400 hover:bg-indigo-500/10 bg-transparent border-none cursor-pointer transition-all"
+              className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-medium text-(--color-text-muted) hover:text-[#35b0a0] hover:bg-[#14847a]/10 bg-transparent border-none cursor-pointer transition-all"
               onClick={() => {
                 if (activeTherapist) {
                   setTherapistEditDraft({ displayName: activeTherapist.displayName ?? "", clinicName: activeTherapist.clinicName ?? "", specialty: activeTherapist.specialty ?? "" });
@@ -1922,7 +1989,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             <button type="button"
               data-tooltip="Çıkış yap"
               data-tooltip-dir="top"
-              className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-medium text-(--color-text-muted) hover:text-red-400 hover:bg-red-500/10 bg-transparent border-none cursor-pointer transition-all"
+              className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-medium text-(--color-text-muted) hover:text-[#de8265] hover:bg-[#d1503c]/10 bg-transparent border-none cursor-pointer transition-all"
               onClick={handleLogout}
               aria-label="Çıkış yap">
               <LogOut size={13} />
@@ -1945,7 +2012,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         {/* Logo */}
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-extrabold text-xs shrink-0"
-            style={{ background: "linear-gradient(135deg, #6366f1, #818cf8)", boxShadow: "0 2px 8px rgba(99,102,241,0.45)" }}>
+            style={{ background: "linear-gradient(135deg, #0f6e63, #35b0a0)", boxShadow: "0 2px 8px rgba(15, 110, 99,0.45)" }}>
             Mi
           </div>
           <div>
@@ -1961,12 +2028,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           {/* Status badge */}
           <div className="flex items-center gap-1 px-2 py-1 rounded-full"
             style={{
-              background: platformStatus === "online" ? "rgba(16,185,129,0.1)" : "rgba(245,158,11,0.1)",
-              border: `1px solid ${platformStatus === "online" ? "rgba(16,185,129,0.25)" : "rgba(245,158,11,0.25)"}`,
+              background: platformStatus === "online" ? "rgba(122, 172, 58,0.1)" : "rgba(192, 124, 44,0.1)",
+              border: `1px solid ${platformStatus === "online" ? "rgba(122, 172, 58,0.25)" : "rgba(192, 124, 44,0.25)"}`,
             }}>
             <span className="w-1.5 h-1.5 rounded-full shrink-0"
-              style={{ background: platformStatus === "online" ? "#10b981" : "#f59e0b", boxShadow: `0 0 5px ${platformStatus === "online" ? "rgba(16,185,129,0.7)" : "rgba(245,158,11,0.7)"}` }} />
-            <span className="text-[9px] font-bold" style={{ color: platformStatus === "online" ? "#10b981" : "#f59e0b" }}>
+              style={{ background: platformStatus === "online" ? "#7aac3a" : "#c07c2c", boxShadow: `0 0 5px ${platformStatus === "online" ? "rgba(122, 172, 58,0.7)" : "rgba(192, 124, 44,0.7)"}` }} />
+            <span className="text-[9px] font-bold" style={{ color: platformStatus === "online" ? "#7aac3a" : "#c07c2c" }}>
               {platformStatus === "online" ? "Canlı" : "Lokal"}
             </span>
           </div>
@@ -1979,10 +2046,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           {/* Avatar / menu */}
           <button type="button"
             className="w-9 h-9 rounded-xl flex items-center justify-center border-none cursor-pointer transition-all active:scale-95"
-            style={{ background: "rgba(99,102,241,0.1)" }}
+            style={{ background: "rgba(15, 110, 99,0.1)" }}
             onClick={() => setShowUserMenu(v => !v)}>
             <div className="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs"
-              style={{ background: "linear-gradient(135deg, #6366f1, #818cf8)", boxShadow: "0 2px 6px rgba(99,102,241,0.4)" }}>
+              style={{ background: "linear-gradient(135deg, #0f6e63, #35b0a0)", boxShadow: "0 2px 6px rgba(15, 110, 99,0.4)" }}>
               {activeTherapist?.displayName?.[0]?.toUpperCase() ?? "T"}
             </div>
           </button>
@@ -1990,12 +2057,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
               <div className="absolute right-3 z-50 rounded-2xl shadow-(--shadow-elevated) border p-2 min-w-[200px] max-w-[calc(100vw-24px)]"
-                style={{ top: "60px", background: "var(--color-surface-strong)", borderColor: "rgba(99,102,241,0.2)", backdropFilter: "blur(20px)" }}>
+                style={{ top: "60px", background: "var(--color-surface-strong)", borderColor: "rgba(15, 110, 99,0.2)", backdropFilter: "blur(20px)" }}>
                 {/* Top shimmer */}
-                <div className="absolute top-0 left-0 right-0 h-px rounded-t-2xl" style={{ background: "linear-gradient(90deg,transparent,rgba(99,102,241,0.4),transparent)" }} />
+                <div className="absolute top-0 left-0 right-0 h-px rounded-t-2xl" style={{ background: "linear-gradient(90deg,transparent,rgba(15, 110, 99,0.4),transparent)" }} />
                 <div className="px-3 py-3 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
-                    style={{ background: "linear-gradient(135deg, #6366f1, #818cf8)", boxShadow: "0 2px 8px rgba(99,102,241,0.4)" }}>
+                    style={{ background: "linear-gradient(135deg, #0f6e63, #35b0a0)", boxShadow: "0 2px 8px rgba(15, 110, 99,0.4)" }}>
                     {activeTherapist?.displayName?.[0]?.toUpperCase() ?? "T"}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -2016,7 +2083,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   <span className="text-sm font-black" style={{ color: theme === "high-contrast" ? "#ffff00" : "inherit" }}>⊙</span>
                   {theme === "high-contrast" ? "Normal Mod" : "Yüksek Kontrast"}
                 </button>
-                <button type="button" className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-(--color-accent-red) hover:bg-red-500/10 w-full text-left bg-transparent border-none cursor-pointer" onClick={() => { setShowUserMenu(false); handleLogout(); }}>
+                <button type="button" className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-(--color-accent-red) hover:bg-[#d1503c]/10 w-full text-left bg-transparent border-none cursor-pointer" onClick={() => { setShowUserMenu(false); handleLogout(); }}>
                   <LogOut size={14} /> Çıkış Yap
                 </button>
               </div>
@@ -2025,15 +2092,20 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto pb-20 lg:pt-0 lg:pb-0 safe-scroll-bottom" style={{ paddingTop: "calc(56px + env(safe-area-inset-top, 0px))", paddingLeft: "env(safe-area-inset-left, 0px)", paddingRight: "env(safe-area-inset-right, 0px)" }}>
+      {/* Oyun alanı kendi yüksekliğini yönetir ve kaymaz; diğer görünümler kayar. */}
+      <div className={`flex-1 min-h-0 ${activeAppView === "games" ? "overflow-hidden flex flex-col" : "overflow-y-auto pb-20 lg:pb-0 safe-scroll-bottom"}`} style={{ paddingTop: "calc(56px + env(safe-area-inset-top, 0px))", paddingLeft: "env(safe-area-inset-left, 0px)", paddingRight: "env(safe-area-inset-right, 0px)" }}>
 
-        {/* ── Breadcrumb Navigation ── */}
-        <div className="px-4 lg:px-8 pt-3 lg:pt-4 max-w-5xl mx-auto">
-          <Breadcrumb
-            items={getBreadcrumbItems(activeAppView, selectedClient?.displayName)}
-            onNavigate={setActiveAppView}
-          />
-        </div>
+        {/* ── Breadcrumb Navigation ──
+            Oyun alanında gizli: hemen altındaki başlık zaten aynı bilgiyi veriyor
+            ve seans ekranında her piksel tahtaya ait. */}
+        {activeAppView !== "games" && (
+          <div className="px-4 lg:px-8 pt-3 lg:pt-4 max-w-5xl mx-auto">
+            <Breadcrumb
+              items={getBreadcrumbItems(activeAppView, selectedClient?.displayName)}
+              onNavigate={setActiveAppView}
+            />
+          </div>
+        )}
 
         {/* ── Dashboard ── */}
         {activeAppView === "dashboard" && (
@@ -2046,14 +2118,14 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   <span className="text-[10px] font-bold uppercase tracking-widest text-(--color-text-muted) hidden sm:inline">{formatDate(getTodayString())}</span>
                   <span className="w-1 h-1 rounded-full bg-(--color-text-muted) hidden sm:inline-block" />
                   <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest"
-                    style={{ color: platformStatus === "online" ? "#10b981" : "#f59e0b" }}>
+                    style={{ color: platformStatus === "online" ? "#7aac3a" : "#c07c2c" }}>
                     <span className="w-1.5 h-1.5 rounded-full"
-                      style={{ background: platformStatus === "online" ? "#10b981" : "#f59e0b", boxShadow: `0 0 5px ${platformStatus === "online" ? "rgba(16,185,129,0.6)" : "rgba(245,158,11,0.6)"}` }} />
+                      style={{ background: platformStatus === "online" ? "#7aac3a" : "#c07c2c", boxShadow: `0 0 5px ${platformStatus === "online" ? "rgba(122, 172, 58,0.6)" : "rgba(192, 124, 44,0.6)"}` }} />
                     {getDatabaseStatusLabel(platformStatus)}
                   </span>
                 </div>
                 <h1 className="text-2xl lg:text-4xl font-extrabold m-0 leading-tight truncate" style={{
-                  background: "linear-gradient(135deg, var(--color-text-strong) 0%, #a5b4fc 55%, #818cf8 100%)",
+                  background: "linear-gradient(135deg, var(--color-text-strong) 0%, #5bc6b8 55%, #35b0a0 100%)",
                   WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
                 }}>
                   Merhaba, {activeTherapist?.displayName?.split(" ")[0] ?? "Terapist"} 👋
@@ -2064,7 +2136,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               </div>
               <button type="button"
                 className="flex items-center gap-2 px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl text-xs lg:text-sm font-semibold text-white border-none cursor-pointer transition-all hover:scale-105 shrink-0"
-                style={{ background: "linear-gradient(135deg, #6366f1, #818cf8)", boxShadow: "0 4px 14px rgba(99,102,241,0.4)" }}
+                style={{ background: "linear-gradient(135deg, #0f6e63, #35b0a0)", boxShadow: "0 4px 14px rgba(15, 110, 99,0.4)" }}
                 onClick={() => setActiveAppView("games")}>
                 <Gamepad2 size={14} /> <span className="hidden sm:inline">Oyun Başlat</span><span className="sm:hidden">Oyna</span>
               </button>
@@ -2081,52 +2153,52 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   v: effectiveSessionCount, l: "Toplam Seans", sub: "tüm zamanlar",
                   tooltip: "Tüm zamanlarda kaydedilen toplam oyun seansı sayısı",
                   Icon: Gamepad2,
-                  gradient: isLight ? "linear-gradient(135deg,rgba(99,102,241,0.14),rgba(99,102,241,0.04))" : "linear-gradient(135deg,rgba(99,102,241,0.22),rgba(79,70,229,0.05))",
-                  border: isLight ? "rgba(99,102,241,0.28)" : "rgba(99,102,241,0.32)",
-                  glow: isLight ? "none" : "0 0 48px rgba(99,102,241,0.15),0 2px 8px rgba(0,0,0,0.3)",
-                  color: isLight ? "#3730a3" : "#a5b4fc",
-                  iconBg: isLight ? "rgba(99,102,241,0.14)" : "rgba(99,102,241,0.2)",
-                  iconColor: isLight ? "#4338ca" : "#818cf8",
-                  sparkColor: "#818cf8",
+                  gradient: isLight ? "linear-gradient(135deg,rgba(15, 110, 99,0.14),rgba(15, 110, 99,0.04))" : "linear-gradient(135deg,rgba(15, 110, 99,0.22),rgba(11, 85, 76,0.05))",
+                  border: isLight ? "rgba(15, 110, 99,0.28)" : "rgba(15, 110, 99,0.32)",
+                  glow: isLight ? "none" : "0 0 48px rgba(15, 110, 99,0.15),0 2px 8px rgba(0,0,0,0.3)",
+                  color: isLight ? "#3730a3" : "#5bc6b8",
+                  iconBg: isLight ? "rgba(15, 110, 99,0.14)" : "rgba(15, 110, 99,0.2)",
+                  iconColor: isLight ? "#094a43" : "#35b0a0",
+                  sparkColor: "#35b0a0",
                   trend: thisWeekCount > 0 ? "up" : "flat",
                 },
                 {
                   v: clientOptions.length, l: "Danışan", sub: "kayıtlı profil",
                   tooltip: "Sisteme kayıtlı toplam danışan profili",
                   Icon: Users,
-                  gradient: isLight ? "linear-gradient(135deg,rgba(16,185,129,0.14),rgba(16,185,129,0.04))" : "linear-gradient(135deg,rgba(16,185,129,0.22),rgba(5,150,105,0.05))",
-                  border: isLight ? "rgba(16,185,129,0.28)" : "rgba(16,185,129,0.32)",
-                  glow: isLight ? "none" : "0 0 48px rgba(16,185,129,0.12),0 2px 8px rgba(0,0,0,0.3)",
-                  color: isLight ? "#065f46" : "#6ee7b7",
-                  iconBg: isLight ? "rgba(16,185,129,0.14)" : "rgba(16,185,129,0.2)",
-                  iconColor: isLight ? "#047857" : "#34d399",
-                  sparkColor: "#34d399",
+                  gradient: isLight ? "linear-gradient(135deg,rgba(122, 172, 58,0.14),rgba(122, 172, 58,0.04))" : "linear-gradient(135deg,rgba(122, 172, 58,0.22),rgba(79, 122, 34,0.05))",
+                  border: isLight ? "rgba(122, 172, 58,0.28)" : "rgba(122, 172, 58,0.32)",
+                  glow: isLight ? "none" : "0 0 48px rgba(122, 172, 58,0.12),0 2px 8px rgba(0,0,0,0.3)",
+                  color: isLight ? "#065f46" : "#c2dd95",
+                  iconBg: isLight ? "rgba(122, 172, 58,0.14)" : "rgba(122, 172, 58,0.2)",
+                  iconColor: isLight ? "#047857" : "#9cc65e",
+                  sparkColor: "#9cc65e",
                   trend: clientOptions.length > 0 ? "up" : "flat",
                 },
                 {
                   v: thisWeekCount, l: "Bu Hafta", sub: "son 7 gün",
                   tooltip: "Son 7 gün içinde oynanan seans sayısı",
                   Icon: TrendingUp,
-                  gradient: isLight ? "linear-gradient(135deg,rgba(245,158,11,0.14),rgba(245,158,11,0.04))" : "linear-gradient(135deg,rgba(245,158,11,0.22),rgba(217,119,6,0.05))",
-                  border: isLight ? "rgba(245,158,11,0.3)" : "rgba(245,158,11,0.32)",
-                  glow: isLight ? "none" : "0 0 48px rgba(245,158,11,0.12),0 2px 8px rgba(0,0,0,0.3)",
-                  color: isLight ? "#92400e" : "#fcd34d",
-                  iconBg: isLight ? "rgba(245,158,11,0.14)" : "rgba(245,158,11,0.2)",
-                  iconColor: isLight ? "#b45309" : "#f59e0b",
-                  sparkColor: "#f59e0b",
+                  gradient: isLight ? "linear-gradient(135deg,rgba(192, 124, 44,0.14),rgba(192, 124, 44,0.04))" : "linear-gradient(135deg,rgba(192, 124, 44,0.22),rgba(217,119,6,0.05))",
+                  border: isLight ? "rgba(192, 124, 44,0.3)" : "rgba(192, 124, 44,0.32)",
+                  glow: isLight ? "none" : "0 0 48px rgba(192, 124, 44,0.12),0 2px 8px rgba(0,0,0,0.3)",
+                  color: isLight ? "#92400e" : "#efc98c",
+                  iconBg: isLight ? "rgba(192, 124, 44,0.14)" : "rgba(192, 124, 44,0.2)",
+                  iconColor: isLight ? "#b45309" : "#c07c2c",
+                  sparkColor: "#c07c2c",
                   trend: thisWeekCount > 0 ? "up" : "flat",
                 },
                 {
                   v: avgScore, l: "Ort. Skor", sub: "seans başına",
                   tooltip: "Tüm seansların skor ortalaması",
                   Icon: Award,
-                  gradient: isLight ? "linear-gradient(135deg,rgba(236,72,153,0.14),rgba(236,72,153,0.04))" : "linear-gradient(135deg,rgba(236,72,153,0.22),rgba(219,39,119,0.05))",
-                  border: isLight ? "rgba(236,72,153,0.28)" : "rgba(236,72,153,0.32)",
-                  glow: isLight ? "none" : "0 0 48px rgba(236,72,153,0.12),0 2px 8px rgba(0,0,0,0.3)",
-                  color: isLight ? "#9d174d" : "#f9a8d4",
-                  iconBg: isLight ? "rgba(236,72,153,0.14)" : "rgba(236,72,153,0.2)",
-                  iconColor: isLight ? "#be185d" : "#f472b6",
-                  sparkColor: "#f472b6",
+                  gradient: isLight ? "linear-gradient(135deg,rgba(196, 97, 74,0.14),rgba(196, 97, 74,0.04))" : "linear-gradient(135deg,rgba(196, 97, 74,0.22),rgba(219,39,119,0.05))",
+                  border: isLight ? "rgba(196, 97, 74,0.28)" : "rgba(196, 97, 74,0.32)",
+                  glow: isLight ? "none" : "0 0 48px rgba(196, 97, 74,0.12),0 2px 8px rgba(0,0,0,0.3)",
+                  color: isLight ? "#9d174d" : "#eaa78f",
+                  iconBg: isLight ? "rgba(196, 97, 74,0.14)" : "rgba(196, 97, 74,0.2)",
+                  iconColor: isLight ? "#be185d" : "#de8265",
+                  sparkColor: "#de8265",
                   trend: avgScore > 0 ? "up" : "flat",
                 },
               ];
@@ -2146,37 +2218,37 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 {
                   Icon: UserPlus, title: "Yeni Danışan Ekle", sub: "Profil oluştur ve seans başlat",
                   action: () => { setShowAddClient(true); setActiveAppView("clients"); },
-                  gradient: isLight ? "linear-gradient(135deg,rgba(16,185,129,0.1),rgba(16,185,129,0.03))" : "linear-gradient(135deg,rgba(16,185,129,0.14),rgba(16,185,129,0.03))",
-                  border: isLight ? "rgba(16,185,129,0.3)" : "rgba(16,185,129,0.25)",
-                  iconBg: isLight ? "rgba(16,185,129,0.14)" : "rgba(16,185,129,0.2)",
-                  iconColor: isLight ? "#047857" : "#34d399",
+                  gradient: isLight ? "linear-gradient(135deg,rgba(122, 172, 58,0.1),rgba(122, 172, 58,0.03))" : "linear-gradient(135deg,rgba(122, 172, 58,0.14),rgba(122, 172, 58,0.03))",
+                  border: isLight ? "rgba(122, 172, 58,0.3)" : "rgba(122, 172, 58,0.25)",
+                  iconBg: isLight ? "rgba(122, 172, 58,0.14)" : "rgba(122, 172, 58,0.2)",
+                  iconColor: isLight ? "#047857" : "#9cc65e",
                   badge: null as string | null,
                 },
                 {
                   Icon: Gamepad2, title: "Oyun Alanını Aç", sub: "6 modülle seans çalışma alanı",
                   action: () => setActiveAppView("games"),
-                  gradient: isLight ? "linear-gradient(135deg,rgba(99,102,241,0.1),rgba(99,102,241,0.03))" : "linear-gradient(135deg,rgba(99,102,241,0.14),rgba(99,102,241,0.03))",
-                  border: isLight ? "rgba(99,102,241,0.28)" : "rgba(99,102,241,0.25)",
-                  iconBg: isLight ? "rgba(99,102,241,0.14)" : "rgba(99,102,241,0.2)",
-                  iconColor: isLight ? "#4338ca" : "#818cf8",
+                  gradient: isLight ? "linear-gradient(135deg,rgba(15, 110, 99,0.1),rgba(15, 110, 99,0.03))" : "linear-gradient(135deg,rgba(15, 110, 99,0.14),rgba(15, 110, 99,0.03))",
+                  border: isLight ? "rgba(15, 110, 99,0.28)" : "rgba(15, 110, 99,0.25)",
+                  iconBg: isLight ? "rgba(15, 110, 99,0.14)" : "rgba(15, 110, 99,0.2)",
+                  iconColor: isLight ? "#094a43" : "#35b0a0",
                   badge: "6 Oyun" as string | null,
                 },
                 {
                   Icon: Stethoscope, title: "Terapi Programı", sub: "Aktivite önerileri ve haftalık plan",
                   action: () => setActiveAppView("therapy-program"),
-                  gradient: isLight ? "linear-gradient(135deg,rgba(6,182,212,0.1),rgba(6,182,212,0.03))" : "linear-gradient(135deg,rgba(6,182,212,0.14),rgba(6,182,212,0.03))",
-                  border: isLight ? "rgba(6,182,212,0.3)" : "rgba(6,182,212,0.25)",
-                  iconBg: isLight ? "rgba(6,182,212,0.14)" : "rgba(6,182,212,0.2)",
-                  iconColor: isLight ? "#0e7490" : "#22d3ee",
+                  gradient: isLight ? "linear-gradient(135deg,rgba(79, 147, 181,0.1),rgba(79, 147, 181,0.03))" : "linear-gradient(135deg,rgba(79, 147, 181,0.14),rgba(79, 147, 181,0.03))",
+                  border: isLight ? "rgba(79, 147, 181,0.3)" : "rgba(79, 147, 181,0.25)",
+                  iconBg: isLight ? "rgba(79, 147, 181,0.14)" : "rgba(79, 147, 181,0.2)",
+                  iconColor: isLight ? "#0e7490" : "#7fb2cc",
                   badge: null as string | null,
                 },
                 {
                   Icon: BarChart3, title: "Raporlar & Analitik", sub: "Skor grafikleri, danışan gelişimi",
                   action: () => setActiveAppView("reports"),
-                  gradient: isLight ? "linear-gradient(135deg,rgba(245,158,11,0.1),rgba(245,158,11,0.03))" : "linear-gradient(135deg,rgba(245,158,11,0.14),rgba(245,158,11,0.03))",
-                  border: isLight ? "rgba(245,158,11,0.3)" : "rgba(245,158,11,0.25)",
-                  iconBg: isLight ? "rgba(245,158,11,0.14)" : "rgba(245,158,11,0.2)",
-                  iconColor: isLight ? "#b45309" : "#fbbf24",
+                  gradient: isLight ? "linear-gradient(135deg,rgba(192, 124, 44,0.1),rgba(192, 124, 44,0.03))" : "linear-gradient(135deg,rgba(192, 124, 44,0.14),rgba(192, 124, 44,0.03))",
+                  border: isLight ? "rgba(192, 124, 44,0.3)" : "rgba(192, 124, 44,0.25)",
+                  iconBg: isLight ? "rgba(192, 124, 44,0.14)" : "rgba(192, 124, 44,0.2)",
+                  iconColor: isLight ? "#b45309" : "#e3a75c",
                   badge: "YENİ" as string | null,
                 },
               ] as const;
@@ -2190,7 +2262,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       className="flex flex-col gap-1.5 sm:gap-2 p-3 sm:p-4 lg:p-5 rounded-xl sm:rounded-2xl border text-left cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-(--shadow-elevated) group relative overflow-hidden active:scale-[0.98]"
                       style={{ background: gradient, borderColor: border }}>
                       {badge && (
-                        <span className="absolute top-2 right-2 sm:top-3 sm:right-3 text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-full text-white" style={{ background: "linear-gradient(135deg,#f59e0b,#ef4444)" }}>{badge}</span>
+                        <span className="absolute top-2 right-2 sm:top-3 sm:right-3 text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-full text-white" style={{ background: "linear-gradient(135deg,#c07c2c,#d1503c)" }}>{badge}</span>
                       )}
                       <span className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center mb-0.5 sm:mb-1 transition-transform duration-200 group-hover:scale-110"
                         style={{ background: iconBg }}>
@@ -2219,33 +2291,33 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   const isLight = theme === "light";
                   const catStyles = [
                     {
-                      bg: isLight ? "rgba(139,92,246,0.12)" : "rgba(139,92,246,0.16)",
-                      color: isLight ? "#6d28d9" : "#c4b5fd",
-                      border: isLight ? "rgba(139,92,246,0.28)" : "rgba(139,92,246,0.3)",
-                      glow: isLight ? "none" : "0 0 32px rgba(139,92,246,0.1)",
-                      labelBg: isLight ? "rgba(139,92,246,0.12)" : "rgba(139,92,246,0.18)",
-                      labelColor: isLight ? "#5b21b6" : "#a78bfa",
-                      gradLine: "rgba(139,92,246,0.4)",
+                      bg: isLight ? "rgba(20, 132, 122,0.12)" : "rgba(20, 132, 122,0.16)",
+                      color: isLight ? "#6d28d9" : "#8fd6cb",
+                      border: isLight ? "rgba(20, 132, 122,0.28)" : "rgba(20, 132, 122,0.3)",
+                      glow: isLight ? "none" : "0 0 32px rgba(20, 132, 122,0.1)",
+                      labelBg: isLight ? "rgba(20, 132, 122,0.12)" : "rgba(20, 132, 122,0.18)",
+                      labelColor: isLight ? "#5b21b6" : "#35b0a0",
+                      gradLine: "rgba(20, 132, 122,0.4)",
                     },
                     {
-                      bg: isLight ? "rgba(245,158,11,0.12)" : "rgba(245,158,11,0.16)",
-                      color: isLight ? "#b45309" : "#fcd34d",
-                      border: isLight ? "rgba(245,158,11,0.28)" : "rgba(245,158,11,0.3)",
-                      glow: isLight ? "none" : "0 0 32px rgba(245,158,11,0.1)",
-                      labelBg: isLight ? "rgba(245,158,11,0.12)" : "rgba(245,158,11,0.18)",
-                      labelColor: isLight ? "#92400e" : "#f59e0b",
-                      gradLine: "rgba(245,158,11,0.4)",
+                      bg: isLight ? "rgba(192, 124, 44,0.12)" : "rgba(192, 124, 44,0.16)",
+                      color: isLight ? "#b45309" : "#efc98c",
+                      border: isLight ? "rgba(192, 124, 44,0.28)" : "rgba(192, 124, 44,0.3)",
+                      glow: isLight ? "none" : "0 0 32px rgba(192, 124, 44,0.1)",
+                      labelBg: isLight ? "rgba(192, 124, 44,0.12)" : "rgba(192, 124, 44,0.18)",
+                      labelColor: isLight ? "#92400e" : "#c07c2c",
+                      gradLine: "rgba(192, 124, 44,0.4)",
                     },
                     {
-                      bg: isLight ? "rgba(6,182,212,0.12)" : "rgba(6,182,212,0.16)",
+                      bg: isLight ? "rgba(79, 147, 181,0.12)" : "rgba(79, 147, 181,0.16)",
                       color: isLight ? "#0e7490" : "#67e8f9",
-                      border: isLight ? "rgba(6,182,212,0.28)" : "rgba(6,182,212,0.3)",
-                      glow: isLight ? "none" : "0 0 32px rgba(6,182,212,0.1)",
-                      labelBg: isLight ? "rgba(6,182,212,0.12)" : "rgba(6,182,212,0.18)",
-                      labelColor: isLight ? "#155e75" : "#06b6d4",
-                      gradLine: "rgba(6,182,212,0.4)",
+                      border: isLight ? "rgba(79, 147, 181,0.28)" : "rgba(79, 147, 181,0.3)",
+                      glow: isLight ? "none" : "0 0 32px rgba(79, 147, 181,0.1)",
+                      labelBg: isLight ? "rgba(79, 147, 181,0.12)" : "rgba(79, 147, 181,0.18)",
+                      labelColor: isLight ? "#155e75" : "#4f93b5",
+                      gradLine: "rgba(79, 147, 181,0.4)",
                     },
-                  ][catIdx] ?? { bg: "rgba(99,102,241,0.12)", color: isLight ? "#4338ca" : "#818cf8", border: "rgba(99,102,241,0.22)", glow: "none", labelBg: "rgba(99,102,241,0.12)", labelColor: isLight ? "#3730a3" : "#6366f1", gradLine: "rgba(99,102,241,0.4)" };
+                  ][catIdx] ?? { bg: "rgba(15, 110, 99,0.12)", color: isLight ? "#094a43" : "#35b0a0", border: "rgba(15, 110, 99,0.22)", glow: "none", labelBg: "rgba(15, 110, 99,0.12)", labelColor: isLight ? "#3730a3" : "#0f6e63", gradLine: "rgba(15, 110, 99,0.4)" };
                   return (
                     <button key={cat.key} type="button"
                       className="flex sm:flex-col flex-row items-center sm:items-start gap-3 sm:gap-2 p-3.5 sm:p-5 rounded-2xl border text-left cursor-pointer transition-all duration-200 hover:-translate-y-0.5 sm:hover:-translate-y-1 bg-(--color-surface-strong) group relative overflow-hidden"
@@ -2284,15 +2356,15 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               const countDelta = thisWeekSessions.length - lastWeekSessions.length;
               const avgDelta = thisAvg - lastAvg;
               const cols = [
-                { label: "Bu Hafta Seans", this: thisWeekSessions.length, last: lastWeekSessions.length, delta: countDelta, unit: "seans", color: "#818cf8" },
-                { label: "Bu Hafta Ort. Skor", this: thisAvg, last: lastAvg, delta: avgDelta, unit: "puan", color: "#34d399" },
+                { label: "Bu Hafta Seans", this: thisWeekSessions.length, last: lastWeekSessions.length, delta: countDelta, unit: "seans", color: "#35b0a0" },
+                { label: "Bu Hafta Ort. Skor", this: thisAvg, last: lastAvg, delta: avgDelta, unit: "puan", color: "#9cc65e" },
               ];
               return (
                 <div className="relative overflow-hidden rounded-2xl border" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}>
-                  <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg,#818cf8,#34d399,transparent)" }} />
+                  <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg,#35b0a0,#9cc65e,transparent)" }} />
                   <div className="px-4 py-3 flex items-center justify-between border-b" style={{ borderColor: "var(--color-line)" }}>
                     <div className="flex items-center gap-2">
-                      <CalendarDays size={13} style={{ color: "#818cf8" }} />
+                      <CalendarDays size={13} style={{ color: "#35b0a0" }} />
                       <span className="text-xs font-extrabold uppercase tracking-wider text-(--color-text-muted)">Haftalık Karşılaştırma</span>
                     </div>
                     <span className="text-[10px] text-(--color-text-muted)">Bu hafta vs geçen hafta</span>
@@ -2305,7 +2377,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           <strong className="text-2xl font-extrabold tabular-nums" style={{ color: col.color }}>{col.this}</strong>
                           <div className="flex items-center gap-1 pb-0.5">
                             {col.delta !== 0 && (
-                              <span className="text-[10px] font-bold" style={{ color: col.delta > 0 ? "#10b981" : "#ef4444" }}>
+                              <span className="text-[10px] font-bold" style={{ color: col.delta > 0 ? "#7aac3a" : "#d1503c" }}>
                                 {col.delta > 0 ? "▲" : "▼"} {Math.abs(col.delta)} {col.unit}
                               </span>
                             )}
@@ -2341,14 +2413,14 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               }).sort((a, b) => a.daysUntil - b.daysUntil);
               if (upcoming.length === 0) return null;
               return (
-                <div className="rounded-2xl border overflow-hidden" style={{ background: "rgba(236,72,153,0.06)", borderColor: "rgba(236,72,153,0.2)" }}>
-                  <div className="h-0.5" style={{ background: "linear-gradient(90deg,#ec4899,#f472b6,transparent)" }} />
+                <div className="rounded-2xl border overflow-hidden" style={{ background: "rgba(196, 97, 74,0.06)", borderColor: "rgba(196, 97, 74,0.2)" }}>
+                  <div className="h-0.5" style={{ background: "linear-gradient(90deg,#c4614a,#de8265,transparent)" }} />
                   <div className="px-4 py-3 space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-widest m-0" style={{ color: "#ec4899" }}>🎂 Yaklaşan Doğum Günleri</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest m-0" style={{ color: "#c4614a" }}>🎂 Yaklaşan Doğum Günleri</p>
                     {upcoming.map(c => (
                       <div key={c.id} className="flex items-center justify-between">
                         <span className="text-sm font-semibold text-(--color-text-body)">{c.displayName}</span>
-                        <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(236,72,153,0.12)", color: "#ec4899" }}>
+                        <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(196, 97, 74,0.12)", color: "#c4614a" }}>
                           {c.daysUntil === 0 ? "🎉 Bugün!" : `${c.daysUntil} gün kaldı`}
                         </span>
                       </div>
@@ -2360,10 +2432,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
             {/* ── Streak widget ── */}
             {sessionStreak > 0 && (
-              <div className="relative overflow-hidden rounded-2xl border flex items-center gap-4 px-4 py-3" style={{ background: sessionStreak >= 7 ? "rgba(251,191,36,0.08)" : "rgba(99,102,241,0.07)", borderColor: sessionStreak >= 7 ? "rgba(251,191,36,0.25)" : "rgba(99,102,241,0.2)" }}>
+              <div className="relative overflow-hidden rounded-2xl border flex items-center gap-4 px-4 py-3" style={{ background: sessionStreak >= 7 ? "rgba(227, 167, 92,0.08)" : "rgba(15, 110, 99,0.07)", borderColor: sessionStreak >= 7 ? "rgba(227, 167, 92,0.25)" : "rgba(15, 110, 99,0.2)" }}>
                 <span className="text-3xl select-none">{sessionStreak >= 14 ? "🏆" : sessionStreak >= 7 ? "🔥" : "⚡"}</span>
                 <div className="flex-1">
-                  <p className="m-0 text-sm font-extrabold" style={{ color: sessionStreak >= 7 ? "#fbbf24" : "#818cf8" }}>
+                  <p className="m-0 text-sm font-extrabold" style={{ color: sessionStreak >= 7 ? "#e3a75c" : "#35b0a0" }}>
                     {sessionStreak} günlük seans serisi
                   </p>
                   <p className="m-0 text-[11px] text-(--color-text-muted)">
@@ -2372,7 +2444,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 </div>
                 <div className="flex gap-0.5 shrink-0">
                   {Array.from({ length: Math.min(sessionStreak, 7) }).map((_, i) => (
-                    <div key={i} className="w-2 h-2 rounded-full" style={{ background: sessionStreak >= 7 ? "#fbbf24" : "#818cf8", opacity: 1 - (Math.min(sessionStreak, 7) - 1 - i) * 0.12 }} />
+                    <div key={i} className="w-2 h-2 rounded-full" style={{ background: sessionStreak >= 7 ? "#e3a75c" : "#35b0a0", opacity: 1 - (Math.min(sessionStreak, 7) - 1 - i) * 0.12 }} />
                   ))}
                 </div>
               </div>
@@ -2425,8 +2497,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 <div className="rounded-2xl border border-(--color-line) p-10 text-center flex flex-col items-center gap-4"
                   style={{ background: "var(--color-surface-strong)" }}>
                   <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                    style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)" }}>
-                    <Gamepad2 size={24} strokeWidth={1.5} style={{ color: "#818cf8" }} />
+                    style={{ background: "rgba(15, 110, 99,0.1)", border: "1px solid rgba(15, 110, 99,0.2)" }}>
+                    <Gamepad2 size={24} strokeWidth={1.5} style={{ color: "#35b0a0" }} />
                   </div>
                   <div>
                     <p className="text-(--color-text-strong) text-sm font-semibold m-0 mb-1">Henüz seans kaydı yok</p>
@@ -2438,22 +2510,22 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 /* ── Premium Vertical Timeline ── */
                 <div className="relative rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
                   {/* Top shimmer accent */}
-                  <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg,transparent,rgba(99,102,241,0.4),transparent)" }} />
+                  <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg,transparent,rgba(15, 110, 99,0.4),transparent)" }} />
                   {/* Vertical line */}
-                  <div className="absolute left-[52px] top-6 bottom-6 w-px" style={{ background: "linear-gradient(180deg,rgba(99,102,241,0.3),rgba(139,92,246,0.15),rgba(6,182,212,0.1))" }} />
+                  <div className="absolute left-[52px] top-6 bottom-6 w-px" style={{ background: "linear-gradient(180deg,rgba(15, 110, 99,0.3),rgba(20, 132, 122,0.15),rgba(79, 147, 181,0.1))" }} />
                   <div className="flex flex-col">
                     {recentSessionFeed.map((session, idx) => {
                       const isLight = theme === "light";
                       // Per-game accent colour
                       const gameAccents: Record<string, { color: string; bg: string; border: string }> = {
-                        memory:     { color: "#818cf8", bg: "rgba(129,140,248,0.12)", border: "rgba(129,140,248,0.2)" },
-                        pairs:      { color: "#2dd4bf", bg: "rgba(45,212,191,0.12)",  border: "rgba(45,212,191,0.2)"  },
-                        pulse:      { color: "#39c6ff", bg: "rgba(57,198,255,0.12)",  border: "rgba(57,198,255,0.2)"  },
-                        route:      { color: "#6366f1", bg: "rgba(99,102,241,0.12)",  border: "rgba(99,102,241,0.2)"  },
-                        difference: { color: "#a78bfa", bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.2)" },
-                        scan:       { color: "#34d399", bg: "rgba(52,211,153,0.12)",  border: "rgba(52,211,153,0.2)"  },
+                        memory:     { color: "#35b0a0", bg: "rgba(53, 176, 160,0.12)", border: "rgba(53, 176, 160,0.2)" },
+                        pairs:      { color: "#35b0a0", bg: "rgba(45,212,191,0.12)",  border: "rgba(45,212,191,0.2)"  },
+                        pulse:      { color: "#7fb2cc", bg: "rgba(127, 178, 204,0.12)",  border: "rgba(127, 178, 204,0.2)"  },
+                        route:      { color: "#0f6e63", bg: "rgba(15, 110, 99,0.12)",  border: "rgba(15, 110, 99,0.2)"  },
+                        difference: { color: "#35b0a0", bg: "rgba(53, 176, 160,0.12)", border: "rgba(53, 176, 160,0.2)" },
+                        scan:       { color: "#9cc65e", bg: "rgba(156, 198, 94,0.12)",  border: "rgba(156, 198, 94,0.2)"  },
                       };
-                      const accent = gameAccents[session.gameKey ?? ""] ?? { color: isLight ? "#4338ca" : "#818cf8", bg: isLight ? "rgba(99,102,241,0.08)" : "rgba(99,102,241,0.12)", border: "rgba(99,102,241,0.18)" };
+                      const accent = gameAccents[session.gameKey ?? ""] ?? { color: isLight ? "#094a43" : "#35b0a0", bg: isLight ? "rgba(15, 110, 99,0.08)" : "rgba(15, 110, 99,0.12)", border: "rgba(15, 110, 99,0.18)" };
                       const isLast = idx === recentSessionFeed.length - 1;
                       return (
                         <div key={session.id}
@@ -2514,7 +2586,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     <span className="text-xs text-(--color-text-muted)">{effectiveSessionCount} toplam seans kaydı</span>
                     <button type="button"
                       className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border cursor-pointer transition-all hover:scale-105"
-                      style={{ background: "rgba(99,102,241,0.08)", borderColor: "rgba(99,102,241,0.2)", color: "#818cf8" }}
+                      style={{ background: "rgba(15, 110, 99,0.08)", borderColor: "rgba(15, 110, 99,0.2)", color: "#35b0a0" }}
                       onClick={() => setActiveAppView("reports")}>
                       <BarChart3 size={11} /> Tam Raporu Gör
                     </button>
@@ -2534,7 +2606,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             <div className="flex items-center justify-between pt-1">
               <div>
                 <h1 className="text-xl lg:text-2xl font-extrabold text-(--color-text-strong) m-0" style={{
-                  background: "linear-gradient(135deg, var(--color-text-strong) 0%, #a5b4fc 100%)",
+                  background: "linear-gradient(135deg, var(--color-text-strong) 0%, #5bc6b8 100%)",
                   WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
                 }}>Danışanlar</h1>
                 <span className="text-(--color-text-muted) text-xs lg:text-sm">{clientOptions.length} kayıtlı danışan</span>
@@ -2543,20 +2615,20 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 {clientOptions.length > 0 && (
                   <button type="button" title="CSV Dışa Aktar"
                     className="w-9 h-9 rounded-xl flex items-center justify-center border cursor-pointer hover:opacity-80 transition-opacity"
-                    style={{ background: "rgba(52,211,153,0.1)", borderColor: "rgba(52,211,153,0.25)", color: "#34d399" }}
+                    style={{ background: "rgba(156, 198, 94,0.1)", borderColor: "rgba(156, 198, 94,0.25)", color: "#9cc65e" }}
                     onClick={handleExportClientsCsv}>
                     <Download size={14} />
                   </button>
                 )}
                 <button type="button" title="CSV İçe Aktar"
                   className="w-9 h-9 rounded-xl flex items-center justify-center border cursor-pointer hover:opacity-80 transition-opacity"
-                  style={{ background: "rgba(99,102,241,0.1)", borderColor: "rgba(99,102,241,0.25)", color: "#818cf8" }}
+                  style={{ background: "rgba(15, 110, 99,0.1)", borderColor: "rgba(15, 110, 99,0.25)", color: "#35b0a0" }}
                   onClick={() => setShowCsvImport(true)}>
                   <Upload size={14} />
                 </button>
                 <button type="button"
                   className="flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl text-sm font-semibold text-white border-none cursor-pointer transition-all hover:scale-105 shrink-0"
-                  style={{ background: "linear-gradient(135deg, #6366f1, #818cf8)", boxShadow: "0 4px 14px rgba(99,102,241,0.4)" }}
+                  style={{ background: "linear-gradient(135deg, #0f6e63, #35b0a0)", boxShadow: "0 4px 14px rgba(15, 110, 99,0.4)" }}
                   onClick={() => setShowAddClient(!showAddClient)}>
                   <UserPlus size={14} />
                   <span className="hidden sm:inline">Yeni Danışan</span>
@@ -2567,11 +2639,11 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
             {showAddClient && (
               <div className="rounded-2xl border p-4 lg:p-6 relative overflow-hidden"
-                style={{ background: "var(--color-surface-strong)", borderColor: "rgba(99,102,241,0.25)", boxShadow: "0 0 40px rgba(99,102,241,0.08)" }}>
-                <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(99,102,241,0.5), transparent)" }} />
+                style={{ background: "var(--color-surface-strong)", borderColor: "rgba(15, 110, 99,0.25)", boxShadow: "0 0 40px rgba(15, 110, 99,0.08)" }}>
+                <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(15, 110, 99,0.5), transparent)" }} />
                 <h3 className="text-(--color-text-strong) font-bold mb-4 flex items-center gap-2">
-                  <span className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(99,102,241,0.15)" }}>
-                    <UserPlus size={14} style={{ color: "#818cf8" }} />
+                  <span className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(15, 110, 99,0.15)" }}>
+                    <UserPlus size={14} style={{ color: "#35b0a0" }} />
                   </span>
                   Yeni Danışan Ekle
                 </h3>
@@ -2614,7 +2686,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   {ageOptions.length > 0 && (
                     <select value={clientFilterAge} onChange={e => setClientFilterAge(e.target.value)}
                       className="text-xs font-semibold px-2.5 py-1.5 rounded-xl border cursor-pointer"
-                      style={{ background: clientFilterAge ? "rgba(99,102,241,0.12)" : "var(--color-surface-strong)", borderColor: clientFilterAge ? "rgba(99,102,241,0.4)" : "var(--color-line)", color: clientFilterAge ? "#818cf8" : "var(--color-text-soft)", outline: "none" }}>
+                      style={{ background: clientFilterAge ? "rgba(15, 110, 99,0.12)" : "var(--color-surface-strong)", borderColor: clientFilterAge ? "rgba(15, 110, 99,0.4)" : "var(--color-line)", color: clientFilterAge ? "#35b0a0" : "var(--color-text-soft)", outline: "none" }}>
                       <option value="">Tüm yaş grupları</option>
                       {ageOptions.map(a => <option key={a} value={a}>{a}</option>)}
                     </select>
@@ -2622,14 +2694,14 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   {supportOptions.length > 0 && (
                     <select value={clientFilterSupport} onChange={e => setClientFilterSupport(e.target.value)}
                       className="text-xs font-semibold px-2.5 py-1.5 rounded-xl border cursor-pointer"
-                      style={{ background: clientFilterSupport ? "rgba(99,102,241,0.12)" : "var(--color-surface-strong)", borderColor: clientFilterSupport ? "rgba(99,102,241,0.4)" : "var(--color-line)", color: clientFilterSupport ? "#818cf8" : "var(--color-text-soft)", outline: "none" }}>
+                      style={{ background: clientFilterSupport ? "rgba(15, 110, 99,0.12)" : "var(--color-surface-strong)", borderColor: clientFilterSupport ? "rgba(15, 110, 99,0.4)" : "var(--color-line)", color: clientFilterSupport ? "#35b0a0" : "var(--color-text-soft)", outline: "none" }}>
                       <option value="">Tüm destek düzeyleri</option>
                       {supportOptions.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   )}
                   <select value={clientFilterActivity} onChange={e => setClientFilterActivity(e.target.value as "all" | "inactive" | "new")}
                     className="text-xs font-semibold px-2.5 py-1.5 rounded-xl border cursor-pointer"
-                    style={{ background: clientFilterActivity !== "all" ? "rgba(99,102,241,0.12)" : "var(--color-surface-strong)", borderColor: clientFilterActivity !== "all" ? "rgba(99,102,241,0.4)" : "var(--color-line)", color: clientFilterActivity !== "all" ? "#818cf8" : "var(--color-text-soft)", outline: "none" }}>
+                    style={{ background: clientFilterActivity !== "all" ? "rgba(15, 110, 99,0.12)" : "var(--color-surface-strong)", borderColor: clientFilterActivity !== "all" ? "rgba(15, 110, 99,0.4)" : "var(--color-line)", color: clientFilterActivity !== "all" ? "#35b0a0" : "var(--color-text-soft)", outline: "none" }}>
                     <option value="all">Tüm aktivite</option>
                     <option value="inactive">14+ gün inaktif</option>
                     <option value="new">Hiç oynanmadı</option>
@@ -2637,7 +2709,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   {hasFilters && (
                     <button type="button" onClick={() => { setClientFilterAge(""); setClientFilterSupport(""); setClientFilterActivity("all"); }}
                       className="text-[10px] font-bold px-2.5 py-1.5 rounded-xl border cursor-pointer flex items-center gap-1 hover:opacity-80 transition-opacity"
-                      style={{ background: "rgba(239,68,68,0.1)", borderColor: "rgba(239,68,68,0.25)", color: "#ef4444" }}>
+                      style={{ background: "rgba(209, 80, 60,0.1)", borderColor: "rgba(209, 80, 60,0.25)", color: "#d1503c" }}>
                       <X size={9} /> Filtreleri temizle
                     </button>
                   )}
@@ -2652,8 +2724,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="archive-dialog-title" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={() => setArchiveTargetId(null)}>
                   <div className="rounded-2xl sm:rounded-3xl border p-5 sm:p-6 max-w-sm w-full space-y-4 result-overlay-in" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }} onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(245,158,11,0.15)" }}>
-                        <Archive size={18} style={{ color: "#f59e0b" }} />
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(192, 124, 44,0.15)" }}>
+                        <Archive size={18} style={{ color: "#c07c2c" }} />
                       </div>
                       <div>
                         <h3 id="archive-dialog-title" className="font-extrabold text-(--color-text-strong) m-0">Danışanı Arşivle</h3>
@@ -2662,7 +2734,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     </div>
                     <p className="text-(--color-text-body) text-sm m-0"><strong>{archiveTarget?.displayName}</strong> arşive taşınacak. Seans verileri korunur.</p>
                     <div className="flex gap-2">
-                      <button type="button" className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white border-none cursor-pointer transition-all active:scale-95" style={{ background: "linear-gradient(135deg,#f59e0b,#ef4444)" }} onClick={() => { void handleArchiveClient(archiveTargetId); }}>Arşivle</button>
+                      <button type="button" className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white border-none cursor-pointer transition-all active:scale-95" style={{ background: "linear-gradient(135deg,#c07c2c,#d1503c)" }} onClick={() => { void handleArchiveClient(archiveTargetId); }}>Arşivle</button>
                       <button type="button" className="flex-1 py-2.5 rounded-xl text-sm font-bold border cursor-pointer transition-all active:scale-95" style={{ background: "var(--color-surface)", borderColor: "var(--color-line)", color: "var(--color-text-soft)" }} onClick={() => setArchiveTargetId(null)}>İptal</button>
                     </div>
                   </div>
@@ -2673,11 +2745,11 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             {/* CSV Import Modal */}
             {showCsvImport && (
               <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={() => { setShowCsvImport(false); setCsvImportError(""); setCsvImportText(""); }}>
-                <div className="rounded-2xl sm:rounded-3xl border p-5 sm:p-6 max-w-md w-full space-y-4" style={{ background: "var(--color-surface-strong)", borderColor: "rgba(99,102,241,0.25)" }} onClick={(e) => e.stopPropagation()}>
+                <div className="rounded-2xl sm:rounded-3xl border p-5 sm:p-6 max-w-md w-full space-y-4" style={{ background: "var(--color-surface-strong)", borderColor: "rgba(15, 110, 99,0.25)" }} onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(99,102,241,0.15)" }}>
-                        <Upload size={18} style={{ color: "#818cf8" }} />
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(15, 110, 99,0.15)" }}>
+                        <Upload size={18} style={{ color: "#35b0a0" }} />
                       </div>
                       <div>
                         <h3 className="font-extrabold text-(--color-text-strong) m-0">CSV İçe Aktar</h3>
@@ -2690,7 +2762,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       <X size={16} />
                     </button>
                   </div>
-                  <div className="text-xs text-(--color-text-muted) p-3 rounded-xl" style={{ background: "var(--color-surface-elevated)", borderLeft: "3px solid rgba(99,102,241,0.5)" }}>
+                  <div className="text-xs text-(--color-text-muted) p-3 rounded-xl" style={{ background: "var(--color-surface-elevated)", borderLeft: "3px solid rgba(15, 110, 99,0.5)" }}>
                     <p className="m-0 font-bold mb-1">Format (başlık satırı zorunlu):</p>
                     <code className="text-[10px]">Ad,Yaş Grubu,Birincil Hedef,Destek Düzeyi<br />Ada Y.,7-9 yaş,Görsel tarama,Orta destek</code>
                   </div>
@@ -2700,7 +2772,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     className="w-full text-xs font-mono p-3 rounded-xl border resize-none outline-none"
                     style={{ background: "var(--color-surface)", borderColor: "var(--color-line)", color: "var(--color-text-body)" }} />
                   {csvImportError && (
-                    <p className="text-[11px] text-red-400 m-0 px-1">{csvImportError}</p>
+                    <p className="text-[11px] text-[#de8265] m-0 px-1">{csvImportError}</p>
                   )}
                   <div className="flex gap-2">
                     <button type="button" className={`${btnPrimary} flex-1 justify-center`} onClick={() => void handleImportCsv()}>
@@ -2714,11 +2786,11 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
             {showEditTherapist && activeTherapist && (
               <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={() => setShowEditTherapist(false)}>
-                <div className="rounded-2xl sm:rounded-3xl border p-5 sm:p-6 max-w-sm w-full space-y-4" style={{ background: "var(--color-surface-strong)", borderColor: "rgba(99,102,241,0.25)" }} onClick={(e) => e.stopPropagation()}>
+                <div className="rounded-2xl sm:rounded-3xl border p-5 sm:p-6 max-w-sm w-full space-y-4" style={{ background: "var(--color-surface-strong)", borderColor: "rgba(15, 110, 99,0.25)" }} onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(99,102,241,0.15)" }}>
-                        <Edit2 size={18} style={{ color: "#818cf8" }} />
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(15, 110, 99,0.15)" }}>
+                        <Edit2 size={18} style={{ color: "#35b0a0" }} />
                       </div>
                       <div>
                         <h3 className="font-extrabold text-(--color-text-strong) m-0">Profili Düzenle</h3>
@@ -2750,7 +2822,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   <div className="flex gap-2 pt-1">
                     <button type="button"
                       className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white border-none cursor-pointer transition-all hover:opacity-90"
-                      style={{ background: "linear-gradient(135deg, #6366f1, #818cf8)" }}
+                      style={{ background: "linear-gradient(135deg, #0f6e63, #35b0a0)" }}
                       onClick={() => void handleUpdateTherapist()}>
                       Kaydet
                     </button>
@@ -2785,8 +2857,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               <div className="rounded-2xl border border-(--color-line) p-12 text-center flex flex-col items-center gap-4"
                 style={{ background: "var(--color-surface-strong)" }}>
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                  style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)" }}>
-                  <Users size={28} strokeWidth={1.5} style={{ color: "#818cf8" }} />
+                  style={{ background: "rgba(15, 110, 99,0.1)", border: "1px solid rgba(15, 110, 99,0.2)" }}>
+                  <Users size={28} strokeWidth={1.5} style={{ color: "#35b0a0" }} />
                 </div>
                 <div>
                   <p className="text-(--color-text-strong) font-semibold m-0 mb-1">Henüz danışan eklenmedi</p>
@@ -2805,19 +2877,19 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   const clientScores = platformOverview.recentSessions.filter((s) => s.clientId === client.id);
                   const bestScore = clientScores.length > 0 ? Math.max(...clientScores.map(s => s.score)) : 0;
                   const avatarPalette = theme === "light" ? [
-                    { bg: "rgba(99,102,241,0.10)", color: "#4338ca", border: "rgba(99,102,241,0.25)", glow: "rgba(99,102,241,0.1)", gradLine: "rgba(99,102,241,0.3)" },
-                    { bg: "rgba(16,185,129,0.10)", color: "#047857", border: "rgba(16,185,129,0.25)", glow: "rgba(16,185,129,0.08)", gradLine: "rgba(16,185,129,0.3)" },
-                    { bg: "rgba(245,158,11,0.10)", color: "#b45309", border: "rgba(245,158,11,0.25)", glow: "rgba(245,158,11,0.08)", gradLine: "rgba(245,158,11,0.3)" },
-                    { bg: "rgba(6,182,212,0.10)", color: "#0e7490", border: "rgba(6,182,212,0.25)", glow: "rgba(6,182,212,0.08)", gradLine: "rgba(6,182,212,0.3)" },
-                    { bg: "rgba(168,85,247,0.10)", color: "#7c3aed", border: "rgba(168,85,247,0.25)", glow: "rgba(168,85,247,0.08)", gradLine: "rgba(168,85,247,0.3)" },
-                    { bg: "rgba(236,72,153,0.10)", color: "#be185d", border: "rgba(236,72,153,0.25)", glow: "rgba(236,72,153,0.08)", gradLine: "rgba(236,72,153,0.3)" },
+                    { bg: "rgba(15, 110, 99,0.10)", color: "#094a43", border: "rgba(15, 110, 99,0.25)", glow: "rgba(15, 110, 99,0.1)", gradLine: "rgba(15, 110, 99,0.3)" },
+                    { bg: "rgba(122, 172, 58,0.10)", color: "#047857", border: "rgba(122, 172, 58,0.25)", glow: "rgba(122, 172, 58,0.08)", gradLine: "rgba(122, 172, 58,0.3)" },
+                    { bg: "rgba(192, 124, 44,0.10)", color: "#b45309", border: "rgba(192, 124, 44,0.25)", glow: "rgba(192, 124, 44,0.08)", gradLine: "rgba(192, 124, 44,0.3)" },
+                    { bg: "rgba(79, 147, 181,0.10)", color: "#0e7490", border: "rgba(79, 147, 181,0.25)", glow: "rgba(79, 147, 181,0.08)", gradLine: "rgba(79, 147, 181,0.3)" },
+                    { bg: "rgba(168,85,247,0.10)", color: "#0b554c", border: "rgba(168,85,247,0.25)", glow: "rgba(168,85,247,0.08)", gradLine: "rgba(168,85,247,0.3)" },
+                    { bg: "rgba(196, 97, 74,0.10)", color: "#be185d", border: "rgba(196, 97, 74,0.25)", glow: "rgba(196, 97, 74,0.08)", gradLine: "rgba(196, 97, 74,0.3)" },
                   ] : [
-                    { bg: "rgba(99,102,241,0.18)", color: "#a5b4fc", border: "rgba(99,102,241,0.3)", glow: "rgba(99,102,241,0.12)", gradLine: "rgba(99,102,241,0.4)" },
-                    { bg: "rgba(16,185,129,0.18)", color: "#6ee7b7", border: "rgba(16,185,129,0.3)", glow: "rgba(16,185,129,0.1)", gradLine: "rgba(16,185,129,0.4)" },
-                    { bg: "rgba(245,158,11,0.18)", color: "#fcd34d", border: "rgba(245,158,11,0.3)", glow: "rgba(245,158,11,0.1)", gradLine: "rgba(245,158,11,0.4)" },
-                    { bg: "rgba(6,182,212,0.18)", color: "#67e8f9", border: "rgba(6,182,212,0.3)", glow: "rgba(6,182,212,0.1)", gradLine: "rgba(6,182,212,0.4)" },
+                    { bg: "rgba(15, 110, 99,0.18)", color: "#5bc6b8", border: "rgba(15, 110, 99,0.3)", glow: "rgba(15, 110, 99,0.12)", gradLine: "rgba(15, 110, 99,0.4)" },
+                    { bg: "rgba(122, 172, 58,0.18)", color: "#c2dd95", border: "rgba(122, 172, 58,0.3)", glow: "rgba(122, 172, 58,0.1)", gradLine: "rgba(122, 172, 58,0.4)" },
+                    { bg: "rgba(192, 124, 44,0.18)", color: "#efc98c", border: "rgba(192, 124, 44,0.3)", glow: "rgba(192, 124, 44,0.1)", gradLine: "rgba(192, 124, 44,0.4)" },
+                    { bg: "rgba(79, 147, 181,0.18)", color: "#67e8f9", border: "rgba(79, 147, 181,0.3)", glow: "rgba(79, 147, 181,0.1)", gradLine: "rgba(79, 147, 181,0.4)" },
                     { bg: "rgba(168,85,247,0.18)", color: "#d8b4fe", border: "rgba(168,85,247,0.3)", glow: "rgba(168,85,247,0.1)", gradLine: "rgba(168,85,247,0.4)" },
-                    { bg: "rgba(236,72,153,0.18)", color: "#f9a8d4", border: "rgba(236,72,153,0.3)", glow: "rgba(236,72,153,0.1)", gradLine: "rgba(236,72,153,0.4)" },
+                    { bg: "rgba(196, 97, 74,0.18)", color: "#eaa78f", border: "rgba(196, 97, 74,0.3)", glow: "rgba(196, 97, 74,0.1)", gradLine: "rgba(196, 97, 74,0.4)" },
                   ];
                   const palette = avatarPalette[clientIdx % avatarPalette.length];
                   return (
@@ -2867,7 +2939,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           if (daysSince < 14) return null;
                           return (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                              style={{ background: "rgba(245,158,11,0.1)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.25)" }}>
+                              style={{ background: "rgba(192, 124, 44,0.1)", color: "#c07c2c", border: "1px solid rgba(192, 124, 44,0.25)" }}>
                               {daysSince}g inaktif
                             </span>
                           );
@@ -2908,7 +2980,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         <button type="button"
                           title="Arşivle"
                           className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border cursor-pointer transition-all hover:opacity-80"
-                          style={{ background: "rgba(245,158,11,0.1)", borderColor: "rgba(245,158,11,0.25)", color: "#f59e0b" }}
+                          style={{ background: "rgba(192, 124, 44,0.1)", borderColor: "rgba(192, 124, 44,0.25)", color: "#c07c2c" }}
                           onClick={() => setArchiveTargetId(client.id)}>
                           <Archive size={13} />
                         </button>
@@ -2926,16 +2998,16 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           const isLight = theme === "light";
           const clientIdx = clientOptions.findIndex((c) => c.id === selectedClientId);
           const palette = (isLight ? [
-            { bg: "rgba(99,102,241,0.10)", color: "#4338ca", border: "rgba(99,102,241,0.25)", glow: "rgba(99,102,241,0.08)", gradientFrom: "rgba(99,102,241,0.07)" },
-            { bg: "rgba(16,185,129,0.10)", color: "#047857", border: "rgba(16,185,129,0.25)", glow: "rgba(16,185,129,0.08)", gradientFrom: "rgba(16,185,129,0.07)" },
-            { bg: "rgba(245,158,11,0.10)", color: "#b45309", border: "rgba(245,158,11,0.25)", glow: "rgba(245,158,11,0.08)", gradientFrom: "rgba(245,158,11,0.07)" },
-            { bg: "rgba(6,182,212,0.10)",  color: "#0e7490", border: "rgba(6,182,212,0.25)",  glow: "rgba(6,182,212,0.08)",  gradientFrom: "rgba(6,182,212,0.07)" },
-            { bg: "rgba(168,85,247,0.10)", color: "#7c3aed", border: "rgba(168,85,247,0.25)", glow: "rgba(168,85,247,0.08)", gradientFrom: "rgba(168,85,247,0.07)" },
+            { bg: "rgba(15, 110, 99,0.10)", color: "#094a43", border: "rgba(15, 110, 99,0.25)", glow: "rgba(15, 110, 99,0.08)", gradientFrom: "rgba(15, 110, 99,0.07)" },
+            { bg: "rgba(122, 172, 58,0.10)", color: "#047857", border: "rgba(122, 172, 58,0.25)", glow: "rgba(122, 172, 58,0.08)", gradientFrom: "rgba(122, 172, 58,0.07)" },
+            { bg: "rgba(192, 124, 44,0.10)", color: "#b45309", border: "rgba(192, 124, 44,0.25)", glow: "rgba(192, 124, 44,0.08)", gradientFrom: "rgba(192, 124, 44,0.07)" },
+            { bg: "rgba(79, 147, 181,0.10)",  color: "#0e7490", border: "rgba(79, 147, 181,0.25)",  glow: "rgba(79, 147, 181,0.08)",  gradientFrom: "rgba(79, 147, 181,0.07)" },
+            { bg: "rgba(168,85,247,0.10)", color: "#0b554c", border: "rgba(168,85,247,0.25)", glow: "rgba(168,85,247,0.08)", gradientFrom: "rgba(168,85,247,0.07)" },
           ] : [
-            { bg: "rgba(99,102,241,0.18)", color: "#a5b4fc", border: "rgba(99,102,241,0.35)", glow: "rgba(99,102,241,0.18)", gradientFrom: "rgba(99,102,241,0.12)" },
-            { bg: "rgba(16,185,129,0.18)", color: "#6ee7b7", border: "rgba(16,185,129,0.35)", glow: "rgba(16,185,129,0.14)", gradientFrom: "rgba(16,185,129,0.12)" },
-            { bg: "rgba(245,158,11,0.18)", color: "#fcd34d", border: "rgba(245,158,11,0.35)", glow: "rgba(245,158,11,0.14)", gradientFrom: "rgba(245,158,11,0.12)" },
-            { bg: "rgba(6,182,212,0.18)",  color: "#67e8f9", border: "rgba(6,182,212,0.35)",  glow: "rgba(6,182,212,0.14)",  gradientFrom: "rgba(6,182,212,0.12)" },
+            { bg: "rgba(15, 110, 99,0.18)", color: "#5bc6b8", border: "rgba(15, 110, 99,0.35)", glow: "rgba(15, 110, 99,0.18)", gradientFrom: "rgba(15, 110, 99,0.12)" },
+            { bg: "rgba(122, 172, 58,0.18)", color: "#c2dd95", border: "rgba(122, 172, 58,0.35)", glow: "rgba(122, 172, 58,0.14)", gradientFrom: "rgba(122, 172, 58,0.12)" },
+            { bg: "rgba(192, 124, 44,0.18)", color: "#efc98c", border: "rgba(192, 124, 44,0.35)", glow: "rgba(192, 124, 44,0.14)", gradientFrom: "rgba(192, 124, 44,0.12)" },
+            { bg: "rgba(79, 147, 181,0.18)",  color: "#67e8f9", border: "rgba(79, 147, 181,0.35)",  glow: "rgba(79, 147, 181,0.14)",  gradientFrom: "rgba(79, 147, 181,0.12)" },
             { bg: "rgba(168,85,247,0.18)", color: "#d8b4fe", border: "rgba(168,85,247,0.35)", glow: "rgba(168,85,247,0.14)", gradientFrom: "rgba(168,85,247,0.12)" },
           ])[clientIdx % 5];
           const clientSessions = platformOverview.recentSessions.filter((s) => s.clientId === selectedClientId);
@@ -2976,7 +3048,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         {selectedClient.supportLevel && <span className="text-xs font-bold px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full hidden sm:inline-flex" style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>{selectedClient.supportLevel}</span>}
                         {selectedClient.difficultyLevel && (
                           <span className="text-xs font-bold px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full hidden sm:inline-flex items-center gap-1"
-                            style={{ background: "rgba(245,158,11,0.1)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.25)" }}>
+                            style={{ background: "rgba(192, 124, 44,0.1)", color: "#c07c2c", border: "1px solid rgba(192, 124, 44,0.25)" }}>
                             🎯 {selectedClient.difficultyLevel}
                           </span>
                         )}
@@ -3008,14 +3080,14 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   {/* ── Achievement badges ── */}
                   {(() => {
                     const badges: { emoji: string; label: string; color: string }[] = [];
-                    if (clientSessions.length >= 1)  badges.push({ emoji: "🎯", label: "İlk Seans", color: "#818cf8" });
-                    if (clientSessions.length >= 5)  badges.push({ emoji: "🔥", label: "5 Seans", color: "#f59e0b" });
-                    if (clientSessions.length >= 10) badges.push({ emoji: "⭐", label: "10 Seans", color: "#fbbf24" });
-                    if (clientSessions.length >= 25) badges.push({ emoji: "🏆", label: "25 Seans", color: "#34d399" });
-                    if (bestScore >= 10)  badges.push({ emoji: "💡", label: "Yüksek Skor", color: "#38bdf8" });
-                    if (bestScore >= 20)  badges.push({ emoji: "🚀", label: "Üst Düzey", color: "#a78bfa" });
-                    if (clientGoals.some(g => g.currentValue >= g.targetValue)) badges.push({ emoji: "✅", label: "Hedef Tamamlandı", color: "#10b981" });
-                    if (clientNotes.length >= 5) badges.push({ emoji: "📋", label: "Notlu Terapist", color: "#ec4899" });
+                    if (clientSessions.length >= 1)  badges.push({ emoji: "🎯", label: "İlk Seans", color: "#35b0a0" });
+                    if (clientSessions.length >= 5)  badges.push({ emoji: "🔥", label: "5 Seans", color: "#c07c2c" });
+                    if (clientSessions.length >= 10) badges.push({ emoji: "⭐", label: "10 Seans", color: "#e3a75c" });
+                    if (clientSessions.length >= 25) badges.push({ emoji: "🏆", label: "25 Seans", color: "#9cc65e" });
+                    if (bestScore >= 10)  badges.push({ emoji: "💡", label: "Yüksek Skor", color: "#7fb2cc" });
+                    if (bestScore >= 20)  badges.push({ emoji: "🚀", label: "Üst Düzey", color: "#35b0a0" });
+                    if (clientGoals.some(g => g.currentValue >= g.targetValue)) badges.push({ emoji: "✅", label: "Hedef Tamamlandı", color: "#7aac3a" });
+                    if (clientNotes.length >= 5) badges.push({ emoji: "📋", label: "Notlu Terapist", color: "#c4614a" });
                     if (badges.length === 0) return null;
                     return (
                       <div className="flex flex-wrap gap-1.5 mb-4">
@@ -3034,10 +3106,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     <div className="flex flex-wrap gap-1.5 items-center">
                       {(selectedClient.tags ?? []).map(tag => (
                         <span key={tag} className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full border"
-                          style={{ background: "rgba(99,102,241,0.1)", color: "#818cf8", borderColor: "rgba(99,102,241,0.25)" }}>
+                          style={{ background: "rgba(15, 110, 99,0.1)", color: "#35b0a0", borderColor: "rgba(15, 110, 99,0.25)" }}>
                           {tag}
                           <button type="button" className="cursor-pointer bg-transparent border-none p-0 leading-none opacity-60 hover:opacity-100 transition-opacity"
-                            style={{ color: "#818cf8" }}
+                            style={{ color: "#35b0a0" }}
                             onClick={() => {
                               const newTags = (selectedClient.tags ?? []).filter(t => t !== tag);
                               void handleUpdateClientTags(selectedClient.id, newTags);
@@ -3074,12 +3146,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           }}
                           placeholder="Etiket yaz, Enter ile ekle"
                           className="text-[11px] font-semibold px-2.5 py-1 rounded-full outline-none w-36"
-                          style={{ background: "rgba(99,102,241,0.1)", color: "#818cf8", border: "1px dashed rgba(99,102,241,0.4)" }}
+                          style={{ background: "rgba(15, 110, 99,0.1)", color: "#35b0a0", border: "1px dashed rgba(15, 110, 99,0.4)" }}
                         />
                       ) : (
                         <button type="button"
                           className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full cursor-pointer border-none transition-opacity hover:opacity-100 opacity-50"
-                          style={{ background: "rgba(99,102,241,0.08)", color: "#818cf8", border: "1px dashed rgba(99,102,241,0.3)" }}
+                          style={{ background: "rgba(15, 110, 99,0.08)", color: "#35b0a0", border: "1px dashed rgba(15, 110, 99,0.3)" }}
                           onClick={() => setShowTagInput(true)}>
                           + Etiket
                         </button>
@@ -3162,7 +3234,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         data-tooltip="Seans verilerinden SOAP özeti üret"
                         data-tooltip-dir="top"
                         className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl cursor-pointer border transition-all hover:opacity-80 active:scale-95"
-                        style={{ background: "rgba(167,139,250,0.08)", borderColor: "rgba(167,139,250,0.25)", color: "#a78bfa" }}
+                        style={{ background: "rgba(53, 176, 160,0.08)", borderColor: "rgba(53, 176, 160,0.25)", color: "#35b0a0" }}
                         onClick={() => {
                           const suggestion = generateTherapySuggestions(selectedClient, platformOverview.recentSessions);
                           const s = suggestion.soapDraft;
@@ -3196,7 +3268,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       {(noteSearch || noteFilterFrom || noteFilterTo) && (
                         <button type="button" onClick={() => { setNoteSearch(""); setNoteFilterFrom(""); setNoteFilterTo(""); }}
                           className="px-3 py-2 rounded-xl text-xs font-bold border cursor-pointer hover:opacity-80"
-                          style={{ background: "rgba(239,68,68,0.1)", borderColor: "rgba(239,68,68,0.25)", color: "#ef4444" }}>
+                          style={{ background: "rgba(209, 80, 60,0.1)", borderColor: "rgba(209, 80, 60,0.25)", color: "#d1503c" }}>
                           Temizle
                         </button>
                       )}
@@ -3335,15 +3407,15 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                                     <div className="flex items-center gap-1.5 flex-wrap">
                                       <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>{formatDate(note.date)}</span>
                                       {noteTypeLabel && (
-                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(99,102,241,0.1)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.2)" }}>{noteTypeLabel}</span>
+                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(15, 110, 99,0.1)", color: "#35b0a0", border: "1px solid rgba(15, 110, 99,0.2)" }}>{noteTypeLabel}</span>
                                       )}
                                       {sameDaySessions.length > 0 && sameDaySessions.map(s => (
-                                        <span key={s.id} className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(52,211,153,0.08)", color: "#34d399", border: "1px solid rgba(52,211,153,0.2)" }}>
+                                        <span key={s.id} className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(156, 198, 94,0.08)", color: "#9cc65e", border: "1px solid rgba(156, 198, 94,0.2)" }}>
                                           {s.gameLabel} · {s.score}p{s.durationSeconds ? ` · ${Math.round(s.durationSeconds / 60)}dk` : ""}
                                         </span>
                                       ))}
                                     </div>
-                                    <button type="button" className="text-[10px] font-bold px-2 py-1 rounded-lg border-none cursor-pointer shrink-0 hover:opacity-70 transition-opacity" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }} onClick={() => { void handleDeleteNoteDB(note.id); }}>Sil</button>
+                                    <button type="button" className="text-[10px] font-bold px-2 py-1 rounded-lg border-none cursor-pointer shrink-0 hover:opacity-70 transition-opacity" style={{ background: "rgba(209, 80, 60,0.1)", color: "#d1503c" }} onClick={() => { void handleDeleteNoteDB(note.id); }}>Sil</button>
                                   </div>
                                   <p className="text-(--color-text-body) text-sm m-0 leading-relaxed">{note.content}</p>
                                 </div>
@@ -3372,18 +3444,18 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       <div className="rounded-2xl border border-(--color-line) p-4" style={{ background: "var(--color-surface-strong)" }}>
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted)">Haftalık Tamamlanma</span>
-                          <span className="text-sm font-extrabold tabular-nums" style={{ color: totalDone === totalPlan ? "#10b981" : pct > 50 ? "#f59e0b" : "var(--color-primary)" }}>
+                          <span className="text-sm font-extrabold tabular-nums" style={{ color: totalDone === totalPlan ? "#7aac3a" : pct > 50 ? "#c07c2c" : "var(--color-primary)" }}>
                             {totalDone}/{totalPlan} · %{pct}
                           </span>
                         </div>
                         <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--color-surface-elevated)" }}>
                           <div className="h-full rounded-full transition-all duration-500" style={{
                             width: `${pct}%`,
-                            background: totalDone === totalPlan ? "linear-gradient(90deg,#10b981,#059669)" : pct > 50 ? "linear-gradient(90deg,#f59e0b,#10b981)" : "linear-gradient(90deg,var(--color-primary),#8b5cf6)",
+                            background: totalDone === totalPlan ? "linear-gradient(90deg,#7aac3a,#4f7a22)" : pct > 50 ? "linear-gradient(90deg,#c07c2c,#7aac3a)" : "linear-gradient(90deg,var(--color-primary),#14847a)",
                           }} />
                         </div>
                         {totalDone === totalPlan && totalPlan > 0 && (
-                          <p className="text-xs text-emerald-500 font-bold m-0 mt-2">🎉 Haftalık plan tamamlandı!</p>
+                          <p className="text-xs text-[#7aac3a] font-bold m-0 mt-2">🎉 Haftalık plan tamamlandı!</p>
                         )}
                       </div>
                     );
@@ -3462,7 +3534,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                                   <div className="flex items-center gap-2">
                                     <span className="text-xs text-(--color-text-muted)">{entries.length} aktivite</span>
                                     {completedCount > 0 && (
-                                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(16,185,129,0.12)", color: "#10b981" }}>
+                                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(122, 172, 58,0.12)", color: "#7aac3a" }}>
                                         {completedCount}/{entries.length} ✓
                                       </span>
                                     )}
@@ -3475,9 +3547,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                             <button type="button"
                               className="shrink-0 text-xs font-semibold px-3 py-2 sm:py-1.5 rounded-xl border cursor-pointer transition-all hover:opacity-75"
                               style={{
-                                background: isToday ? palette.bg : (isLight ? "rgba(99,102,241,0.08)" : "rgba(99,102,241,0.1)"),
-                                borderColor: isToday ? palette.border : (isLight ? "rgba(99,102,241,0.2)" : "rgba(99,102,241,0.18)"),
-                                color: isToday ? palette.color : (isLight ? "#4338ca" : "#818cf8"),
+                                background: isToday ? palette.bg : (isLight ? "rgba(15, 110, 99,0.08)" : "rgba(15, 110, 99,0.1)"),
+                                borderColor: isToday ? palette.border : (isLight ? "rgba(15, 110, 99,0.2)" : "rgba(15, 110, 99,0.18)"),
+                                color: isToday ? palette.color : (isLight ? "#094a43" : "#35b0a0"),
                               }}
                               onClick={() => { setPlanEdits((current) => ({ ...current, [day]: [...current[day], { gameKey: "memory" as PlatformGameKey, goal: "" }] })); }}>
                               + Oyun Ekle
@@ -3491,8 +3563,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                               <div className="pt-1 space-y-2">
                                 {entries.map((entry, entryIndex) => (
                                   <div key={entryIndex} className="flex items-start gap-2.5 sm:gap-3 rounded-xl px-2.5 sm:px-3 py-2.5 transition-all" style={{
-                                    background: entry.completed ? "rgba(16,185,129,0.06)" : (isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)"),
-                                    border: `1px solid ${entry.completed ? "rgba(16,185,129,0.2)" : (isToday ? palette.border : "var(--color-line)")}`,
+                                    background: entry.completed ? "rgba(122, 172, 58,0.06)" : (isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)"),
+                                    border: `1px solid ${entry.completed ? "rgba(122, 172, 58,0.2)" : (isToday ? palette.border : "var(--color-line)")}`,
                                     opacity: entry.completed ? 0.75 : 1,
                                   }}>
                                     {/* Completed checkbox */}
@@ -3540,7 +3612,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                                     {/* Delete */}
                                     <button type="button"
                                       className="shrink-0 w-8 h-8 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center border-none cursor-pointer text-sm sm:text-xs font-bold transition-opacity hover:opacity-70"
-                                      style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }}
+                                      style={{ background: "rgba(209, 80, 60,0.1)", color: "#d1503c" }}
                                       aria-label={`${GAME_LABELS[entry.gameKey] ?? entry.gameKey} aktivitesini sil`}
                                       onClick={() => { setPlanEdits((current) => { const updated = current[day].filter((_, i) => i !== entryIndex); return { ...current, [day]: updated }; }); }}>
                                       ×
@@ -3581,8 +3653,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     if (activeGoals.length === 0) return null;
                     return (
                       <div className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
-                        <div className="px-4 py-3 border-b border-(--color-line)" style={{ background: "rgba(99,102,241,0.06)" }}>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400 m-0">🎯 Hedef Bazlı Oyun Önerisi</p>
+                        <div className="px-4 py-3 border-b border-(--color-line)" style={{ background: "rgba(15, 110, 99,0.06)" }}>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-[#35b0a0] m-0">🎯 Hedef Bazlı Oyun Önerisi</p>
                         </div>
                         <div className="p-4 space-y-3">
                           {activeGoals.slice(0, 3).map(goal => {
@@ -3609,7 +3681,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                                         });
                                       }}
                                       className="flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border cursor-pointer transition-all hover:opacity-80"
-                                      style={{ background: "rgba(99,102,241,0.08)", borderColor: "rgba(99,102,241,0.2)", color: "var(--color-primary)" }}>
+                                      style={{ background: "rgba(15, 110, 99,0.08)", borderColor: "rgba(15, 110, 99,0.2)", color: "var(--color-primary)" }}>
                                       + {GAME_LABELS[g]}
                                     </button>
                                   ))}
@@ -3732,7 +3804,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     const secondHalfAvg = sorted.slice(half).reduce((s, x) => s + x.score, 0) / Math.max(sorted.length - half, 1);
                     const trendPct = firstHalfAvg > 0 ? ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100 : 0;
                     const trendLabel = trendPct >= 8 ? "↑ Gelişiyor" : trendPct <= -8 ? "↓ Düşüş" : "→ Stabil";
-                    const trendColor = trendPct >= 8 ? "#10b981" : trendPct <= -8 ? "#ef4444" : "#f59e0b";
+                    const trendColor = trendPct >= 8 ? "#7aac3a" : trendPct <= -8 ? "#d1503c" : "#c07c2c";
                     return (
                       <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}>
                         <div className="px-4 pt-4 pb-1 flex items-center justify-between">
@@ -3779,8 +3851,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   {/* ── Per-game multi-line trend chart ── */}
                   {clientSessions.length >= 2 && (() => {
                     const GAME_COLORS: Record<string, string> = {
-                      memory: "#818cf8", pairs: "#34d399", pulse: "#f472b6",
-                      route: "#fb923c", difference: "#38bdf8", scan: "#a78bfa",
+                      memory: "#35b0a0", pairs: "#9cc65e", pulse: "#de8265",
+                      route: "#fb923c", difference: "#7fb2cc", scan: "#35b0a0",
                     };
                     // Collect all unique dates and per-game series
                     const sorted = [...clientSessions].sort((a, b) => (a.playedAt ?? "").localeCompare(b.playedAt ?? ""));
@@ -3876,18 +3948,18 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     const isFatiguing = recent3Avg !== null && recent3Avg < avgDur * 0.75;
                     const isImproving = recent3Avg !== null && recent3Avg > avgDur * 1.1;
                     return (
-                      <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: isFatiguing ? "rgba(245,158,11,0.3)" : "var(--color-line)" }}>
-                        {isFatiguing && <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg,#f59e0b,transparent)" }} />}
+                      <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: isFatiguing ? "rgba(192, 124, 44,0.3)" : "var(--color-line)" }}>
+                        {isFatiguing && <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg,#c07c2c,transparent)" }} />}
                         <div className="p-4 space-y-3">
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-extrabold uppercase tracking-wider text-(--color-text-muted)">Seans Süresi</span>
                             {isFatiguing && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(245,158,11,0.12)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.25)" }}>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(192, 124, 44,0.12)", color: "#c07c2c", border: "1px solid rgba(192, 124, 44,0.25)" }}>
                                 ⚠ Yorgunluk olabilir
                               </span>
                             )}
                             {isImproving && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(16,185,129,0.12)", color: "#10b981", border: "1px solid rgba(16,185,129,0.25)" }}>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(122, 172, 58,0.12)", color: "#7aac3a", border: "1px solid rgba(122, 172, 58,0.25)" }}>
                                 ↗ Süre artıyor
                               </span>
                             )}
@@ -4066,7 +4138,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       <div className="space-y-3">
                         <h4 className="text-xs font-extrabold uppercase tracking-widest text-(--color-text-muted) m-0">Hedef Bazlı İlerleme</h4>
                         {goalAverages.map((ga) => {
-                          const barColor = ga.average >= 75 ? "#10b981" : ga.average >= 50 ? "#f59e0b" : ga.average >= 25 ? "#2563eb" : "#ef4444";
+                          const barColor = ga.average >= 75 ? "#7aac3a" : ga.average >= 50 ? "#c07c2c" : ga.average >= 25 ? "#0d5f56" : "#d1503c";
                           const barLabel = ga.average >= 75 ? "Bağımsız" : ga.average >= 50 ? "Min. Yardım" : ga.average >= 25 ? "Orta Yardım" : "Max. Yardım";
                           return (
                             <div key={ga.id} className="rounded-2xl border border-(--color-line) p-4" style={{ background: "var(--color-surface-strong)" }}>
@@ -4106,7 +4178,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         <h4 className="text-xs font-extrabold uppercase tracking-widest text-(--color-text-muted) m-0">Son Kayıtlar</h4>
                         {clientProgress.slice(0, 6).map((entry, i) => {
                           const goal = goals.find(g => g.id === entry.goalId);
-                          const barColor = entry.value >= 75 ? "#10b981" : entry.value >= 50 ? "#f59e0b" : "#2563eb";
+                          const barColor = entry.value >= 75 ? "#7aac3a" : entry.value >= 50 ? "#c07c2c" : "#0d5f56";
                           return (
                             <div key={entry.id} className="flex items-start gap-3 p-3.5 rounded-2xl border border-(--color-line)" style={{ background: "var(--color-surface-elevated)", animation: `result-stat-in 0.3s ease ${i * 0.05}s both` }}>
                               <div className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-white text-xs font-black" style={{ background: barColor }}>
@@ -4176,7 +4248,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       {clientGoals.map((g, i) => {
                         const pct = Math.round((g.currentValue / Math.max(g.targetValue, 1)) * 100);
                         const clampedPct = Math.min(pct, 100);
-                        const goalColor = clampedPct >= 100 ? "#10b981" : clampedPct >= 60 ? "#f59e0b" : palette.color;
+                        const goalColor = clampedPct >= 100 ? "#7aac3a" : clampedPct >= 60 ? "#c07c2c" : palette.color;
                         const isOverdue = g.deadline && g.deadline < getTodayString() && clampedPct < 100;
                         return (
                           <div key={g.id} className="rounded-2xl border border-(--color-line) p-4 space-y-3" style={{ background: "var(--color-surface-strong)", animation: `result-stat-in 0.3s ease ${i * 0.06}s both` }}>
@@ -4184,14 +4256,14 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="text-sm font-bold text-(--color-text-strong)">{g.title}</span>
-                                  {clampedPct >= 100 && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ background: "#10b981" }}>✓ Tamamlandı</span>}
-                                  {isOverdue && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ background: "#ef4444" }}>Gecikmiş</span>}
+                                  {clampedPct >= 100 && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ background: "#7aac3a" }}>✓ Tamamlandı</span>}
+                                  {isOverdue && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ background: "#d1503c" }}>Gecikmiş</span>}
                                 </div>
                                 {g.description && <p className="text-xs text-(--color-text-muted) m-0 mt-0.5">{g.description}</p>}
                                 {g.deadline && <p className="text-[10px] text-(--color-text-muted) m-0 mt-0.5">Son tarih: {g.deadline}</p>}
                               </div>
                               <button type="button" onClick={() => handleDeleteGoal(g.id)}
-                                className="text-(--color-text-muted) hover:text-red-400 transition-colors cursor-pointer border-none bg-transparent p-1 shrink-0">
+                                className="text-(--color-text-muted) hover:text-[#de8265] transition-colors cursor-pointer border-none bg-transparent p-1 shrink-0">
                                 <X size={14} />
                               </button>
                             </div>
@@ -4207,7 +4279,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                             <div className="flex items-center gap-2">
                               <input type="range" min={0} max={g.targetValue} value={g.currentValue}
                                 onChange={e => handleUpdateGoalProgress(g.id, Number(e.target.value))}
-                                className="flex-1 h-1.5 rounded-full cursor-pointer accent-indigo-500" />
+                                className="flex-1 h-1.5 rounded-full cursor-pointer accent-[#14847a]" />
                               <span className="text-[10px] text-(--color-text-muted) shrink-0 w-16 text-right tabular-nums">{g.currentValue}/{g.targetValue}</span>
                             </div>
                           </div>
@@ -4222,14 +4294,14 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               {clientDetailTab === "suggestions" && (() => {
                 const suggestion = generateTherapySuggestions(selectedClient, platformOverview.recentSessions);
                 const trendIcon = suggestion.overallTrend === "improving" ? "📈" : suggestion.overallTrend === "declining" ? "📉" : suggestion.overallTrend === "insufficient_data" ? "🔍" : "➡️";
-                const trendColor = suggestion.overallTrend === "improving" ? "#10b981" : suggestion.overallTrend === "declining" ? "#ef4444" : "#f59e0b";
+                const trendColor = suggestion.overallTrend === "improving" ? "#7aac3a" : suggestion.overallTrend === "declining" ? "#d1503c" : "#c07c2c";
                 return (
                   <div className="space-y-4">
                     {/* Header */}
                     <div className="relative overflow-hidden rounded-2xl border border-(--color-line) p-4" style={{ background: "var(--color-surface-strong)" }}>
-                      <div className="h-0.5 w-full absolute top-0 left-0" style={{ background: "linear-gradient(90deg,#6366f1,#a78bfa,#ec4899)" }} />
+                      <div className="h-0.5 w-full absolute top-0 left-0" style={{ background: "linear-gradient(90deg,#0f6e63,#35b0a0,#c4614a)" }} />
                       <div className="flex items-start gap-3 mt-1">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0" style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.2)" }}>🤖</div>
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0" style={{ background: "rgba(15, 110, 99,0.12)", border: "1px solid rgba(15, 110, 99,0.2)" }}>🤖</div>
                         <div>
                           <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0 mb-1">Akıllı Terapi Analizi</h3>
                           <p className="text-(--color-text-muted) text-xs m-0">{suggestion.performanceSummary}</p>
@@ -4251,16 +4323,16 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     {/* Strengths */}
                     {suggestion.strengths.length > 0 && (
                       <div className="space-y-2">
-                        <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-500 m-0">✅ Güçlü Alanlar</h4>
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-[#7aac3a] m-0">✅ Güçlü Alanlar</h4>
                         <div className="grid grid-cols-1 gap-2">
                           {suggestion.strengths.map(s => (
-                            <div key={s.gameKey} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-(--color-line)" style={{ background: "rgba(16,185,129,0.06)" }}>
+                            <div key={s.gameKey} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-(--color-line)" style={{ background: "rgba(122, 172, 58,0.06)" }}>
                               <span className="text-base shrink-0">⭐</span>
                               <div className="flex-1">
                                 <span className="text-xs font-bold text-(--color-text-strong)">{s.label}</span>
-                                <span className="text-[10px] text-emerald-500 ml-2">{s.trend === "improving" ? "↑ Gelişiyor" : "→ Stabil"}</span>
+                                <span className="text-[10px] text-[#7aac3a] ml-2">{s.trend === "improving" ? "↑ Gelişiyor" : "→ Stabil"}</span>
                               </div>
-                              <span className="text-xs font-extrabold tabular-nums text-emerald-400">~{s.last3Avg}p</span>
+                              <span className="text-xs font-extrabold tabular-nums text-[#9cc65e]">~{s.last3Avg}p</span>
                             </div>
                           ))}
                         </div>
@@ -4270,10 +4342,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     {/* Attention areas */}
                     {suggestion.attentionAreas.length > 0 && (
                       <div className="space-y-2">
-                        <h4 className="text-[10px] font-black uppercase tracking-widest text-amber-500 m-0">⚠️ Dikkat Gereken Alanlar</h4>
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-[#c07c2c] m-0">⚠️ Dikkat Gereken Alanlar</h4>
                         <div className="grid grid-cols-1 gap-2">
                           {suggestion.attentionAreas.map(a => (
-                            <div key={a.gameKey} className="flex items-start gap-3 px-3 py-2.5 rounded-xl border border-(--color-line)" style={{ background: "rgba(245,158,11,0.06)" }}>
+                            <div key={a.gameKey} className="flex items-start gap-3 px-3 py-2.5 rounded-xl border border-(--color-line)" style={{ background: "rgba(192, 124, 44,0.06)" }}>
                               <span className="text-base shrink-0 mt-0.5">🎯</span>
                               <div>
                                 <span className="text-xs font-bold text-(--color-text-strong) block">{a.label}</span>
@@ -4288,8 +4360,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     {/* Recommended session set */}
                     {suggestion.recommendedSet.length > 0 && (
                       <div className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
-                        <div className="px-4 py-3 border-b border-(--color-line)" style={{ background: "rgba(99,102,241,0.08)" }}>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400 m-0">📋 Önerilen Seans Seti</p>
+                        <div className="px-4 py-3 border-b border-(--color-line)" style={{ background: "rgba(15, 110, 99,0.08)" }}>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-[#35b0a0] m-0">📋 Önerilen Seans Seti</p>
                         </div>
                         <div className="p-4 space-y-2">
                           {suggestion.recommendedSet.map((k, i) => (
@@ -4300,7 +4372,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           ))}
                           <button type="button"
                             className="w-full mt-3 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-xs text-white border-none cursor-pointer transition-all hover:opacity-90"
-                            style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}
+                            style={{ background: "linear-gradient(135deg,#0f6e63,#14847a)" }}
                             onClick={() => {
                               startCustomSessionSet("🤖 AI Önerisi", suggestion.recommendedSet);
                               setActiveAppView("games");
@@ -4313,8 +4385,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
                     {/* Protocol recommendation */}
                     {suggestion.protocolName && (
-                      <div className="px-4 py-3.5 rounded-2xl border border-(--color-line)" style={{ background: "rgba(167,139,250,0.08)" }}>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400 m-0 mb-1.5">📚 Protokol Önerisi</p>
+                      <div className="px-4 py-3.5 rounded-2xl border border-(--color-line)" style={{ background: "rgba(53, 176, 160,0.08)" }}>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-[#35b0a0] m-0 mb-1.5">📚 Protokol Önerisi</p>
                         <p className="text-sm font-bold text-(--color-text-strong) m-0 mb-1">{suggestion.protocolName}</p>
                         <p className="text-xs text-(--color-text-muted) m-0">Danışanın hedefleriyle eşleşen hazır protokol şablonu.</p>
                         <button type="button"
@@ -4328,8 +4400,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
                     {/* SOAP draft */}
                     <div className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
-                      <div className="px-4 py-3 border-b border-(--color-line)" style={{ background: "rgba(99,102,241,0.06)" }}>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400 m-0">📄 Otomatik SOAP Taslağı</p>
+                      <div className="px-4 py-3 border-b border-(--color-line)" style={{ background: "rgba(15, 110, 99,0.06)" }}>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-[#35b0a0] m-0">📄 Otomatik SOAP Taslağı</p>
                       </div>
                       <div className="p-4 space-y-3">
                         {(["s", "o", "a", "p"] as const).map(key => (
@@ -4365,7 +4437,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
         {/* ── Games View ── */}
         {activeAppView === "games" && (
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col flex-1 min-h-0">
 
             {/* ── Session Set Summary Overlay ── */}
             {sessionSet?.phase === "finished" && (
@@ -4385,15 +4457,15 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               {/* Left: title + session info */}
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, var(--color-primary), #8b5cf6)", boxShadow: "0 2px 8px var(--color-primary)/30" }}>
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, var(--color-primary), #14847a)", boxShadow: "0 2px 8px var(--color-primary)/30" }}>
                     <Gamepad2 size={15} className="text-white" />
                   </div>
                   <span className="font-bold text-(--color-text-strong) text-sm tracking-tight">Oyun Alanı</span>
                 </div>
                 <div className="w-px h-5 shrink-0" style={{ background: "var(--color-line)" }} />
-                <div className="flex items-center gap-2 rounded-full px-3 py-1.5" style={{ background: gameElapsed > 0 ? "rgba(16,185,129,0.08)" : "var(--color-primary)/8", border: gameElapsed > 0 ? "1px solid rgba(16,185,129,0.25)" : "1px solid var(--color-primary)/15" }}>
-                  <span className="w-2 h-2 rounded-full shrink-0 transition-all" style={{ background: gameElapsed > 0 ? "#10b981" : "var(--color-primary)", boxShadow: gameElapsed > 0 ? "0 0 6px rgba(16,185,129,0.7)" : "none" }} />
-                  <span className="text-xs font-semibold max-w-56 truncate" style={{ color: gameElapsed > 0 ? "#10b981" : "var(--color-primary)" }}>
+                <div className="flex items-center gap-2 rounded-full px-3 py-1.5" style={{ background: gameElapsed > 0 ? "rgba(122, 172, 58,0.08)" : "var(--color-primary)/8", border: gameElapsed > 0 ? "1px solid rgba(122, 172, 58,0.25)" : "1px solid var(--color-primary)/15" }}>
+                  <span className="w-2 h-2 rounded-full shrink-0 transition-all" style={{ background: gameElapsed > 0 ? "#7aac3a" : "var(--color-primary)", boxShadow: gameElapsed > 0 ? "0 0 6px rgba(122, 172, 58,0.7)" : "none" }} />
+                  <span className="text-xs font-semibold max-w-56 truncate" style={{ color: gameElapsed > 0 ? "#7aac3a" : "var(--color-primary)" }}>
                     {activeTherapist?.displayName ?? "—"}&nbsp;·&nbsp;{activeClient?.displayName ?? "Danışan seç"}
                   </span>
                 </div>
@@ -4408,26 +4480,26 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   const pct = topGoal.targetValue > 0 ? Math.round((topGoal.currentValue / topGoal.targetValue) * 100) : 0;
                   return (
                     <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 rounded-full border max-w-48"
-                      style={{ background: "rgba(99,102,241,0.08)", borderColor: "rgba(99,102,241,0.2)" }}>
-                      <Target size={10} style={{ color: "#818cf8", flexShrink: 0 }} />
+                      style={{ background: "rgba(15, 110, 99,0.08)", borderColor: "rgba(15, 110, 99,0.2)" }}>
+                      <Target size={10} style={{ color: "#35b0a0", flexShrink: 0 }} />
                       <span className="text-[10px] font-semibold truncate" style={{ color: "var(--color-text-soft)" }}>{topGoal.title}</span>
-                      <span className="text-[10px] font-extrabold shrink-0" style={{ color: "#818cf8" }}>{pct}%</span>
+                      <span className="text-[10px] font-extrabold shrink-0" style={{ color: "#35b0a0" }}>{pct}%</span>
                     </div>
                   );
                 })()}
-                <span className={`text-xs font-semibold rounded-full px-2.5 py-1 border ${platformStatus === "online" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : platformStatus === "schema_missing" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" : platformStatus === "error" ? "bg-red-500/10 text-red-400 border-red-500/20" : "bg-white/5 text-(--color-text-muted) border-(--color-line)"}`}>
+                <span className={`text-xs font-semibold rounded-full px-2.5 py-1 border ${platformStatus === "online" ? "bg-[#7aac3a]/10 text-[#9cc65e] border-[#7aac3a]/20" : platformStatus === "schema_missing" ? "bg-[#c07c2c]/10 text-[#e3a75c] border-[#c07c2c]/20" : platformStatus === "error" ? "bg-[#d1503c]/10 text-[#de8265] border-[#d1503c]/20" : "bg-white/5 text-(--color-text-muted) border-(--color-line)"}`}>
                   {getDatabaseStatusLabel(platformStatus)}
                 </span>
               </div>
               {/* Right: timer + back */}
               <div className="flex items-center gap-2.5">
                 <div className="flex items-center gap-2 rounded-2xl px-3 py-1.5 border" style={{
-                  background: gameElapsed > 0 ? "rgba(16,185,129,0.08)" : "var(--color-surface-strong)",
-                  borderColor: gameElapsed > 0 ? "rgba(16,185,129,0.25)" : "var(--color-line)",
+                  background: gameElapsed > 0 ? "rgba(122, 172, 58,0.08)" : "var(--color-surface-strong)",
+                  borderColor: gameElapsed > 0 ? "rgba(122, 172, 58,0.25)" : "var(--color-line)",
                 }}>
-                  <Clock size={13} style={{ color: gameElapsed > 0 ? "#10b981" : "var(--color-primary)" }} />
-                  <span className="font-mono font-bold text-sm tabular-nums" style={{ color: gameElapsed > 0 ? "#10b981" : "var(--color-text-strong)", letterSpacing: "-0.02em" }}>{formatElapsed(gameElapsed)}</span>
-                  <button type="button" className="text-[11px] font-semibold hover:opacity-70 bg-transparent border-none cursor-pointer ml-0.5 transition-opacity" style={{ color: gameElapsed > 0 ? "#10b981" : "var(--color-primary)" }} onClick={resetSessionClock}>Sıfırla</button>
+                  <Clock size={13} style={{ color: gameElapsed > 0 ? "#7aac3a" : "var(--color-primary)" }} />
+                  <span className="font-mono font-bold text-sm tabular-nums" style={{ color: gameElapsed > 0 ? "#7aac3a" : "var(--color-text-strong)", letterSpacing: "-0.02em" }}>{formatElapsed(gameElapsed)}</span>
+                  <button type="button" className="text-[11px] font-semibold hover:opacity-70 bg-transparent border-none cursor-pointer ml-0.5 transition-opacity" style={{ color: gameElapsed > 0 ? "#7aac3a" : "var(--color-primary)" }} onClick={resetSessionClock}>Sıfırla</button>
                 </div>
                 <button type="button" className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-xl border cursor-pointer transition-all hover:opacity-80" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)", color: "var(--color-text-soft)" }} onClick={() => setActiveAppView("dashboard")}>
                   ← Panel
@@ -4437,21 +4509,21 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
             {/* ── Session duration warning banner ── */}
             {gameElapsed > 0 && !sessionWarningDismissed && gameElapsed >= sessionWarnThreshold * 60 && (
-              <div className="flex items-center gap-3 px-4 py-2.5 shrink-0 border-b" style={{ background: "rgba(245,158,11,0.1)", borderColor: "rgba(245,158,11,0.25)" }}>
-                <Timer size={14} style={{ color: "#f59e0b", flexShrink: 0 }} />
-                <p className="flex-1 text-xs font-semibold m-0" style={{ color: "#f59e0b" }}>
+              <div className="flex items-center gap-3 px-4 py-2.5 shrink-0 border-b" style={{ background: "rgba(192, 124, 44,0.1)", borderColor: "rgba(192, 124, 44,0.25)" }}>
+                <Timer size={14} style={{ color: "#c07c2c", flexShrink: 0 }} />
+                <p className="flex-1 text-xs font-semibold m-0" style={{ color: "#c07c2c" }}>
                   ⏱ {sessionWarnThreshold} dakika geçti — seans sona yaklaşıyor
                 </p>
                 <div className="flex items-center gap-2 shrink-0">
                   {([30, 45, 60] as const).map(t => (
                     <button key={t} type="button"
                       className="text-[10px] font-bold px-2 py-0.5 rounded-full border cursor-pointer hover:opacity-80"
-                      style={{ background: t === sessionWarnThreshold ? "rgba(245,158,11,0.2)" : "transparent", borderColor: "rgba(245,158,11,0.3)", color: "#f59e0b" }}
+                      style={{ background: t === sessionWarnThreshold ? "rgba(192, 124, 44,0.2)" : "transparent", borderColor: "rgba(192, 124, 44,0.3)", color: "#c07c2c" }}
                       onClick={() => { setSessionWarnThreshold(t); try { localStorage.setItem("mimio-session-warn-min", String(t)); } catch { /* ignore */ } }}>
                       {t}dk
                     </button>
                   ))}
-                  <button type="button" className="text-[10px] font-bold px-2 py-0.5 rounded-full border cursor-pointer hover:opacity-80" style={{ borderColor: "rgba(245,158,11,0.3)", color: "#f59e0b" }} onClick={() => setSessionWarningDismissed(true)}>
+                  <button type="button" className="text-[10px] font-bold px-2 py-0.5 rounded-full border cursor-pointer hover:opacity-80" style={{ borderColor: "rgba(192, 124, 44,0.3)", color: "#c07c2c" }} onClick={() => setSessionWarningDismissed(true)}>
                     Kapat
                   </button>
                 </div>
@@ -4475,15 +4547,15 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               if (!weakest || weakest.key === activeGame) return null;
               const suggestedLabel = GAME_LABELS[weakest.key as PlatformGameKey] ?? weakest.key;
               return (
-                <div className="flex items-center gap-2.5 px-4 py-2 shrink-0 border-b" style={{ background: "rgba(99,102,241,0.07)", borderColor: "rgba(99,102,241,0.15)" }}>
+                <div className="flex items-center gap-2.5 px-4 py-2 shrink-0 border-b" style={{ background: "rgba(15, 110, 99,0.07)", borderColor: "rgba(15, 110, 99,0.15)" }}>
                   <span className="text-sm shrink-0">💡</span>
                   <p className="flex-1 text-xs text-(--color-text-soft) m-0">
-                    <strong style={{ color: "#818cf8" }}>{activeClient.displayName}</strong> için öneri:{" "}
-                    <span style={{ color: "#818cf8" }}>{suggestedLabel}</span> oynanmamış / en düşük skor ({weakest.avg} ort.)
+                    <strong style={{ color: "#35b0a0" }}>{activeClient.displayName}</strong> için öneri:{" "}
+                    <span style={{ color: "#35b0a0" }}>{suggestedLabel}</span> oynanmamış / en düşük skor ({weakest.avg} ort.)
                   </p>
                   <button type="button"
                     className="text-[10px] font-bold px-2.5 py-1 rounded-lg border-none cursor-pointer shrink-0 transition-opacity hover:opacity-80"
-                    style={{ background: "rgba(99,102,241,0.2)", color: "#818cf8" }}
+                    style={{ background: "rgba(15, 110, 99,0.2)", color: "#35b0a0" }}
                     onClick={() => setActiveGame(weakest.key as PlatformGameKey)}>
                     Geç →
                   </button>
@@ -4501,10 +4573,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 <select value={activeClient?.id ?? ""} onChange={(event) => setActiveClientId(event.target.value)} className="flex-1 text-xs px-2 py-1.5 border border-(--color-line) rounded-lg bg-(--color-surface-strong) text-(--color-text-body) min-w-0">
                   {clientOptions.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}</option>)}
                 </select>
-                <div className="flex items-center gap-1 rounded-lg px-2 py-1.5 border shrink-0" style={{ background: gameElapsed > 0 ? "rgba(16,185,129,0.1)" : "var(--color-surface-strong)", borderColor: gameElapsed > 0 ? "rgba(16,185,129,0.3)" : "var(--color-line)" }}>
-                  <Clock size={10} style={{ color: gameElapsed > 0 ? "#10b981" : "var(--color-text-muted)" }} />
-                  <span className="font-mono font-bold text-xs tabular-nums" style={{ color: gameElapsed > 0 ? "#10b981" : "var(--color-text-strong)" }}>{formatElapsed(gameElapsed)}</span>
-                  <button type="button" className="hover:opacity-70 bg-transparent border-none cursor-pointer ml-0.5 transition-opacity" style={{ color: gameElapsed > 0 ? "#10b981" : "var(--color-primary)" }} onClick={resetSessionClock}><RotateCcw size={9} /></button>
+                <div className="flex items-center gap-1 rounded-lg px-2 py-1.5 border shrink-0" style={{ background: gameElapsed > 0 ? "rgba(122, 172, 58,0.1)" : "var(--color-surface-strong)", borderColor: gameElapsed > 0 ? "rgba(122, 172, 58,0.3)" : "var(--color-line)" }}>
+                  <Clock size={10} style={{ color: gameElapsed > 0 ? "#7aac3a" : "var(--color-text-muted)" }} />
+                  <span className="font-mono font-bold text-xs tabular-nums" style={{ color: gameElapsed > 0 ? "#7aac3a" : "var(--color-text-strong)" }}>{formatElapsed(gameElapsed)}</span>
+                  <button type="button" className="hover:opacity-70 bg-transparent border-none cursor-pointer ml-0.5 transition-opacity" style={{ color: gameElapsed > 0 ? "#7aac3a" : "var(--color-primary)" }} onClick={resetSessionClock}><RotateCcw size={9} /></button>
                 </div>
               </div>
               {/* Row 2: category + game tabs — scroll snap */}
@@ -4521,7 +4593,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 <div className="w-px h-4 shrink-0 self-center" style={{ background: "var(--color-line)" }} />
                 {visibleTabs.map((tab) => (
                   <button key={tab.key} type="button" className={`shrink-0 px-2.5 py-1.5 rounded-full text-[11px] font-bold border cursor-pointer transition-all ${activeGame === tab.key ? "border-(--color-primary)/40 text-(--color-primary)" : "bg-(--color-surface-elevated) text-(--color-text-soft) border-(--color-line)"}`}
-                    style={activeGame === tab.key ? { background: "rgba(99,102,241,0.1)" } : {}}
+                    style={activeGame === tab.key ? { background: "rgba(15, 110, 99,0.1)" } : {}}
                     onClick={() => setActiveGame(tab.key)}>
                     {tab.title}
                   </button>
@@ -4537,25 +4609,25 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 <div className="p-3 lg:p-4 border-b border-(--color-line) space-y-2.5 lg:space-y-3">
                   {/* Status indicator */}
                   <div className="rounded-xl lg:rounded-2xl p-3 lg:p-3.5 relative overflow-hidden" style={{
-                    background: gameElapsed > 0 ? "linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0.04) 100%)" : "linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(99,102,241,0.02) 100%)",
-                    border: gameElapsed > 0 ? "1px solid rgba(16,185,129,0.25)" : "1px solid var(--color-primary)/15",
+                    background: gameElapsed > 0 ? "linear-gradient(135deg, rgba(122, 172, 58,0.12) 0%, rgba(122, 172, 58,0.04) 100%)" : "linear-gradient(135deg, rgba(15, 110, 99,0.08) 0%, rgba(15, 110, 99,0.02) 100%)",
+                    border: gameElapsed > 0 ? "1px solid rgba(122, 172, 58,0.25)" : "1px solid var(--color-primary)/15",
                   }}>
-                    <div className="absolute top-0 right-0 w-20 h-20 rounded-full pointer-events-none" style={{ background: gameElapsed > 0 ? "#10b981" : "var(--color-primary)", opacity: 0.06, filter: "blur(20px)", transform: "translate(30%,-30%)" }} />
+                    <div className="absolute top-0 right-0 w-20 h-20 rounded-full pointer-events-none" style={{ background: gameElapsed > 0 ? "#7aac3a" : "var(--color-primary)", opacity: 0.06, filter: "blur(20px)", transform: "translate(30%,-30%)" }} />
                     <div className="relative flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: gameElapsed > 0 ? "#10b981" : "#64748b", boxShadow: gameElapsed > 0 ? "0 0 8px rgba(16,185,129,0.8)" : "none" }} />
-                        <span className="text-xs font-bold" style={{ color: gameElapsed > 0 ? "#10b981" : "var(--color-text-muted)" }}>
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: gameElapsed > 0 ? "#7aac3a" : "#64748b", boxShadow: gameElapsed > 0 ? "0 0 8px rgba(122, 172, 58,0.8)" : "none" }} />
+                        <span className="text-xs font-bold" style={{ color: gameElapsed > 0 ? "#7aac3a" : "var(--color-text-muted)" }}>
                           {gameElapsed > 0 ? "Seans Aktif" : "Seans Bekliyor"}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono font-bold text-xs tabular-nums" style={{ background: gameElapsed > 0 ? "rgba(16,185,129,0.15)" : "rgba(255,255,255,0.04)", color: gameElapsed > 0 ? "#10b981" : "var(--color-text-muted)" }}>
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono font-bold text-xs tabular-nums" style={{ background: gameElapsed > 0 ? "rgba(122, 172, 58,0.15)" : "rgba(255,255,255,0.04)", color: gameElapsed > 0 ? "#7aac3a" : "var(--color-text-muted)" }}>
                         <Clock size={10} />
                         {formatElapsed(gameElapsed)}
                       </div>
                     </div>
                     {activeClient && (
                       <div className="relative flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-extrabold shrink-0" style={{ background: gameElapsed > 0 ? "rgba(16,185,129,0.2)" : "var(--color-primary)/15", color: gameElapsed > 0 ? "#10b981" : "var(--color-primary)" }}>
+                        <div className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-extrabold shrink-0" style={{ background: gameElapsed > 0 ? "rgba(122, 172, 58,0.2)" : "var(--color-primary)/15", color: gameElapsed > 0 ? "#7aac3a" : "var(--color-primary)" }}>
                           {activeClient.displayName[0]?.toUpperCase()}
                         </div>
                         <span className="text-xs font-semibold text-(--color-text-strong) truncate">{activeClient.displayName}</span>
@@ -4578,7 +4650,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         <div className="flex flex-wrap gap-1.5 mb-1">
                           {clientOptions.slice(0, 6).map((c, i) => {
                             const isActive = c.id === (activeClient?.id ?? "");
-                            const colors = ["#818cf8","#34d399","#f59e0b","#38bdf8","#a78bfa","#ec4899"];
+                            const colors = ["#35b0a0","#9cc65e","#c07c2c","#7fb2cc","#35b0a0","#c4614a"];
                             const col = colors[i % colors.length];
                             return (
                               <button key={c.id} type="button" title={c.displayName}
@@ -4603,22 +4675,22 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   </div>
 
                   {/* CTA */}
-                  <button type="button" className="w-full flex items-center justify-center gap-2 font-bold text-sm px-4 py-2.5 rounded-2xl text-white cursor-pointer border-none transition-all hover:opacity-90 active:scale-[0.98]" style={{ background: gameElapsed > 0 ? "linear-gradient(135deg, #10b981, #059669)" : "linear-gradient(135deg, var(--color-primary), #8b5cf6)", boxShadow: gameElapsed > 0 ? "0 4px 16px rgba(16,185,129,0.35)" : "0 4px 16px var(--color-primary)/35" }} onClick={resetSessionClock}>
+                  <button type="button" className="w-full flex items-center justify-center gap-2 font-bold text-sm px-4 py-2.5 rounded-2xl text-white cursor-pointer border-none transition-all hover:opacity-90 active:scale-[0.98]" style={{ background: gameElapsed > 0 ? "linear-gradient(135deg, #7aac3a, #4f7a22)" : "linear-gradient(135deg, var(--color-primary), #14847a)", boxShadow: gameElapsed > 0 ? "0 4px 16px rgba(122, 172, 58,0.35)" : "0 4px 16px var(--color-primary)/35" }} onClick={resetSessionClock}>
                     <span>{gameElapsed > 0 ? "↺" : "▶"}</span>
                     {gameElapsed > 0 ? "Yeni Seans" : "Seansı Başlat"}
                   </button>
 
                   {/* Session Set trigger */}
                   {sessionSet?.phase === "running" ? (
-                    <div className="rounded-2xl p-3" style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}>
+                    <div className="rounded-2xl p-3" style={{ background: "rgba(15, 110, 99,0.08)", border: "1px solid rgba(15, 110, 99,0.2)" }}>
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-400">Seri Aktif</span>
+                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#35b0a0]">Seri Aktif</span>
                         <button type="button" onClick={() => setSessionSet(null)} className="text-white/30 hover:text-white/60 text-xs font-bold cursor-pointer border-none bg-transparent" title="Seriyi iptal et">✕</button>
                       </div>
                       <p className="text-white/70 text-xs font-semibold m-0 mb-2">{sessionSet.presetLabel}</p>
                       <div className="flex gap-1">
                         {sessionSet.games.map((g, i) => (
-                          <div key={g} className="flex-1 h-1.5 rounded-full" style={{ background: i < sessionSet.entries.length ? "#10b981" : i === sessionSet.currentIndex ? "var(--color-primary)" : "rgba(255,255,255,0.1)" }} />
+                          <div key={g} className="flex-1 h-1.5 rounded-full" style={{ background: i < sessionSet.entries.length ? "#7aac3a" : i === sessionSet.currentIndex ? "var(--color-primary)" : "rgba(255,255,255,0.1)" }} />
                         ))}
                       </div>
                       <p className="text-white/35 text-[10px] mt-1.5 m-0">{sessionSet.entries.length}/{sessionSet.games.length} tamamlandı</p>
@@ -4627,16 +4699,16 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     <button type="button"
                       onClick={() => setShowSessionSetPicker(prev => !prev)}
                       className="w-full flex items-center justify-center gap-2 font-semibold text-xs px-4 py-2 rounded-xl cursor-pointer border transition-all hover:text-white/80"
-                      style={{ background: "rgba(99,102,241,0.06)", borderColor: "rgba(99,102,241,0.2)", color: "var(--color-primary)" }}>
+                      style={{ background: "rgba(15, 110, 99,0.06)", borderColor: "rgba(15, 110, 99,0.2)", color: "var(--color-primary)" }}>
                       ⚡ Seri Modu
                     </button>
                   )}
 
                   {/* Session Set preset picker */}
                   {showSessionSetPicker && !sessionSet && (
-                    <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(99,102,241,0.2)", background: "var(--color-surface-elevated)" }}>
+                    <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(15, 110, 99,0.2)", background: "var(--color-surface-elevated)" }}>
                       <div className="px-3 py-2 border-b border-white/5">
-                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-400">Set Seç</span>
+                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#35b0a0]">Set Seç</span>
                       </div>
                       <div className="p-2 space-y-1">
                         {SESSION_SET_PRESETS.map(preset => (
@@ -4655,54 +4727,48 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   )}
                 </div>
 
-                {/* Categories */}
+                {/* Oyun listesi — kategoriler ayrı bir blok değil, listenin başlıkları.
+                    Böylece yedi oyunun tamamı kaydırma olmadan görünür. */}
                 <div className="p-3 lg:p-4 border-b border-(--color-line)">
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-(--color-text-muted) block mb-2 lg:mb-3 px-1">Kategoriler</span>
-                  <div className="flex flex-col gap-1">
-                    {GAME_CATEGORIES.map((category) => {
-                      const isActive = activeTab.category === category.key;
-                      const CatIcon = CATEGORY_ICONS[category.key];
-                      const catCount = GAME_TABS.filter((g) => g.category === category.key).length;
-                      return (
-                        <button key={category.key} type="button" aria-pressed={isActive} className="flex items-center gap-2 lg:gap-3 px-2.5 lg:px-3 py-2 lg:py-2.5 rounded-2xl w-full text-left cursor-pointer border transition-all" style={{ background: isActive ? "var(--color-primary)/8" : "transparent", borderColor: isActive ? "var(--color-primary)/20" : "transparent" }} onClick={() => openCategory(category.key)}>
-                          <div className="w-7 h-7 lg:w-9 lg:h-9 rounded-lg lg:rounded-xl flex items-center justify-center shrink-0 transition-all" style={{ background: isActive ? "linear-gradient(135deg, var(--color-primary), #8b5cf6)" : "var(--color-surface-elevated)", color: isActive ? "white" : "var(--color-text-muted)", boxShadow: isActive ? "0 4px 12px var(--color-primary)/30" : "none" }}>
-                            <CatIcon size={14} />
-                          </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-xs lg:text-sm font-semibold truncate leading-tight" style={{ color: isActive ? "var(--color-primary)" : "var(--color-text-strong)" }}>{category.title}</span>
-                            <span className="text-[10px] lg:text-[11px]" style={{ color: isActive ? "var(--color-primary)/70" : "var(--color-text-muted)" }}>{catCount} oyun</span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Games list */}
-                <div className="p-3 lg:p-4 border-b border-(--color-line)">
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-(--color-text-muted) block mb-2 lg:mb-3 px-1">Oyunlar</span>
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-(--color-text-muted) block mb-2 px-1">Oyunlar</span>
                   {(() => {
                     const thisWeekPlan = allWeeklyPlans.find(p => p.clientId === (activeClient?.id ?? "") && p.weekStartDate === getWeekStart());
                     const plannedGameKeys = new Set(
                       thisWeekPlan ? Object.values(thisWeekPlan.days).flat().map(e => e.gameKey) : []
                     );
                     return (
-                      <div className="flex flex-col gap-1">
-                        {visibleTabs.map((tab) => {
-                          const isPlanned = plannedGameKeys.has(tab.key as PlatformGameKey);
+                      <div className="flex flex-col gap-2">
+                        {GAME_CATEGORIES.map((category) => {
+                          const tabs = GAME_TABS.filter((tab) => tab.category === category.key);
+                          if (tabs.length === 0) return null;
+                          const CatIcon = CATEGORY_ICONS[category.key];
                           return (
-                            <button key={tab.key} type="button" aria-pressed={activeGame === tab.key} className="relative flex items-center gap-2 lg:gap-3 px-2.5 lg:px-3 py-2 lg:py-2.5 rounded-2xl cursor-pointer w-full text-left transition-all" style={{ background: activeGame === tab.key ? "var(--color-primary)/8" : "transparent" }} onClick={() => setActiveGame(tab.key)}>
-                              {activeGame === tab.key && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 lg:h-6 rounded-full" style={{ background: "var(--color-primary)" }} />}
-                              <div className="flex flex-col flex-1 min-w-0">
-                                <span className="text-[9px] lg:text-[10px] font-extrabold uppercase tracking-wider" style={{ color: activeGame === tab.key ? "var(--color-primary)" : "var(--color-text-muted)" }}>{tab.kicker}</span>
-                                <span className="text-xs lg:text-sm font-semibold truncate" style={{ color: activeGame === tab.key ? "var(--color-primary)" : "var(--color-text-strong)" }}>{tab.title}</span>
+                            <div key={category.key} className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1.5 px-1 pt-1">
+                                <CatIcon size={11} className="text-(--color-text-muted) shrink-0" />
+                                <span className="text-[10px] font-bold text-(--color-text-muted) truncate">{category.title}</span>
                               </div>
-                              {isPlanned && (
-                                <span className="shrink-0 text-[9px] font-extrabold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(99,102,241,0.15)", color: "var(--color-primary)", border: "1px solid var(--color-primary)/20" }}>
-                                  📅 Plan
-                                </span>
-                              )}
-                            </button>
+                              {tabs.map((tab) => {
+                                const isActive = activeGame === tab.key;
+                                const isPlanned = plannedGameKeys.has(tab.key as PlatformGameKey);
+                                const best = scoreboard[tab.key].best;
+                                return (
+                                  <button key={tab.key} type="button" aria-pressed={isActive}
+                                    className="relative flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-xl cursor-pointer w-full text-left transition-all hover:bg-(--color-surface-elevated)"
+                                    style={{ background: isActive ? "var(--color-primary)/10" : "transparent" }}
+                                    onClick={() => setActiveGame(tab.key)}>
+                                    {isActive && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full" style={{ background: "var(--color-primary)" }} />}
+                                    <span className="text-[13px] font-semibold truncate flex-1"
+                                      style={{ color: isActive ? "var(--color-primary)" : "var(--color-text-strong)" }}>{tab.title}</span>
+                                    {isPlanned && <span className="shrink-0 text-[9px]" title="Bu haftanın planında">📅</span>}
+                                    {best > 0 && (
+                                      <span className="numeral shrink-0 text-[11px] font-bold"
+                                        style={{ color: isActive ? "var(--color-primary)" : "var(--color-text-muted)" }}>{best}</span>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           );
                         })}
                       </div>
@@ -4725,7 +4791,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           <span className="text-(--color-text-muted) text-[10px]">{card.plays}×</span>
                         </div>
                         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--color-surface-elevated)" }}>
-                          <div className="h-full rounded-full transition-all duration-500" style={{ width: card.best > 0 ? `${Math.min(100, card.best)}%` : "0%", background: "linear-gradient(90deg, var(--color-primary), #8b5cf6)" }} />
+                          <div className="h-full rounded-full transition-all duration-500" style={{ width: card.best > 0 ? `${Math.min(100, card.best)}%` : "0%", background: "linear-gradient(90deg, var(--color-primary), #14847a)" }} />
                         </div>
                       </div>
                     ))}
@@ -4756,7 +4822,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 )}
               </aside>
 
-              <section className="relative flex-1 overflow-y-auto" style={{ background: "var(--color-page-bg)" }}>
+              <section className="relative flex-1 min-h-0 flex flex-col overflow-hidden" style={{ background: "var(--color-page-bg)" }}>
 
                 {/* ── Float Score Overlay ── */}
                 {floatScores.map(fs => (
@@ -4782,7 +4848,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       pointerEvents: "none",
                       padding: "6px 16px",
                       borderRadius: "999px",
-                      background: lastFeedback.combo >= 8 ? "linear-gradient(90deg,#ef4444,#f59e0b)" : lastFeedback.combo >= 5 ? "linear-gradient(90deg,#f59e0b,#a78bfa)" : "linear-gradient(90deg,#6366f1,#10b981)",
+                      background: lastFeedback.combo >= 8 ? "linear-gradient(90deg,#d1503c,#c07c2c)" : lastFeedback.combo >= 5 ? "linear-gradient(90deg,#c07c2c,#35b0a0)" : "linear-gradient(90deg,#0f6e63,#7aac3a)",
                       color: "#fff",
                       fontWeight: 700,
                       fontSize: "0.85rem",
@@ -4797,48 +4863,47 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
               {(() => {
                 const gameBtn = "flex items-center gap-2 text-white text-sm font-bold px-6 py-3 rounded-2xl transition-all cursor-pointer border-none active:scale-95";
-                const gameBtnSec = "flex items-center gap-2 text-slate-300 text-sm font-semibold px-6 py-3 rounded-2xl transition-all cursor-pointer border border-white/15 hover:border-white/30 hover:text-white";
+                const gameBtnSec = "flex items-center gap-2 text-[#cbd3cf] text-sm font-semibold px-6 py-3 rounded-2xl transition-all cursor-pointer border border-white/15 hover:border-white/30 hover:text-white";
+                /* Geri bildirim yönergesi, faz yönergesinin önüne geçer. */
+                const fbCue = lastFeedback ? feedbackCue(lastFeedback.correct, lastFeedback.combo) : null;
+                const withFeedback = (base: GameCue): GameCue => fbCue ?? base;
+                const elapsedLabel = `${Math.floor(gameElapsed / 60)}:${String(gameElapsed % 60).padStart(2, "0")}`;
                 return (
-              <div className="p-4 lg:p-6 max-w-4xl mx-auto flex flex-col gap-5">
-
-                {/* ── Active Game: Top Info Bar ── */}
-                <div className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
-                  <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg, var(--color-primary), #8b5cf6, #ec4899)" }} />
-                  <div className="flex items-center gap-4 px-5 py-3.5">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-extrabold uppercase tracking-widest text-(--color-text-muted) m-0 mb-0.5">{activeCategory.title}</p>
-                      <h2 className="text-base font-extrabold text-(--color-text-strong) m-0 truncate">{activeTab.title}</h2>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {activeTab.goals.slice(0, 2).map((goal) => (
-                        <span key={goal} data-tooltip={`Terapi hedefi: ${goal}`} data-tooltip-dir="bottom" className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: "var(--color-primary)/10", color: "var(--color-primary)", border: "1px solid var(--color-primary)/20" }}>{goal}</span>
-                      ))}
-                      {/* Active SMART goal mini HUD */}
-                      {activeClient && clientGoals.length > 0 && (() => {
-                        const topGoal = clientGoals.find(g => g.currentValue < g.targetValue) ?? clientGoals[0];
-                        const pct = topGoal.targetValue > 0 ? Math.round((topGoal.currentValue / topGoal.targetValue) * 100) : 0;
-                        return (
-                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border"
-                            style={{ background: "rgba(99,102,241,0.1)", borderColor: "rgba(99,102,241,0.25)" }}>
-                            <Target size={9} style={{ color: "#818cf8" }} />
-                            <span className="text-[10px] font-semibold max-w-28 truncate" style={{ color: "var(--color-text-soft)" }}>{topGoal.title}</span>
-                            <span className="text-[10px] font-extrabold" style={{ color: "#818cf8" }}>{pct}%</span>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                </div>
-                {activeGame === "memory" && (
-                  <section className="relative rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 flex flex-col gap-4 sm:gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(19,184,255,0.18)", boxShadow: "0 0 80px rgba(19,184,255,0.08), 0 24px 48px rgba(0,0,0,0.4)" }}>
-                    {memoryState.phase === "finished" && (() => {
+              <div className="flex-1 min-h-0 flex flex-col p-3 lg:p-4">
+                {activeGame === "memory" && (() => {
+                  const cue = withFeedback(memoryCue(memoryState.phase, memoryState.sequence.length));
+                  return (
+                  <GameArena
+                    name={activeTab.title}
+                    kicker={activeTab.kicker}
+                    accent="#7fb2cc"
+                    cue={cue.title}
+                    cueNote={cue.note}
+                    cueState={cue.state}
+                    hint={ARENA_KEYBOARD_HINT}
+                    stats={[
+                      { label: "Seri", value: memoryState.score, tone: "accent" },
+                      { label: "Uzunluk", value: memoryState.sequence.length || "—" },
+                      { label: "En iyi", value: scoreboard.memory.best || "—", optional: true },
+                      { label: "Süre", value: elapsedLabel, optional: true },
+                    ]}
+                    primaryAction={{
+                      label: memoryState.phase === "idle" ? "Başlat" : "Yeniden başlat",
+                      onClick: startMemoryGame,
+                    }}
+                    secondaryAction={{
+                      label: "Sırayı tekrar göster",
+                      onClick: replayMemorySequence,
+                      disabled: memoryState.sequence.length === 0 || memoryState.phase === "showing",
+                    }}
+                    overlay={memoryState.phase === "finished" ? (() => {
                       const s = memoryState.score;
                       const memStars = s >= 6 ? 3 : s >= 3 ? 2 : s >= 1 ? 1 : 0;
                       return (
                         <GameResultOverlay
-                          accent="#13b8ff"
-                          gradFrom="#13b8ff"
-                          gradTo="#8b5cf6"
+                          accent="#7fb2cc"
+                          gradFrom="#7fb2cc"
+                          gradTo="#14847a"
                           gameName="Dizi Hafıza"
                           score={s}
                           bestScore={scoreboard.memory.best}
@@ -4858,68 +4923,77 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           nextInSet={sessionSetNextInSet}
                         />
                       );
-                    })()}
-                    <div className="absolute top-0 right-0 w-96 h-48 rounded-full pointer-events-none" style={{ background: "#13b8ff", opacity: 0.06, filter: "blur(70px)", transform: "translate(20%,-30%)" }} />
-                    <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full pointer-events-none" style={{ background: "#8b5cf6", opacity: 0.04, filter: "blur(60px)", transform: "translate(-30%,30%)" }} />
-                    {/* HUD */}
-                    <div className="relative flex flex-wrap gap-1.5 sm:gap-2 lg:gap-4 pb-3 sm:pb-5 border-b border-white/10">
-                      <div className={`flex-1 rounded-2xl p-3 lg:p-3.5 transition-all ${lastFeedback && activeGame === "memory" ? (lastFeedback.correct ? "correct-glow" : "wrong-shake") : ""}`}
-                        style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                        <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Aktif seri</p>
-                        <strong className="text-white text-3xl lg:text-4xl font-extrabold tabular-nums leading-none tracking-tight">{memoryState.score}</strong>
+                    })() : null}
+                  >
+                    {/* Girilen adımlar — danışan diziyi nereye kadar tekrarladığını görür */}
+                    {memoryState.sequence.length > 0 && (
+                      <div className="flex items-center gap-1.5" aria-hidden="true">
+                        {memoryState.sequence.map((_, index) => (
+                          <span key={index} className="rounded-full transition-all duration-200"
+                            style={{
+                              width: index < memoryState.input.length ? 22 : 8,
+                              height: 8,
+                              background: index < memoryState.input.length ? "#7fb2cc" : "rgba(255,255,255,0.16)",
+                            }} />
+                        ))}
                       </div>
-                      <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                        <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Faz</p>
-                        <strong className={`text-2xl lg:text-4xl font-extrabold tabular-nums leading-none tracking-tight transition-all ${lastFeedback && activeGame === "memory" ? (lastFeedback.correct ? "text-emerald-400" : "text-red-400") : "text-white"}`}>
-                          {lastFeedback && activeGame === "memory" ? (lastFeedback.correct ? "✓" : "✗") : getPhaseLabel(memoryState.phase)}
-                        </strong>
-                      </div>
-                      <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(19,184,255,0.08)", border: "1px solid rgba(19,184,255,0.15)" }}>
-                        <p className="text-[#13b8ff]/60 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">En İyi</p>
-                        <strong className="text-3xl lg:text-4xl font-extrabold tabular-nums leading-none tracking-tight" style={{ color: "#13b8ff" }}>{scoreboard.memory.best || "—"}</strong>
-                      </div>
-                      {gameTimerKey > 0 && (
-                        <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                          <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold flex items-center gap-1"><Timer size={8} /> Süre</p>
-                          <strong className="text-white text-xl lg:text-2xl font-extrabold tabular-nums leading-none">{Math.floor(gameElapsed / 60)}:{String(gameElapsed % 60).padStart(2, "0")}</strong>
-                        </div>
-                      )}
-                    </div>
-                    <p className="relative text-white/50 text-sm leading-relaxed m-0">{memoryState.message}</p>
-                    <p className="relative text-white/30 text-xs m-0">Kısayollar: <strong className="text-white/50">A/B</strong> oyun değiştirir, yön tuşları hücre seçer, <strong className="text-white/50">Enter</strong> ve <strong className="text-white/50">Boşluk</strong> aksiyonu tetikler.</p>
-                    <div className="relative grid grid-cols-3 gap-3">
+                    )}
+                    <div className="arena-grid" style={{ ["--cols" as string]: 3, ["--rows" as string]: 2, ["--reserve" as string]: "32px" }}>
                       {MEMORY_TILES.map((label, index) => {
                         const isActive = memoryState.flashIndex === index;
-                        const isLocked = memoryState.phase === "showing";
+                        const isLocked = memoryState.phase === "showing" || memoryState.phase === "idle";
                         const isCursor = memoryCursor === index;
                         const symbol = SYMBOL_LIBRARY.find((s) => s.label === label);
                         return (
-                          <button key={label} type="button" className={`game-tile relative flex flex-col items-center justify-center gap-1 sm:gap-1.5 h-[4.5rem] sm:h-24 lg:h-28 rounded-xl sm:rounded-2xl border cursor-pointer transition-all duration-150 select-none overflow-hidden ${isActive ? "game-tile-active border-transparent" : "border-white/8 hover:border-white/20"} ${isCursor ? "game-tile-cursor" : ""}`} disabled={isLocked} onClick={() => handleMemoryPick(index)} style={!isActive ? { background: symbol?.background } as CSSProperties : undefined} aria-label={`${label} hücresi${isActive ? " — aktif" : ""}`}>
+                          <button key={label} type="button"
+                            className={`arena-cell ${isActive ? "game-tile-active" : ""} ${isCursor ? "game-tile-cursor" : ""}`}
+                            disabled={isLocked} onClick={() => handleMemoryPick(index)}
+                            style={!isActive ? { background: symbol?.background } as CSSProperties : undefined}
+                            aria-label={`${label} karesi${isActive ? " — yanıyor" : ""}`}>
                             {!isActive && <div className="absolute inset-0" style={symbol ? patternStyle(symbol) : undefined} />}
-                            <span className="relative text-2xl" style={!isActive ? { color: symbol?.accent } : undefined}>{symbol?.icon ?? label[0]}</span>
-                            <span className="relative text-xs font-semibold text-white/60">{label}</span>
+                            <span className="relative arena-cell-glyph" style={!isActive ? { color: symbol?.accent } : undefined}>{symbol?.icon ?? label[0]}</span>
+                            <span className="relative arena-cell-label">{label}</span>
                           </button>
                         );
                       })}
                     </div>
-                    <div className="relative flex gap-3 pt-2">
-                      <button type="button" data-tooltip="Sıfırdan yeni bir dizi başlat" data-tooltip-dir="top" className={gameBtn} style={{ background: "linear-gradient(135deg, #13b8ff, #8b5cf6)", boxShadow: "0 4px 20px rgba(19,184,255,0.4)" }} onClick={startMemoryGame}>Yeni Seri Başlat</button>
-                      <button type="button" data-tooltip="Mevcut diziyi tekrar göster" data-tooltip-dir="top" className={gameBtnSec} onClick={replayMemorySequence} disabled={memoryState.sequence.length === 0}>Sırayı Tekrar Göster</button>
-                    </div>
-                  </section>
-                )}
+                  </GameArena>
+                  );
+                })()}
 
-                {activeGame === "pairs" && (
-                  <section className="relative rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 flex flex-col gap-4 sm:gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(93,211,255,0.18)", boxShadow: "0 0 80px rgba(93,211,255,0.08), 0 24px 48px rgba(0,0,0,0.4)" }}>
-                    {pairsState.phase === "finished" && (() => {
+                {activeGame === "pairs" && (() => {
+                  const openCount = pairsState.tiles.filter((t) => t.revealed && !t.matched).length;
+                  const totalPairs = pairsState.tiles.length / 2 || TOTAL_PAIR_MATCHES;
+                  const cue = pairsCue(pairsState.phase, openCount, totalPairs, pairsState.pairsFound);
+                  return (
+                  <GameArena
+                    name={activeTab.title}
+                    kicker={activeTab.kicker}
+                    accent="#7fb2cc"
+                    boardSize="wide"
+                    cue={cue.title}
+                    cueNote={cue.note}
+                    cueState={cue.state}
+                    hint={ARENA_KEYBOARD_HINT}
+                    progress={pairsState.phase === "playing" ? { current: pairsState.pairsFound, total: totalPairs } : undefined}
+                    stats={[
+                      { label: "Çift", value: `${pairsState.pairsFound}/${totalPairs}`, tone: "accent" },
+                      { label: "Hamle", value: pairsState.moves },
+                      { label: "Süre", value: elapsedLabel, optional: true },
+                    ]}
+                    primaryAction={{
+                      label: pairsState.phase === "idle" ? "Başlat" : "Yeni deste",
+                      onClick: startPairsGame,
+                    }}
+                    overlay={pairsState.phase === "finished" ? (() => {
                       const mv = pairsState.moves;
                       const pairsStars = mv <= 12 ? 3 : mv <= 18 ? 2 : 1;
                       const pairsScore = Math.max(50, 280 - mv * 7);
                       return (
                         <GameResultOverlay
-                          accent="#5dd3ff"
-                          gradFrom="#5dd3ff"
-                          gradTo="#2dd4bf"
+                          accent="#8fbdd6"
+                          gradFrom="#8fbdd6"
+                          gradTo="#35b0a0"
                           gameName="Kart Eşle"
                           score={pairsScore}
                           bestScore={scoreboard.pairs.best}
@@ -4939,65 +5013,72 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           nextInSet={sessionSetNextInSet}
                         />
                       );
-                    })()}
-                    <div className="absolute top-0 left-0 w-80 h-56 rounded-full pointer-events-none" style={{ background: "#5dd3ff", opacity: 0.06, filter: "blur(70px)", transform: "translate(-20%,-30%)" }} />
-                    {/* HUD */}
-                    <div className="relative flex flex-wrap gap-1.5 sm:gap-2 lg:gap-4 pb-3 sm:pb-5 border-b border-white/10">
-                      <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                        <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Eşleşen</p>
-                        <strong className="text-white text-3xl lg:text-4xl font-extrabold tabular-nums leading-none tracking-tight">{pairsState.pairsFound}</strong>
-                      </div>
-                      <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                        <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Hamle</p>
-                        <strong className="text-white text-3xl lg:text-4xl font-extrabold tabular-nums leading-none tracking-tight">{pairsState.moves}</strong>
-                      </div>
-                      <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(93,211,255,0.08)", border: "1px solid rgba(93,211,255,0.15)" }}>
-                        <p className="text-[#5dd3ff]/60 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Durum</p>
-                        <strong className="text-xl lg:text-2xl font-extrabold leading-tight" style={{ color: "#5dd3ff" }}>{getPhaseLabel(pairsState.phase)}</strong>
-                      </div>
-                      {gameTimerKey > 0 && (
-                        <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                          <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold flex items-center gap-1"><Timer size={8} /> Süre</p>
-                          <strong className="text-white text-xl lg:text-2xl font-extrabold tabular-nums leading-none">{Math.floor(gameElapsed / 60)}:{String(gameElapsed % 60).padStart(2, "0")}</strong>
-                        </div>
-                      )}
-                    </div>
-                    <p className="relative text-white/50 text-sm leading-relaxed m-0">{pairsState.message}</p>
-                    <p className="relative text-white/30 text-xs m-0">On iki kartı 4×3 düzende gezebilirsin; seçili kart parlak çerçeveyle görünür.</p>
-                    <div className="relative grid grid-cols-4 gap-2">
+                    })() : null}
+                  >
+                    {pairsState.tiles.length === 0 ? (
+                      <p className="text-sm text-white/45 m-0">Deste henüz açılmadı.</p>
+                    ) : (
+                    <div className="arena-grid" style={{ ["--cols" as string]: 4, ["--rows" as string]: Math.ceil(pairsState.tiles.length / 4) }}>
                       {pairsState.tiles.map((tile, index) => {
                         const isCursor = pairsCursor === index;
                         const isVisible = tile.revealed || tile.matched;
                         return (
-                          <button key={tile.id} type="button" data-pairs-index={index} aria-label={isVisible ? `${tile.label} kartı` : `Kapalı kart ${index + 1}`} className={`game-tile relative flex flex-col items-center justify-center h-[3.75rem] sm:h-20 lg:h-24 rounded-lg sm:rounded-xl cursor-pointer transition-all overflow-hidden border ${tile.matched ? "game-tile-matched" : ""} ${isCursor ? "game-tile-cursor" : ""} ${isVisible ? "border-white/15 hover:border-white/25" : "border-white/6 hover:border-white/12"}`} onClick={() => handlePairsPick(index)} style={isVisible && !tile.matched ? { background: tile.background } : { background: "rgba(10,16,30,0.9)" }}>
-                            <div className="absolute inset-0 rounded-xl" style={patternStyle(isVisible ? tile : { pattern: "grid" } as typeof tile)} />
-                            <div className="relative flex flex-col items-center justify-center gap-1">
-                              {isVisible ? (
-                                <><span className="text-2xl" style={{ color: tile.accent }}>{tile.icon}</span><span className="text-xs font-semibold text-white/60">{tile.label}</span></>
-                              ) : (
-                                <><span className="text-2xl text-white/15">?</span><span className="text-xs text-white/20">aç</span></>
-                              )}
-                            </div>
+                          <button key={tile.id} type="button" data-pairs-index={index}
+                            aria-label={isVisible ? `${tile.label} kartı` : `Kapalı kart ${index + 1}`}
+                            className={`arena-cell ${tile.matched ? "game-tile-matched" : ""} ${isCursor ? "game-tile-cursor" : ""}`}
+                            onClick={() => handlePairsPick(index)}
+                            style={isVisible && !tile.matched ? { background: tile.background } : { background: "rgba(13,19,17,0.92)" }}>
+                            <div className="absolute inset-0" style={patternStyle(isVisible ? tile : { pattern: "grid" } as typeof tile)} />
+                            {isVisible ? (
+                              <>
+                                <span className="relative arena-cell-glyph" style={{ color: tile.accent }}>{tile.icon}</span>
+                                <span className="relative arena-cell-label">{tile.label}</span>
+                              </>
+                            ) : (
+                              <span className="relative arena-cell-glyph text-white/15">?</span>
+                            )}
                           </button>
                         );
                       })}
                     </div>
-                    <div className="relative flex gap-3">
-                      <button type="button" data-tooltip="Kartları karıştır, yeni oyun başlat" data-tooltip-dir="top" className={gameBtn} style={{ background: "linear-gradient(135deg, #5dd3ff, #2dd4bf)", boxShadow: "0 4px 20px rgba(93,211,255,0.35)" }} onClick={startPairsGame}>Yeni Deste Aç</button>
-                    </div>
-                  </section>
-                )}
+                    )}
+                  </GameArena>
+                  );
+                })()}
 
-                {activeGame === "pulse" && (
-                  <section className="relative rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 flex flex-col gap-4 sm:gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(57,198,255,0.18)", boxShadow: "0 0 80px rgba(57,198,255,0.08), 0 24px 48px rgba(0,0,0,0.4)" }}>
-                    {pulseState.phase === "finished" && (() => {
+                {activeGame === "pulse" && (() => {
+                  const cue = withFeedback(pulseCue(pulseState.phase, pulseState.activeIndex !== null));
+                  const accuracy = pulseState.hits + pulseState.misses > 0
+                    ? Math.round((pulseState.hits / (pulseState.hits + pulseState.misses)) * 100)
+                    : 0;
+                  return (
+                  <GameArena
+                    name={activeTab.title}
+                    kicker={activeTab.kicker}
+                    accent="#7fb2cc"
+                    cue={cue.title}
+                    cueNote={cue.note}
+                    cueState={cue.state}
+                    hint={ARENA_KEYBOARD_HINT}
+                    progress={pulseState.phase === "playing" ? { current: pulseState.round, total: PULSE_TOTAL_ROUNDS } : undefined}
+                    stats={[
+                      { label: "Puan", value: pulseState.points, tone: "accent" },
+                      { label: "Tur", value: `${pulseState.round}/${PULSE_TOTAL_ROUNDS}` },
+                      { label: "Seri", value: pulseState.combo },
+                      { label: "İsabet", value: `%${accuracy}`, optional: true },
+                    ]}
+                    primaryAction={{
+                      label: pulseState.phase === "idle" ? "Başlat" : "Yeniden başlat",
+                      onClick: startPulseGame,
+                    }}
+                    overlay={pulseState.phase === "finished" ? (() => {
                       const pts = pulseState.points;
                       const pulseStars = pts >= 130 ? 3 : pts >= 80 ? 2 : 1;
                       return (
                         <GameResultOverlay
-                          accent="#39c6ff"
-                          gradFrom="#39c6ff"
-                          gradTo="#818cf8"
+                          accent="#7fb2cc"
+                          gradFrom="#7fb2cc"
+                          gradTo="#35b0a0"
                           gameName="Hedef Vur"
                           score={pts}
                           bestScore={scoreboard.pulse.best}
@@ -5017,72 +5098,62 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           nextInSet={sessionSetNextInSet}
                         />
                       );
-                    })()}
-                    <div className="absolute bottom-0 left-1/2 w-96 h-64 rounded-full pointer-events-none" style={{ background: "#39c6ff", opacity: 0.06, filter: "blur(80px)", transform: "translate(-50%,30%)" }} />
-                    {/* HUD */}
-                    <div className="relative flex flex-wrap gap-1.5 sm:gap-2 lg:gap-4 pb-3 sm:pb-5 border-b border-white/10">
-                      <div className={`flex-1 rounded-2xl p-3 lg:p-3.5 relative overflow-hidden transition-all ${lastFeedback && activeGame === "pulse" ? (lastFeedback.correct ? "correct-glow" : "wrong-shake") : ""}`}
-                        style={{ background: "rgba(57,198,255,0.08)", border: "1px solid rgba(57,198,255,0.15)" }}>
-                        <p className="text-[#39c6ff]/60 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Puan</p>
-                        <strong className="text-3xl lg:text-4xl font-extrabold tabular-nums leading-none tracking-tight" style={{ color: "#39c6ff" }}>{pulseState.points}</strong>
-                      </div>
-                      <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                        <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Tur</p>
-                        <strong className="text-white text-3xl lg:text-4xl font-extrabold tabular-nums leading-none tracking-tight">{pulseState.round}<span className="text-lg lg:text-xl text-white/30">/{PULSE_TOTAL_ROUNDS}</span></strong>
-                      </div>
-                      <div className={`flex-1 rounded-2xl p-3 lg:p-3.5 transition-all ${lastFeedback?.correct && lastFeedback.combo >= 3 && activeGame === "pulse" ? "combo-flash" : ""}`}
-                        style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                        <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Seri</p>
-                        <strong className={`text-white text-3xl lg:text-4xl font-extrabold tabular-nums leading-none tracking-tight ${lastFeedback?.correct && lastFeedback.combo >= 3 && activeGame === "pulse" ? "combo-badge-enter" : ""}`}>
-                          {pulseState.combo}
-                          {pulseState.combo >= 3 && <span className="ml-1 text-xs lg:text-sm text-amber-400">🔥</span>}
-                        </strong>
-                      </div>
-                      {gameTimerKey > 0 && (
-                        <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                          <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold flex items-center gap-1"><Timer size={8} /> Süre</p>
-                          <strong className="text-white text-xl lg:text-2xl font-extrabold tabular-nums leading-none">{Math.floor(gameElapsed / 60)}:{String(gameElapsed % 60).padStart(2, "0")}</strong>
-                        </div>
-                      )}
-                    </div>
-                    <p className="relative text-white/50 text-sm leading-relaxed m-0">{pulseState.message}</p>
-                    <p className="relative text-white/30 text-xs m-0">Klavyede merkezden başla: yön tuşları seçimi taşır, <strong className="text-white/50">Enter</strong> aktif kareyi oynatır.</p>
-                    <div className="relative grid grid-cols-3 gap-3">
+                    })() : null}
+                  >
+                    <div className="arena-grid" style={{ ["--cols" as string]: 3, ["--rows" as string]: 3 }}>
                       {PULSE_LABELS.map((label, index) => {
                         const isActive = pulseState.activeIndex === index && pulseState.phase === "playing";
                         const isCursor = pulseCursor === index;
                         const wasJustPicked = lastFeedback && activeGame === "pulse" && !isActive && pulseState.activeIndex !== index && index === pulseCursor;
                         return (
                           <button key={label} type="button"
-                            aria-label={`${label} hücresi${isActive ? " — aktif hedef" : ""}`}
-                            className={`game-tile h-[4.5rem] sm:h-24 rounded-lg sm:rounded-xl border flex items-center justify-center text-sm cursor-pointer transition-all
-                              ${isActive ? "game-tile-active border-transparent" : "border-white/8 hover:border-white/16"}
+                            aria-label={`${label} karesi${isActive ? " — hedef" : ""}`}
+                            className={`arena-cell
+                              ${isActive ? "game-tile-active" : ""}
                               ${isCursor ? "game-tile-cursor" : ""}
                               ${wasJustPicked && lastFeedback?.correct ? "correct-glow" : ""}
                               ${wasJustPicked && !lastFeedback?.correct ? "wrong-shake" : ""}`}
-                            style={!isActive ? { background: "rgba(10,18,34,0.9)", color: "rgba(148,163,184,0.8)" } : undefined}
+                            style={!isActive ? { background: "rgba(13,20,18,0.9)" } : undefined}
                             onClick={() => handlePulsePick(index)}>
-                            <span className="font-semibold text-xs">{label}</span>
+                            <span className="arena-cell-label">{label}</span>
                           </button>
                         );
                       })}
                     </div>
-                    <div className="relative flex gap-3">
-                      <button type="button" data-tooltip="Aktif hedef belirleme setini başlat" data-tooltip-dir="top" className={gameBtn} style={{ background: "linear-gradient(135deg, #39c6ff, #818cf8)", boxShadow: "0 4px 20px rgba(57,198,255,0.35)" }} onClick={startPulseGame}>Seti Başlat</button>
-                    </div>
-                  </section>
-                )}
+                  </GameArena>
+                  );
+                })()}
 
-                {activeGame === "route" && (
-                  <section className="relative rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 flex flex-col gap-4 sm:gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(74,207,255,0.18)", boxShadow: "0 0 80px rgba(74,207,255,0.08), 0 24px 48px rgba(0,0,0,0.4)" }}>
-                    {routeState.phase === "finished" && (() => {
+                {activeGame === "route" && (() => {
+                  const cue = withFeedback(routeCue(routeState.phase, routeCommandMeta?.label ?? null));
+                  return (
+                  <GameArena
+                    name={activeTab.title}
+                    kicker={activeTab.kicker}
+                    accent="#35b0a0"
+                    cue={cue.title}
+                    cueNote={cue.note}
+                    cueState={cue.state}
+                    hint={ARENA_KEYBOARD_HINT}
+                    progress={routeState.phase === "playing" ? { current: routeState.round, total: ROUTE_TOTAL_ROUNDS } : undefined}
+                    stats={[
+                      { label: "Puan", value: routeState.score, tone: "accent" },
+                      { label: "Tur", value: `${routeState.round}/${ROUTE_TOTAL_ROUNDS}` },
+                      { label: "Seri", value: routeState.streak },
+                      { label: "Süre", value: elapsedLabel, optional: true },
+                    ]}
+                    primaryAction={{
+                      label: routeState.phase === "idle" ? "Başlat" : "Yeniden başlat",
+                      onClick: startRouteGame,
+                    }}
+                    overlay={routeState.phase === "finished" ? (() => {
                       const rs = routeState.score;
                       const routeStars = rs >= 140 ? 3 : rs >= 80 ? 2 : 1;
                       return (
                         <GameResultOverlay
-                          accent="#4acfff"
-                          gradFrom="#4acfff"
-                          gradTo="#6366f1"
+                          accent="#8fbdd6"
+                          gradFrom="#8fbdd6"
+                          gradTo="#0f6e63"
                           gameName="Yön Komutu"
                           score={rs}
                           bestScore={scoreboard.route.best}
@@ -5102,87 +5173,76 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           nextInSet={sessionSetNextInSet}
                         />
                       );
-                    })()}
-                    <div className="absolute top-1/2 right-0 w-72 h-72 rounded-full pointer-events-none" style={{ background: "#4acfff", opacity: 0.05, filter: "blur(70px)", transform: "translate(30%,-50%)" }} />
-                    {/* HUD */}
-                    <div className="relative flex flex-wrap gap-1.5 sm:gap-2 lg:gap-4 pb-3 sm:pb-5 border-b border-white/10">
-                      <div className={`flex-1 rounded-2xl p-3 lg:p-3.5 transition-all ${lastFeedback && activeGame === "route" ? (lastFeedback.correct ? "correct-glow" : "wrong-shake") : ""}`}
-                        style={{ background: "rgba(74,207,255,0.08)", border: "1px solid rgba(74,207,255,0.15)" }}>
-                        <p className="text-[#4acfff]/60 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Puan</p>
-                        <strong className="text-3xl lg:text-4xl font-extrabold tabular-nums leading-none tracking-tight" style={{ color: "#4acfff" }}>{routeState.score}</strong>
-                      </div>
-                      <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                        <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Tur</p>
-                        <strong className="text-white text-3xl lg:text-4xl font-extrabold tabular-nums leading-none tracking-tight">{routeState.round}<span className="text-lg lg:text-xl text-white/30">/{ROUTE_TOTAL_ROUNDS}</span></strong>
-                      </div>
-                      <div className={`flex-1 rounded-2xl p-3 lg:p-3.5 transition-all ${lastFeedback?.correct && lastFeedback.combo >= 3 && activeGame === "route" ? "combo-flash" : ""}`}
-                        style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                        <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Seri</p>
-                        <strong className={`text-white text-3xl lg:text-4xl font-extrabold tabular-nums leading-none tracking-tight ${lastFeedback?.correct && lastFeedback.combo >= 3 && activeGame === "route" ? "combo-badge-enter" : ""}`}>
-                          {routeState.streak}
-                          {routeState.streak >= 3 && <span className="ml-1 text-xs lg:text-sm text-amber-400">🔥</span>}
-                        </strong>
-                      </div>
-                      {gameTimerKey > 0 && (
-                        <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                          <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold flex items-center gap-1"><Timer size={8} /> Süre</p>
-                          <strong className="text-white text-xl lg:text-2xl font-extrabold tabular-nums leading-none">{Math.floor(gameElapsed / 60)}:{String(gameElapsed % 60).padStart(2, "0")}</strong>
-                        </div>
-                      )}
+                    })() : null}
+                  >
+                    {/* Komut kartı — okunması gereken tek şey */}
+                    <div className={`flex flex-col items-center justify-center rounded-2xl px-10 py-4 border w-full max-w-xs transition-all ${lastFeedback && activeGame === "route" ? (lastFeedback.correct ? "correct-glow" : "wrong-shake") : ""}`}
+                      style={{ background: "rgba(13,20,18,0.92)", borderColor: "rgba(53, 176, 160,0.28)" }}>
+                      <span className="text-6xl leading-none" style={{ color: "#35b0a0" }}>{routeCommandMeta?.icon ?? "•"}</span>
+                      <strong className="text-white text-lg font-extrabold mt-2">{routeCommandMeta?.label ?? "Hazır"}</strong>
                     </div>
-                    <p className="relative text-white/50 text-sm leading-relaxed m-0">{routeState.message}</p>
-                    <div className="relative flex items-center gap-4">
-                      <div className={`flex flex-col items-center rounded-2xl px-8 py-5 border min-w-[140px] transition-all ${lastFeedback && activeGame === "route" ? (lastFeedback.correct ? "correct-glow" : "wrong-shake") : ""}`}
-                        style={{ background: "rgba(10,18,34,0.9)", borderColor: "rgba(74,207,255,0.2)" }}>
-                        <span className="text-white/40 text-[10px] uppercase tracking-wider mb-1 font-bold">Aktif komut</span>
-                        <strong className="text-white text-base font-bold mt-0.5">{routeCommandMeta?.label ?? "Hazır"}</strong>
-                        <span className="text-3xl mt-1.5" style={{ color: "#4acfff" }}>{routeCommandMeta?.icon ?? "•"}</span>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {routeState.history.slice(-6).map((item, index) => {
-                          const meta = ROUTE_COMMANDS.find((command) => command.key === item);
-                          const isLast = index === routeState.history.slice(-6).length - 1;
-                          return (
-                            <span key={`${item}-${index}`}
-                              className={`text-sm font-semibold transition-all ${isLast ? "text-white/60" : "text-white/25"}`}>
-                              {meta?.icon ?? item}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    <div className="relative grid grid-cols-2 gap-3">
+                    {/* Dört yön padi */}
+                    <div className="arena-grid" style={{ ["--cols" as string]: 4, ["--rows" as string]: 1, ["--reserve" as string]: "170px", maxWidth: "24rem" }}>
                       {ROUTE_COMMANDS.map((command, index) => {
                         const isCursor = routeCursor === index;
                         return (
                           <button key={command.key} type="button"
                             aria-label={`${command.label} yönü`}
-                            className={`game-tile flex flex-col items-center justify-center gap-1.5 sm:gap-2 h-[4.5rem] sm:h-24 rounded-lg sm:rounded-xl border cursor-pointer transition-all hover:-translate-y-0.5
-                              ${isCursor ? "game-tile-cursor border-transparent" : "border-white/8 hover:border-white/20"}`}
-                            style={{ background: "rgba(10,18,34,0.9)" }}
+                            className={`arena-cell ${isCursor ? "game-tile-cursor" : ""}`}
+                            style={{ background: "rgba(13,20,18,0.9)" }}
                             onClick={() => handleRoutePick(command.key)}>
-                            <span className="text-2xl sm:text-3xl" style={{ color: "#4acfff" }}>{command.icon}</span>
-                            <span className="text-[10px] sm:text-xs font-semibold text-white/50">{command.label}</span>
+                            <span className="arena-cell-glyph" style={{ color: "#35b0a0" }}>{command.icon}</span>
+                            <span className="arena-cell-label">{command.label}</span>
                           </button>
                         );
                       })}
                     </div>
-                    <div className="relative flex gap-3">
-                      <button type="button" data-tooltip="Rotayı takip et, komutları uygula" data-tooltip-dir="top" className={gameBtn} style={{ background: "linear-gradient(135deg, #4acfff, #6366f1)", boxShadow: "0 4px 20px rgba(74,207,255,0.35)" }} onClick={startRouteGame}>Komutları Başlat</button>
-                    </div>
-                  </section>
-                )}
+                    {routeState.history.length > 0 && (
+                      <div className="flex items-center gap-1.5" aria-hidden="true">
+                        {routeState.history.slice(-8).map((item, index, arr) => {
+                          const meta = ROUTE_COMMANDS.find((command) => command.key === item);
+                          return (
+                            <span key={`${item}-${index}`}
+                              className={`text-sm ${index === arr.length - 1 ? "text-white/55" : "text-white/20"}`}>
+                              {meta?.icon ?? item}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </GameArena>
+                  );
+                })()}
 
-                {activeGame === "difference" && (
-                  <section className="relative rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 flex flex-col gap-4 sm:gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(105,212,255,0.18)", boxShadow: "0 0 80px rgba(105,212,255,0.08), 0 24px 48px rgba(0,0,0,0.4)" }}>
-                    {differenceState.phase === "finished" && (() => {
+                {activeGame === "difference" && (() => {
+                  const cue = withFeedback(differenceCue(differenceState.phase));
+                  return (
+                  <GameArena
+                    name={activeTab.title}
+                    kicker={activeTab.kicker}
+                    accent="#9cc65e"
+                    cue={cue.title}
+                    cueNote={cue.note}
+                    cueState={cue.state}
+                    hint={ARENA_KEYBOARD_HINT}
+                    progress={differenceState.phase === "playing" ? { current: differenceState.round, total: DIFFERENCE_TOTAL_ROUNDS } : undefined}
+                    stats={[
+                      { label: "Doğru", value: differenceState.score, tone: "accent" },
+                      { label: "Tur", value: `${differenceState.round}/${DIFFERENCE_TOTAL_ROUNDS}` },
+                      { label: "Süre", value: elapsedLabel, optional: true },
+                    ]}
+                    primaryAction={{
+                      label: differenceState.phase === "idle" ? "Başlat" : "Yeniden başlat",
+                      onClick: startDifferenceGame,
+                    }}
+                    overlay={differenceState.phase === "finished" ? (() => {
                       const ds = differenceState.score;
                       const diffStars = ds >= 7 ? 3 : ds >= 4 ? 2 : ds >= 1 ? 1 : 0;
                       return (
                         <GameResultOverlay
-                          accent="#69d4ff"
-                          gradFrom="#69d4ff"
-                          gradTo="#a78bfa"
+                          accent="#9ac7dc"
+                          gradFrom="#9ac7dc"
+                          gradTo="#35b0a0"
                           gameName="Farkı Bul"
                           score={ds}
                           bestScore={scoreboard.difference.best}
@@ -5202,65 +5262,63 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           nextInSet={sessionSetNextInSet}
                         />
                       );
-                    })()}
-                    <div className="absolute top-0 left-1/2 w-96 h-56 rounded-full pointer-events-none" style={{ background: "#69d4ff", opacity: 0.06, filter: "blur(70px)", transform: "translate(-50%,-40%)" }} />
-                    {/* HUD */}
-                    <div className="relative flex flex-wrap gap-1.5 sm:gap-2 lg:gap-4 pb-3 sm:pb-5 border-b border-white/10">
-                      <div className={`flex-1 rounded-2xl p-3 lg:p-3.5 transition-all ${lastFeedback && activeGame === "difference" ? (lastFeedback.correct ? "correct-glow" : "wrong-shake") : ""}`}
-                        style={{ background: "rgba(105,212,255,0.08)", border: "1px solid rgba(105,212,255,0.15)" }}>
-                        <p className="text-[#69d4ff]/60 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Skor</p>
-                        <strong className="text-3xl lg:text-4xl font-extrabold tabular-nums leading-none tracking-tight" style={{ color: "#69d4ff" }}>{differenceState.score}</strong>
-                      </div>
-                      <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                        <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Tur</p>
-                        <strong className="text-white text-3xl lg:text-4xl font-extrabold tabular-nums leading-none tracking-tight">{differenceState.round}<span className="text-lg lg:text-xl text-white/30">/{DIFFERENCE_TOTAL_ROUNDS}</span></strong>
-                      </div>
-                      <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                        <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Durum</p>
-                        <strong className={`text-xl lg:text-2xl font-extrabold leading-tight transition-all ${lastFeedback && activeGame === "difference" ? (lastFeedback.correct ? "text-emerald-400" : "text-red-400") : "text-white"}`}>
-                          {lastFeedback && activeGame === "difference" ? (lastFeedback.correct ? "✓ Doğru" : "✗ Yanlış") : getPhaseLabel(differenceState.phase)}
-                        </strong>
-                      </div>
-                      {gameTimerKey > 0 && (
-                        <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                          <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold flex items-center gap-1"><Timer size={8} /> Süre</p>
-                          <strong className="text-white text-xl lg:text-2xl font-extrabold tabular-nums leading-none">{Math.floor(gameElapsed / 60)}:{String(gameElapsed % 60).padStart(2, "0")}</strong>
-                        </div>
-                      )}
-                    </div>
-                    <p className="relative text-white/50 text-sm leading-relaxed m-0">{differenceState.message}</p>
-                    <p className="relative text-white/30 text-xs m-0">Aynı dizilim klavyede de çalışır; seçili kart parlak kontur ile gösterilir.</p>
-                    <div className="relative grid grid-cols-3 gap-3">
+                    })() : null}
+                  >
+                    {differenceState.tiles.length === 0 ? (
+                      <p className="text-sm text-white/45 m-0">Tur henüz başlamadı.</p>
+                    ) : (
+                    <div className="arena-grid" style={{ ["--cols" as string]: 3, ["--rows" as string]: 2 }}>
                       {differenceState.tiles.map((tile, index) => {
                         const reveal = differenceState.revealId === tile.id;
                         const isCursor = differenceCursor === index;
                         return (
-                          <button key={tile.id} type="button" aria-label={`Kart ${index + 1}${tile.odd ? " — farklı" : ""}`} className={`game-tile relative flex flex-col items-center justify-center h-[4.5rem] sm:h-24 lg:h-28 rounded-xl sm:rounded-2xl border cursor-pointer overflow-hidden transition-all hover:border-white/25 ${reveal ? "game-tile-reveal" : "border-white/8"} ${isCursor ? "game-tile-cursor" : ""}`} onClick={() => handleDifferencePick(tile.id)} style={{ background: tile.background, transform: `rotate(${tile.rotation}deg)` } as CSSProperties}>
+                          <button key={tile.id} type="button" aria-label={`Kart ${index + 1}`}
+                            className={`arena-cell ${reveal ? "game-tile-reveal" : ""} ${isCursor ? "game-tile-cursor" : ""}`}
+                            onClick={() => handleDifferencePick(tile.id)}
+                            style={{ background: tile.background, transform: `rotate(${tile.rotation}deg)` } as CSSProperties}>
                             <div className="absolute inset-0" style={patternStyle(tile)} />
-                            <div className="relative flex flex-col items-center justify-center gap-1.5">
-                              <span className="text-2xl" style={{ color: tile.accent }}>{tile.icon}</span>
-                              <span className="text-xs font-semibold text-white/60">{tile.label}</span>
-                            </div>
+                            <span className="relative arena-cell-glyph" style={{ color: tile.accent }}>{tile.icon}</span>
+                            <span className="relative arena-cell-label">{tile.label}</span>
                           </button>
                         );
                       })}
                     </div>
-                    <div className="relative flex gap-3">
-                      <button type="button" data-tooltip="Görseller arasındaki farkları bul" data-tooltip-dir="top" className={gameBtn} style={{ background: "linear-gradient(135deg, #69d4ff, #a78bfa)", boxShadow: "0 4px 20px rgba(105,212,255,0.35)" }} onClick={startDifferenceGame}>Turu Başlat</button>
-                    </div>
-                  </section>
-                )}
+                    )}
+                  </GameArena>
+                  );
+                })()}
 
-                {activeGame === "scan" && (
-                  <section className="relative rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 flex flex-col gap-4 sm:gap-6 w-full overflow-hidden" style={{ background: "rgba(8,14,28,0.97)", border: "1px solid rgba(139,226,255,0.18)", boxShadow: "0 0 80px rgba(139,226,255,0.08), 0 24px 48px rgba(0,0,0,0.4)" }}>
-                    {scanState.phase === "finished" && (() => {
+                {activeGame === "scan" && (() => {
+                  const cue = withFeedback(scanCue(scanState.phase, scanState.targetLabel));
+                  const targetSymbol = SYMBOL_LIBRARY.find((s) => s.label === scanState.targetLabel);
+                  return (
+                  <GameArena
+                    name={activeTab.title}
+                    kicker={activeTab.kicker}
+                    accent="#9cc65e"
+                    boardSize={scanState.tiles.length > 9 ? "wide" : "default"}
+                    cue={cue.title}
+                    cueNote={cue.note}
+                    cueState={cue.state}
+                    hint={ARENA_KEYBOARD_HINT}
+                    progress={scanState.phase === "playing" ? { current: scanState.round, total: SCAN_TOTAL_ROUNDS } : undefined}
+                    stats={[
+                      { label: "Doğru", value: scanState.score, tone: "accent" },
+                      { label: "Tur", value: `${scanState.round}/${SCAN_TOTAL_ROUNDS}` },
+                      { label: "Süre", value: elapsedLabel, optional: true },
+                    ]}
+                    primaryAction={{
+                      label: scanState.phase === "idle" ? "Başlat" : "Yeniden başlat",
+                      onClick: startScanGame,
+                    }}
+                    overlay={scanState.phase === "finished" ? (() => {
                       const ss = scanState.score;
                       const scanStars = ss >= 7 ? 3 : ss >= 4 ? 2 : ss >= 1 ? 1 : 0;
                       return (
                         <GameResultOverlay
-                          accent="#8be2ff"
-                          gradFrom="#8be2ff"
-                          gradTo="#34d399"
+                          accent="#a9d1e2"
+                          gradFrom="#a9d1e2"
+                          gradTo="#9cc65e"
                           gameName="Hedef Tara"
                           score={ss}
                           bestScore={scoreboard.scan.best}
@@ -5280,92 +5338,73 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           nextInSet={sessionSetNextInSet}
                         />
                       );
-                    })()}
-                    <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full pointer-events-none" style={{ background: "#8be2ff", opacity: 0.05, filter: "blur(70px)", transform: "translate(20%,20%)" }} />
-                    {/* HUD */}
-                    <div className="relative flex flex-wrap gap-1.5 sm:gap-2 lg:gap-4 pb-3 sm:pb-5 border-b border-white/10">
-                      <div className={`flex-1 rounded-2xl p-3 lg:p-3.5 transition-all ${lastFeedback && activeGame === "scan" ? (lastFeedback.correct ? "correct-glow" : "wrong-shake") : ""}`}
-                        style={{ background: "rgba(139,226,255,0.08)", border: "1px solid rgba(139,226,255,0.15)" }}>
-                        <p className="text-[#8be2ff]/60 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Skor</p>
-                        <strong className="text-3xl lg:text-4xl font-extrabold tabular-nums leading-none tracking-tight" style={{ color: "#8be2ff" }}>{scanState.score}</strong>
-                      </div>
-                      <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                        <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Tur</p>
-                        <strong className="text-white text-3xl lg:text-4xl font-extrabold tabular-nums leading-none tracking-tight">{scanState.round}<span className="text-lg lg:text-xl text-white/30">/{SCAN_TOTAL_ROUNDS}</span></strong>
-                      </div>
-                      <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                        <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold">Durum</p>
-                        <strong className={`text-xl lg:text-2xl font-extrabold leading-tight truncate transition-all ${lastFeedback && activeGame === "scan" ? (lastFeedback.correct ? "text-emerald-400" : "text-red-400") : "text-white"}`}>
-                          {lastFeedback && activeGame === "scan" ? (lastFeedback.correct ? "✓ Bulundu!" : "✗ Yanlış") : (scanState.targetLabel || "Hazır")}
-                        </strong>
-                      </div>
-                      {gameTimerKey > 0 && (
-                        <div className="flex-1 rounded-2xl p-3 lg:p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                          <p className="text-white/40 text-[9px] lg:text-[10px] uppercase tracking-widest m-0 mb-1 font-bold flex items-center gap-1"><Timer size={8} /> Süre</p>
-                          <strong className="text-white text-xl lg:text-2xl font-extrabold tabular-nums leading-none">{Math.floor(gameElapsed / 60)}:{String(gameElapsed % 60).padStart(2, "0")}</strong>
-                        </div>
-                      )}
-                    </div>
-                    <p className="relative text-white/50 text-sm leading-relaxed m-0">{scanState.message}</p>
-                    {/* Target highlight */}
-                    {scanState.targetLabel && (() => {
-                      const targetSymbol = SYMBOL_LIBRARY.find((s) => s.label === scanState.targetLabel);
-                      return (
-                        <div className={`relative rounded-2xl px-5 py-4 flex items-center gap-4 border transition-all ${lastFeedback?.correct && activeGame === "scan" ? "correct-glow" : ""}`}
-                          style={{ background: "rgba(10,18,34,0.9)", borderColor: "rgba(139,226,255,0.2)" }}>
-                          <span className="text-white/40 text-xs uppercase tracking-wider font-bold">Bu simgeyi bul</span>
-                          <div className="flex items-center gap-3 ml-auto">
-                            <span className="text-3xl" style={{ color: targetSymbol?.accent }}>{targetSymbol?.icon ?? "?"}</span>
-                            <strong className="text-white text-sm font-bold">{scanState.targetLabel}</strong>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                    {!scanState.targetLabel && (
-                      <div className="relative rounded-2xl px-5 py-4 flex items-center gap-3 border" style={{ background: "rgba(10,18,34,0.9)", borderColor: "rgba(139,226,255,0.1)" }}>
-                        <span className="text-white/30 text-xs uppercase tracking-wider font-bold">Bu simgeyi bul</span>
-                        <span className="text-white/20 text-sm ml-auto">Oyunu başlat</span>
+                    })() : null}
+                  >
+                    {/* Aranan simge — ızgaranın hemen üstünde, referans olarak durur */}
+                    {scanState.targetLabel && (
+                      <div className={`flex items-center gap-3 rounded-full pl-4 pr-5 py-2 border transition-all ${lastFeedback?.correct && activeGame === "scan" ? "correct-glow" : ""}`}
+                        style={{ background: "rgba(13,20,18,0.92)", borderColor: "rgba(156, 198, 94,0.3)" }}>
+                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-white/40">Aranan</span>
+                        <span className="text-3xl leading-none" style={{ color: targetSymbol?.accent }}>{targetSymbol?.icon ?? "?"}</span>
+                        <strong className="text-white text-sm font-bold">{scanState.targetLabel}</strong>
                       </div>
                     )}
-                    <div className={`relative grid gap-3 ${scanState.tiles.length > 9 ? "grid-cols-4" : "grid-cols-3"}`}>
+                    {scanState.tiles.length > 0 && (
+                    <div className="arena-grid" style={{ ["--cols" as string]: scanState.tiles.length > 9 ? 4 : 3, ["--rows" as string]: Math.ceil(scanState.tiles.length / (scanState.tiles.length > 9 ? 4 : 3)), ["--reserve" as string]: "64px" }}>
                       {scanState.tiles.map((tile, index) => {
                         const reveal = scanState.revealId === tile.id;
                         const isCursor = scanCursor === index;
                         return (
                           <button key={tile.id} type="button"
-                            aria-label={`${tile.label}${tile.target ? " — hedef" : ""}`}
-                            className={`game-tile relative flex flex-col items-center justify-center ${scanState.tiles.length > 9 ? "h-[3.5rem] sm:h-20 lg:h-24" : "h-[4.5rem] sm:h-24 lg:h-28"} rounded-lg sm:rounded-2xl border cursor-pointer overflow-hidden transition-all hover:border-white/25
-                              ${reveal ? "game-tile-reveal" : "border-white/8"}
-                              ${isCursor ? "game-tile-cursor" : ""}`}
+                            aria-label={tile.label}
+                            className={`arena-cell ${reveal ? "game-tile-reveal" : ""} ${isCursor ? "game-tile-cursor" : ""}`}
                             onClick={() => handleScanPick(tile.id)}
                             style={{ background: tile.background, transform: `rotate(${tile.rotation}deg)` } as CSSProperties}>
                             <div className="absolute inset-0" style={patternStyle(tile)} />
-                            <div className="relative flex flex-col items-center justify-center gap-1.5">
-                              <span className="text-2xl" style={{ color: tile.accent }}>{tile.icon}</span>
-                              <span className="text-xs font-semibold text-white/60">{tile.label}</span>
-                            </div>
+                            <span className="relative arena-cell-glyph" style={{ color: tile.accent }}>{tile.icon}</span>
+                            <span className="relative arena-cell-label">{tile.label}</span>
                           </button>
                         );
                       })}
                     </div>
-                    <div className="relative flex gap-3">
-                      <button type="button" data-tooltip="Ekranda görünen nesneleri tara ve say" data-tooltip-dir="top" className={gameBtn} style={{ background: "linear-gradient(135deg, #8be2ff, #34d399)", boxShadow: "0 4px 20px rgba(139,226,255,0.35)" }} onClick={startScanGame}>Taramayı Başlat</button>
-                    </div>
-                  </section>
-                )}
+                    )}
+                  </GameArena>
+                  );
+                })()}
 
                 {/* ── Logic Game ── */}
-                {activeGame === "logic" && (
-                  <section className="relative rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 flex flex-col gap-4 sm:gap-6 w-full overflow-hidden" style={{ background: "rgba(8,6,24,0.97)", border: "1px solid rgba(167,139,250,0.22)", boxShadow: "0 0 80px rgba(167,139,250,0.08), 0 24px 48px rgba(0,0,0,0.4)" }}>
-                    {logicState.phase === "finished" && (() => {
+                {activeGame === "logic" && (() => {
+                  const logicRoundTotal = GAME_DIFF_CONFIG.logic.rounds[clientDiffLevel - 1];
+                  const cue = logicCue(logicState.phase, logicState.puzzle?.ruleHint ?? null);
+                  return (
+                  <GameArena
+                    name={activeTab.title}
+                    kicker={activeTab.kicker}
+                    accent="#5bc6b8"
+                    boardSize="wide"
+                    cue={cue.title}
+                    cueNote={cue.note}
+                    cueState={cue.state}
+                    hint="1–4 tuşları seçenekleri seçer"
+                    progress={logicState.phase === "playing" ? { current: logicState.round, total: logicRoundTotal } : undefined}
+                    stats={[
+                      { label: "Puan", value: logicState.score, tone: "accent" },
+                      { label: "Tur", value: `${logicState.round}/${logicRoundTotal}` },
+                      { label: "Süre", value: elapsedLabel, optional: true },
+                    ]}
+                    primaryAction={{
+                      label: logicState.phase === "idle" ? "Başlat" : "Yeniden başlat",
+                      onClick: startLogicGame,
+                    }}
+                    overlay={logicState.phase === "finished" ? (() => {
                       const ls = logicState.score;
                       const logicRounds = GAME_DIFF_CONFIG.logic.rounds[clientDiffLevel - 1];
                       const logicStars = ls >= logicRounds * 8 ? 3 : ls >= logicRounds * 5 ? 2 : ls >= logicRounds * 2 ? 1 : 0;
                       return (
                         <GameResultOverlay
-                          accent="#a78bfa"
-                          gradFrom="#a78bfa"
-                          gradTo="#7c3aed"
+                          accent="#35b0a0"
+                          gradFrom="#35b0a0"
+                          gradTo="#0b554c"
                           gameName="Dizi Mantık"
                           score={ls}
                           bestScore={scoreboard.logic.best}
@@ -5385,84 +5424,46 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           nextInSet={sessionSetNextInSet}
                         />
                       );
-                    })()}
-                    {/* Header */}
-                    <div className="flex items-center justify-between flex-wrap gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #a78bfa, #7c3aed)" }}>
-                          <Grid3X3 size={18} className="text-white" />
-                        </div>
-                        <div>
-                          <h3 className="text-base font-extrabold text-(--color-text) m-0">Dizi Mantık</h3>
-                          <p className="text-xs text-(--color-text-muted) m-0">3×3 matris — şekil &amp; renk örüntüsü</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <div className="text-xl font-black" style={{ color: "#a78bfa" }}>{logicState.score}</div>
-                          <div className="text-[10px] text-(--color-text-muted) font-semibold uppercase tracking-wider">Puan</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-xl font-black text-(--color-text)">{logicState.round}/{GAME_DIFF_CONFIG.logic.rounds[clientDiffLevel - 1]}</div>
-                          <div className="text-[10px] text-(--color-text-muted) font-semibold uppercase tracking-wider">Tur</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Status message */}
-                    <div className="rounded-2xl px-4 py-2.5 text-sm font-semibold text-center" style={{ background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.15)", color: "#c4b5fd" }}>
-                      {logicState.message}
-                      {logicState.phase === "playing" && logicState.puzzle && (
-                        <span className="ml-2 text-xs opacity-60">({logicState.puzzle.ruleHint})</span>
-                      )}
-                    </div>
-
-                    {logicState.phase === "playing" && logicState.puzzle && (() => {
+                    })() : null}
+                  >
+                    {logicState.phase === "playing" && logicState.puzzle ? (() => {
                       const { puzzle } = logicState;
                       const cellSize = 56;
-                      const mobileCellSize = 44;
                       return (
-                        <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 items-center sm:items-start justify-center">
-                          {/* 3x3 matrix — last cell is the question */}
-                          <div className="flex flex-col gap-1.5 items-center">
-                            <p className="text-xs font-bold text-(--color-text-muted) uppercase tracking-wider mb-1">Matris</p>
-                            <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-                              {puzzle.grid.map((cell, i) => (
-                                <div key={i} className="w-11 h-11 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(167,139,250,0.2)" }}>
-                                  <svg className="w-7 h-7 sm:w-10 sm:h-10" viewBox={`0 0 ${cellSize} ${cellSize}`} dangerouslySetInnerHTML={{ __html: renderLogicShape(cell.shape, cell.color, cellSize) }} />
-                                </div>
-                              ))}
-                              {/* Missing cell */}
-                              <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl flex items-center justify-center" style={{ background: "rgba(167,139,250,0.12)", border: "2px dashed rgba(167,139,250,0.5)" }}>
-                                <span className="text-xl sm:text-2xl font-black" style={{ color: "#a78bfa" }}>?</span>
+                        <div className="flex flex-col sm:flex-row gap-5 sm:gap-9 items-center justify-center w-full">
+                          {/* 3×3 matris — son hücre soru işareti */}
+                          <div className="grid grid-cols-3 gap-2">
+                            {puzzle.grid.map((cell, i) => (
+                              <div key={i} className="w-12 h-12 sm:w-[3.75rem] sm:h-[3.75rem] rounded-xl flex items-center justify-center"
+                                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(91, 198, 184,0.2)" }}>
+                                <svg className="w-8 h-8 sm:w-10 sm:h-10" viewBox={`0 0 ${cellSize} ${cellSize}`} dangerouslySetInnerHTML={{ __html: renderLogicShape(cell.shape, cell.color, cellSize) }} />
                               </div>
+                            ))}
+                            <div className="w-12 h-12 sm:w-[3.75rem] sm:h-[3.75rem] rounded-xl flex items-center justify-center"
+                              style={{ background: "rgba(91, 198, 184,0.14)", border: "2px dashed rgba(91, 198, 184,0.55)" }}>
+                              <span className="text-2xl font-black" style={{ color: "#5bc6b8" }}>?</span>
                             </div>
                           </div>
 
-                          {/* Options */}
-                          <div className="flex flex-col gap-2 items-center">
-                            <p className="text-xs font-bold text-(--color-text-muted) uppercase tracking-wider mb-1">Seçenekler <span className="opacity-50 normal-case font-normal">(1–4 tuş)</span></p>
-                            <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                          <div className="flex flex-col items-center gap-2">
+                            <span className="text-[10px] font-extrabold uppercase tracking-widest text-white/35">Seçenekler</span>
+                            <div className="grid grid-cols-2 gap-2.5">
                               {puzzle.options.map((opt, i) => {
                                 const isCursor = logicCursor === i;
                                 const isSelected = logicState.selectedIdx === i;
                                 const isCorrectOpt = i === puzzle.answerIdx;
-                                let borderColor = isCursor ? "rgba(167,139,250,0.7)" : "rgba(167,139,250,0.2)";
-                                let bg = isCursor ? "rgba(167,139,250,0.10)" : "rgba(255,255,255,0.03)";
-                                if (logicState.showResult && isSelected) { bg = isCorrectOpt ? "rgba(16,185,129,0.18)" : "rgba(239,68,68,0.18)"; borderColor = isCorrectOpt ? "#10b981" : "#ef4444"; }
-                                if (logicState.showResult && isCorrectOpt && !isSelected) { bg = "rgba(16,185,129,0.10)"; borderColor = "#10b98188"; }
+                                let borderColor = isCursor ? "rgba(91, 198, 184,0.75)" : "rgba(91, 198, 184,0.22)";
+                                let bg = isCursor ? "rgba(91, 198, 184,0.10)" : "rgba(255,255,255,0.03)";
+                                if (logicState.showResult && isSelected) { bg = isCorrectOpt ? "rgba(122, 172, 58,0.18)" : "rgba(209, 80, 60,0.18)"; borderColor = isCorrectOpt ? "#7aac3a" : "#d1503c"; }
+                                if (logicState.showResult && isCorrectOpt && !isSelected) { bg = "rgba(122, 172, 58,0.10)"; borderColor = "#7aac3a88"; }
                                 return (
-                                  <button
-                                    key={i}
-                                    type="button"
-                                    aria-label={`Seçenek ${i + 1}`}
-                                    className="game-tile relative w-16 h-[4.5rem] sm:w-[76px] sm:h-[84px] rounded-xl sm:rounded-2xl flex flex-col items-center justify-center gap-1 cursor-pointer transition-all hover:scale-105 active:scale-95"
+                                  <button key={i} type="button" aria-label={`Seçenek ${i + 1}`}
+                                    className="relative w-[4.5rem] h-[4.5rem] rounded-2xl flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 disabled:cursor-default"
                                     style={{ background: bg, border: `2px solid ${borderColor}` }}
                                     onClick={() => handleLogicPick(i)}
-                                    disabled={logicState.showResult}
-                                  >
-                                    <span className="absolute top-1 left-1.5 sm:top-1.5 sm:left-2 text-[9px] sm:text-[10px] font-black opacity-50">{i + 1}</span>
-                                    <svg className="w-9 h-9 sm:w-12 sm:h-12" viewBox={`0 0 ${cellSize} ${cellSize}`} dangerouslySetInnerHTML={{ __html: renderLogicShape(opt.shape, opt.color, cellSize) }} />
+                                    disabled={logicState.showResult}>
+                                    <span className="absolute top-1.5 left-2 text-[10px] font-black text-white/40">{i + 1}</span>
+                                    <svg className="w-11 h-11" viewBox={`0 0 ${cellSize} ${cellSize}`} dangerouslySetInnerHTML={{ __html: renderLogicShape(opt.shape, opt.color, cellSize) }} />
                                   </button>
                                 );
                               })}
@@ -5470,22 +5471,24 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           </div>
                         </div>
                       );
-                    })()}
+                    })() : (
+                      <div className="grid grid-cols-3 gap-2 opacity-25" aria-hidden="true">
+                        {Array.from({ length: 9 }).map((_, i) => (
+                          <div key={i} className="w-12 h-12 sm:w-[3.75rem] sm:h-[3.75rem] rounded-xl"
+                            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(91, 198, 184,0.18)" }} />
+                        ))}
+                      </div>
+                    )}
+                  </GameArena>
+                  );
+                })()}
 
-                    <div className="relative flex gap-3">
-                      <button type="button" className={gameBtn} style={{ background: "linear-gradient(135deg, #a78bfa, #7c3aed)", boxShadow: "0 4px 20px rgba(167,139,250,0.35)" }} onClick={startLogicGame}>
-                        {logicState.phase === "idle" ? "Oyunu Başlat" : "Yeniden Başlat"}
-                      </button>
-                    </div>
-                  </section>
-                )}
-
-                {/* ── Premium Game Details Card ── */}
-                <details ref={gameDetailsRef} className="rounded-3xl border border-(--color-line) overflow-hidden w-full" style={{ background: "var(--color-surface-strong)" }}>
+                {/* ── Oyunun klinik künyesi — kapalıyken tek satır, açıkken kendi içinde kayar ── */}
+                <details ref={gameDetailsRef} className="mt-3 shrink-0 rounded-2xl border border-(--color-line) overflow-y-auto w-full max-h-[46%]" style={{ background: "var(--color-surface-strong)" }}>
                   <summary className="flex items-center justify-between px-5 py-4 cursor-pointer list-none group select-none">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, var(--color-primary)/15, #8b5cf6/10)", border: "1px solid var(--color-primary)/20" }}>
-                        <div className="w-2 h-7 rounded-full shrink-0" style={{ background: "linear-gradient(180deg, var(--color-primary), #8b5cf6)" }} />
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, var(--color-primary)/15, #14847a/10)", border: "1px solid var(--color-primary)/20" }}>
+                        <div className="w-2 h-7 rounded-full shrink-0" style={{ background: "linear-gradient(180deg, var(--color-primary), #14847a)" }} />
                       </div>
                       <div>
                         <span className="text-[10px] font-extrabold uppercase tracking-widest block mb-0.5" style={{ color: "var(--color-primary)" }}>{activeCategory.title}</span>
@@ -5516,8 +5519,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       ))}
                     </div>
                     {activeRemoteScore.best > 0 && (
-                      <div className="flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.15)" }}>
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                      <div className="flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: "rgba(122, 172, 58,0.06)", border: "1px solid rgba(122, 172, 58,0.15)" }}>
+                        <span className="w-2 h-2 rounded-full bg-[#9cc65e] shrink-0" />
                         <span className="text-(--color-text-soft) text-sm">
                           Sunucu en iyi: <strong className="text-(--color-text-strong)">{activeRemoteScore.best}</strong>
                           {activeRemoteScore.lastPlayedAt ? <span className="text-(--color-text-muted)"> · {formatPlayedAt(activeRemoteScore.lastPlayedAt)}</span> : ""}
@@ -5538,8 +5541,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         {/* ── Reports & Analytics ── */}
         {activeAppView === "reports" && (() => {
           const GAME_COLORS: Record<string, string> = {
-            memory: "#818cf8", pairs: "#2dd4bf", pulse: "#38bdf8",
-            route: "#6366f1", difference: "#a78bfa", scan: "#34d399",
+            memory: "#35b0a0", pairs: "#35b0a0", pulse: "#7fb2cc",
+            route: "#0f6e63", difference: "#35b0a0", scan: "#9cc65e",
           };
           const allGameKeys = Object.keys(GAME_LABELS) as Array<keyof typeof GAME_LABELS>;
           const scoreEntries = allGameKeys.map((key) => {
@@ -5552,8 +5555,34 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           });
           const totalSessions = scoreEntries.reduce((s, e) => s + e.plays, 0);
           const topGame = [...scoreEntries].sort((a, b) => b.plays - a.plays)[0];
-          const maxBest = Math.max(...scoreEntries.map(e => e.best), 1);
-          const maxPlays = Math.max(...scoreEntries.map(e => e.plays), 1);
+
+          /* Beceri alanı dökümü: son 3 seansın ortalaması, oyunun kendi
+             puan ölçeğine oranlanır — oyunlar arasında karşılaştırılabilir. */
+          const gameBreakdown = allGameKeys.map((key) => {
+            const runs = platformOverview.recentSessions
+              .filter((s) => s.gameKey === key)
+              .sort((a, b) => new Date(b.playedAt).getTime() - new Date(a.playedAt).getTime());
+            const recent = runs.slice(0, 3).map((s) => s.score);
+            const recentAvg = recent.length > 0
+              ? Math.round(recent.reduce((t, v) => t + v, 0) / recent.length)
+              : 0;
+            const scale = GAME_SCORE_SCALE[key];
+            /* Tavan, beklenen ölçek ile fiilen gözlenen en yüksek skorun
+               büyüğüdür: eski kayıtlarda beklenenin üstünde bir skor varsa
+               çubuk %100'ü aşmış gibi görünmez. */
+            const observedMax = runs.length > 0 ? Math.max(...runs.map((s) => s.score)) : 0;
+            const scaleMax = Math.max(scale.typicalMax, observedMax);
+            return {
+              key,
+              label: GAME_LABELS[key],
+              color: GAME_COLORS[key] ?? "var(--color-primary)",
+              plays: runs.length,
+              recentAvg,
+              scaleMax,
+              unit: scale.unit,
+              percent: scaleMax > 0 ? Math.round(Math.min(1, recentAvg / scaleMax) * 100) : 0,
+            };
+          }).sort((a, b) => b.percent - a.percent);
 
           // Client performance table
           const clientRows = clientOptions.map((c) => {
@@ -5570,9 +5599,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             <div className="flex flex-col h-full overflow-hidden page-enter">
               {/* Header */}
               <div className="relative flex items-center justify-between gap-3 px-4 lg:px-6 py-3.5 lg:py-5 border-b border-(--color-line) overflow-hidden shrink-0" style={{ background: "var(--color-chrome-section)", backdropFilter: "blur(20px)" }}>
-                <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 80% at 0% 50%, rgba(245,158,11,0.06), transparent)" }} />
+                <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 80% at 0% 50%, rgba(192, 124, 44,0.06), transparent)" }} />
                 <div className="relative flex items-center gap-2.5 lg:gap-3">
-                  <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg,#f59e0b,#ef4444)", boxShadow: "0 4px 14px rgba(245,158,11,0.4)" }}>
+                  <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg,#c07c2c,#d1503c)", boxShadow: "0 4px 14px rgba(192, 124, 44,0.4)" }}>
                     <BarChart3 size={15} className="text-white" />
                   </div>
                   <div>
@@ -5630,7 +5659,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   )}
                   <button type="button"
                     className="flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-2 rounded-xl text-xs font-bold text-white border-none cursor-pointer transition-all active:scale-95"
-                    style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)", boxShadow: "0 4px 12px rgba(99,102,241,0.4)" }}
+                    style={{ background: "linear-gradient(135deg,#0f6e63,#14847a)", boxShadow: "0 4px 12px rgba(15, 110, 99,0.4)" }}
                     onClick={() => { void loadPlatformOverview(); showToast("Veriler yenilendi", "info"); }}>
                     <RefreshCw size={13} /> <span className="hidden sm:inline">Yenile</span>
                   </button>
@@ -5642,10 +5671,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 {/* ── KPI strip ── */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
                   {[
-                    { label: "Toplam Seans", value: totalSessions, icon: "🎮", color: "#818cf8", sub: "kayıt" },
-                    { label: "Aktif Danışan", value: clientOptions.length, icon: "👥", color: "#34d399", sub: "profil" },
-                    { label: "En Çok Oynanan", value: topGame?.label ?? "—", icon: "🏆", color: "#fbbf24", sub: "oyun", isText: true },
-                    { label: "Bu Hafta", value: thisWeekCount, icon: "📅", color: "#f472b6", sub: "seans" },
+                    { label: "Toplam Seans", value: totalSessions, icon: "🎮", color: "#35b0a0", sub: "kayıt" },
+                    { label: "Aktif Danışan", value: clientOptions.length, icon: "👥", color: "#9cc65e", sub: "profil" },
+                    { label: "En Çok Oynanan", value: topGame?.label ?? "—", icon: "🏆", color: "#e3a75c", sub: "oyun", isText: true },
+                    { label: "Bu Hafta", value: thisWeekCount, icon: "📅", color: "#de8265", sub: "seans" },
                   ].map(({ label, value, icon, color, sub, isText }) => (
                     <div key={label} className="relative overflow-hidden rounded-2xl border border-(--color-line) p-3.5 lg:p-5" style={{ background: "var(--color-surface-strong)" }}>
                       <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg,${color},transparent)` }} />
@@ -5662,47 +5691,52 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   ))}
                 </div>
 
-                {/* ── Game Performance Bar Chart ── */}
-                <div className="relative overflow-hidden rounded-3xl border border-(--color-line)" style={{ background: "var(--color-surface-strong)" }}>
-                  <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,#6366f1,#8b5cf6,#06b6d4,transparent)" }} />
-                  <div className="flex items-center justify-between px-6 py-4 border-b border-(--color-line)" style={{ background: "var(--color-surface-elevated)" }}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}>
-                        <Activity size={15} className="text-white" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0">Oyun Performans Grafiği</h3>
-                        <span className="text-xs text-(--color-text-muted)">Her oyun için en yüksek skor ve toplam oynama sayısı</span>
-                      </div>
+                {/* ── Zaman içinde skor eğilimi ── */}
+                <SessionTrendChart sessions={platformOverview.recentSessions} />
+
+                {/* ── Beceri alanı dökümü ──
+                    Önceki sürüm her oyunun en iyi skorunu kendi maksimumuna
+                    göre çizdiği için bütün çubuklar dolu görünüyor, hiçbir şey
+                    ayırt edilmiyordu. Artık ölçek her oyunun kendi puan aralığı
+                    (GAME_SCORE_SCALE) ve gösterilen değer son 3 seansın
+                    ortalaması — yani "şu an nerede", "en iyi gün" değil. */}
+                <div className="surface overflow-hidden">
+                  <div className="flex items-center justify-between gap-3 flex-wrap px-5 py-4 border-b border-(--color-line)">
+                    <div>
+                      <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0">Beceri alanı dökümü</h3>
+                      <p className="text-xs text-(--color-text-muted) m-0 mt-0.5">
+                        Son 3 seans ortalaması, her oyunun kendi puan ölçeğine göre
+                      </p>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-(--color-text-muted)">
-                      <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }} />En İyi Skor</span>
-                      <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{ background: "rgba(99,102,241,0.2)" }} />Oynama</span>
-                    </div>
+                    <span className="text-xs text-(--color-text-muted)">
+                      Toplam <span className="numeral font-bold text-(--color-text-body)">{totalSessions}</span> seans
+                    </span>
                   </div>
-                  <div className="p-6 space-y-5">
-                    {scoreEntries.map(({ key, label, best, plays, last, color }) => (
-                      <div key={key} className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
-                            <span className="font-semibold text-(--color-text-strong)">{label}</span>
+                  <div className="p-5 flex flex-col gap-4">
+                    {gameBreakdown.map((row) => (
+                      <div key={row.key} className="flex flex-col gap-1.5">
+                        <div className="flex items-baseline justify-between gap-3 text-sm">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: row.color }} />
+                            <span className="font-semibold text-(--color-text-strong) truncate">{row.label}</span>
+                            {row.plays === 0 && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
+                                style={{ background: "var(--color-surface-elevated)", color: "var(--color-text-muted)" }}>
+                                oynanmadı
+                              </span>
+                            )}
                           </div>
-                          <div className="flex items-center gap-4 text-xs text-(--color-text-muted) tabular-nums">
-                            <span>En iyi: <strong style={{ color }} className="font-bold">{best}</strong></span>
-                            <span>Son: <strong className="text-(--color-text-body) font-semibold">{last}</strong></span>
-                            <span className="px-2 py-0.5 rounded-full font-bold text-white text-[10px]" style={{ background: color }}>{plays}×</span>
-                          </div>
+                          {row.plays > 0 && (
+                            <div className="flex items-baseline gap-3 shrink-0 text-xs text-(--color-text-muted)">
+                              <span className="numeral font-bold text-base" style={{ color: row.color }}>{row.recentAvg}</span>
+                              <span>/ {row.scaleMax} {row.unit}</span>
+                              <span className="numeral">{row.plays}×</span>
+                            </div>
+                          )}
                         </div>
-                        {/* Best score bar */}
-                        <div className="h-2.5 rounded-full overflow-hidden" style={{ background: "var(--color-line)" }}>
-                          <div className="h-full rounded-full transition-all duration-1000"
-                            style={{ width: `${Math.round((best / maxBest) * 100)}%`, background: `linear-gradient(90deg,${color},${color}aa)` }} />
-                        </div>
-                        {/* Plays bar */}
-                        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--color-line)" }}>
-                          <div className="h-full rounded-full transition-all duration-1000"
-                            style={{ width: `${Math.round((plays / maxPlays) * 100)}%`, background: `${color}44` }} />
+                        <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--color-line)" }}>
+                          <div className="h-full rounded-full transition-[width] duration-700"
+                            style={{ width: `${row.percent}%`, background: row.color }} />
                         </div>
                       </div>
                     ))}
@@ -5714,9 +5748,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
                   {/* Client Performance Table */}
                   <div className="lg:col-span-3 relative overflow-hidden rounded-3xl border border-(--color-line)" style={{ background: "var(--color-surface-strong)" }}>
-                    <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,#34d399,#06b6d4,transparent)" }} />
+                    <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,#9cc65e,#4f93b5,transparent)" }} />
                     <div className="flex items-center gap-3 px-6 py-4 border-b border-(--color-line)" style={{ background: "var(--color-surface-elevated)" }}>
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#10b981,#06b6d4)" }}>
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#7aac3a,#4f93b5)" }}>
                         <Users size={14} className="text-white" />
                       </div>
                       <div>
@@ -5728,7 +5762,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       <div className="flex flex-col items-center gap-3 py-12 text-(--color-text-muted)">
                         <Users size={36} strokeWidth={1.5} />
                         <p className="text-sm m-0">Henüz danışan kaydı yok.</p>
-                        <button type="button" className="text-xs font-bold px-3 py-1.5 rounded-xl text-white border-none cursor-pointer" style={{ background: "linear-gradient(135deg,#10b981,#06b6d4)" }} onClick={() => { setShowAddClient(true); setActiveAppView("clients"); }}>Danışan Ekle</button>
+                        <button type="button" className="text-xs font-bold px-3 py-1.5 rounded-xl text-white border-none cursor-pointer" style={{ background: "linear-gradient(135deg,#7aac3a,#4f93b5)" }} onClick={() => { setShowAddClient(true); setActiveAppView("clients"); }}>Danışan Ekle</button>
                       </div>
                     ) : (
                       <div className="overflow-x-auto">
@@ -5743,7 +5777,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           <tbody>
                             {clientRows.map((c, idx) => {
                               const initials = c.displayName.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
-                              const gradients = ["linear-gradient(135deg,#6366f1,#8b5cf6)","linear-gradient(135deg,#10b981,#06b6d4)","linear-gradient(135deg,#f59e0b,#ef4444)","linear-gradient(135deg,#ec4899,#8b5cf6)","linear-gradient(135deg,#14b8a6,#6366f1)"];
+                              const gradients = ["linear-gradient(135deg,#0f6e63,#14847a)","linear-gradient(135deg,#7aac3a,#4f93b5)","linear-gradient(135deg,#c07c2c,#d1503c)","linear-gradient(135deg,#c4614a,#14847a)","linear-gradient(135deg,#0f6e63,#0f6e63)"];
                               const grad = gradients[idx % gradients.length];
                               return (
                                 <tr key={c.id}
@@ -5760,12 +5794,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                                     </div>
                                   </td>
                                   <td className="px-4 py-3">
-                                    <span className="font-bold tabular-nums" style={{ color: "#818cf8" }}>{c.sessionCount}</span>
+                                    <span className="font-bold tabular-nums" style={{ color: "#35b0a0" }}>{c.sessionCount}</span>
                                   </td>
                                   <td className="px-4 py-3">
                                     <div className="flex items-center gap-2">
-                                      <span className="font-bold tabular-nums" style={{ color: c.avgScore >= 10 ? "#34d399" : c.avgScore >= 5 ? "#fbbf24" : "#f87171" }}>{c.avgScore}</span>
-                                      {c.avgScore >= 10 && <ArrowUpRight size={12} style={{ color: "#34d399" }} />}
+                                      <span className="font-bold tabular-nums" style={{ color: c.avgScore >= 10 ? "#9cc65e" : c.avgScore >= 5 ? "#e3a75c" : "#de8265" }}>{c.avgScore}</span>
+                                      {c.avgScore >= 10 && <ArrowUpRight size={12} style={{ color: "#9cc65e" }} />}
                                     </div>
                                   </td>
                                   <td className="px-4 py-3 text-(--color-text-soft) text-xs">{c.lastGame}</td>
@@ -5781,9 +5815,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
                   {/* Activity Timeline */}
                   <div className="lg:col-span-2 relative overflow-hidden rounded-3xl border border-(--color-line)" style={{ background: "var(--color-surface-strong)" }}>
-                    <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,#f472b6,#818cf8,transparent)" }} />
+                    <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,#de8265,#35b0a0,transparent)" }} />
                     <div className="flex items-center gap-3 px-5 py-4 border-b border-(--color-line)" style={{ background: "var(--color-surface-elevated)" }}>
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#ec4899,#8b5cf6)" }}>
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c4614a,#14847a)" }}>
                         <Clock size={14} className="text-white" />
                       </div>
                       <div>
@@ -5801,7 +5835,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         {/* Vertical line */}
                         <div className="absolute left-9 top-5 bottom-5 w-px" style={{ background: "var(--color-line)" }} />
                         {recentFeed.map((session, i) => {
-                          const gc = GAME_COLORS[session.gameKey] ?? "#818cf8";
+                          const gc = GAME_COLORS[session.gameKey] ?? "#35b0a0";
                           const timeAgo = (() => {
                             const d = new Date(session.playedAt);
                             const diff = Math.floor((Date.now() - d.getTime()) / 60000);
@@ -5864,9 +5898,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   const hasData = scoreEntries.some(e => e.best > 0);
                   return (
                     <div className="relative overflow-hidden rounded-3xl border border-(--color-line)" style={{ background: "var(--color-surface-strong)" }}>
-                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,#818cf8,#2dd4bf,transparent)" }} />
+                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,#35b0a0,#35b0a0,transparent)" }} />
                       <div className="flex items-center gap-3 px-6 py-4 border-b border-(--color-line)" style={{ background: "var(--color-surface-elevated)" }}>
-                        <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#818cf8,#2dd4bf)" }}>
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#35b0a0,#35b0a0)" }}>
                           <Activity size={15} className="text-white" />
                         </div>
                         <div>
@@ -5893,9 +5927,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           {/* Data polygon */}
                           {hasData && (
                             <>
-                              <path d={polygonPath} fill="rgba(99,102,241,0.2)" stroke="#818cf8" strokeWidth="2" strokeLinejoin="round" />
+                              <path d={polygonPath} fill="rgba(15, 110, 99,0.2)" stroke="#35b0a0" strokeWidth="2" strokeLinejoin="round" />
                               {dataPoints.map((p, i) => (
-                                <circle key={i} cx={p.x.toFixed(1)} cy={p.y.toFixed(1)} r="3.5" fill="#818cf8" stroke="var(--color-surface-strong)" strokeWidth="1.5" />
+                                <circle key={i} cx={p.x.toFixed(1)} cy={p.y.toFixed(1)} r="3.5" fill="#35b0a0" stroke="var(--color-surface-strong)" strokeWidth="1.5" />
                               ))}
                             </>
                           )}
@@ -5931,9 +5965,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
                 {/* ── Game distribution pie-style ── */}
                 <div className="relative overflow-hidden rounded-3xl border border-(--color-line)" style={{ background: "var(--color-surface-strong)" }}>
-                  <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,#fbbf24,#f59e0b,transparent)" }} />
+                  <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,#e3a75c,#c07c2c,transparent)" }} />
                   <div className="flex items-center gap-3 px-6 py-4 border-b border-(--color-line)" style={{ background: "var(--color-surface-elevated)" }}>
-                    <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#f59e0b,#ef4444)" }}>
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c07c2c,#d1503c)" }}>
                       <Trophy size={14} className="text-white" />
                     </div>
                     <div>
@@ -5966,7 +6000,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         <div className="flex flex-col items-center gap-3 py-10 w-full text-center text-(--color-text-muted)">
                           <Trophy size={36} strokeWidth={1.5} />
                           <p className="text-sm m-0">Henüz oyun seansı kaydedilmedi.</p>
-                          <button type="button" className="text-xs font-bold px-4 py-2 rounded-xl text-white border-none cursor-pointer" style={{ background: "linear-gradient(135deg,#f59e0b,#ef4444)" }} onClick={() => setActiveAppView("games")}>
+                          <button type="button" className="text-xs font-bold px-4 py-2 rounded-xl text-white border-none cursor-pointer" style={{ background: "linear-gradient(135deg,#c07c2c,#d1503c)" }} onClick={() => setActiveAppView("games")}>
                             Oyun Başlat
                           </button>
                         </div>
@@ -5995,9 +6029,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   ];
                   return (
                     <div className="relative overflow-hidden rounded-3xl border border-(--color-line)" style={{ background: "var(--color-surface-strong)" }}>
-                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,#818cf8,#f472b6,transparent)" }} />
+                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,#35b0a0,#de8265,transparent)" }} />
                       <div className="flex items-center gap-3 px-6 py-4 border-b border-(--color-line)" style={{ background: "var(--color-surface-elevated)" }}>
-                        <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#818cf8,#f472b6)" }}>
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#35b0a0,#de8265)" }}>
                           <Users size={15} className="text-white" />
                         </div>
                         <div>
@@ -6008,7 +6042,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       <div className="p-5 space-y-4">
                         {/* Selector row */}
                         <div className="grid grid-cols-2 gap-3">
-                          {([{ val: compareClientA, set: setCompareClientA, color: "#818cf8", label: "Danışan A" }, { val: compareClientB, set: setCompareClientB, color: "#f472b6", label: "Danışan B" }] as const).map(col => (
+                          {([{ val: compareClientA, set: setCompareClientA, color: "#35b0a0", label: "Danışan A" }, { val: compareClientB, set: setCompareClientB, color: "#de8265", label: "Danışan B" }] as const).map(col => (
                             <div key={col.label}>
                               <p className="text-[10px] font-extrabold uppercase tracking-wider mb-1" style={{ color: col.color }}>{col.label}</p>
                               <select value={col.val} onChange={e => col.set(e.target.value)}
@@ -6025,8 +6059,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           <div className="rounded-2xl overflow-hidden border border-(--color-line)">
                             <div className="grid grid-cols-3 text-[10px] font-extrabold uppercase tracking-wider" style={{ background: "var(--color-surface-elevated)" }}>
                               <div className="px-4 py-2.5 text-(--color-text-muted)">Metrik</div>
-                              <div className="px-4 py-2.5 text-center" style={{ color: "#818cf8" }}>{cA.displayName}</div>
-                              <div className="px-4 py-2.5 text-center" style={{ color: "#f472b6" }}>{cB.displayName}</div>
+                              <div className="px-4 py-2.5 text-center" style={{ color: "#35b0a0" }}>{cA.displayName}</div>
+                              <div className="px-4 py-2.5 text-center" style={{ color: "#de8265" }}>{cB.displayName}</div>
                             </div>
                             {metrics.map(m => {
                               const isNum = m.a >= 0;
@@ -6035,11 +6069,11 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                               return (
                                 <div key={m.label} className="grid grid-cols-3 border-t text-sm" style={{ borderColor: "var(--color-line-soft)" }}>
                                   <div className="px-4 py-3 text-(--color-text-muted) text-xs font-semibold">{m.label}</div>
-                                  <div className="px-4 py-3 text-center font-bold tabular-nums" style={{ color: aWins ? "#818cf8" : "var(--color-text-body)", background: aWins ? "rgba(129,140,248,0.06)" : "transparent" }}>
+                                  <div className="px-4 py-3 text-center font-bold tabular-nums" style={{ color: aWins ? "#35b0a0" : "var(--color-text-body)", background: aWins ? "rgba(53, 176, 160,0.06)" : "transparent" }}>
                                     {isNum ? m.a : (m as { labelA?: string }).labelA ?? "—"}
                                     {aWins && <span className="ml-1 text-[10px]">↑</span>}
                                   </div>
-                                  <div className="px-4 py-3 text-center font-bold tabular-nums" style={{ color: bWins ? "#f472b6" : "var(--color-text-body)", background: bWins ? "rgba(244,114,182,0.06)" : "transparent" }}>
+                                  <div className="px-4 py-3 text-center font-bold tabular-nums" style={{ color: bWins ? "#de8265" : "var(--color-text-body)", background: bWins ? "rgba(222, 130, 101,0.06)" : "transparent" }}>
                                     {isNum ? m.b : (m as { labelB?: string }).labelB ?? "—"}
                                     {bWins && <span className="ml-1 text-[10px]">↑</span>}
                                   </div>
@@ -6051,7 +6085,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         {cA && cB && (
                           <button type="button"
                             className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm text-white border-none cursor-pointer transition-all hover:opacity-90 active:scale-[0.99] mt-2"
-                            style={{ background: "linear-gradient(135deg, #818cf8, #f472b6)", boxShadow: "0 4px 16px rgba(129,140,248,0.3)" }}
+                            style={{ background: "linear-gradient(135deg, #35b0a0, #de8265)", boxShadow: "0 4px 16px rgba(53, 176, 160,0.3)" }}
                             onClick={() => setShowComparison(true)}>
                             <Users size={14} /> Detaylı Karşılaştırma
                           </button>
@@ -6078,7 +6112,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               <div className="absolute top-0 left-0 w-64 h-32 rounded-full pointer-events-none" style={{ background: "var(--color-primary)", opacity: 0.04, filter: "blur(50px)", transform: "translate(-20%,-40%)" }} />
               <div className="relative">
                 <div className="flex items-center gap-2.5 mb-1">
-                  <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, var(--color-primary), #8b5cf6)", boxShadow: "0 2px 8px var(--color-primary)/30" }}>
+                  <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, var(--color-primary), #14847a)", boxShadow: "0 2px 8px var(--color-primary)/30" }}>
                     <Stethoscope size={13} className="text-white" />
                   </div>
                   <h1 className="text-lg lg:text-xl font-extrabold text-(--color-text-strong) m-0 tracking-tight">Terapi Programı</h1>
@@ -6109,7 +6143,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 <button key={key} type="button"
                   className="shrink-0 flex items-center gap-1 lg:gap-1.5 px-2.5 lg:px-3.5 py-1.5 lg:py-2 rounded-xl text-xs lg:text-sm font-semibold border-none cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   style={{
-                    background: tpActiveTab === key ? "linear-gradient(135deg, var(--color-primary), #8b5cf6)" : "transparent",
+                    background: tpActiveTab === key ? "linear-gradient(135deg, var(--color-primary), #14847a)" : "transparent",
                     color: tpActiveTab === key ? "white" : "var(--color-text-soft)",
                     boxShadow: tpActiveTab === key ? "0 4px 12px var(--color-primary)/30" : "none",
                   }}
@@ -6189,7 +6223,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   <div className="space-y-5">
                     {/* ── Premium Section Header ── */}
                     <div className="relative overflow-hidden rounded-3xl border border-(--color-line) p-5" style={{ background: `linear-gradient(135deg, ${domain.color}10 0%, var(--color-surface-strong) 100%)` }}>
-                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg, ${domain.color}, #8b5cf6, transparent)` }} />
+                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg, ${domain.color}, #14847a, transparent)` }} />
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <div className="flex items-center gap-2 mb-2">
@@ -6209,7 +6243,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           </button>
                           <button type="button"
                             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border-none cursor-pointer text-white transition-all"
-                            style={{ background: "linear-gradient(135deg,var(--color-primary),#8b5cf6)", boxShadow: "0 4px 12px var(--color-primary)/40" }}
+                            style={{ background: "linear-gradient(135deg,var(--color-primary),#14847a)", boxShadow: "0 4px 12px var(--color-primary)/40" }}
                             onClick={handleGeneratePlan}>
                             <CalendarDays size={13} />Plan Üret →
                           </button>
@@ -6220,10 +6254,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     {/* ── Premium stat strip ── */}
                     <div className="grid grid-cols-4 gap-3">
                       {([
-                        {v: domain.goals.length, l: "Hedef", emoji: "🎯", color: "#2563eb"},
-                        {v: domain.activities.length, l: "Aktivite", emoji: "🧩", color: "#8b5cf6"},
-                        {v: domain.subSkills.length, l: "Beceri Alanı", emoji: "⚡", color: "#10b981"},
-                        {v: favoriteActivities.length, l: "Favori", emoji: "⭐", color: "#f59e0b"},
+                        {v: domain.goals.length, l: "Hedef", emoji: "🎯", color: "#0d5f56"},
+                        {v: domain.activities.length, l: "Aktivite", emoji: "🧩", color: "#14847a"},
+                        {v: domain.subSkills.length, l: "Beceri Alanı", emoji: "⚡", color: "#7aac3a"},
+                        {v: favoriteActivities.length, l: "Favori", emoji: "⭐", color: "#c07c2c"},
                       ]).map(({v, l, emoji, color}) => (
                         <div key={l} className="relative overflow-hidden rounded-2xl border border-(--color-line) p-4 text-center" style={{ background: "var(--color-surface-strong)" }}>
                           <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg, ${color}, transparent)` }} />
@@ -6238,19 +6272,19 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     <details open className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
                       <summary className="flex items-center justify-between px-5 py-3.5 cursor-pointer list-none font-semibold text-sm text-(--color-text-strong)" style={{ background: "var(--color-surface-elevated)" }}>
                         <span className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#2563eb,#06b6d4)", boxShadow: "0 2px 6px #2563eb40" }}>
+                          <span className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#0d5f56,#4f93b5)", boxShadow: "0 2px 6px #0d5f5640" }}>
                             <Target size={12} className="text-white" />
                           </span>
                           Terapi Hedefleri
                         </span>
-                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold text-white" style={{ background: "#2563eb" }}>{domain.goals.length}</span>
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold text-white" style={{ background: "#0d5f56" }}>{domain.goals.length}</span>
                       </summary>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4">
                         {domain.goals.map((goal, gi) => (
                           <div key={goal.id} className="relative overflow-hidden rounded-xl border border-(--color-line) p-3.5" style={{ background: "var(--color-surface-elevated)" }}>
-                            <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg,#2563eb40,transparent)" }} />
+                            <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg,#0d5f5640,transparent)" }} />
                             <div className="flex items-center gap-2 mb-1.5">
-                              <span className="w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white shrink-0" style={{ background: "linear-gradient(135deg,#2563eb,#8b5cf6)" }}>{gi + 1}</span>
+                              <span className="w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white shrink-0" style={{ background: "linear-gradient(135deg,#0d5f56,#14847a)" }}>{gi + 1}</span>
                               <strong className="text-(--color-text-strong) text-sm leading-snug">{goal.label}</strong>
                             </div>
                             <p className="text-(--color-text-soft) text-xs mt-1 m-0 pl-7 leading-relaxed">{goal.description}</p>
@@ -6264,16 +6298,16 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       <details open className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
                         <summary className="flex items-center justify-between px-5 py-3.5 cursor-pointer list-none font-semibold text-sm text-(--color-text-strong)" style={{ background: "var(--color-surface-elevated)" }}>
                           <span className="flex items-center gap-2">
-                            <span className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#f59e0b,#ef4444)", boxShadow: "0 2px 6px #f59e0b40" }}>
+                            <span className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c07c2c,#d1503c)", boxShadow: "0 2px 6px #c07c2c40" }}>
                               <Zap size={12} className="text-white" />
                             </span>
                             Fonksiyonel Zorluklar
                           </span>
-                          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold text-white" style={{ background: "#f59e0b" }}>{domain.challenges.length}</span>
+                          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold text-white" style={{ background: "#c07c2c" }}>{domain.challenges.length}</span>
                         </summary>
                         <div className="flex flex-wrap gap-2 p-4">
                           {domain.challenges.map((ch) => (
-                            <span key={ch.id} className="text-xs px-3 py-1.5 rounded-full border font-medium" style={{ background: "#f59e0b10", borderColor: "#f59e0b30", color: "#f59e0b" }}>{ch.label}</span>
+                            <span key={ch.id} className="text-xs px-3 py-1.5 rounded-full border font-medium" style={{ background: "#c07c2c10", borderColor: "#c07c2c30", color: "#c07c2c" }}>{ch.label}</span>
                           ))}
                         </div>
                       </details>
@@ -6281,17 +6315,17 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       <details open className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
                         <summary className="flex items-center justify-between px-5 py-3.5 cursor-pointer list-none font-semibold text-sm text-(--color-text-strong)" style={{ background: "var(--color-surface-elevated)" }}>
                           <span className="flex items-center gap-2">
-                            <span className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#10b981,#06b6d4)", boxShadow: "0 2px 6px #10b98140" }}>
+                            <span className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#7aac3a,#4f93b5)", boxShadow: "0 2px 6px #7aac3a40" }}>
                               <Puzzle size={12} className="text-white" />
                             </span>
                             Alt Beceriler
                           </span>
-                          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold text-white" style={{ background: "#10b981" }}>{domain.subSkills.length}</span>
+                          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold text-white" style={{ background: "#7aac3a" }}>{domain.subSkills.length}</span>
                         </summary>
                         <div className="grid grid-cols-1 gap-2 p-4">
                           {domain.subSkills.map((skill) => (
                             <div key={skill.id} className="flex items-start gap-2.5 p-3 rounded-xl border border-(--color-line)" style={{ background: "var(--color-surface-elevated)" }}>
-                              <span className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: "#10b981" }} />
+                              <span className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: "#7aac3a" }} />
                               <div>
                                 <strong className="text-(--color-text-strong) text-sm">{skill.label}</strong>
                                 <p className="text-(--color-text-soft) text-xs mt-0.5 m-0">{skill.description}</p>
@@ -6304,15 +6338,15 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
                     {/* ── Favorites strip ── */}
                     {favoriteActivities.length > 0 && (
-                      <div className="rounded-2xl border border-amber-500/30 p-4 overflow-hidden relative" style={{ background: "color-mix(in srgb,#f59e0b 6%,var(--color-surface-strong))" }}>
-                        <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,#f59e0b,transparent)" }} />
-                        <h3 className="text-sm font-bold text-amber-400 mb-3 flex items-center gap-1.5">⭐ Favori Aktiviteler <span className="text-xs font-semibold px-2 py-0.5 rounded-full text-white" style={{ background: "#f59e0b" }}>{favoriteActivities.length}</span></h3>
+                      <div className="rounded-2xl border border-[#c07c2c]/30 p-4 overflow-hidden relative" style={{ background: "color-mix(in srgb,#c07c2c 6%,var(--color-surface-strong))" }}>
+                        <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,#c07c2c,transparent)" }} />
+                        <h3 className="text-sm font-bold text-[#e3a75c] mb-3 flex items-center gap-1.5">⭐ Favori Aktiviteler <span className="text-xs font-semibold px-2 py-0.5 rounded-full text-white" style={{ background: "#c07c2c" }}>{favoriteActivities.length}</span></h3>
                         <div className="flex flex-wrap gap-2">
                           {favoriteActivities.map((act) => (
-                            <div key={act.id} className="flex items-center gap-2 rounded-full px-3 py-1.5 border" style={{ background: "#f59e0b12", borderColor: "#f59e0b30" }}>
+                            <div key={act.id} className="flex items-center gap-2 rounded-full px-3 py-1.5 border" style={{ background: "#c07c2c12", borderColor: "#c07c2c30" }}>
                               <span className="text-xs font-medium text-(--color-text-body)">{act.label}</span>
-                              <span className={`w-2 h-2 rounded-full shrink-0 ${act.difficulty === "kolay" ? "bg-emerald-500" : act.difficulty === "orta" ? "bg-amber-500" : "bg-red-500"}`} />
-                              <button type="button" className="text-(--color-text-muted) hover:text-red-400 bg-transparent border-none cursor-pointer text-xs transition-colors" onClick={() => toggleFavoriteActivity(act.id)} title="Favoriden çıkar">✕</button>
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${act.difficulty === "kolay" ? "bg-[#7aac3a]" : act.difficulty === "orta" ? "bg-[#c07c2c]" : "bg-[#d1503c]"}`} />
+                              <button type="button" className="text-(--color-text-muted) hover:text-[#de8265] bg-transparent border-none cursor-pointer text-xs transition-colors" onClick={() => toggleFavoriteActivity(act.id)} title="Favoriden çıkar">✕</button>
                             </div>
                           ))}
                         </div>
@@ -6321,11 +6355,11 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
                     {/* ── Activity cards section ── */}
                     <div className="relative overflow-hidden rounded-3xl border border-(--color-line)" style={{ background: "var(--color-surface-strong)" }}>
-                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg, ${domain.color}, #8b5cf6, transparent)` }} />
+                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg, ${domain.color}, #14847a, transparent)` }} />
                       {/* Section header */}
                       <div className="flex items-center justify-between px-5 py-4 border-b border-(--color-line)" style={{ background: "var(--color-surface-elevated)" }}>
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${domain.color}, #8b5cf6)` }}>
+                          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${domain.color}, #14847a)` }}>
                             <ClipboardList size={15} className="text-white" />
                           </div>
                           <div>
@@ -6349,7 +6383,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         </div>
                         <div className="flex items-center gap-1 p-0.5 rounded-xl border border-(--color-line)" style={{ background: "var(--color-surface-elevated)" }}>
                           {(["all", "kolay", "orta", "zor"] as const).map((level) => {
-                            const levelColor = level === "kolay" ? "#10b981" : level === "orta" ? "#f59e0b" : level === "zor" ? "#ef4444" : undefined;
+                            const levelColor = level === "kolay" ? "#7aac3a" : level === "orta" ? "#c07c2c" : level === "zor" ? "#d1503c" : undefined;
                             const isActive = tpDifficultyFilter === level;
                             return (
                               <button key={level} type="button"
@@ -6384,9 +6418,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                               const isFav = tpFavoriteActivities.includes(activity.id);
                               const isExpanded = tpExpandedActivity === activity.id;
                               const customNote = tpCustomNotes[activity.id] ?? "";
-                              const diffBg = activity.difficulty === "kolay" ? "#10b981" : activity.difficulty === "orta" ? "#f59e0b" : "#ef4444";
-                              const diffBgLight = activity.difficulty === "kolay" ? "#10b98115" : activity.difficulty === "orta" ? "#f59e0b15" : "#ef444415";
-                              const diffBorder = activity.difficulty === "kolay" ? "#10b98130" : activity.difficulty === "orta" ? "#f59e0b30" : "#ef444430";
+                              const diffBg = activity.difficulty === "kolay" ? "#7aac3a" : activity.difficulty === "orta" ? "#c07c2c" : "#d1503c";
+                              const diffBgLight = activity.difficulty === "kolay" ? "#7aac3a15" : activity.difficulty === "orta" ? "#c07c2c15" : "#d1503c15";
+                              const diffBorder = activity.difficulty === "kolay" ? "#7aac3a30" : activity.difficulty === "orta" ? "#c07c2c30" : "#d1503c30";
                               return (
                                 <div key={activity.id} className="relative overflow-hidden rounded-2xl border transition-all card-hover flex flex-col" style={{ borderColor: isExpanded ? domain.color + "60" : "var(--color-line)", background: "var(--color-surface-elevated)", boxShadow: isExpanded ? `0 0 20px ${domain.color}15` : "none" }}>
                                   {/* Difficulty color bar */}
@@ -6402,7 +6436,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                                       <div className="flex items-center gap-1.5 shrink-0">
                                         <button type="button"
                                           className="w-7 h-7 rounded-lg flex items-center justify-center border-none cursor-pointer transition-all"
-                                          style={{ background: isFav ? "#f59e0b20" : "transparent", color: isFav ? "#f59e0b" : "var(--color-text-muted)" }}
+                                          style={{ background: isFav ? "#c07c2c20" : "transparent", color: isFav ? "#c07c2c" : "var(--color-text-muted)" }}
                                           onClick={() => toggleFavoriteActivity(activity.id)} title={isFav ? "Favoriden çıkar" : "Favorilere ekle"}>
                                           {isFav ? "★" : "☆"}
                                         </button>
@@ -6419,7 +6453,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                                     <div className="flex flex-wrap gap-1.5">
                                       <span className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg border border-(--color-line) text-(--color-text-muted)"><Tag size={9} />{activity.activityType}</span>
                                       <span className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg border border-(--color-line) text-(--color-text-muted)"><Clock size={9} />{activity.sessionMinutes} dk</span>
-                                      {activity.homeExercise && <span className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg text-emerald-400 border border-emerald-500/20" style={{ background: "#10b98112" }}><Home size={9} />Ev ödevi</span>}
+                                      {activity.homeExercise && <span className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg text-[#9cc65e] border border-[#7aac3a]/20" style={{ background: "#7aac3a12" }}><Home size={9} />Ev ödevi</span>}
                                     </div>
 
                                     {/* Expand toggle */}
@@ -6451,8 +6485,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                                           </div>
                                         </div>
                                         {activity.evidenceBase && (
-                                          <div className="rounded-xl border border-amber-500/25 p-3" style={{ background: "#f59e0b08" }}>
-                                            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-500 mb-1.5"><FlaskConical size={10} />Kanıt Temeli</span>
+                                          <div className="rounded-xl border border-[#c07c2c]/25 p-3" style={{ background: "#c07c2c08" }}>
+                                            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#c07c2c] mb-1.5"><FlaskConical size={10} />Kanıt Temeli</span>
                                             <p className="text-xs text-(--color-text-soft) m-0 leading-relaxed">{activity.evidenceBase}</p>
                                           </div>
                                         )}
@@ -6493,20 +6527,20 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 if (!domain) return null;
                 const gameMappings = getGameMappingsForDomain(tpSelectedDomain);
                 const diffBadge = (d: string) => d === "kolay"
-                  ? { bg: "#10b98115", color: "#10b981", border: "#10b98130", label: "Kolay" }
+                  ? { bg: "#7aac3a15", color: "#7aac3a", border: "#7aac3a30", label: "Kolay" }
                   : d === "orta"
-                  ? { bg: "#f59e0b15", color: "#f59e0b", border: "#f59e0b30", label: "Orta" }
-                  : { bg: "#ef444415", color: "#ef4444", border: "#ef444430", label: "Zor" };
+                  ? { bg: "#c07c2c15", color: "#c07c2c", border: "#c07c2c30", label: "Orta" }
+                  : { bg: "#d1503c15", color: "#d1503c", border: "#d1503c30", label: "Zor" };
                 const gameIcon = (key: string) => { const Icon = GAME_ICON_MAP[key] ?? Gamepad2; return <Icon size={22} />; };
                 const gameAccent: Record<string, string> = {
-                  memory: "#2563eb", pairs: "#8b5cf6", pulse: "#10b981",
-                  route: "#f59e0b", difference: "#ec4899", scan: "#06b6d4",
+                  memory: "#0d5f56", pairs: "#14847a", pulse: "#7aac3a",
+                  route: "#c07c2c", difference: "#c4614a", scan: "#4f93b5",
                 };
                 return (
                   <div className="space-y-6">
                     {/* ── Premium Header ── */}
                     <div className="relative overflow-hidden rounded-3xl border border-(--color-line) p-6" style={{ background: `linear-gradient(135deg, ${domain.color}10 0%, var(--color-surface-strong) 100%)` }}>
-                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg, ${domain.color}, #8b5cf6, transparent)` }} />
+                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg, ${domain.color}, #14847a, transparent)` }} />
                       <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: domain.color, boxShadow: `0 4px 12px ${domain.color}50` }}>
                           <DomainIcon iconKey={domain.icon} size={18} color="white" />
@@ -6581,8 +6615,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                                   </p>
                                   <p className="text-sm text-(--color-text-soft) leading-relaxed m-0">{mapping.howToUseInSession}</p>
                                 </div>
-                                <div className="rounded-2xl border border-amber-500/25 p-4" style={{ background: "#f59e0b08" }}>
-                                  <p className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-amber-500 mb-2"><BookOpen size={12} />Bilimsel Referans</p>
+                                <div className="rounded-2xl border border-[#c07c2c]/25 p-4" style={{ background: "#c07c2c08" }}>
+                                  <p className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-[#c07c2c] mb-2"><BookOpen size={12} />Bilimsel Referans</p>
                                   <p className="text-xs text-(--color-text-soft) m-0 leading-relaxed italic">{mapping.researchBasis}</p>
                                 </div>
                               </div>
@@ -6634,7 +6668,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     <details open className="overflow-hidden rounded-3xl border border-(--color-line)" style={{ background: "var(--color-surface-strong)" }}>
                       <summary className="flex items-center justify-between px-5 py-4 cursor-pointer list-none font-bold text-sm text-(--color-text-strong)" style={{ background: "var(--color-surface-elevated)" }}>
                         <span className="flex items-center gap-2.5">
-                          <span className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,var(--color-primary),#8b5cf6)" }}>
+                          <span className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,var(--color-primary),#14847a)" }}>
                             <BarChart3 size={12} className="text-white" />
                           </span>
                           Tüm Oyun–Amaç Eşleme Tablosu (Hızlı Referans)
@@ -6691,182 +6725,269 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               {tpActiveTab === "plan" && tpSelectedDomain && (() => {
                 const domain = THERAPY_DOMAINS.find((d) => d.key === tpSelectedDomain);
                 if (!domain) return null;
-                const ALL_DAYS = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
-                const dayShort: Record<string, string> = { Pazartesi: "Pzt", Salı: "Sal", Çarşamba: "Çar", Perşembe: "Per", Cuma: "Cum", Cumartesi: "Cmt", Pazar: "Paz" };
-                const dayColors = ["#2563eb","#8b5cf6","#10b981","#f59e0b","#ec4899","#06b6d4","#ef4444"];
+
+                const planClient = tpSelectedClientId ? clientOptions.find((c) => c.id === tpSelectedClientId) ?? null : null;
+                const planContext = buildPlanContext(planClient);
+                const plan = buildTherapyPlan(tpSelectedDomain, planContext, platformOverview.recentSessions);
+                if (!plan) return null;
+
+                const verdictStyle: Record<string, { label: string; color: string }> = {
+                  ideal:      { label: "İdeal zorluk", color: "var(--color-accent-green)" },
+                  uygun:      { label: "Uygun",        color: "var(--color-primary)" },
+                  kolay:      { label: "Fazla kolay",  color: "var(--color-text-muted)" },
+                  zor:        { label: "Destek gerekir", color: "var(--color-accent-amber)" },
+                  "yaş-dışı": { label: "Yaş dışı",     color: "var(--color-accent-red)" },
+                };
+
                 return (
-                  <div className="space-y-6">
-                    {/* ── Header ── */}
-                    <div className="relative overflow-hidden rounded-3xl border border-(--color-line) p-6" style={{ background: `linear-gradient(135deg, ${domain.color}10 0%, var(--color-surface-strong) 100%)` }}>
-                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg, ${domain.color}, #06b6d4, transparent)` }} />
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: domain.color, boxShadow: `0 4px 12px ${domain.color}50` }}>
-                          <DomainIcon iconKey={domain.icon} size={18} color="white" />
-                        </div>
+                  <div className="space-y-5">
+                    {/* ── Plan girdileri ── */}
+                    <div className="surface p-5">
+                      <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
                         <div>
                           <span className="text-[11px] font-bold uppercase tracking-widest block" style={{ color: domain.color }}>{domain.label}</span>
-                          <h2 className="text-xl font-extrabold text-(--color-text-strong) m-0 tracking-tight">Haftalık Terapi Planı</h2>
+                          <h2 className="text-lg font-extrabold text-(--color-text-strong) m-0 tracking-tight">Haftalık plan</h2>
+                          <p className="text-(--color-text-soft) text-sm m-0 mt-1">
+                            Plan; danışanın yaşı, bağımsızlık düzeyi, ortamı ve oyun geçmişine göre üretilir.
+                          </p>
                         </div>
+                        {!planClient && (
+                          <span className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+                            style={{ background: "var(--color-accent-amber)/12", color: "var(--color-accent-amber)", border: "1px solid var(--color-accent-amber)" }}>
+                            Danışan seçilmedi — genel plan gösteriliyor
+                          </span>
+                        )}
                       </div>
-                      <p className="text-(--color-text-soft) text-sm m-0">Seanslarınızı planlayın. Sistem, seçilen gün sayısına göre aktivite ve dijital oyun dağılımı oluşturur.</p>
-                    </div>
 
-                    {/* ── Day Selector ── */}
-                    <div className="relative overflow-hidden rounded-3xl border border-(--color-line) p-5" style={{ background: "var(--color-surface-strong)" }}>
-                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,var(--color-primary),#8b5cf6,transparent)" }} />
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,var(--color-primary),#8b5cf6)" }}>
-                            <CalendarDays size={13} className="text-white" />
-                          </div>
-                          <span className="text-sm font-bold text-(--color-text-strong)">Seans Günleri</span>
-                        </div>
-                        <span className="px-3 py-1 rounded-full text-xs font-bold text-white" style={{ background: tpSelectedDays.length > 0 ? "var(--color-primary)" : "var(--color-text-muted)" }}>
-                          {tpSelectedDays.length} / 7 gün
-                        </span>
-                      </div>
-                      <div className="flex gap-2 flex-wrap">
-                        {ALL_DAYS.map((day, di) => {
-                          const isSelected = tpSelectedDays.includes(day);
-                          const dc = dayColors[di];
-                          return (
-                            <button key={day} type="button" onClick={() => togglePlanDay(day)}
-                              className="px-4 py-2 rounded-xl text-xs font-bold border-none cursor-pointer transition-all"
-                              style={{
-                                background: isSelected ? dc : "var(--color-surface-elevated)",
-                                color: isSelected ? "white" : "var(--color-text-soft)",
-                                boxShadow: isSelected ? `0 4px 12px ${dc}50` : "none",
-                                transform: isSelected ? "scale(1.05)" : "scale(1)",
-                              }}>
-                              {dayShort[day]}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      {tpSelectedDays.length === 0 && (
-                        <p className="text-xs text-amber-500 mt-3 flex items-center gap-1.5">⚠️ En az 1 gün seçin.</p>
-                      )}
-                      <div className="mt-4 flex gap-2">
-                        <button type="button"
-                          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white border-none cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                          style={{ background: "linear-gradient(135deg,var(--color-primary),#8b5cf6)", boxShadow: "0 4px 14px var(--color-primary)/40" }}
-                          onClick={handleGeneratePlan} disabled={tpSelectedDays.length === 0}>
-                          {tpGeneratedPlan ? <><RefreshCw size={15} />Planı Güncelle</> : <><CalendarDays size={15} />Plan Oluştur</>}
-                        </button>
-                      </div>
-                    </div>
-
-                    {!tpGeneratedPlan ? (
-                      <div className="flex flex-col items-center gap-4 py-16 text-center rounded-3xl border border-(--color-line) border-dashed" style={{ background: "var(--color-surface-strong)" }}>
-                        <div className="w-16 h-16 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,var(--color-primary)/15,#8b5cf6/15)" }}>
-                          <CalendarDays size={28} className="text-(--color-primary)" />
-                        </div>
-                        <h3 className="text-(--color-text-strong) font-extrabold text-lg m-0">Henüz plan oluşturulmadı</h3>
-                        <p className="text-(--color-text-soft) text-sm m-0 max-w-sm">Yukarıdan gün seçin ve "Plan Oluştur" butonuna tıklayın. Sistem otomatik bir terapi planı oluşturacak.</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-6">
-                        {/* Weekly summary cards */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                          {[
-                            { icon: "🎯", label: "Ana Hedef", content: tpGeneratedPlan.weeklyPlan.mainGoal, color: "#2563eb" },
-                            { icon: "🏠", label: "Ev Ödevi", content: tpGeneratedPlan.weeklyPlan.homeExercise, color: "#10b981" },
-                            { icon: "🧩", label: "Aktivite Sayısı", content: `${tpGeneratedPlan.weeklyPlan.keyActivities.length} aktivite`, color: "#8b5cf6" },
-                            { icon: "🎮", label: "Dijital Oyun", content: `${tpGeneratedPlan.weeklyPlan.digitalGames.length} oyun`, color: "#f59e0b" },
-                          ].map(({icon, label, content, color}) => (
-                            <div key={label} className="relative overflow-hidden rounded-2xl border border-(--color-line) p-4" style={{ background: "var(--color-surface-elevated)" }}>
-                              <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg, ${color}, transparent)` }} />
-                              <span className="text-2xl block mb-1.5">{icon}</span>
-                              <span className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) block mb-1">{label}</span>
-                              <strong className="text-(--color-text-strong) text-xs leading-snug">{content}</strong>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Key activities + digital games row */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
-                            <div className="px-5 py-3 border-b border-(--color-line) flex items-center gap-2" style={{ background: "#2563eb12" }}>
-                              <span className="w-5 h-5 rounded flex items-center justify-center text-xs" style={{ background: "#2563eb" }}>🧩</span>
-                              <span className="text-xs font-black uppercase tracking-wider" style={{ color: "#2563eb" }}>Anahtar Aktiviteler</span>
-                            </div>
-                            <ul className="p-4 space-y-2 m-0 pl-0 list-none">
-                              {tpGeneratedPlan.weeklyPlan.keyActivities.map((a, i) => (
-                                <li key={i} className="flex items-start gap-2.5 text-xs text-(--color-text-soft)">
-                                  <span className="w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center shrink-0 mt-0.5 text-white" style={{ background: "#2563eb" }}>{i + 1}</span>
-                                  {a}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                          <div className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
-                            <div className="px-5 py-3 border-b border-(--color-line) flex items-center gap-2" style={{ background: "#8b5cf612" }}>
-                              <span className="w-5 h-5 rounded flex items-center justify-center text-xs" style={{ background: "#8b5cf6" }}>🎮</span>
-                              <span className="text-xs font-black uppercase tracking-wider" style={{ color: "#8b5cf6" }}>Dijital Oyunlar</span>
-                            </div>
-                            <div className="p-4 flex flex-wrap gap-2">
-                              {tpGeneratedPlan.weeklyPlan.digitalGames.map((gk) => {
-                                const gt = GAME_TABS.find((g) => g.key === gk);
-                                return (
-                                  <button key={gk} type="button"
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border-none cursor-pointer text-white transition-all hover:opacity-90"
-                                    style={{ background: "linear-gradient(135deg,#8b5cf6,#2563eb)", boxShadow: "0 2px 8px #8b5cf640" }}
-                                    onClick={() => openGameView(gk)}>
-                                    ▶ {gt?.title ?? gk}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Daily session cards */}
-                        <div>
-                          <div className="flex items-center gap-2.5 mb-4">
-                            <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,var(--color-primary),#10b981)" }}>
-                              <CalendarDays size={13} className="text-white" />
-                            </div>
-                            <h3 className="text-base font-extrabold text-(--color-text-strong) m-0">Günlük Yapı — {tpGeneratedPlan.dailyStructure.length} Seans</h3>
-                          </div>
-                          <div className={`grid gap-4 ${tpGeneratedPlan.dailyStructure.length <= 2 ? "grid-cols-1 sm:grid-cols-2" : tpGeneratedPlan.dailyStructure.length <= 4 ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`}>
-                            {tpGeneratedPlan.dailyStructure.map((day, i) => {
-                              const gameTab = GAME_TABS.find((g) => g.key === day.game);
-                              const dc = dayColors[i % dayColors.length];
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <label className="flex flex-col gap-1.5">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-(--color-text-muted)">Yaş grubu</span>
+                          <select className={inputCls} value={tpAgeOverride ?? planContext.ageGroup ?? ""}
+                            onChange={(e) => setTpAgeOverride((e.target.value || null) as AgeGroupKey | null)}>
+                            <option value="">Seçilmedi</option>
+                            {AGE_GROUPS.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}
+                          </select>
+                        </label>
+                        <label className="flex flex-col gap-1.5">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-(--color-text-muted)">Bağımsızlık düzeyi</span>
+                          <select className={inputCls} value={tpIndependence ?? planContext.independenceScore ?? ""}
+                            onChange={(e) => setTpIndependence(e.target.value ? Number(e.target.value) : null)}>
+                            <option value="">Seçilmedi</option>
+                            {INDEPENDENCE_LEVELS.map((l) => <option key={l.key} value={l.score}>{l.score} · {l.label}</option>)}
+                          </select>
+                        </label>
+                        <label className="flex flex-col gap-1.5">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-(--color-text-muted)">Haftalık seans</span>
+                          <select className={inputCls} value={tpSessionsPerWeek}
+                            onChange={(e) => setTpSessionsPerWeek(Number(e.target.value))}>
+                            {[1, 2, 3, 4, 5, 6, 7].map((n) => <option key={n} value={n}>{n} seans</option>)}
+                          </select>
+                        </label>
+                        <div className="flex flex-col gap-1.5">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-(--color-text-muted)">Ortam</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {ENVIRONMENT_OPTIONS.map((env) => {
+                              const on = tpEnvironments.includes(env.key);
                               return (
-                                <div key={i} className="relative overflow-hidden rounded-2xl border transition-all card-hover" style={{ borderColor: `${dc}40`, background: "var(--color-surface-elevated)" }}>
-                                  <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${dc}, transparent)` }} />
-                                  <div className="flex items-center gap-2.5 px-4 py-3 border-b border-(--color-line)" style={{ background: `${dc}10` }}>
-                                    <span className="w-7 h-7 rounded-xl text-xs font-black flex items-center justify-center shrink-0 text-white" style={{ background: dc }}>{i + 1}</span>
-                                    <span className="text-(--color-text-strong) text-sm font-bold">{day.dayLabel}</span>
-                                  </div>
-                                  <div className="p-4 flex flex-col gap-3">
-                                    <div>
-                                      <span className="text-[9px] font-black uppercase tracking-widest text-(--color-text-muted) block mb-1">🧩 Aktivite</span>
-                                      <span className="text-xs text-(--color-text-body) leading-snug">{day.activity}</span>
-                                    </div>
-                                    <div>
-                                      <span className="text-[9px] font-black uppercase tracking-widest text-(--color-text-muted) block mb-1">🎮 Dijital Oyun</span>
-                                      <button type="button"
-                                        className="text-xs font-semibold border-none cursor-pointer flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors text-white"
-                                        style={{ background: dc, boxShadow: `0 2px 6px ${dc}50` }}
-                                        onClick={() => openGameView(day.game)}>
-                                        ▶ {gameTab?.title ?? day.game}
-                                      </button>
-                                    </div>
-                                    <div>
-                                      <span className="text-[9px] font-black uppercase tracking-widest text-(--color-text-muted) block mb-1">📝 Gözlem</span>
-                                      <span className="text-xs text-(--color-text-soft)">{day.observation}</span>
-                                    </div>
-                                  </div>
-                                </div>
+                                <button key={env.key} type="button"
+                                  onClick={() => setTpEnvironments((cur) => on ? cur.filter((e) => e !== env.key) : [...cur, env.key])}
+                                  className="px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-all"
+                                  style={{
+                                    background: on ? "var(--color-primary)" : "var(--color-surface-elevated)",
+                                    color: on ? "#fff" : "var(--color-text-soft)",
+                                    border: `1px solid ${on ? "var(--color-primary)" : "var(--color-line)"}`,
+                                  }}>
+                                  {env.label}
+                                </button>
                               );
                             })}
                           </div>
                         </div>
+                      </div>
 
-                        <div className="rounded-2xl border border-amber-500/25 p-4 flex items-start gap-2.5" style={{ background: "#f59e0b08" }}>
-                          <span className="text-base shrink-0">📌</span>
-                          <p className="text-(--color-text-muted) text-xs m-0 italic leading-relaxed">{tpGeneratedPlan.weeklyPlan.sessionNotes}</p>
+                      {/* Planın dayandığı girdiler — terapist güvenmeden önce görmeli */}
+                      <div className="mt-4 pt-4 border-t border-(--color-line) flex flex-wrap gap-x-4 gap-y-1.5">
+                        {plan.basis.map((b) => (
+                          <span key={b} className="text-[11px] text-(--color-text-muted) flex items-center gap-1.5">
+                            <span className="w-1 h-1 rounded-full bg-(--color-text-disabled)" />{b}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* ── Uyarılar ── */}
+                    {plan.precautions.length > 0 && (
+                      <div className="rounded-2xl border p-4" style={{ borderColor: "var(--color-accent-amber)", background: "var(--color-accent-amber)/08" }}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Bell size={14} style={{ color: "var(--color-accent-amber)" }} />
+                          <span className="text-xs font-extrabold uppercase tracking-widest" style={{ color: "var(--color-accent-amber)" }}>
+                            Klinik uyarılar
+                          </span>
+                        </div>
+                        <ul className="m-0 pl-4 space-y-1">
+                          {plan.precautions.map((p) => (
+                            <li key={p} className="text-xs text-(--color-text-body) leading-relaxed">{p}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* ── Haftalık takvim ── */}
+                    <div className="surface overflow-hidden">
+                      <div className="flex items-center justify-between gap-3 flex-wrap px-5 py-4 border-b border-(--color-line)">
+                        <div>
+                          <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0">
+                            Haftalık akış — {plan.days.length} seans
+                          </h3>
+                          <p className="text-xs text-(--color-text-muted) m-0 mt-0.5">{plan.performanceNote}</p>
+                        </div>
+                        <span className="text-xs text-(--color-text-muted)">
+                          Toplam <span className="numeral font-bold text-(--color-text-body)">{plan.weeklyMinutes}</span> dk/hafta
+                        </span>
+                      </div>
+                      <div className="divide-y divide-(--color-line)">
+                        {plan.days.map((day) => (
+                          <div key={day.dayKey} className="flex items-start gap-4 px-5 py-3.5">
+                            <span className="w-16 shrink-0 text-xs font-bold text-(--color-text-strong) pt-0.5">{day.dayLabel}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-baseline gap-2 flex-wrap">
+                                <span className="text-sm font-semibold text-(--color-text-strong)">
+                                  {day.activity?.label ?? "Aktivite seçilmedi"}
+                                </span>
+                                {day.activity && (
+                                  <span className="numeral text-[11px] text-(--color-text-muted)">{day.minutes} dk</span>
+                                )}
+                              </div>
+                              <p className="text-xs text-(--color-text-soft) m-0 mt-0.5 leading-relaxed">{day.focus}</p>
+                            </div>
+                            {day.game && (
+                              <button type="button"
+                                onClick={() => openGameView(day.game as PlatformGameKey)}
+                                className="shrink-0 text-[11px] font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-opacity hover:opacity-85"
+                                style={{ background: "var(--color-primary)", color: "#fff", border: "none" }}>
+                                ▶ {day.gameLabel}
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* ── Önerilen aktiviteler, öncelik sırasıyla ── */}
+                    <div className="surface overflow-hidden">
+                      <div className="px-5 py-4 border-b border-(--color-line)">
+                        <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0">
+                          Aktivite önerileri
+                        </h3>
+                        <p className="text-xs text-(--color-text-muted) m-0 mt-0.5">
+                          Öncelik sırası; danışanın bağımsızlık düzeyinin bir kademe üstündeki aktiviteler öne alınır.
+                        </p>
+                      </div>
+                      <div className="divide-y divide-(--color-line)">
+                        {plan.recommended.map(({ activity, fit, verdict, rationale }) => {
+                          const vs = verdictStyle[verdict];
+                          return (
+                            <div key={activity.id} className="px-5 py-4">
+                              <div className="flex items-start justify-between gap-3 flex-wrap">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                                    <span className="text-sm font-bold text-(--color-text-strong)">{activity.label}</span>
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                                      style={{ background: `${vs.color}1a`, color: vs.color, border: `1px solid ${vs.color}33` }}>
+                                      {vs.label}
+                                    </span>
+                                    <span className="text-[10px] text-(--color-text-muted)">{activity.subSkill}</span>
+                                  </div>
+                                  <p className="text-xs text-(--color-text-soft) m-0 leading-relaxed">{activity.description}</p>
+                                  <p className="text-[11px] text-(--color-text-muted) m-0 mt-1.5">
+                                    <span className="font-semibold">Neden bu sırada:</span> {rationale}
+                                  </p>
+                                  {fit && (
+                                    <p className="text-[11px] text-(--color-text-muted) m-0 mt-1">
+                                      <span className="font-semibold">İlerleme ölçütü:</span> {fit.progressionCriterion}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="flex flex-col items-end gap-1 shrink-0">
+                                  <span className="numeral text-xs text-(--color-text-muted)">{activity.sessionMinutes} dk</span>
+                                  {fit && (
+                                    <span className="numeral text-[11px] text-(--color-text-muted)">
+                                      hafta × {fit.sessionsPerWeek}
+                                    </span>
+                                  )}
+                                  {activity.homeExercise && (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                                      style={{ background: "var(--color-accent-green)/12", color: "var(--color-accent-green)" }}>
+                                      ev programı
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* ── Elenen aktiviteler — şeffaflık ── */}
+                    {plan.excluded.length > 0 && (
+                      <details className="surface overflow-hidden">
+                        <summary className="px-5 py-3.5 cursor-pointer list-none flex items-center justify-between">
+                          <span className="text-xs font-bold text-(--color-text-soft)">
+                            Bu danışan için elenen {plan.excluded.length} aktivite
+                          </span>
+                          <ChevronDown size={14} className="text-(--color-text-muted)" />
+                        </summary>
+                        <div className="px-5 pb-4 pt-1 border-t border-(--color-line) flex flex-col gap-1.5">
+                          {plan.excluded.map(({ activity, rationale }) => (
+                            <p key={activity.id} className="text-xs text-(--color-text-muted) m-0">
+                              <span className="font-semibold text-(--color-text-soft)">{activity.label}</span> — {rationale}
+                            </p>
+                          ))}
+                        </div>
+                      </details>
+                    )}
+
+                    {/* ── Standart çıktı ölçütleri ── */}
+                    {plan.measures.length > 0 && (
+                      <div className="surface overflow-hidden">
+                        <div className="px-5 py-4 border-b border-(--color-line)">
+                          <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0">İlerlemeyi nasıl ölçersiniz?</h3>
+                          <p className="text-xs text-(--color-text-muted) m-0 mt-0.5">
+                            Bu alan ve yaş grubu için uygun standart araçlar; eşikler kaynağıyla birlikte verilmiştir.
+                          </p>
+                        </div>
+                        <div className="divide-y divide-(--color-line)">
+                          {plan.measures.map((measure) => (
+                            <details key={measure.id} className="px-5 py-3.5">
+                              <summary className="cursor-pointer list-none flex items-baseline gap-2 flex-wrap">
+                                <span className="text-sm font-bold text-(--color-text-strong)">{measure.abbr}</span>
+                                <span className="text-xs text-(--color-text-soft)">{measure.name}</span>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto shrink-0"
+                                  style={{ background: "var(--color-primary)/10", color: "var(--color-primary)" }}>
+                                  {MEASURE_KIND_LABELS[measure.kind]}
+                                </span>
+                              </summary>
+                              <div className="mt-2.5 flex flex-col gap-2">
+                                <p className="text-xs text-(--color-text-body) m-0 leading-relaxed">{measure.measures}</p>
+                                <p className="text-xs text-(--color-text-soft) m-0 leading-relaxed">
+                                  <span className="font-semibold">Uygulama:</span> {measure.administration}
+                                </p>
+                                <ul className="m-0 pl-4 space-y-0.5">
+                                  {measure.interpretation.map((line) => (
+                                    <li key={line} className="text-xs text-(--color-text-soft) leading-relaxed">{line}</li>
+                                  ))}
+                                </ul>
+                                {measure.caveat && (
+                                  <p className="text-xs m-0 leading-relaxed px-3 py-2 rounded-lg"
+                                    style={{ background: "var(--color-accent-amber)/10", color: "var(--color-text-body)" }}>
+                                    <span className="font-semibold">Sınırlılık:</span> {measure.caveat}
+                                  </p>
+                                )}
+                                <p className="text-[11px] text-(--color-text-muted) m-0 italic">Kaynak: {measure.source}</p>
+                              </div>
+                            </details>
+                          ))}
                         </div>
                       </div>
                     )}
@@ -6879,7 +7000,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 const selectedProgressClient = clientOptions.find((c) => c.id === tpSelectedClientId) ?? null;
                 if (!selectedProgressClient) return (
                   <div className="flex flex-col items-center gap-4 py-16 text-center rounded-3xl border border-(--color-line) border-dashed" style={{ background: "var(--color-surface-strong)" }}>
-                    <div className="w-16 h-16 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,var(--color-primary)/15,#8b5cf6/15)" }}>
+                    <div className="w-16 h-16 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,var(--color-primary)/15,#14847a/15)" }}>
                       <BarChart3 size={28} className="text-(--color-primary)" />
                     </div>
                     <h3 className="text-(--color-text-strong) font-extrabold text-lg m-0">Danışan seçilmedi</h3>
@@ -6911,22 +7032,22 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       </div>
                       <button type="button"
                         className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white border-none cursor-pointer transition-all"
-                        style={{ background: "linear-gradient(135deg,var(--color-primary),#8b5cf6)", boxShadow: "0 4px 14px var(--color-primary)/40" }}
+                        style={{ background: "linear-gradient(135deg,var(--color-primary),#14847a)", boxShadow: "0 4px 14px var(--color-primary)/40" }}
                         onClick={() => setTpShowProgressForm(!tpShowProgressForm)}>
                         + Kayıt Ekle
                       </button>
                     </div>
 
                     {/* ── Overall Progress Hero ── */}
-                    <div className="relative overflow-hidden rounded-3xl border border-(--color-line) p-6" style={{ background: "linear-gradient(135deg,var(--color-primary)/8 0%,#8b5cf6/5 100%)" }}>
-                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,var(--color-primary),#8b5cf6,transparent)" }} />
+                    <div className="relative overflow-hidden rounded-3xl border border-(--color-line) p-6" style={{ background: "linear-gradient(135deg,var(--color-primary)/8 0%,#14847a/5 100%)" }}>
+                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,var(--color-primary),#14847a,transparent)" }} />
                       <div className="flex items-center gap-6">
                         {/* Donut chart */}
                         <div className="relative w-24 h-24 shrink-0">
                           <svg viewBox="0 0 36 36" className="w-24 h-24 -rotate-90">
                             <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(14,165,233,0.1)" strokeWidth="3" />
                             <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="url(#progressGrad)" strokeWidth="3" strokeDasharray={`${overallAvg}, 100`} strokeLinecap="round" />
-                            <defs><linearGradient id="progressGrad"><stop offset="0%" stopColor="#2563eb" /><stop offset="100%" stopColor="#8b5cf6" /></linearGradient></defs>
+                            <defs><linearGradient id="progressGrad"><stop offset="0%" stopColor="#0d5f56" /><stop offset="100%" stopColor="#14847a" /></linearGradient></defs>
                           </svg>
                           <span className="absolute inset-0 flex items-center justify-center text-xl font-black text-(--color-text-strong)">{overallAvg}%</span>
                         </div>
@@ -6935,7 +7056,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           <p className="text-(--color-text-soft) text-sm m-0">{clientProgress.length} kayıt · {goalAverages.filter((g) => g.count > 0).length}/{goals.length} hedef takipte</p>
                           {/* Mini bar */}
                           <div className="mt-3 h-2 rounded-full overflow-hidden" style={{ background: "var(--color-line)" }}>
-                            <div className="h-full rounded-full transition-all" style={{ width: `${overallAvg}%`, background: "linear-gradient(90deg,var(--color-primary),#8b5cf6)" }} />
+                            <div className="h-full rounded-full transition-all" style={{ width: `${overallAvg}%`, background: "linear-gradient(90deg,var(--color-primary),#14847a)" }} />
                           </div>
                         </div>
                       </div>
@@ -6944,9 +7065,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     {/* ── Add Progress Form ── */}
                     {tpShowProgressForm && domain && (
                       <div className="relative overflow-hidden rounded-3xl border border-(--color-line)" style={{ background: "var(--color-surface-strong)" }}>
-                        <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,var(--color-primary),#8b5cf6,transparent)" }} />
+                        <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,var(--color-primary),#14847a,transparent)" }} />
                         <div className="flex items-center gap-3 px-6 py-4 border-b border-(--color-line)" style={{ background: "var(--color-primary)/5" }}>
-                          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,var(--color-primary),#8b5cf6)" }}>
+                          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,var(--color-primary),#14847a)" }}>
                             <TrendingUp size={15} className="text-white" />
                           </div>
                           <h4 className="text-(--color-text-strong) font-extrabold m-0">Yeni İlerleme Kaydı</h4>
@@ -6964,7 +7085,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                               <span className="text-[10px] font-black uppercase tracking-wider text-(--color-text-muted)">Bağımsızlık Düzeyi</span>
                               <span className="text-lg font-black text-(--color-primary)">{tpProgressForm.value}%</span>
                             </div>
-                            <input type="range" min={0} max={100} step={5} value={tpProgressForm.value} onChange={(e) => setTpProgressForm((c) => ({ ...c, value: Number(e.target.value) }))} className="w-full accent-blue-600" />
+                            <input type="range" min={0} max={100} step={5} value={tpProgressForm.value} onChange={(e) => setTpProgressForm((c) => ({ ...c, value: Number(e.target.value) }))} className="w-full accent-[#35708f]" />
                             <div className="flex justify-between text-[10px] text-(--color-text-muted) font-semibold">
                               {INDEPENDENCE_LEVELS.map((lvl) => <span key={lvl.key}>{lvl.label}</span>)}
                             </div>
@@ -6976,7 +7097,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           <div className="flex gap-2 sm:col-span-2">
                             <button type="button"
                               className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white border-none cursor-pointer transition-all"
-                              style={{ background: "linear-gradient(135deg,var(--color-primary),#8b5cf6)", boxShadow: "0 4px 14px var(--color-primary)/40" }}
+                              style={{ background: "linear-gradient(135deg,var(--color-primary),#14847a)", boxShadow: "0 4px 14px var(--color-primary)/40" }}
                               onClick={handleAddProgressEntry}>
                               Kaydet
                             </button>
@@ -6994,17 +7115,17 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     {/* ── Goal Averages ── */}
                     {goalAverages.length > 0 && (
                       <div className="rounded-3xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
-                        <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,#10b981,transparent)" }} />
+                        <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg,#7aac3a,transparent)" }} />
                         <div className="flex items-center gap-3 px-5 py-4 border-b border-(--color-line)" style={{ background: "var(--color-surface-elevated)" }}>
-                          <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#10b981,#06b6d4)" }}>
+                          <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#7aac3a,#4f93b5)" }}>
                             <Target size={13} className="text-white" />
                           </div>
                           <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0">Hedef Bazlı İlerleme</h3>
-                          <span className="ml-auto px-2.5 py-0.5 rounded-full text-xs font-bold text-white" style={{ background: "#10b981" }}>{goalAverages.filter(g => g.count > 0).length} hedef</span>
+                          <span className="ml-auto px-2.5 py-0.5 rounded-full text-xs font-bold text-white" style={{ background: "#7aac3a" }}>{goalAverages.filter(g => g.count > 0).length} hedef</span>
                         </div>
                         <div className="p-5 space-y-4">
                           {goalAverages.map((ga, i) => {
-                            const barColor = ga.average >= 75 ? "#10b981" : ga.average >= 50 ? "#f59e0b" : ga.average >= 25 ? "#2563eb" : "#ef4444";
+                            const barColor = ga.average >= 75 ? "#7aac3a" : ga.average >= 50 ? "#c07c2c" : ga.average >= 25 ? "#0d5f56" : "#d1503c";
                             return (
                               <div key={ga.id}>
                                 <div className="flex items-center justify-between mb-2">
@@ -7027,11 +7148,11 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     {/* ── Progress History ── */}
                     <div className="relative rounded-3xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
                       <div className="flex items-center gap-3 px-5 py-4 border-b border-(--color-line)" style={{ background: "var(--color-surface-elevated)" }}>
-                        <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#f59e0b,#ef4444)" }}>
+                        <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c07c2c,#d1503c)" }}>
                           <BarChart3 size={13} className="text-white" />
                         </div>
                         <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0">İlerleme Geçmişi</h3>
-                        <span className="ml-auto px-2.5 py-0.5 rounded-full text-xs font-bold text-white" style={{ background: "#f59e0b" }}>{clientProgress.length}</span>
+                        <span className="ml-auto px-2.5 py-0.5 rounded-full text-xs font-bold text-white" style={{ background: "#c07c2c" }}>{clientProgress.length}</span>
                       </div>
                       {clientProgress.length === 0 ? (
                         <div className="flex flex-col items-center gap-3 py-12 text-center">
@@ -7042,7 +7163,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         <div className="divide-y divide-(--color-line)">
                           {clientProgress.map((entry) => {
                             const goal = goals.find((g) => g.id === entry.goalId);
-                            const barColor = entry.value >= 75 ? "#10b981" : entry.value >= 50 ? "#f59e0b" : entry.value >= 25 ? "#2563eb" : "#ef4444";
+                            const barColor = entry.value >= 75 ? "#7aac3a" : entry.value >= 50 ? "#c07c2c" : entry.value >= 25 ? "#0d5f56" : "#d1503c";
                             return (
                               <div key={entry.id} className="px-5 py-4 flex items-center gap-4 hover:bg-(--color-surface-elevated) transition-colors">
                                 <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-base font-black text-white" style={{ background: `linear-gradient(135deg, ${barColor}, ${barColor}90)` }}>
@@ -7061,7 +7182,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                                     </div>
                                   </div>
                                   <button type="button"
-                                    className="w-7 h-7 rounded-lg flex items-center justify-center text-xs border-none cursor-pointer transition-colors text-(--color-text-muted) hover:text-red-400 hover:bg-red-500/10"
+                                    className="w-7 h-7 rounded-lg flex items-center justify-center text-xs border-none cursor-pointer transition-colors text-(--color-text-muted) hover:text-[#de8265] hover:bg-[#d1503c]/10"
                                     style={{ background: "transparent" }}
                                     onClick={() => handleDeleteProgressEntry(entry.id)}>
                                     ✕
@@ -7235,11 +7356,11 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       <nav className="fixed bottom-0 left-0 right-0 z-30 lg:hidden" role="navigation" aria-label="Mobil gezinme" style={{ background: "var(--color-chrome-nav)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: "1px solid var(--color-line)", paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div className="flex items-stretch h-16 px-2">
           {([
-            { view: "dashboard" as AppView, Icon: LayoutDashboard, label: "Panel", gradient: "linear-gradient(135deg,#2563eb,#06b6d4)", tooltip: "Ana Panel" },
-            { view: "clients" as AppView, Icon: Users, label: "Danışanlar", gradient: "linear-gradient(135deg,#8b5cf6,#ec4899)", tooltip: "Danışan Listesi" },
-            { view: "games" as AppView, Icon: Gamepad2, label: "Oyunlar", gradient: "linear-gradient(135deg,#10b981,#2563eb)", tooltip: "Oyun Seç" },
-            { view: "therapy-program" as AppView, Icon: Stethoscope, label: "Terapi", gradient: "linear-gradient(135deg,#8b5cf6,#6366f1)", tooltip: "Terapi Programı" },
-            { view: "reports" as AppView, Icon: BarChart3, label: "Rapor", gradient: "linear-gradient(135deg,#f59e0b,#ef4444)", tooltip: "Raporlar & Analitik" },
+            { view: "dashboard" as AppView, Icon: LayoutDashboard, label: "Panel", gradient: "linear-gradient(135deg,#0d5f56,#4f93b5)", tooltip: "Ana Panel" },
+            { view: "clients" as AppView, Icon: Users, label: "Danışanlar", gradient: "linear-gradient(135deg,#14847a,#c4614a)", tooltip: "Danışan Listesi" },
+            { view: "games" as AppView, Icon: Gamepad2, label: "Oyunlar", gradient: "linear-gradient(135deg,#7aac3a,#0d5f56)", tooltip: "Oyun Seç" },
+            { view: "therapy-program" as AppView, Icon: Stethoscope, label: "Terapi", gradient: "linear-gradient(135deg,#14847a,#0f6e63)", tooltip: "Terapi Programı" },
+            { view: "reports" as AppView, Icon: BarChart3, label: "Rapor", gradient: "linear-gradient(135deg,#c07c2c,#d1503c)", tooltip: "Raporlar & Analitik" },
           ]).map(({ view, Icon, label, gradient, tooltip }) => {
             const isActive = activeAppView === view || (view === "clients" && activeAppView === "client-detail");
             return (
@@ -7286,7 +7407,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       {showAchievements && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)" }} onClick={() => setShowAchievements(false)}>
           <div className="w-full max-w-md max-h-[80vh] overflow-y-auto rounded-3xl border" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }} onClick={e => e.stopPropagation()}>
-            <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #6366f1, #f59e0b, #ec4899)" }} />
+            <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #0f6e63, #c07c2c, #c4614a)" }} />
             <div className="p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0">Başarımlar</h3>
@@ -7309,12 +7430,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       {/* ── Difficulty upgrade prompt ── */}
       {difficultyPrompt && (
         <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4 sm:p-6" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
-          <div className="w-full max-w-sm rounded-3xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "rgba(99,102,241,0.35)", boxShadow: "0 0 60px rgba(99,102,241,0.2)" }}>
-            <div className="h-1 w-full" style={{ background: "linear-gradient(90deg,#6366f1,#8b5cf6,#06b6d4)" }} />
+          <div className="w-full max-w-sm rounded-3xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "rgba(15, 110, 99,0.35)", boxShadow: "0 0 60px rgba(15, 110, 99,0.2)" }}>
+            <div className="h-1 w-full" style={{ background: "linear-gradient(90deg,#0f6e63,#14847a,#4f93b5)" }} />
             <div className="p-5 space-y-4">
               <div className="flex items-start gap-3">
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "rgba(99,102,241,0.15)" }}>
-                  <TrendingUp size={20} style={{ color: "#818cf8" }} />
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "rgba(15, 110, 99,0.15)" }}>
+                  <TrendingUp size={20} style={{ color: "#35b0a0" }} />
                 </div>
                 <div>
                   <h3 className="font-extrabold text-(--color-text-strong) m-0 mb-1">Zorluk Artışı Önerisi</h3>
@@ -7323,11 +7444,11 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   </p>
                 </div>
               </div>
-              <div className="rounded-2xl p-3.5 flex items-center gap-3" style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}>
+              <div className="rounded-2xl p-3.5 flex items-center gap-3" style={{ background: "rgba(15, 110, 99,0.08)", border: "1px solid rgba(15, 110, 99,0.2)" }}>
                 <span className="text-2xl">📈</span>
                 <div>
                   <p className="m-0 text-sm font-bold text-(--color-text-strong)">
-                    Seviyeyi <span style={{ color: "#818cf8" }}>{difficultyPrompt.suggestedLevel}</span>'a yükselt
+                    Seviyeyi <span style={{ color: "#35b0a0" }}>{difficultyPrompt.suggestedLevel}</span>'a yükselt
                   </p>
                   <p className="m-0 text-xs text-(--color-text-muted)">Danışan profili güncellenecek, oyunlar buna göre ayarlanacak.</p>
                 </div>
@@ -7335,7 +7456,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               <div className="flex gap-2">
                 <button type="button"
                   className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white border-none cursor-pointer hover:opacity-90 transition-opacity"
-                  style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}
+                  style={{ background: "linear-gradient(135deg,#0f6e63,#14847a)" }}
                   onClick={() => void handleUpdateClientDifficulty(difficultyPrompt.clientId, difficultyPrompt.suggestedLevel)}>
                   Evet, güncelle
                 </button>
@@ -7355,13 +7476,13 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       {showShortcutGuide && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)" }}
           onClick={() => setShowShortcutGuide(false)}>
-          <div className="w-full max-w-lg rounded-3xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "rgba(99,102,241,0.3)", boxShadow: "0 0 80px rgba(99,102,241,0.2)" }}
+          <div className="w-full max-w-lg rounded-3xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "rgba(15, 110, 99,0.3)", boxShadow: "0 0 80px rgba(15, 110, 99,0.2)" }}
             onClick={e => e.stopPropagation()}>
-            <div className="h-1 w-full" style={{ background: "linear-gradient(90deg,#6366f1,#8b5cf6,#06b6d4)" }} />
+            <div className="h-1 w-full" style={{ background: "linear-gradient(90deg,#0f6e63,#14847a,#4f93b5)" }} />
             <div className="p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-extrabold text-(--color-text-strong) m-0 flex items-center gap-2">
-                  <span className="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black" style={{ background: "rgba(99,102,241,0.15)", color: "#818cf8" }}>?</span>
+                  <span className="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black" style={{ background: "rgba(15, 110, 99,0.15)", color: "#35b0a0" }}>?</span>
                   Klavye Kısayolları
                 </h3>
                 <button type="button" className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer border-none text-(--color-text-muted) hover:text-(--color-text-body) transition-colors" style={{ background: "var(--color-surface)" }} onClick={() => setShowShortcutGuide(false)}>✕</button>
@@ -7386,7 +7507,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         <span className="text-sm text-(--color-text-body)">{desc}</span>
                         <div className="flex items-center gap-1 shrink-0">
                           {keys.map(k => (
-                            <kbd key={k} className="text-[11px] font-bold px-2 py-0.5 rounded-lg" style={{ background: "rgba(99,102,241,0.12)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.25)", fontFamily: "monospace" }}>{k}</kbd>
+                            <kbd key={k} className="text-[11px] font-bold px-2 py-0.5 rounded-lg" style={{ background: "rgba(15, 110, 99,0.12)", color: "#35b0a0", border: "1px solid rgba(15, 110, 99,0.25)", fontFamily: "monospace" }}>{k}</kbd>
                           ))}
                         </div>
                       </div>

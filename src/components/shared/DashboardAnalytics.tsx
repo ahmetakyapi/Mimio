@@ -74,13 +74,13 @@ export function WeeklySummaryCard({ sessions, totalClients }: DashboardAnalytics
   return (
     <div className="rounded-2xl sm:rounded-3xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}>
       {/* Header gradient bar */}
-      <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #6366f1, #8b5cf6, #06b6d4)" }} />
+      <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #0f6e63, #14847a, #4f93b5)" }} />
 
       <div className="p-4 sm:p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "rgba(99,102,241,0.12)" }}>
-              <Calendar size={15} style={{ color: "#818cf8" }} />
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "rgba(15, 110, 99,0.12)" }}>
+              <Calendar size={15} style={{ color: "#35b0a0" }} />
             </div>
             <div>
               <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0">Haftalık Özet</h3>
@@ -89,9 +89,9 @@ export function WeeklySummaryCard({ sessions, totalClients }: DashboardAnalytics
           </div>
           {sessionDelta !== 0 && (
             <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold" style={{
-              background: sessionDelta > 0 ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)",
-              color: sessionDelta > 0 ? "#10b981" : "#ef4444",
-              border: `1px solid ${sessionDelta > 0 ? "rgba(16,185,129,0.2)" : "rgba(239,68,68,0.2)"}`,
+              background: sessionDelta > 0 ? "rgba(122, 172, 58,0.1)" : "rgba(209, 80, 60,0.1)",
+              color: sessionDelta > 0 ? "#7aac3a" : "#d1503c",
+              border: `1px solid ${sessionDelta > 0 ? "rgba(122, 172, 58,0.2)" : "rgba(209, 80, 60,0.2)"}`,
             }}>
               {sessionDelta > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
               {sessionDelta > 0 ? "+" : ""}{sessionDelta}%
@@ -102,10 +102,10 @@ export function WeeklySummaryCard({ sessions, totalClients }: DashboardAnalytics
         {/* Quick stats grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
           {[
-            { icon: Gamepad2, label: "Seans", value: analytics.thisWeekCount, color: "#6366f1", bg: "rgba(99,102,241,0.08)" },
-            { icon: Users, label: "Aktif Danışan", value: analytics.thisWeekClients, color: "#8b5cf6", bg: "rgba(139,92,246,0.08)" },
-            { icon: Target, label: "Ort. Skor", value: analytics.thisWeekAvg, color: "#06b6d4", bg: "rgba(6,182,212,0.08)" },
-            { icon: Clock, label: "Toplam Süre", value: formatDuration(analytics.thisWeekDuration), color: "#10b981", bg: "rgba(16,185,129,0.08)" },
+            { icon: Gamepad2, label: "Seans", value: analytics.thisWeekCount, color: "#0f6e63", bg: "rgba(15, 110, 99,0.08)" },
+            { icon: Users, label: "Aktif Danışan", value: analytics.thisWeekClients, color: "#14847a", bg: "rgba(20, 132, 122,0.08)" },
+            { icon: Target, label: "Ort. Skor", value: analytics.thisWeekAvg, color: "#4f93b5", bg: "rgba(79, 147, 181,0.08)" },
+            { icon: Clock, label: "Toplam Süre", value: formatDuration(analytics.thisWeekDuration), color: "#7aac3a", bg: "rgba(122, 172, 58,0.08)" },
           ].map(({ icon: Icon, label, value, color, bg }) => (
             <div key={label} className="rounded-xl p-3 text-center" style={{ background: bg, border: `1px solid ${color}15` }}>
               <Icon size={14} className="mx-auto mb-1" style={{ color, opacity: 0.7 }} />
@@ -127,9 +127,9 @@ export function WeeklySummaryCard({ sessions, totalClients }: DashboardAnalytics
                   <div className="w-full rounded-t-md transition-all duration-500" style={{
                     height,
                     background: isToday
-                      ? "linear-gradient(180deg, #6366f1, #8b5cf6)"
-                      : count > 0 ? "rgba(99,102,241,0.35)" : "rgba(255,255,255,0.04)",
-                    boxShadow: isToday && count > 0 ? "0 2px 8px rgba(99,102,241,0.4)" : "none",
+                      ? "linear-gradient(180deg, #0f6e63, #14847a)"
+                      : count > 0 ? "rgba(15, 110, 99,0.35)" : "rgba(255,255,255,0.04)",
+                    boxShadow: isToday && count > 0 ? "0 2px 8px rgba(15, 110, 99,0.4)" : "none",
                   }} />
                   <span className={`text-[8px] font-bold ${isToday ? "text-(--color-primary)" : "text-(--color-text-muted)"}`}>
                     {reorderedLabels[i]}
@@ -142,8 +142,8 @@ export function WeeklySummaryCard({ sessions, totalClients }: DashboardAnalytics
 
         {/* Top game badge */}
         {analytics.topGame && (
-          <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.12)" }}>
-            <BarChart3 size={12} style={{ color: "#818cf8" }} />
+          <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: "rgba(15, 110, 99,0.06)", border: "1px solid rgba(15, 110, 99,0.12)" }}>
+            <BarChart3 size={12} style={{ color: "#35b0a0" }} />
             <span className="text-xs text-(--color-text-soft)">
               En çok oynanan: <strong className="text-(--color-text-strong)">{GAME_LABELS[analytics.topGame.key]}</strong>
               <span className="text-(--color-text-muted)"> ({analytics.topGame.count} seans)</span>
@@ -154,13 +154,13 @@ export function WeeklySummaryCard({ sessions, totalClients }: DashboardAnalytics
         {/* Score trend indicator */}
         {analytics.scoreDelta !== 0 && (
           <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-xl" style={{
-            background: analytics.scoreDelta > 0 ? "rgba(16,185,129,0.06)" : "rgba(239,68,68,0.06)",
-            border: `1px solid ${analytics.scoreDelta > 0 ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)"}`,
+            background: analytics.scoreDelta > 0 ? "rgba(122, 172, 58,0.06)" : "rgba(209, 80, 60,0.06)",
+            border: `1px solid ${analytics.scoreDelta > 0 ? "rgba(122, 172, 58,0.12)" : "rgba(209, 80, 60,0.12)"}`,
           }}>
-            {analytics.scoreDelta > 0 ? <TrendingUp size={12} style={{ color: "#10b981" }} /> : <TrendingDown size={12} style={{ color: "#ef4444" }} />}
+            {analytics.scoreDelta > 0 ? <TrendingUp size={12} style={{ color: "#7aac3a" }} /> : <TrendingDown size={12} style={{ color: "#d1503c" }} />}
             <span className="text-xs text-(--color-text-soft)">
               Skor ortalaması geçen haftaya göre{" "}
-              <strong style={{ color: analytics.scoreDelta > 0 ? "#10b981" : "#ef4444" }}>
+              <strong style={{ color: analytics.scoreDelta > 0 ? "#7aac3a" : "#d1503c" }}>
                 %{Math.abs(analytics.scoreDelta)} {analytics.scoreDelta > 0 ? "arttı" : "düştü"}
               </strong>
             </span>
@@ -191,8 +191,8 @@ export function GameDistributionChart({ sessions }: GameRadarProps) {
   }, [sessions]);
 
   const GAME_COLORS: Record<string, string> = {
-    memory: "#818cf8", pairs: "#34d399", pulse: "#f472b6",
-    route: "#fb923c", difference: "#38bdf8", scan: "#a78bfa", logic: "#fbbf24",
+    memory: "#35b0a0", pairs: "#9cc65e", pulse: "#de8265",
+    route: "#fb923c", difference: "#7fb2cc", scan: "#35b0a0", logic: "#e3a75c",
   };
 
   const entries = Object.entries(gameStats).sort((a, b) => b[1].count - a[1].count);
@@ -264,7 +264,7 @@ export function ClientActivityOverview({ sessions, clientNames }: ClientActivity
             return (
               <div key={client.id} className="flex items-center gap-3 px-3 py-2 rounded-xl" style={{ background: "var(--color-surface-elevated)" }}>
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-extrabold text-white shrink-0"
-                  style={{ background: `linear-gradient(135deg, ${["#6366f1","#8b5cf6","#06b6d4","#10b981","#f59e0b"][i]}, ${["#4f46e5","#7c3aed","#0891b2","#059669","#d97706"][i]})` }}>
+                  style={{ background: `linear-gradient(135deg, ${["#0f6e63","#14847a","#4f93b5","#7aac3a","#c07c2c"][i]}, ${["#0b554c","#0b554c","#0891b2","#4f7a22","#9c5f18"][i]})` }}>
                   {client.name[0]?.toUpperCase() ?? "?"}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -273,8 +273,8 @@ export function ClientActivityOverview({ sessions, clientNames }: ClientActivity
                 </div>
                 {daysSince !== null && (
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0" style={{
-                    background: daysSince === 0 ? "rgba(16,185,129,0.1)" : daysSince <= 3 ? "rgba(99,102,241,0.1)" : "rgba(245,158,11,0.1)",
-                    color: daysSince === 0 ? "#10b981" : daysSince <= 3 ? "#818cf8" : "#f59e0b",
+                    background: daysSince === 0 ? "rgba(122, 172, 58,0.1)" : daysSince <= 3 ? "rgba(15, 110, 99,0.1)" : "rgba(192, 124, 44,0.1)",
+                    color: daysSince === 0 ? "#7aac3a" : daysSince <= 3 ? "#35b0a0" : "#c07c2c",
                   }}>
                     {daysSince === 0 ? "Bugün" : `${daysSince}g önce`}
                   </span>

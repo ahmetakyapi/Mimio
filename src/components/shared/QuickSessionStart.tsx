@@ -35,20 +35,20 @@ export function QuickSessionStart({ clients, activeClientId, recentSessions, onS
     : null;
 
   const quickActions = [
-    lastGame && { label: `Devam: ${GAME_LABELS[lastGame]}`, icon: RotateCcw, gameKey: lastGame, color: "#6366f1", description: "Son oynanan oyun" },
-    leastPlayed && { label: `Önerilen: ${GAME_LABELS[leastPlayed]}`, icon: Star, gameKey: leastPlayed, color: "#f59e0b", description: "Az çalışılan alan" },
-    { label: "Hızlı Set", icon: Zap, preset: "quick-mix", color: "#10b981", description: "3 oyunluk karma set" },
+    lastGame && { label: `Devam: ${GAME_LABELS[lastGame]}`, icon: RotateCcw, gameKey: lastGame, color: "#0f6e63", description: "Son oynanan oyun" },
+    leastPlayed && { label: `Önerilen: ${GAME_LABELS[leastPlayed]}`, icon: Star, gameKey: leastPlayed, color: "#c07c2c", description: "Az çalışılan alan" },
+    { label: "Hızlı Set", icon: Zap, preset: "quick-mix", color: "#7aac3a", description: "3 oyunluk karma set" },
   ].filter(Boolean) as Array<{ label: string; icon: typeof Play; gameKey?: PlatformGameKey; preset?: string; color: string; description: string }>;
 
   return (
     <div className="rounded-2xl sm:rounded-3xl border overflow-hidden" style={{
-      background: "linear-gradient(135deg, rgba(99,102,241,0.06), rgba(139,92,246,0.04))",
-      borderColor: "rgba(99,102,241,0.15)",
+      background: "linear-gradient(135deg, rgba(15, 110, 99,0.06), rgba(20, 132, 122,0.04))",
+      borderColor: "rgba(15, 110, 99,0.15)",
     }}>
       <div className="p-4 sm:p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", boxShadow: "0 4px 12px rgba(99,102,241,0.3)" }}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0f6e63, #14847a)", boxShadow: "0 4px 12px rgba(15, 110, 99,0.3)" }}>
               <Play size={16} className="text-white" />
             </div>
             <div>
@@ -66,7 +66,7 @@ export function QuickSessionStart({ clients, activeClientId, recentSessions, onS
         {activeClient && (
           <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-xl" style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
             <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-extrabold text-white shrink-0"
-              style={{ background: "linear-gradient(135deg, #8b5cf6, #6366f1)" }}>
+              style={{ background: "linear-gradient(135deg, #14847a, #0f6e63)" }}>
               {activeClient.displayName[0]?.toUpperCase() ?? "?"}
             </div>
             <div className="flex-1 min-w-0">

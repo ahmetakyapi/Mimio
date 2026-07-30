@@ -64,8 +64,8 @@ export function ClientProgressRadar({ sessions, clientId }: ClientProgressRadarP
   }).join(" ");
 
   const GAME_COLORS: Record<string, string> = {
-    memory: "#818cf8", pairs: "#34d399", pulse: "#f472b6",
-    route: "#fb923c", difference: "#38bdf8", scan: "#a78bfa", logic: "#fbbf24",
+    memory: "#35b0a0", pairs: "#9cc65e", pulse: "#de8265",
+    route: "#fb923c", difference: "#7fb2cc", scan: "#35b0a0", logic: "#e3a75c",
   };
 
   return (
@@ -75,11 +75,11 @@ export function ClientProgressRadar({ sessions, clientId }: ClientProgressRadarP
           <span className="text-xs font-extrabold uppercase tracking-wider text-(--color-text-muted)">Beceri Haritası</span>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1">
-              <span className="w-3 h-1.5 rounded-full" style={{ background: "rgba(99,102,241,0.5)" }} />
+              <span className="w-3 h-1.5 rounded-full" style={{ background: "rgba(15, 110, 99,0.5)" }} />
               <span className="text-[9px] text-(--color-text-muted)">En iyi</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="w-3 h-1.5 rounded-full" style={{ background: "rgba(16,185,129,0.5)" }} />
+              <span className="w-3 h-1.5 rounded-full" style={{ background: "rgba(122, 172, 58,0.5)" }} />
               <span className="text-[9px] text-(--color-text-muted)">Son 3 ort.</span>
             </div>
           </div>
@@ -106,10 +106,10 @@ export function ClientProgressRadar({ sessions, clientId }: ClientProgressRadarP
             })}
 
             {/* Best score area */}
-            <polygon points={bestPolygon} fill="rgba(99,102,241,0.12)" stroke="rgba(99,102,241,0.5)" strokeWidth="1.5" strokeLinejoin="round" />
+            <polygon points={bestPolygon} fill="rgba(15, 110, 99,0.12)" stroke="rgba(15, 110, 99,0.5)" strokeWidth="1.5" strokeLinejoin="round" />
 
             {/* Recent avg area */}
-            <polygon points={recentPolygon} fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.5)" strokeWidth="1.5" strokeLinejoin="round" strokeDasharray="4 2" />
+            <polygon points={recentPolygon} fill="rgba(122, 172, 58,0.08)" stroke="rgba(122, 172, 58,0.5)" strokeWidth="1.5" strokeLinejoin="round" strokeDasharray="4 2" />
 
             {/* Data points */}
             {gameStats.map((g, i) => {
@@ -117,8 +117,8 @@ export function ClientProgressRadar({ sessions, clientId }: ClientProgressRadarP
               const pRecent = getPoint(i, g.recentAvg);
               return (
                 <g key={g.key}>
-                  <circle cx={pBest.x} cy={pBest.y} r="3" fill="#6366f1" stroke="var(--color-surface-strong)" strokeWidth="1.5" />
-                  <circle cx={pRecent.x} cy={pRecent.y} r="2.5" fill="#10b981" stroke="var(--color-surface-strong)" strokeWidth="1" />
+                  <circle cx={pBest.x} cy={pBest.y} r="3" fill="#0f6e63" stroke="var(--color-surface-strong)" strokeWidth="1.5" />
+                  <circle cx={pRecent.x} cy={pRecent.y} r="2.5" fill="#7aac3a" stroke="var(--color-surface-strong)" strokeWidth="1" />
                 </g>
               );
             })}
@@ -153,7 +153,7 @@ export function ClientProgressRadar({ sessions, clientId }: ClientProgressRadarP
               <div key={g.key} className="text-center rounded-lg p-1.5" style={{ background: `${color}08` }}>
                 <strong className="text-sm font-extrabold tabular-nums block" style={{ color }}>{g.best}</strong>
                 <span className="text-[8px] text-(--color-text-muted) block">{g.label.split(" ")[0]}</span>
-                <span className="text-[8px] font-bold" style={{ color: trend === "up" ? "#10b981" : trend === "down" ? "#ef4444" : "#f59e0b" }}>
+                <span className="text-[8px] font-bold" style={{ color: trend === "up" ? "#7aac3a" : trend === "down" ? "#d1503c" : "#c07c2c" }}>
                   {trend === "up" ? "↑" : trend === "down" ? "↓" : "→"}
                 </span>
               </div>

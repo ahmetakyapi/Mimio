@@ -133,14 +133,14 @@ export function SessionReminderBanner({ clients, sessions, onSelectClient }: Ses
 
   return (
     <div className="rounded-2xl border overflow-hidden" style={{
-      background: "linear-gradient(135deg, rgba(245,158,11,0.04), rgba(239,68,68,0.02))",
-      borderColor: "rgba(245,158,11,0.15)",
+      background: "linear-gradient(135deg, rgba(192, 124, 44,0.04), rgba(209, 80, 60,0.02))",
+      borderColor: "rgba(192, 124, 44,0.15)",
     }}>
       <div className="p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "rgba(245,158,11,0.12)" }}>
-              <Bell size={14} style={{ color: "#f59e0b" }} />
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "rgba(192, 124, 44,0.12)" }}>
+              <Bell size={14} style={{ color: "#c07c2c" }} />
             </div>
             <div>
               <h4 className="text-xs font-extrabold text-(--color-text-strong) m-0">Seans Hatırlatıcı</h4>
@@ -156,7 +156,7 @@ export function SessionReminderBanner({ clients, sessions, onSelectClient }: Ses
           {visibleReminders.map(reminder => (
             <div key={reminder.clientId} className="flex items-center gap-3 px-3 py-2.5 rounded-xl" style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
               <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-extrabold text-white shrink-0"
-                style={{ background: reminder.type === "inactive" ? "linear-gradient(135deg, #f59e0b, #ea580c)" : "linear-gradient(135deg, #8b5cf6, #6366f1)" }}>
+                style={{ background: reminder.type === "inactive" ? "linear-gradient(135deg, #c07c2c, #ea580c)" : "linear-gradient(135deg, #14847a, #0f6e63)" }}>
                 {reminder.clientName[0]?.toUpperCase() ?? "?"}
               </div>
               <div className="flex-1 min-w-0">
@@ -171,7 +171,7 @@ export function SessionReminderBanner({ clients, sessions, onSelectClient }: Ses
               <div className="flex items-center gap-1 shrink-0">
                 <button type="button" onClick={() => { onSelectClient(reminder.clientId); }}
                   className="w-7 h-7 rounded-lg flex items-center justify-center border-none cursor-pointer"
-                  style={{ background: "rgba(99,102,241,0.1)", color: "#818cf8" }}
+                  style={{ background: "rgba(15, 110, 99,0.1)", color: "#35b0a0" }}
                   title="Seans başlat">
                   <ChevronRight size={14} />
                 </button>
@@ -188,7 +188,7 @@ export function SessionReminderBanner({ clients, sessions, onSelectClient }: Ses
 
         {reminders.length > 2 && (
           <button type="button" onClick={() => setShowAll(v => !v)}
-            className="w-full text-center text-[10px] font-bold mt-2 bg-transparent border-none cursor-pointer" style={{ color: "#f59e0b" }}>
+            className="w-full text-center text-[10px] font-bold mt-2 bg-transparent border-none cursor-pointer" style={{ color: "#c07c2c" }}>
             {showAll ? "Daha az göster" : `+${reminders.length - 2} danışan daha`}
           </button>
         )}
@@ -225,7 +225,7 @@ export function ReminderSettingsPanel({ onClose }: ReminderSettingsProps) {
         <span className="text-xs text-(--color-text-body)">Hatırlatıcıları aktifleştir</span>
         <button type="button" onClick={() => setSettings(s => ({ ...s, enabled: !s.enabled }))}
           className="w-10 h-5 rounded-full transition-colors border-none cursor-pointer relative"
-          style={{ background: settings.enabled ? "#6366f1" : "rgba(255,255,255,0.1)" }}>
+          style={{ background: settings.enabled ? "#0f6e63" : "rgba(255,255,255,0.1)" }}>
           <span className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform"
             style={{ left: settings.enabled ? "calc(100% - 18px)" : "2px" }} />
         </button>
@@ -243,7 +243,7 @@ export function ReminderSettingsPanel({ onClose }: ReminderSettingsProps) {
 
       <button type="button" onClick={handleSave}
         className="w-full py-2.5 rounded-xl text-sm font-bold text-white border-none cursor-pointer hover:opacity-90"
-        style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}>
+        style={{ background: "linear-gradient(135deg, #0f6e63, #14847a)" }}>
         Kaydet
       </button>
     </div>

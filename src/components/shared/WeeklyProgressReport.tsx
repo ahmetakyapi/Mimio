@@ -78,7 +78,7 @@ export function WeeklyProgressReport({ client, sessions, goals, therapistName, c
 
   function handlePrint() {
     const trendIcons: Record<string, string> = { up: "↑", down: "↓", stable: "→", new: "★" };
-    const trendColors: Record<string, string> = { up: "#10b981", down: "#ef4444", stable: "#f59e0b", new: "#6366f1" };
+    const trendColors: Record<string, string> = { up: "#7aac3a", down: "#d1503c", stable: "#c07c2c", new: "#0f6e63" };
 
     const gameRows = report.gamePerformance.map(g =>
       `<tr><td>${g.label}</td><td>${g.count}</td><td>${g.avg}</td><td>${g.best}</td><td style="color:${trendColors[g.trend]}; font-weight:700">${trendIcons[g.trend]} ${g.trend === "up" ? "Gelişiyor" : g.trend === "down" ? "Düşüş" : g.trend === "new" ? "Yeni" : "Stabil"}</td></tr>`
@@ -87,7 +87,7 @@ export function WeeklyProgressReport({ client, sessions, goals, therapistName, c
     const goalRows = [...report.activeGoals, ...report.completedGoals].map(g => {
       const pct = Math.round((g.currentValue / Math.max(g.targetValue, 1)) * 100);
       const isComplete = g.currentValue >= g.targetValue;
-      return `<tr><td>${g.title}</td><td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${isComplete ? "#10b981" : "#6366f1"};border-radius:4px"></div></div><span style="font-weight:700;color:${isComplete ? "#10b981" : "#6366f1"}">${pct}%</span></div></td><td>${g.deadline ?? "—"}</td></tr>`;
+      return `<tr><td>${g.title}</td><td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${isComplete ? "#7aac3a" : "#0f6e63"};border-radius:4px"></div></div><span style="font-weight:700;color:${isComplete ? "#7aac3a" : "#0f6e63"}">${pct}%</span></div></td><td>${g.deadline ?? "—"}</td></tr>`;
     }).join("");
 
     const noteItems = report.weekNotes.slice(0, 8).map(n => `<li style="margin-bottom:4px"><strong>${n.date}</strong> — ${n.content}</li>`).join("");
@@ -95,14 +95,14 @@ export function WeeklyProgressReport({ client, sessions, goals, therapistName, c
     const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Haftalık İlerleme — ${client.displayName}</title><style>
       body{font-family:'Segoe UI',Arial,sans-serif;color:#1e293b;margin:0;padding:28px;font-size:13px;line-height:1.5}
       h1{font-size:22px;margin:0 0 4px;color:#1e293b}
-      h2{font-size:13px;font-weight:800;margin:24px 0 8px;color:#6366f1;text-transform:uppercase;letter-spacing:.08em;border-bottom:2px solid #e0e7ff;padding-bottom:4px}
-      .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #6366f1;padding-bottom:16px;margin-bottom:24px}
-      .badge{display:inline-block;background:#ede9fe;color:#6366f1;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;margin-right:4px}
-      table{width:100%;border-collapse:collapse;margin-bottom:12px}td,th{padding:8px 12px;border:1px solid #e5e7eb;text-align:left;font-size:12px}th{background:#f5f3ff;font-weight:700;color:#4f46e5}
+      h2{font-size:13px;font-weight:800;margin:24px 0 8px;color:#0f6e63;text-transform:uppercase;letter-spacing:.08em;border-bottom:2px solid #e0e7ff;padding-bottom:4px}
+      .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0f6e63;padding-bottom:16px;margin-bottom:24px}
+      .badge{display:inline-block;background:#ede9fe;color:#0f6e63;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;margin-right:4px}
+      table{width:100%;border-collapse:collapse;margin-bottom:12px}td,th{padding:8px 12px;border:1px solid #e5e7eb;text-align:left;font-size:12px}th{background:#f5f3ff;font-weight:700;color:#0b554c}
       .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
       .stat{background:#f5f3ff;border:1px solid #e0e7ff;border-radius:12px;padding:14px;text-align:center}
-      .stat-val{font-size:28px;font-weight:900;color:#6366f1}.stat-lbl{font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
-      .trend-up{color:#10b981}.trend-down{color:#ef4444}.trend-stable{color:#f59e0b}
+      .stat-val{font-size:28px;font-weight:900;color:#0f6e63}.stat-lbl{font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+      .trend-up{color:#7aac3a}.trend-down{color:#d1503c}.trend-stable{color:#c07c2c}
       .note-list{padding-left:18px;font-size:12px;color:#475569}
       .footer{margin-top:32px;padding-top:12px;border-top:2px solid #e5e7eb;font-size:10px;color:#94a3b8;text-align:center}
       @media print{body{padding:0}button{display:none}}
@@ -110,7 +110,7 @@ export function WeeklyProgressReport({ client, sessions, goals, therapistName, c
       <div class="header">
         <div>
           <h1>Haftalık İlerleme Raporu</h1>
-          <p style="color:#6366f1;font-weight:700;font-size:14px;margin:4px 0">${client.displayName}</p>
+          <p style="color:#0f6e63;font-weight:700;font-size:14px;margin:4px 0">${client.displayName}</p>
           <div style="margin-top:6px">
             ${client.ageGroup ? `<span class="badge">${client.ageGroup}</span>` : ""}
             ${client.primaryGoal ? `<span class="badge">${client.primaryGoal}</span>` : ""}
@@ -150,17 +150,17 @@ export function WeeklyProgressReport({ client, sessions, goals, therapistName, c
   }
 
   const trendIcon = report.scoreDelta > 5 ? TrendingUp : report.scoreDelta < -5 ? TrendingDown : Minus;
-  const trendColor = report.scoreDelta > 5 ? "#10b981" : report.scoreDelta < -5 ? "#ef4444" : "#f59e0b";
+  const trendColor = report.scoreDelta > 5 ? "#7aac3a" : report.scoreDelta < -5 ? "#d1503c" : "#c07c2c";
   const TrendIcon = trendIcon;
 
   return (
     <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}>
-      <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #6366f1, #8b5cf6, #06b6d4)" }} />
+      <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #0f6e63, #14847a, #4f93b5)" }} />
       <div className="p-4 sm:p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "rgba(99,102,241,0.12)" }}>
-              <Calendar size={15} style={{ color: "#818cf8" }} />
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "rgba(15, 110, 99,0.12)" }}>
+              <Calendar size={15} style={{ color: "#35b0a0" }} />
             </div>
             <div>
               <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0">Haftalık İlerleme</h3>
@@ -169,7 +169,7 @@ export function WeeklyProgressReport({ client, sessions, goals, therapistName, c
           </div>
           <button type="button" onClick={handlePrint}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border-none cursor-pointer transition-all hover:opacity-90"
-            style={{ background: "rgba(99,102,241,0.1)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.2)" }}>
+            style={{ background: "rgba(15, 110, 99,0.1)", color: "#35b0a0", border: "1px solid rgba(15, 110, 99,0.2)" }}>
             <Printer size={12} /> Yazdır
           </button>
         </div>
@@ -186,7 +186,7 @@ export function WeeklyProgressReport({ client, sessions, goals, therapistName, c
               <strong className="text-base font-extrabold block tabular-nums text-(--color-text-strong)">{value}</strong>
               <span className="text-[9px] text-(--color-text-muted) font-semibold">{label}</span>
               {typeof prev === "number" && prev > 0 && typeof value === "number" && (
-                <span className="text-[8px] block font-bold" style={{ color: value > prev ? "#10b981" : value < prev ? "#ef4444" : "#f59e0b" }}>
+                <span className="text-[8px] block font-bold" style={{ color: value > prev ? "#7aac3a" : value < prev ? "#d1503c" : "#c07c2c" }}>
                   {value > prev ? "↑" : value < prev ? "↓" : "→"} önceki: {prev}
                 </span>
               )}
@@ -201,12 +201,12 @@ export function WeeklyProgressReport({ client, sessions, goals, therapistName, c
             {report.gamePerformance.map(g => {
               const maxAvg = Math.max(...report.gamePerformance.map(x => x.avg), 1);
               const pct = Math.round((g.avg / maxAvg) * 100);
-              const tColor = g.trend === "up" ? "#10b981" : g.trend === "down" ? "#ef4444" : "#f59e0b";
+              const tColor = g.trend === "up" ? "#7aac3a" : g.trend === "down" ? "#d1503c" : "#c07c2c";
               return (
                 <div key={g.key} className="flex items-center gap-2">
                   <span className="text-[10px] font-bold text-(--color-text-soft) w-16 truncate">{g.label}</span>
                   <div className="flex-1 h-4 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.04)" }}>
-                    <div className="h-full rounded-full flex items-center justify-end pr-1.5 bar-animated" style={{ "--bar-width": `${Math.max(pct, 8)}%`, background: "linear-gradient(90deg, rgba(99,102,241,0.5), #6366f1)" } as React.CSSProperties}>
+                    <div className="h-full rounded-full flex items-center justify-end pr-1.5 bar-animated" style={{ "--bar-width": `${Math.max(pct, 8)}%`, background: "linear-gradient(90deg, rgba(15, 110, 99,0.5), #0f6e63)" } as React.CSSProperties}>
                       <span className="text-[8px] font-extrabold text-white/80">{g.avg}</span>
                     </div>
                   </div>
@@ -233,9 +233,9 @@ export function WeeklyProgressReport({ client, sessions, goals, therapistName, c
                   <div key={g.id} className="flex items-center gap-2">
                     <span className="text-xs text-(--color-text-soft) flex-1 truncate">{g.title}</span>
                     <div className="w-20 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
-                      <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "#6366f1" }} />
+                      <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "#0f6e63" }} />
                     </div>
-                    <span className="text-[10px] font-bold tabular-nums" style={{ color: "#6366f1" }}>%{pct}</span>
+                    <span className="text-[10px] font-bold tabular-nums" style={{ color: "#0f6e63" }}>%{pct}</span>
                   </div>
                 );
               })}

@@ -105,11 +105,11 @@ export function generateClientReport(data: {
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #1e293b; padding: 2rem; max-width: 800px; margin: 0 auto; }
     h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
-    h2 { font-size: 1.1rem; margin-top: 2rem; margin-bottom: 0.75rem; color: #6366f1; }
+    h2 { font-size: 1.1rem; margin-top: 2rem; margin-bottom: 0.75rem; color: #0f6e63; }
     .meta { color: #64748b; font-size: 0.85rem; margin-bottom: 2rem; }
     .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; }
     .stat { background: #f1f5f9; border-radius: 12px; padding: 1rem; text-align: center; }
-    .stat-value { font-size: 1.75rem; font-weight: 800; color: #6366f1; }
+    .stat-value { font-size: 1.75rem; font-weight: 800; color: #0f6e63; }
     .stat-label { font-size: 0.75rem; color: #64748b; margin-top: 0.25rem; }
     table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
     th { background: #f1f5f9; text-align: left; padding: 0.5rem 0.75rem; font-weight: 600; }
