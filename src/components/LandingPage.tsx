@@ -8,7 +8,6 @@ import {
   useSpring as useSpringFM,
   useTransform,
 } from "framer-motion";
-import { MimioPlayer } from "./MimioPlayer";
 import {
   Users,
   Gamepad2,
@@ -36,6 +35,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
+import { HeroSessionCard } from "./landing/HeroSessionCard";
 import { BlockMark, BrandLockup } from "./brand/BlockMark";
 import { HERO_STATS, PLATFORM_STATS } from "@/lib/platform-stats";
 import {
@@ -262,7 +262,6 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
   const heroScale = useTransform(heroProgress, [0, 1], [1, 0.94]);
   const heroOpacity = useTransform(heroProgress, [0, 1], [1, 0.35]);
   const parallaxMockY = useTransform(heroProgress, [0, 1], [0, 80]);
-  const parallaxMockScale = useTransform(heroProgress, [0, 1], [1, 1.06]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -572,82 +571,16 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               </motion.div>
             </motion.div>
 
-            {/* Right — App window showcase with parallax + float */}
+            {/* Sağ — seans kaydı kartı. Sahte tarayıcı penceresi + tanıtım
+                videosu yerine ürünün gerçek çıktısı gösteriliyor. */}
             <motion.div
-              initial={{ opacity: 0, y: 48, scale: 0.94 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.9, delay: 0.3, ease }}
-              style={{ y: parallaxMockY, scale: parallaxMockScale }}
+              initial={{ opacity: 0, y: 32 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.25, ease }}
+              style={{ y: parallaxMockY }}
               className="relative"
             >
-              {/* Glow halo */}
-              <div className="absolute -inset-8 bg-[radial-gradient(ellipse_70%_60%_at_60%_50%,rgba(29, 90, 140,0.14),transparent)] blur-3xl pointer-events-none" />
-
-              {/* Floating accent pills */}
-              <motion.div
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="hidden sm:flex absolute -top-6 -left-8 z-20 items-center gap-2 px-3.5 py-2 rounded-2xl border glass"
-              >
-                <span
-                  className="halo-dot w-2 h-2 rounded-full"
-                  style={{ color: "#3f7d4f", background: "#3f7d4f" }}
-                />
-                <span className="text-[11px] font-bold text-(--color-text-strong)">
-                  +12 gelişim skoru
-                </span>
-              </motion.div>
-              <motion.div
-                animate={{ y: [0, 10, 0] }}
-                transition={{
-                  duration: 4.5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: 0.6,
-                }}
-                className="hidden sm:flex absolute -bottom-6 -right-5 z-20 items-center gap-2 px-3.5 py-2 rounded-2xl border glass"
-              >
-                <Star size={13} className="fill-[#dda05e] text-[#dda05e]" />
-                <span className="text-[11px] font-bold text-(--color-text-strong)">
-                  Yeni rekor!
-                </span>
-              </motion.div>
-
-              {/* App window frame */}
-              <div
-                className="relative w-full rounded-2xl overflow-hidden border border-(--color-line) ring-conic"
-                style={{
-                  boxShadow:
-                    "0 2px 0 0 rgba(255,255,255,0.06) inset, 0 24px 64px rgba(29, 90, 140,0.14), 0 8px 28px rgba(0,0,0,0.16)",
-                }}
-              >
-                {/* Chrome bar */}
-                <div
-                  className="flex items-center gap-3 px-4 py-3 border-b border-(--color-line)"
-                  style={{ background: "var(--color-surface)" }}
-                >
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <div className="w-3 h-3 rounded-full bg-[#e2705f]/70" />
-                    <div className="w-3 h-3 rounded-full bg-[#dda05e]/70" />
-                    <div className="w-3 h-3 rounded-full bg-[#6fb87f]/70" />
-                  </div>
-                  <div className="flex-1 mx-2 max-w-xs">
-                    <div className="h-6 rounded-md bg-(--color-surface-elevated) border border-(--color-line) flex items-center justify-center gap-1.5 px-3">
-                      <ShieldCheck size={9} className="text-(--color-accent-green) shrink-0" />
-                      <span className="text-[10px] text-(--color-text-muted) truncate">
-                        mimio.app/dashboard
-                      </span>
-                    </div>
-                  </div>
-                  <div className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-(--color-primary-light) border border-(--color-primary)/15">
-                    <Gamepad2 size={10} className="text-(--color-primary)" />
-                    <span className="text-[10px] font-semibold text-(--color-primary)">
-                      Mimio
-                    </span>
-                  </div>
-                </div>
-                <MimioPlayer />
-              </div>
+              <HeroSessionCard />
             </motion.div>
           </div>
 

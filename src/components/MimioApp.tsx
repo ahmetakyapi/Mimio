@@ -1651,7 +1651,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
         {/* Card */}
         <div className="w-full max-w-md rounded-2xl sm:rounded-3xl border border-(--color-line) p-5 sm:p-8 relative overflow-hidden" style={{ background: "var(--color-surface-strong)", backdropFilter: "blur(24px)", boxShadow: "0 24px 64px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.06)" }}>
-          <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg, #1d5a8c, #2a72ac, #b8503f)" }} />
+          <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "var(--color-primary)" }} />
           {/* Badge */}
           <div className="flex justify-center mb-5">
             <span className="inline-flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-full" style={{ background: "var(--color-primary)/10", color: "var(--color-primary)", border: "1px solid var(--color-primary)/20" }}>
@@ -1694,28 +1694,28 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             }
           }}>
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-semibold text-(--color-text-soft)">Kullanıcı adı</span>
-              <input value={therapistDraft.username} onChange={(e) => { setLoginError(""); setTherapistDraft((c) => ({ ...c, username: e.target.value.replace(/\s/g, "").toLocaleLowerCase("tr-TR") })); }} placeholder="boşluksuz, benzersiz" className={authInp} required autoComplete="username" />
+              <span className="text-xs font-semibold text-(--color-text-soft)">Kullanıcı Adı</span>
+              <input value={therapistDraft.username} onChange={(e) => { setLoginError(""); setTherapistDraft((c) => ({ ...c, username: e.target.value.replace(/\s/g, "").toLocaleLowerCase("tr-TR") })); }} placeholder="Boşluksuz, Benzersiz" className={authInp} required autoComplete="username" />
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-xs font-semibold text-(--color-text-soft)">Şifre</span>
-              <input type="password" value={therapistDraft.password} onChange={(e) => { setLoginError(""); setTherapistDraft((c) => ({ ...c, password: e.target.value })); }} placeholder="en az 4 karakter" className={authInp} required autoComplete="new-password" />
+              <input type="password" value={therapistDraft.password} onChange={(e) => { setLoginError(""); setTherapistDraft((c) => ({ ...c, password: e.target.value })); }} placeholder="En Az 4 Karakter" className={authInp} required autoComplete="new-password" />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-semibold text-(--color-text-soft)">Ad soyad</span>
-              <input value={therapistDraft.displayName} onChange={(e) => setTherapistDraft((c) => ({ ...c, displayName: e.target.value }))} placeholder="örn. Uzm. Erg. Elif Kara" className={authInp} required />
+              <span className="text-xs font-semibold text-(--color-text-soft)">Ad Soyad</span>
+              <input value={therapistDraft.displayName} onChange={(e) => setTherapistDraft((c) => ({ ...c, displayName: e.target.value }))} placeholder="Örn. Uzm. Erg. Elif Kara" className={authInp} required />
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-(--color-text-soft)">Kurum / klinik</span>
-                <input value={therapistDraft.clinicName} onChange={(e) => setTherapistDraft((c) => ({ ...c, clinicName: e.target.value }))} placeholder="opsiyonel" className={authInp} />
+                <span className="text-xs font-semibold text-(--color-text-soft)">Kurum / Klinik</span>
+                <input value={therapistDraft.clinicName} onChange={(e) => setTherapistDraft((c) => ({ ...c, clinicName: e.target.value }))} placeholder="Opsiyonel" className={authInp} />
               </label>
               <label className="flex flex-col gap-1">
                 <span className="text-xs font-semibold text-(--color-text-soft)">Uzmanlık</span>
-                <input value={therapistDraft.specialty} onChange={(e) => setTherapistDraft((c) => ({ ...c, specialty: e.target.value }))} placeholder="opsiyonel" className={authInp} />
+                <input value={therapistDraft.specialty} onChange={(e) => setTherapistDraft((c) => ({ ...c, specialty: e.target.value }))} placeholder="Opsiyonel" className={authInp} />
               </label>
             </div>
-            <button type="submit" className="relative w-full text-white font-bold py-3.5 rounded-2xl transition-all text-sm border-none cursor-pointer mt-1 overflow-hidden hover:opacity-90 active:scale-[0.98]" style={{ background: "linear-gradient(135deg, #1d5a8c, #2a72ac)", boxShadow: "0 6px 20px rgba(29, 90, 140,0.4)" }}>
+            <button type="submit" className="relative w-full text-white font-bold py-3.5 rounded-2xl transition-all text-sm border-none cursor-pointer mt-1 overflow-hidden hover:opacity-90 active:scale-[0.98]" style={{ background: "var(--color-primary)", boxShadow: "0 6px 20px rgba(29, 90, 140,0.32)" }}>
               Hesabı Oluştur ve Gir →
             </button>
           </form>
@@ -1728,7 +1728,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
           <p className="text-(--color-text-soft) text-sm text-center">
             Zaten hesabınız var mı?{" "}
-            <button type="button" className="font-bold hover:underline bg-transparent border-none cursor-pointer" style={{ color: "var(--color-primary)" }} onClick={() => { setActiveAppView("login"); setLoginError(""); }}>Giriş yapın</button>
+            <button type="button" className="font-bold hover:underline bg-transparent border-none cursor-pointer" style={{ color: "var(--color-primary)" }} onClick={() => { setActiveAppView("login"); setLoginError(""); }}>Giriş Yapın</button>
           </p>
         </div>
 
@@ -1758,7 +1758,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
         {/* Card */}
         <div className="w-full max-w-sm rounded-2xl sm:rounded-3xl border border-(--color-line) p-5 sm:p-8 relative overflow-hidden" style={{ background: "var(--color-surface-strong)", backdropFilter: "blur(24px)", boxShadow: "0 24px 64px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.06)" }}>
-          <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg, #1d5a8c, #2a72ac, #b8503f)" }} />
+          <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "var(--color-primary)" }} />
           <h2 className="text-2xl font-extrabold text-(--color-text-strong) text-center mb-1 tracking-tight">Tekrar Hoş Geldiniz</h2>
           <p className="text-(--color-text-soft) text-sm text-center mb-7">Hesabınıza giriş yapın ve çalışmaya devam edin.</p>
 
@@ -1791,14 +1791,14 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             }
           }}>
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-semibold text-(--color-text-soft)">Kullanıcı adı</span>
-              <input value={loginUsername} onChange={(e) => { setLoginError(""); setLoginUsername(e.target.value.replace(/\s/g, "").toLocaleLowerCase("tr-TR")); }} placeholder="kullanıcı adınız" className={authInp} required autoComplete="username" />
+              <span className="text-xs font-semibold text-(--color-text-soft)">Kullanıcı Adı</span>
+              <input value={loginUsername} onChange={(e) => { setLoginError(""); setLoginUsername(e.target.value.replace(/\s/g, "").toLocaleLowerCase("tr-TR")); }} placeholder="Kullanıcı Adınız" className={authInp} required autoComplete="username" />
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-xs font-semibold text-(--color-text-soft)">Şifre</span>
-              <input type="password" value={loginPassword} onChange={(e) => { setLoginError(""); setLoginPassword(e.target.value); }} placeholder="şifreniz" className={authInp} required autoComplete="current-password" />
+              <input type="password" value={loginPassword} onChange={(e) => { setLoginError(""); setLoginPassword(e.target.value); }} placeholder="Şifreniz" className={authInp} required autoComplete="current-password" />
             </label>
-            <button type="submit" className="relative w-full text-white font-bold py-3.5 rounded-2xl transition-all text-sm border-none cursor-pointer mt-1 overflow-hidden hover:opacity-90 active:scale-[0.98]" style={{ background: "linear-gradient(135deg, #1d5a8c, #2a72ac)", boxShadow: "0 6px 20px rgba(29, 90, 140,0.4)" }}>
+            <button type="submit" className="relative w-full text-white font-bold py-3.5 rounded-2xl transition-all text-sm border-none cursor-pointer mt-1 overflow-hidden hover:opacity-90 active:scale-[0.98]" style={{ background: "var(--color-primary)", boxShadow: "0 6px 20px rgba(29, 90, 140,0.32)" }}>
               Giriş Yap →
             </button>
           </form>
@@ -1811,7 +1811,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
           <p className="text-(--color-text-soft) text-sm text-center">
             Hesabınız yok mu?{" "}
-            <button type="button" className="font-bold hover:underline bg-transparent border-none cursor-pointer" style={{ color: "var(--color-primary)" }} onClick={() => { setActiveAppView("register"); setLoginError(""); }}>Ücretsiz kayıt olun</button>
+            <button type="button" className="font-bold hover:underline bg-transparent border-none cursor-pointer" style={{ color: "var(--color-primary)" }} onClick={() => { setActiveAppView("register"); setLoginError(""); }}>Ücretsiz Kayıt Olun</button>
           </p>
         </div>
 
@@ -1823,7 +1823,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
         {/* Trust badges */}
         <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 mt-6 sm:mt-8 text-[10px] sm:text-xs text-(--color-text-muted)">
-          {["Ücretsiz başla", "Kurulum yok", "Veri güvenliği"].map((t) => (
+          {["Ücretsiz Başla", "Kurulum Yok", "Veri Güvenliği"].map((t) => (
             <span key={t} className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-[#3f7d4f]" aria-hidden="true" />
               {t}
@@ -1850,6 +1850,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   ];
 
   const earnedAchievementCount = earnedAchievements.length;
+
+  /* Kendi iç kaydırıcısını yöneten görünümler — dış sarmalayıcı bunlarda kaymaz. */
+  const ownsScroll = activeAppView === "games" || activeAppView === "reports" || activeAppView === "therapy-program";
 
   return (
     <main id="main-content" className="flex h-dvh overflow-hidden bg-(--color-page-bg)" role="main">
@@ -2209,8 +2212,24 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         </div>
       </header>
 
-      {/* Oyun alanı kendi yüksekliğini yönetir ve kaymaz; diğer görünümler kayar. */}
-      <div className={`flex-1 min-h-0 ${activeAppView === "games" ? "overflow-hidden flex flex-col" : "overflow-y-auto pb-20 lg:pb-0 safe-scroll-bottom"}`} style={{ paddingTop: "calc(56px + env(safe-area-inset-top, 0px))", paddingLeft: "env(safe-area-inset-left, 0px)", paddingRight: "env(safe-area-inset-right, 0px)" }}>
+      {/*
+        Tek kaydırma kuralı.
+
+        Oyun alanı, Raporlar ve Terapi kendi iç kaydırıcılarını yönetir; bu
+        görünümlerde dış sarmalayıcı kaymaz, aksi hâlde iç içe iki kaydırma
+        çubuğu oluşuyordu. Diğer görünümlerde kaydırma dış sarmalayıcıdadır.
+
+        Üstteki 56 px yalnızca mobil başlık çubuğu için: o çubuk `lg:hidden`
+        olduğundan masaüstünde padding de kaldırılır — daha önce sabit
+        veriliyordu ve masaüstünde üstte ölü bir bant bırakıp içeriğin son
+        56 px'ini görünür alanın dışına itiyordu.
+      */}
+      <div
+        className={`flex-1 min-h-0 pt-[calc(56px+env(safe-area-inset-top,0px))] lg:pt-0 ${
+          ownsScroll ? "overflow-hidden flex flex-col" : "overflow-y-auto pb-20 lg:pb-0 safe-scroll-bottom"
+        }`}
+        style={{ paddingLeft: "env(safe-area-inset-left, 0px)", paddingRight: "env(safe-area-inset-right, 0px)" }}
+      >
 
         {/* ── Breadcrumb Navigation ──
             Oyun alanında gizli: hemen altındaki başlık zaten aynı bilgiyi veriyor
@@ -5664,7 +5683,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           const recentFeed = platformOverview.recentSessions.slice(0, 7);
 
           return (
-            <div className="flex flex-col h-full overflow-hidden page-enter">
+            <div className="flex flex-col flex-1 min-h-0 overflow-hidden page-enter">
               {/* Header */}
               <div className="relative flex items-center justify-between gap-3 px-4 lg:px-6 py-3.5 lg:py-5 border-b border-(--color-line) overflow-hidden shrink-0" style={{ background: "var(--color-chrome-section)", backdropFilter: "blur(20px)" }}>
                 <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 80% at 0% 50%, rgba(184, 118, 58,0.06), transparent)" }} />
@@ -6173,7 +6192,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
         {/* ── Therapy Program ── */}
         {activeAppView === "therapy-program" && (
-          <div className="flex flex-col h-full overflow-hidden">
+          <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
             {/* ── Premium Header ── */}
             <div className="relative flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4 px-4 lg:px-6 py-4 lg:py-5 border-b border-(--color-line) overflow-hidden" style={{ background: "var(--color-chrome-section)", backdropFilter: "blur(20px)" }}>
               {/* Background glow */}
