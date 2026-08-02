@@ -74,6 +74,7 @@ import { WeeklyPlanScreen } from "@/components/app/WeeklyPlanScreen";
 import { SettingsScreen } from "@/components/app/SettingsScreen";
 import { GameLibraryScreen } from "@/components/app/GameLibraryScreen";
 import { SessionReviewScreen } from "@/components/app/SessionReviewScreen";
+import { SessionNotesScreen } from "@/components/app/SessionNotesScreen";
 import { ScreenHeader, Card, CardTitle, Eyebrow, Avatar } from "@/components/app/primitives";
 import { startOfWeek as denizWeekStart, isoDate as denizIso, DOMAIN_ORDER, DOMAIN_META, gameDomain } from "@/lib/deniz-derive";
 import { MEASURE_KIND_LABELS } from "@/lib/outcome-measures";
@@ -2113,6 +2114,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     activeAppView === "clients" ||
     activeAppView === "client-detail" ||
     activeAppView === "weekly-plan" ||
+    activeAppView === "notes" ||
     activeAppView === "settings";
 
   /*
@@ -2513,6 +2515,19 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               onAddEntry={handlePlanAddEntry}
               onRemoveEntry={handlePlanRemoveEntry}
               onStartSession={handleStartSessionFor}
+            />
+          </div>
+        )}
+
+        {/* ── Seans Notları (1p/1q) ── */}
+        {activeAppView === "notes" && (
+          <div className="app-shell h-full p-4 lg:p-[26px_28px]">
+            <SessionNotesScreen
+              notes={allNotes}
+              clients={clientOptions}
+              sessions={platformOverview.recentSessions}
+              onNewNote={() => { if (selectedClient) { setShowNoteForm(true); setActiveAppView("client-detail"); } else { setActiveAppView("clients"); } }}
+              onExport={handleExportClientsCsv}
             />
           </div>
         )}

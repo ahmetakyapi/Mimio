@@ -206,7 +206,8 @@ export function isPlatformGameKey(value: string): value is PlatformGameKey {
 /*
  * Gezinme, Deniz tasarım sistemindeki yedi bölümü karşılar:
  *   Bugün → dashboard, Danışanlar → clients/client-detail,
- *   Haftalık Plan → weekly-plan, Oyunlar → games, Raporlar → reports,
+ *   Haftalık Plan → weekly-plan, Oyunlar → games (kitaplık/canlı/değerlendirme),
+ *   Seans Notları → notes, Raporlar → reports,
  *   Aktivite Kitaplığı → therapy-program, Ayarlar → settings.
  */
 export type AppView =
@@ -219,6 +220,7 @@ export type AppView =
   | "games"
   | "therapy-program"
   | "reports"
+  | "notes"
   | "settings";
 
 export interface SessionNote {
