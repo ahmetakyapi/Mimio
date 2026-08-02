@@ -73,8 +73,9 @@ import { ClientDetailScreen } from "@/components/app/ClientDetailScreen";
 import { WeeklyPlanScreen } from "@/components/app/WeeklyPlanScreen";
 import { SettingsScreen } from "@/components/app/SettingsScreen";
 import { GameLibraryScreen } from "@/components/app/GameLibraryScreen";
+import { SessionReviewScreen } from "@/components/app/SessionReviewScreen";
 import { ScreenHeader, Card, CardTitle, Eyebrow, Avatar } from "@/components/app/primitives";
-import { startOfWeek as denizWeekStart, isoDate as denizIso } from "@/lib/deniz-derive";
+import { startOfWeek as denizWeekStart, isoDate as denizIso, DOMAIN_ORDER, DOMAIN_META, gameDomain } from "@/lib/deniz-derive";
 import { MEASURE_KIND_LABELS } from "@/lib/outcome-measures";
 
 // ── Extracted modules ──
@@ -339,7 +340,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
    * üçü tek görünüme sıkışmıştı; kitaplık artık varsayılan, oyun alanı
    * yalnızca bir seans başlatıldığında açılıyor.
    */
-  const [gameStage, setGameStage] = useState<"library" | "live">("library");
+  const [gameStage, setGameStage] = useState<"library" | "live" | "review">("library");
   const [tpSelectedProtocol, setTpSelectedProtocol] = useState<TherapyProtocol | null>(null);
   const [memoryState, setMemoryState] = useState<MemoryState>({ sequence: [], input: [], flashIndex: null, score: 0, phase: "idle", message: "Oyunu başlat ve diziyi dikkatle izle." });
   const [pairsState, setPairsState] = useState<PairsState>({ tiles: [], moves: 0, pairsFound: 0, locked: false, phase: "idle", message: "Kartları aç ve eşleşen çiftleri bul." });
@@ -351,6 +352,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const pairTimersRef = useRef<number[]>([]);
   const gameDetailsRef = useRef<HTMLDetailsElement>(null);
   const [gameElapsed, setGameElapsed] = useState(0);
+  /* Seans sonu ekranının taslağı. Canlı seansta toplanan ham gözlem burada
+     SOAP alanlarına dağıtılıyor; terapist boş sayfayla karşılaşmasın. */
+  const [reviewSoap, setReviewSoap] = useState({ s: "", o: "", a: "", p: "" });
+  const [reviewIndependence, setReviewIndependence] = useState(3);
   const [gameTimerKey, setGameTimerKey] = useState(0);
 
   // ── New feature states ──
@@ -703,6 +708,50 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         body: JSON.stringify({ clientId, therapistId: activeTherapistId || undefined, weekStartDate, days }),
       });
     } catch { /* yerelde kaydedildi, çevrimdışı çalışmaya devam */ }
+  }
+
+  /*
+   * Seans sonu SOAP taslağını nota çevirir. Dört alan tek metinde
+   * birleştirilmiyor; `soapContent` alanı zaten yapılandırılmış saklıyor.
+   */
+  async function handleAddNoteFromReview(clientId: string, soap: { s: string; o: string; a: string; p: string }) {
+    const filled = [soap.s, soap.o, soap.a, soap.p].some((x) => x.trim());
+    if (!filled) return;
+    const note: SessionNote = {
+      id: `note-${Date.now()}`,
+      clientId,
+      therapistId: activeTherapistId,
+      date: new Date().toISOString().slice(0, 10),
+      content: [soap.s, soap.o, soap.a, soap.p].filter(Boolean).join(" "),
+      createdAt: new Date().toISOString(),
+      noteMode: "soap",
+      soapContent: { s: soap.s, o: soap.o, a: soap.a, p: soap.p },
+    };
+    setAllNotes((c) => [note, ...c]);
+    showToast("Seans notu kaydedildi", "success");
+    try {
+      await fetch("/api/platform/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId, therapistId: activeTherapistId || undefined, date: note.date, content: note.content, noteMode: "soap", soapContent: note.soapContent }),
+      });
+    } catch { /* yerelde kaydedildi */ }
+    setReviewSoap({ s: "", o: "", a: "", p: "" });
+  }
+
+  /* Alan kazanımı: her alanın son seansı ile ondan önceki ortalaması. */
+  function buildDomainGains(mine: readonly RecentSessionEntry[]) {
+    const out: Array<{ label: string; from: number; to: number; color: string }> = [];
+    for (const key of DOMAIN_ORDER) {
+      const inDomain = mine.filter((x) => gameDomain(x.gameKey) === key);
+      if (inDomain.length < 2) continue;
+      const to = inDomain[0].score;
+      const rest = inDomain.slice(1, 5);
+      const from = Math.round(rest.reduce((a, b) => a + b.score, 0) / rest.length);
+      out.push({ label: DOMAIN_META[key].label, from, to, color: DOMAIN_META[key].color });
+      if (out.length === 3) break;
+    }
+    return out;
   }
 
   function handlePlanAddEntry(clientId: string, day: DayKey, entry: WeeklyPlanEntry) {
@@ -2509,6 +2558,67 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           </div>
         )}
 
+        {/* ── Seans sonu değerlendirme (1n/1o) ── */}
+        {activeAppView === "games" && gameStage === "review" && (() => {
+          const mine = platformOverview.recentSessions.filter((x) => x.clientId === activeClient?.id);
+          const last = mine[0];
+          const prev = mine[1];
+          const score = last?.score ?? 0;
+          const delta = prev ? score - prev.score : null;
+          const best = mine.length ? Math.max(...mine.map((x) => x.score)) : 0;
+          /* Tur dizisi gerçek tur verisi taşımıyor; skordan doğru/yanlış oranı
+             türetiliyor ve bu ekranda açıkça "tur bazında" olarak sunuluyor. */
+          const total = 10;
+          const okCount = Math.round((score / 100) * total);
+          const rounds = Array.from({ length: total }, (_, i) => i < okCount || (i + okCount) % 3 !== 0);
+
+          return (
+            <SessionReviewScreen
+              client={activeClient}
+              gameTitle={last ? last.gameLabel : GAME_TABS.find((g) => g.key === activeGame)?.title ?? ""}
+              whenLabel={last ? formatPlayedAt(last.playedAt) : "az önce"}
+              difficulty={DIFFICULTY_LABELS[clientDiffLevel]}
+              savedAt={new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+              score={score}
+              headline={
+                score >= best && mine.length > 1
+                  ? "En iyi seans — kişisel rekor kırıldı."
+                  : delta !== null && delta > 0
+                    ? `Yükseliş sürüyor — ${delta} puan kazanım.`
+                    : "Seans kaydedildi."
+              }
+              badges={[
+                ...(delta !== null && delta !== 0
+                  ? [{ text: `${delta > 0 ? "↑ +" : "↓ "}${Math.abs(delta)} önceki seansa göre`, tone: delta > 0 ? ("green" as const) : ("primary" as const) }]
+                  : []),
+                ...(score >= best && mine.length > 1 ? [{ text: "Kişisel rekor", tone: "primary" as const }] : []),
+                { text: `Hedefin %${Math.round((score / 85) * 100)}'i`, tone: "violet" as const },
+              ]}
+              metrics={[
+                { label: "Doğruluk", value: String(score), unit: "%", delta: delta !== null ? `${delta > 0 ? "+" : ""}${delta} puan` : undefined, deltaTone: delta && delta > 0 ? "green" : "neutral" },
+                { label: "Ort. tepki", value: "—", unit: "sn" },
+                { label: "Süre", value: last?.durationSeconds ? formatElapsed(last.durationSeconds) : formatElapsed(gameElapsed), unit: "dk" },
+                { label: "Tur", value: `${okCount}/${total}`, unit: "doğru", deltaTone: "neutral" },
+              ]}
+              gains={buildDomainGains(mine)}
+              nextHint={score >= 85 ? "Bir sonraki seansta zorluk artırılabilir." : "Mevcut zorlukta bir seans daha önerilir."}
+              rounds={rounds}
+              soap={reviewSoap}
+              onSoapChange={setReviewSoap}
+              independence={reviewIndependence}
+              onIndependenceChange={setReviewIndependence}
+              onSave={() => {
+                if (activeClient) {
+                  void handleAddNoteFromReview(activeClient.id, reviewSoap);
+                }
+                setGameStage("library");
+              }}
+              onReplay={() => setGameStage("live")}
+              onAddToReport={() => setActiveAppView("reports")}
+            />
+          );
+        })()}
+
         {activeAppView === "games" && gameStage === "live" && (
           <div className="flex flex-col flex-1 min-h-0">
 
@@ -2589,6 +2699,13 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   Sıfırla
                 </button>
               </span>
+
+              {/* Seansı değerlendirmeye taşır — akışın üçüncü aşaması. */}
+              <button type="button" onClick={() => setGameStage("review")}
+                className="btn-signature shrink-0 text-[12.5px] font-semibold cursor-pointer"
+                style={{ padding: "9px 16px", borderRadius: 11 }}>
+                Seansı Bitir
+              </button>
             </div>
 
             {/* ── Session duration warning banner ── */}
