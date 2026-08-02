@@ -203,8 +203,8 @@ export function GameLibraryScreen({
         <div
           className="flex items-center gap-3 flex-wrap"
           style={{
-            padding: "12px 16px",
-            borderRadius: 14,
+            padding: "14px 18px",
+            borderRadius: 15,
             background: "var(--gradient-signature-soft)",
             border: "1px solid var(--color-line-strong)",
           }}
@@ -229,8 +229,8 @@ export function GameLibraryScreen({
 
       {/* Oyun ızgarası */}
       <div
-        className="grid gap-4 flex-1 min-h-0 overflow-y-auto content-start pb-1"
-        style={{ gridTemplateColumns: "repeat(auto-fill, minmax(255px, 1fr))" }}
+        className="grid gap-[13px] flex-1 min-h-0 overflow-y-auto content-start pb-1"
+        style={{ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}
       >
         {games.map((g) => {
           const key = g.key as PlatformGameKey;
@@ -244,27 +244,26 @@ export function GameLibraryScreen({
             <article
               key={g.key}
               className="glass rounded-[18px] flex flex-col self-start"
-              style={{ padding: 0 }}
+              style={{ padding: 14 }}
             >
               {/* Önizleme — oyunun görsel imzası, ekran görüntüsü değil şema */}
               <div
-                className="grid place-items-center shrink-0"
+                className="grid place-items-center shrink-0 mb-[11px]"
                 style={{
-                  height: 84,
-                  margin: 12,
-                  borderRadius: 12,
-                  background: "var(--color-primary-light)",
-                  border: "1px solid var(--color-line)",
+                  height: 78,
+                  borderRadius: 14,
+                  background:
+                    "linear-gradient(150deg, color-mix(in srgb, var(--color-primary) 7%, transparent), color-mix(in srgb, var(--color-signature-to) 5%, transparent))",
                 }}
               >
-                <GamePreview gameKey={g.key} color={color} />
+                <GamePreview gameKey={g.key} />
               </div>
 
-              <div className="px-[18px] pb-[18px] flex flex-col">
+              <div className="flex flex-col flex-1 min-h-0">
                 <span
-                  className="self-start text-[10.5px] font-semibold mb-2.5"
+                  className="self-start text-[10px] font-semibold mb-[9px]"
                   style={{
-                    padding: "4px 9px",
+                    padding: "4px 10px",
                     borderRadius: 7,
                     background: `color-mix(in srgb, ${color} 13%, transparent)`,
                     color,
@@ -273,25 +272,25 @@ export function GameLibraryScreen({
                   {meta.tag}
                 </span>
 
-                <h3 className="m-0 mb-1 text-[15px] font-bold text-(--color-text-strong) tracking-[-0.015em]">
+                <h3 className="font-display m-0 mb-1 text-[15px] font-bold text-(--color-text-strong) tracking-[-0.02em]">
                   {g.title}
                 </h3>
-                <p className="m-0 mb-3.5 text-[11px] leading-[1.45] text-(--color-text-soft)">{meta.source}</p>
+                <p className="m-0 mb-[9px] text-[11px] leading-[1.45] text-(--color-text-soft)">{meta.source}</p>
 
-                <div className="flex items-end gap-4 mt-auto mb-3.5">
+                <div className="flex items-end gap-3 mt-auto" style={{ padding: "7px 0" }}>
                   <span>
-                    <span className="figure block text-[17px] text-(--color-text-strong) leading-none">
+                    <span className="numeral block text-[13px] font-semibold text-(--color-text-strong) leading-none">
                       {st?.count ?? 0}
                     </span>
-                    <span className="numeral block text-[9.5px] text-(--color-text-soft) mt-1">oturum</span>
+                    <span className="numeral block text-[9px] text-(--color-text-soft) mt-1">oturum</span>
                   </span>
                   <span>
-                    <span className="figure block text-[17px] leading-none" style={{ color: avg === null ? "var(--color-text-muted)" : color }}>
+                    <span className="numeral block text-[13px] font-semibold leading-none" style={{ color: avg === null ? "var(--color-text-muted)" : "var(--color-primary)" }}>
                       {avg ?? "—"}
                     </span>
-                    <span className="numeral block text-[9.5px] text-(--color-text-soft) mt-1">ort. skor</span>
+                    <span className="numeral block text-[9px] text-(--color-text-soft) mt-1">ort. skor</span>
                   </span>
-                  <span className="numeral ml-auto text-[10px] text-(--color-text-soft) text-right">
+                  <span className="numeral ml-auto text-[10px] font-medium text-(--color-text-soft)">
                     {difficultyRange(avg)}
                   </span>
                 </div>
@@ -299,8 +298,8 @@ export function GameLibraryScreen({
                 <button
                   type="button"
                   onClick={() => onStart(key)}
-                  className="btn-signature w-full text-[12.5px] font-semibold cursor-pointer"
-                  style={{ padding: "10px", borderRadius: 11 }}
+                  className="btn-signature w-full text-[11.5px] font-semibold cursor-pointer mt-2"
+                  style={{ padding: 9, borderRadius: 11 }}
                 >
                   Seansı Başlat
                 </button>
@@ -322,78 +321,51 @@ function difficultyRange(avg: number | null): string {
 }
 
 /**
- * Kart önizlemesi. Ekran görüntüsü değil şema: her oyunun mekaniğini tek
- * bakışta ayırt ettiren soyut bir işaret. Ekran görüntüsü küçük boyutta
- * okunmuyor ve oyun değiştikçe bayatlıyor.
+ * Kart önizlemesi — dokümandaki gibi gerçek bir mini ızgara, SVG şema değil.
+ *
+ * Hücreler oyunun kendi tahtasının küçültülmüş hâli: terapist kartta gördüğü
+ * deseni birazdan ekranda aynen görecek. Aktif hücre imza degradesini taşır,
+ * pasifler soluk mavi tint.
  */
-function GamePreview({ gameKey, color }: { readonly gameKey: string; readonly color: string }) {
-  const cell = (x: number, y: number, on = false, k = "") => (
-    <rect
-      key={`${x}-${y}-${k}`}
-      x={x}
-      y={y}
-      width={13}
-      height={13}
-      rx={4}
-      fill={on ? color : `color-mix(in srgb, ${color} 22%, transparent)`}
-    />
-  );
+function GamePreview({ gameKey }: { readonly gameKey: string }) {
+  const shape = PREVIEW[gameKey] ?? PREVIEW.memory;
+  const { cols, rows, on, round } = shape;
+  const size = 76;
 
-  switch (gameKey) {
-    case "memory":
-      return (
-        <svg width={68} height={50} viewBox="0 0 68 50" aria-hidden="true">
-          {[0, 1, 2].map((r) => [0, 1, 2].map((c) => cell(c * 17 + 8, r * 17, r === 1 && c === 1)))}
-        </svg>
-      );
-    case "pairs":
-      return (
-        <svg width={68} height={50} viewBox="0 0 68 50" aria-hidden="true">
-          {[0, 1, 2].map((r) => [0, 1].map((c) => cell(c * 17 + 17, r * 17, (r === 0 && c === 1) || (r === 1 && c === 1))))}
-        </svg>
-      );
-    case "pulse":
-      return (
-        <svg width={68} height={50} viewBox="0 0 68 50" aria-hidden="true">
-          <circle cx={34} cy={25} r={18} fill={`color-mix(in srgb, ${color} 16%, transparent)`} />
-          <circle cx={30} cy={23} r={10} fill={color} />
-        </svg>
-      );
-    case "route":
-      return (
-        <svg width={72} height={30} viewBox="0 0 72 30" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M10 20V8m0 0-4 4m4-4 4 4" />
-          <path d="M30 15h12m0 0-4-4m4 4-4 4" opacity={0.55} />
-          <path d="M62 10v12m0 0 4-4m-4 4-4-4" opacity={0.35} />
-        </svg>
-      );
-    case "difference":
-      return (
-        <svg width={68} height={50} viewBox="0 0 68 50" aria-hidden="true">
-          {cell(17, 0)}{cell(34, 0)}
-          <circle cx={23} cy={32} r={9} fill={color} />
-          {cell(34, 25)}
-        </svg>
-      );
-    case "scan":
-      return (
-        <svg width={85} height={50} viewBox="0 0 85 50" aria-hidden="true">
-          {[0, 1, 2].map((r) => [0, 1, 2, 3, 4].map((c) => cell(c * 16 + 3, r * 16, r === 1 && c === 2)))}
-        </svg>
-      );
-    default:
-      return (
-        <svg width={68} height={50} viewBox="0 0 68 50" aria-hidden="true">
-          {[0, 1, 2].map((r) =>
-            [0, 1, 2].map((c) =>
-              r === 2 && c === 2 ? (
-                <rect key="q" x={c * 17 + 8} y={r * 17} width={13} height={13} rx={4} fill="none" stroke={color} strokeWidth={1.4} strokeDasharray="3 2" />
-              ) : (
-                cell(c * 17 + 8, r * 17, r === 1 && c === 1)
-              ),
-            ),
-          )}
-        </svg>
-      );
-  }
+  return (
+    <div
+      aria-hidden="true"
+      className="grid"
+      style={{
+        width: size,
+        height: size,
+        gridTemplateColumns: `repeat(${cols}, 1fr)`,
+        gridTemplateRows: `repeat(${rows}, 1fr)`,
+        gap: 7,
+      }}
+    >
+      {Array.from({ length: cols * rows }, (_, i) => (
+        <span
+          key={i}
+          style={{
+            borderRadius: round ? "50%" : 6,
+            background: on.includes(i)
+              ? "linear-gradient(140deg, var(--color-signature-from), var(--color-signature-to))"
+              : "var(--color-primary-light)",
+          }}
+        />
+      ))}
+    </div>
+  );
 }
+
+/* Her oyunun tahta şekli ve hangi hücrenin "yandığı". */
+const PREVIEW: Record<string, { cols: number; rows: number; on: number[]; round?: boolean }> = {
+  memory:     { cols: 3, rows: 3, on: [4] },
+  pairs:      { cols: 2, rows: 3, on: [1, 3] },
+  pulse:      { cols: 2, rows: 2, on: [0], round: true },
+  route:      { cols: 3, rows: 1, on: [1] },
+  difference: { cols: 2, rows: 2, on: [2], round: true },
+  scan:       { cols: 5, rows: 3, on: [7] },
+  logic:      { cols: 3, rows: 3, on: [4] },
+};

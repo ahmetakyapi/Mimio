@@ -761,6 +761,16 @@ html[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
 .on-signature { color: #ffffff; }
 .on-signature-soft { color: rgba(255, 255, 255, 0.82); }
 
+/* Canlı seans nabzı — seansın sürdüğünü gösteren tek hareket. */
+@keyframes live-pulse-kf {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.45; transform: scale(0.82); }
+}
+.live-pulse { animation: live-pulse-kf 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .live-pulse { animation: none; }
+}
+
 /* ── Games showcase section backgrounds (theme-aware) ── */
 .section-games {
   background:
