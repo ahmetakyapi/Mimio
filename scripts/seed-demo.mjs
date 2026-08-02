@@ -203,11 +203,18 @@ if (!therapist) {
   );
   console.log(`   • terapist oluşturuldu: ${THERAPIST.username} / ${THERAPIST.password}`);
 } else {
+  /* Var olan hesabın kendi bilgilerini ezmiyoruz — yalnızca boş alanları
+     dolduruyoruz. Seed demo verisi eklemek için, kimliği değiştirmek için
+     değil. */
   await sql.query(
-    "UPDATE therapist_profiles SET display_name=$2, clinic_name=$3, specialty=$4 WHERE id=$1",
+    `UPDATE therapist_profiles
+     SET display_name = COALESCE(NULLIF(display_name,''), $2),
+         clinic_name  = COALESCE(NULLIF(clinic_name,''), $3),
+         specialty    = COALESCE(NULLIF(specialty,''), $4)
+     WHERE id = $1`,
     [therapist.id, THERAPIST.displayName, THERAPIST.clinicName, THERAPIST.specialty],
   );
-  console.log("   • terapist zaten var, bilgileri güncellendi");
+  console.log("   • terapist zaten var, mevcut bilgileri korundu");
 }
 
 const therapistId = therapist.id;

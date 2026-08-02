@@ -210,7 +210,7 @@ export function TopBar({
 
   return (
     <header
-      className="hidden lg:flex items-center gap-3.5 shrink-0"
+      className="hidden lg:flex items-center gap-3.5 shrink-0 relative"
       style={{
         height: 62,
         padding: "0 28px",
@@ -218,6 +218,14 @@ export function TopBar({
         background: "var(--color-chrome-header)",
         backdropFilter: "blur(18px)",
         WebkitBackdropFilter: "blur(18px)",
+        /*
+         * `backdrop-filter` kendi yığın bağlamını kuruyor; hesap menüsünün
+         * `z-50`si o bağlamın içinde kalıyor ve DOM'da sonra gelen içerik
+         * (ör. Bugün ekranındaki degrade "sıradaki seans" kartı) menünün
+         * üstüne biniyordu. Çubuğun kendisini içerikten yukarı almak
+         * gerekiyor — menüye daha büyük bir z vermek çözmüyor.
+         */
+        zIndex: 40,
       }}
     >
       <form
