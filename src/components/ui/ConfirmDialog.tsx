@@ -91,12 +91,12 @@ export function ConfirmDialog({
               className="flex-1 py-2.5 rounded-xl text-sm font-bold border-none cursor-pointer transition-all active:scale-95"
               style={{
                 background: isDanger
-                  ? "linear-gradient(135deg, #a8392c, #8a2c21)"
-                  : "linear-gradient(135deg, #1d5a8c, #4a95cc)",
+                  ? "linear-gradient(135deg, #d63d63, #b8304c)"
+                  : "linear-gradient(135deg, #2b62f5, #17c2e0)",
                 color: "#fff",
                 boxShadow: isDanger
-                  ? "0 4px 14px rgba(168, 57, 44,0.3)"
-                  : "0 4px 14px rgba(29, 90, 140,0.3)",
+                  ? "0 4px 14px rgba(214, 61, 99,0.3)"
+                  : "0 4px 14px rgba(43, 98, 245,0.3)",
               }}>
               {confirmLabel}
             </button>

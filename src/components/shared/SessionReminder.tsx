@@ -185,7 +185,7 @@ export function SessionReminderBanner({ clients, sessions, onSelectClient }: Ses
 
         {reminders.length > 2 && (
           <button type="button" onClick={() => setShowAll(v => !v)}
-            className="w-full text-center text-[10px] font-bold mt-2 bg-transparent border-none cursor-pointer" style={{ color: "#b8763a" }}>
+            className="w-full text-center text-[10px] font-bold mt-2 bg-transparent border-none cursor-pointer" style={{ color: "#f59e0b" }}>
             {showAll ? "Daha az göster" : `+${reminders.length - 2} danışan daha`}
           </button>
         )}
@@ -222,7 +222,7 @@ export function ReminderSettingsPanel({ onClose }: ReminderSettingsProps) {
         <span className="text-xs text-(--color-text-body)">Hatırlatıcıları aktifleştir</span>
         <button type="button" onClick={() => setSettings(s => ({ ...s, enabled: !s.enabled }))}
           className="w-10 h-5 rounded-full transition-colors border-none cursor-pointer relative"
-          style={{ background: settings.enabled ? "#1d5a8c" : "rgba(255,255,255,0.1)" }}>
+          style={{ background: settings.enabled ? "#2b62f5" : "rgba(255,255,255,0.1)" }}>
           <span className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform"
             style={{ left: settings.enabled ? "calc(100% - 18px)" : "2px" }} />
         </button>
@@ -240,7 +240,7 @@ export function ReminderSettingsPanel({ onClose }: ReminderSettingsProps) {
 
       <button type="button" onClick={handleSave}
         className="w-full py-2.5 rounded-xl text-sm font-bold text-white border-none cursor-pointer hover:opacity-90"
-        style={{ background: "linear-gradient(135deg, #1d5a8c, #2a72ac)" }}>
+        style={{ background: "linear-gradient(135deg, #2b62f5, #17c2e0)" }}>
         Kaydet
       </button>
     </div>

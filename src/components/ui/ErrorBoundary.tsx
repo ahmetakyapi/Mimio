@@ -38,7 +38,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             border: "1px solid var(--color-line)",
           }}>
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
-            style={{ background: "rgba(168, 57, 44,0.1)", border: "1px solid rgba(168, 57, 44,0.2)" }}>
+            style={{ background: "rgba(214, 61, 99,0.1)", border: "1px solid rgba(214, 61, 99,0.2)" }}>
             <span className="text-2xl">⚠️</span>
           </div>
           <h3 className="text-(--color-text-strong) font-bold text-base m-0 mb-1">
@@ -52,9 +52,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             onClick={() => this.setState({ hasError: false, error: null })}
             className="px-4 py-2 rounded-xl text-sm font-semibold border-none cursor-pointer transition-all active:scale-95"
             style={{
-              background: "linear-gradient(135deg, #1d5a8c, #4a95cc)",
+              background: "linear-gradient(135deg, #2b62f5, #17c2e0)",
               color: "#fff",
-              boxShadow: "0 4px 14px rgba(29, 90, 140,0.35)",
+              boxShadow: "0 4px 14px rgba(43, 98, 245,0.35)",
             }}>
             Tekrar Dene
           </button>
@@ -64,7 +64,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 Hata detayı
               </summary>
               <pre className="text-xs text-(--color-accent-red) mt-2 p-3 rounded-lg overflow-auto"
-                style={{ background: "rgba(168, 57, 44,0.06)", border: "1px solid rgba(168, 57, 44,0.1)" }}>
+                style={{ background: "rgba(214, 61, 99,0.06)", border: "1px solid rgba(214, 61, 99,0.1)" }}>
                 {this.state.error.message}
               </pre>
             </details>

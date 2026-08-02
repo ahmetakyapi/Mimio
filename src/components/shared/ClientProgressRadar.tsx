@@ -74,11 +74,11 @@ export function ClientProgressRadar({ sessions, clientId }: ClientProgressRadarP
           <span className="text-xs font-extrabold uppercase tracking-wider text-(--color-text-muted)">Beceri Haritası</span>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1">
-              <span className="w-3 h-1.5 rounded-full" style={{ background: "rgba(29, 90, 140,0.5)" }} />
+              <span className="w-3 h-1.5 rounded-full" style={{ background: "rgba(43, 98, 245,0.5)" }} />
               <span className="text-[9px] text-(--color-text-muted)">En iyi</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="w-3 h-1.5 rounded-full" style={{ background: "rgba(63, 125, 79,0.5)" }} />
+              <span className="w-3 h-1.5 rounded-full" style={{ background: "rgba(18, 184, 134,0.5)" }} />
               <span className="text-[9px] text-(--color-text-muted)">Son 3 ort.</span>
             </div>
           </div>
@@ -105,10 +105,10 @@ export function ClientProgressRadar({ sessions, clientId }: ClientProgressRadarP
             })}
 
             {/* Best score area */}
-            <polygon points={bestPolygon} fill="rgba(29, 90, 140,0.12)" stroke="rgba(29, 90, 140,0.5)" strokeWidth="1.5" strokeLinejoin="round" />
+            <polygon points={bestPolygon} fill="rgba(43, 98, 245,0.12)" stroke="rgba(43, 98, 245,0.5)" strokeWidth="1.5" strokeLinejoin="round" />
 
             {/* Recent avg area */}
-            <polygon points={recentPolygon} fill="rgba(63, 125, 79,0.08)" stroke="rgba(63, 125, 79,0.5)" strokeWidth="1.5" strokeLinejoin="round" strokeDasharray="4 2" />
+            <polygon points={recentPolygon} fill="rgba(18, 184, 134,0.08)" stroke="rgba(18, 184, 134,0.5)" strokeWidth="1.5" strokeLinejoin="round" strokeDasharray="4 2" />
 
             {/* Data points */}
             {gameStats.map((g, i) => {

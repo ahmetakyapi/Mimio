@@ -46,8 +46,8 @@ export function checkAndShowMilestones(stats: {
       title: "Yeni Rekor!",
       description: `${gameName} oyununda yeni en yüksek skor!`,
       icon: Trophy,
-      color: "#b8763a",
-      gradient: "linear-gradient(135deg, #b8763a, #8f5626)",
+      color: "#f59e0b",
+      gradient: "linear-gradient(135deg, #f59e0b, #a96708)",
     });
   }
 
@@ -59,8 +59,8 @@ export function checkAndShowMilestones(stats: {
       title: `${totalSessions}. Seans!`,
       description: `Toplam ${totalSessions} seans tamamlandı. Harika bir ilerleme!`,
       icon: Award,
-      color: "#1d5a8c",
-      gradient: "linear-gradient(135deg, #1d5a8c, #2a72ac)",
+      color: "#2b62f5",
+      gradient: "linear-gradient(135deg, #2b62f5, #17c2e0)",
     });
   }
 
@@ -71,8 +71,8 @@ export function checkAndShowMilestones(stats: {
       title: `${sessionStreak} Gün Serisi!`,
       description: `Üst üste ${sessionStreak} gün seans yapıldı!`,
       icon: Flame,
-      color: "#a8392c",
-      gradient: "linear-gradient(135deg, #a8392c, #b8763a)",
+      color: "#d63d63",
+      gradient: "linear-gradient(135deg, #d63d63, #f59e0b)",
     });
   }
 
@@ -83,8 +83,8 @@ export function checkAndShowMilestones(stats: {
       title: "Tüm Oyunlar!",
       description: "7 oyun türünün tamamı en az bir kez oynandı!",
       icon: Star,
-      color: "#5b7183",
-      gradient: "linear-gradient(135deg, #5b7183, #2a72ac)",
+      color: "#17c2e0",
+      gradient: "linear-gradient(135deg, #17c2e0, #4d7dff)",
     });
   }
 }

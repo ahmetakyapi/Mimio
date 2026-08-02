@@ -1,5 +1,7 @@
 "use client";
 
+import { useId } from "react";
+
 /**
  * Mimio monogramı.
  *
@@ -28,6 +30,11 @@ export function BlockMark({
   className,
 }: MarkProps) {
   const V = 32; // viewBox birimi
+
+  /* Degrade tanımı SVG içinde yaşadığı için id benzersiz olmalı: aynı sayfada
+     birden çok işaret varsa (sidebar + giriş ekranı) ikisi de ilk tanımı
+     kullanır ve tema değişiminde biri donar. */
+  const gradientId = useId();
 
   /*
    * M tek dolu yol. Gövde ağır (kol kalınlığı 32 birimin ~4,8'i) ki 24 px'te
@@ -61,9 +68,19 @@ export function BlockMark({
       aria-label="Mimio"
     >
       {tile && (
-        <rect width={V} height={V} rx={8} fill="var(--color-primary)" />
+        <>
+          {/* Döşeme hâli imza degradesini taşır — markanın rengi ürünün
+              birincil eylem rengiyle aynı kaynaktan gelsin. */}
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="var(--color-signature-from)" />
+              <stop offset="100%" stopColor="var(--color-signature-to)" />
+            </linearGradient>
+          </defs>
+          <rect width={V} height={V} rx={8} fill={`url(#${gradientId})`} />
+        </>
       )}
-      <path d={m} fill={tile ? "var(--color-text-inverse)" : color} />
+      <path d={m} fill={tile ? "#ffffff" : color} />
     </svg>
   );
 }

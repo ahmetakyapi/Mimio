@@ -40,26 +40,26 @@ export interface EarnedAchievement {
 
 export const ACHIEVEMENTS: AchievementDef[] = [
   // Session milestones
-  { id: "first-session", title: "İlk Adım", description: "İlk seans tamamlandı", icon: Star, color: "#3f7d4f", gradient: "linear-gradient(135deg, #3f7d4f, #33663f)", category: "session", check: (s) => s.totalSessions >= 1, progress: (s) => ({ current: s.totalSessions, target: 1 }), unit: "seans" },
-  { id: "ten-sessions", title: "Düzenli Terapist", description: "10 seans tamamlandı", icon: Award, color: "#1d5a8c", gradient: "linear-gradient(135deg, #1d5a8c, #17456e)", category: "session", check: (s) => s.totalSessions >= 10, progress: (s) => ({ current: s.totalSessions, target: 10 }), unit: "seans" },
-  { id: "fifty-sessions", title: "Deneyimli Uzman", description: "50 seans tamamlandı", icon: Trophy, color: "#b8763a", gradient: "linear-gradient(135deg, #b8763a, #8f5626)", category: "session", check: (s) => s.totalSessions >= 50, progress: (s) => ({ current: s.totalSessions, target: 50 }), unit: "seans" },
-  { id: "hundred-sessions", title: "Yüzüncü Seans", description: "100 seans başarıyla tamamlandı!", icon: Trophy, color: "#b8503f", gradient: "linear-gradient(135deg, #b8503f, #8a2c21)", category: "milestone", check: (s) => s.totalSessions >= 100, progress: (s) => ({ current: s.totalSessions, target: 100 }), unit: "seans" },
+  { id: "first-session", title: "İlk Adım", description: "İlk seans tamamlandı", icon: Star, color: "#12b886", gradient: "linear-gradient(135deg, #12b886, #0a7a58)", category: "session", check: (s) => s.totalSessions >= 1, progress: (s) => ({ current: s.totalSessions, target: 1 }), unit: "seans" },
+  { id: "ten-sessions", title: "Düzenli Terapist", description: "10 seans tamamlandı", icon: Award, color: "#2b62f5", gradient: "linear-gradient(135deg, #2b62f5, #17c2e0)", category: "session", check: (s) => s.totalSessions >= 10, progress: (s) => ({ current: s.totalSessions, target: 10 }), unit: "seans" },
+  { id: "fifty-sessions", title: "Deneyimli Uzman", description: "50 seans tamamlandı", icon: Trophy, color: "#f59e0b", gradient: "linear-gradient(135deg, #f59e0b, #a96708)", category: "session", check: (s) => s.totalSessions >= 50, progress: (s) => ({ current: s.totalSessions, target: 50 }), unit: "seans" },
+  { id: "hundred-sessions", title: "Yüzüncü Seans", description: "100 seans başarıyla tamamlandı!", icon: Trophy, color: "#f0708a", gradient: "linear-gradient(135deg, #f0708a, #b8304c)", category: "milestone", check: (s) => s.totalSessions >= 100, progress: (s) => ({ current: s.totalSessions, target: 100 }), unit: "seans" },
 
   // Score achievements
-  { id: "high-scorer", title: "Yüksek Performans", description: "Tek seansta 200+ puan", icon: Zap, color: "#b8763a", gradient: "linear-gradient(135deg, #b8763a, #8f5626)", category: "score", check: (s) => s.bestScore >= 200, progress: (s) => ({ current: s.bestScore, target: 200 }), unit: "puan" },
-  { id: "perfect-game", title: "Kusursuz Oyun", description: "Bir oyunda tüm turlar doğru", icon: Sparkles, color: "#2a72ac", gradient: "linear-gradient(135deg, #2a72ac, #17456e)", category: "score", check: (s) => s.perfectGames >= 1, progress: (s) => ({ current: s.perfectGames, target: 1 }), unit: "oyun" },
+  { id: "high-scorer", title: "Yüksek Performans", description: "Tek seansta 200+ puan", icon: Zap, color: "#f59e0b", gradient: "linear-gradient(135deg, #f59e0b, #a96708)", category: "score", check: (s) => s.bestScore >= 200, progress: (s) => ({ current: s.bestScore, target: 200 }), unit: "puan" },
+  { id: "perfect-game", title: "Kusursuz Oyun", description: "Bir oyunda tüm turlar doğru", icon: Sparkles, color: "#4d7dff", gradient: "linear-gradient(135deg, #4d7dff, #2ad6ef)", category: "score", check: (s) => s.perfectGames >= 1, progress: (s) => ({ current: s.perfectGames, target: 1 }), unit: "oyun" },
 
   // Streak achievements
-  { id: "three-day-streak", title: "Üç Gün Serisi", description: "3 gün üst üste seans yapıldı", icon: Flame, color: "#a8392c", gradient: "linear-gradient(135deg, #a8392c, #8a2c21)", category: "streak", check: (s) => s.sessionStreak >= 3, progress: (s) => ({ current: s.sessionStreak, target: 3 }), unit: "gün" },
-  { id: "week-streak", title: "Haftalık Seri", description: "7 gün üst üste seans yapıldı", icon: Flame, color: "#b8763a", gradient: "linear-gradient(135deg, #b8763a, #8f5626)", category: "streak", check: (s) => s.sessionStreak >= 7, progress: (s) => ({ current: s.sessionStreak, target: 7 }), unit: "gün" },
+  { id: "three-day-streak", title: "Üç Gün Serisi", description: "3 gün üst üste seans yapıldı", icon: Flame, color: "#d63d63", gradient: "linear-gradient(135deg, #d63d63, #b8304c)", category: "streak", check: (s) => s.sessionStreak >= 3, progress: (s) => ({ current: s.sessionStreak, target: 3 }), unit: "gün" },
+  { id: "week-streak", title: "Haftalık Seri", description: "7 gün üst üste seans yapıldı", icon: Flame, color: "#f59e0b", gradient: "linear-gradient(135deg, #f59e0b, #a96708)", category: "streak", check: (s) => s.sessionStreak >= 7, progress: (s) => ({ current: s.sessionStreak, target: 7 }), unit: "gün" },
 
   // Diversity achievements
-  { id: "explorer", title: "Kaşif", description: "Tüm oyun türlerini denedi", icon: Target, color: "#5b7183", gradient: "linear-gradient(135deg, #5b7183, #465a6b)", category: "milestone", check: (s) => s.uniqueGamesPlayed >= 7, progress: (s) => ({ current: s.uniqueGamesPlayed, target: 7 }), unit: "oyun" },
+  { id: "explorer", title: "Kaşif", description: "Tüm oyun türlerini denedi", icon: Target, color: "#17c2e0", gradient: "linear-gradient(135deg, #17c2e0, #0b7f95)", category: "milestone", check: (s) => s.uniqueGamesPlayed >= 7, progress: (s) => ({ current: s.uniqueGamesPlayed, target: 7 }), unit: "oyun" },
 
   // Therapist achievements
-  { id: "caring-therapist", title: "İlgili Terapist", description: "10+ seans notu yazıldı", icon: Heart, color: "#b8503f", gradient: "linear-gradient(135deg, #b8503f, #8a2c21)", category: "special", check: (s) => s.notesWritten >= 10, progress: (s) => ({ current: s.notesWritten, target: 10 }), unit: "not" },
-  { id: "goal-setter", title: "Hedef Odaklı", description: "5 hedef tamamlandı", icon: TrendingUp, color: "#3f7d4f", gradient: "linear-gradient(135deg, #3f7d4f, #33663f)", category: "special", check: (s) => s.goalsCompleted >= 5, progress: (s) => ({ current: s.goalsCompleted, target: 5 }), unit: "hedef" },
-  { id: "weekly-warrior", title: "Haftalık Savaşçı", description: "Bir haftada 10+ seans", icon: Clock, color: "#2a72ac", gradient: "linear-gradient(135deg, #2a72ac, #17456e)", category: "milestone", check: (s) => s.thisWeekSessions >= 10, progress: (s) => ({ current: s.thisWeekSessions, target: 10 }), unit: "seans" },
+  { id: "caring-therapist", title: "İlgili Terapist", description: "10+ seans notu yazıldı", icon: Heart, color: "#f0708a", gradient: "linear-gradient(135deg, #f0708a, #b8304c)", category: "special", check: (s) => s.notesWritten >= 10, progress: (s) => ({ current: s.notesWritten, target: 10 }), unit: "not" },
+  { id: "goal-setter", title: "Hedef Odaklı", description: "5 hedef tamamlandı", icon: TrendingUp, color: "#12b886", gradient: "linear-gradient(135deg, #12b886, #0a7a58)", category: "special", check: (s) => s.goalsCompleted >= 5, progress: (s) => ({ current: s.goalsCompleted, target: 5 }), unit: "hedef" },
+  { id: "weekly-warrior", title: "Haftalık Savaşçı", description: "Bir haftada 10+ seans", icon: Clock, color: "#4d7dff", gradient: "linear-gradient(135deg, #4d7dff, #2ad6ef)", category: "milestone", check: (s) => s.thisWeekSessions >= 10, progress: (s) => ({ current: s.thisWeekSessions, target: 10 }), unit: "seans" },
 ];
 
 // ── Badge component ──
@@ -137,11 +137,11 @@ export function AchievementPanel({ stats, earned, onEarn }: AchievementPanelProp
   const progressPct = Math.round((earnedCount / ACHIEVEMENTS.length) * 100);
 
   const categories = [
-    { key: "session" as const, label: "Seans", color: "#1d5a8c" },
-    { key: "score" as const, label: "Skor", color: "#b8763a" },
-    { key: "streak" as const, label: "Seri", color: "#a8392c" },
-    { key: "milestone" as const, label: "Dönüm Noktası", color: "#2a72ac" },
-    { key: "special" as const, label: "Özel", color: "#b8503f" },
+    { key: "session" as const, label: "Seans", color: "#2b62f5" },
+    { key: "score" as const, label: "Skor", color: "#f59e0b" },
+    { key: "streak" as const, label: "Seri", color: "#d63d63" },
+    { key: "milestone" as const, label: "Dönüm Noktası", color: "#4d7dff" },
+    { key: "special" as const, label: "Özel", color: "#f0708a" },
   ];
 
   return (

@@ -84,42 +84,42 @@ const FEATURES = [
     icon: Users,
     title: "Danışan Yönetimi",
     body: "Tüm hastalarınızın bilgilerini, seans geçmişlerini ve kişisel notlarınızı güvenle saklayın.",
-    color: "#4a95cc",
+    color: "#4d7dff",
     size: "large" as const,
   },
   {
     icon: Gamepad2,
     title: "İnteraktif Oyunlar",
     body: `${PLATFORM_STATS.gameCount} bilişsel ve motor beceri oyunuyla çocukların seanslara katılımını artırın.`,
-    color: "#7db8e0",
+    color: "#a8c2ff",
     size: "small" as const,
   },
   {
     icon: CalendarDays,
     title: "Haftalık Plan",
     body: "Her danışan için kişiselleştirilmiş terapi programları oluşturun.",
-    color: "#8ba0b0",
+    color: "#9a80ff",
     size: "small" as const,
   },
   {
     icon: TrendingUp,
     title: "İlerleme Analizi",
     body: "Oyun skorları ve seans verileriyle danışan gelişimini grafikler üzerinden takip edin.",
-    color: "#ecc493",
+    color: "#f5c26b",
     size: "large" as const,
   },
   {
     icon: FileText,
     title: "Seans Notları",
     body: "Her seansın detaylı gözlemlerini kolayca kaydedin ve geçmişe dönük inceleyin.",
-    color: "#a8d4b2",
+    color: "#7ee0b8",
     size: "small" as const,
   },
   {
     icon: ShieldCheck,
     title: "Güvenli & Gizli",
     body: "Klinik standartlara uygun veri güvenliği ile danışan bilgileriniz koruma altında.",
-    color: "#eda393",
+    color: "#f7a8b8",
     size: "small" as const,
   },
 ];
@@ -130,21 +130,21 @@ const STEPS = [
     title: "Hesap Oluşturun",
     body: "Klinik veya bireysel profilinizi saniyeler içinde oluşturun.",
     icon: Sparkles,
-    color: "#4a95cc",
+    color: "#4d7dff",
   },
   {
     num: "02",
     title: "Danışan Ekleyin",
     body: "Hizmet verdiğiniz kişilerin bilgilerini ve terapi hedeflerini girin.",
     icon: Users,
-    color: "#8ba0b0",
+    color: "#9a80ff",
   },
   {
     num: "03",
     title: "Oynayın & Takip Edin",
     body: "Seanslarda oyunları açın, sonuçları otomatik kaydedin.",
     icon: Play,
-    color: "#3f7d4f",
+    color: "#12b886",
   },
 ];
 
@@ -154,28 +154,28 @@ const PERSONAS = [
     text: "Seanslarda çocuğun ilgisini oyunla canlı tutun; skorlar ve seans süreleri kendiliğinden kaydedilsin.",
     module: "Oyun Alanı",
     icon: Stethoscope,
-    accent: "#1d5a8c",
+    accent: "#2b62f5",
   },
   {
     role: "Nörolojik Rehabilitasyon Uzmanı",
     text: "El-göz koordinasyonu ve işlem hızı oyunlarıyla motor hedefleri çalışın, gelişimi grafiklerle izleyin.",
     module: "Raporlar",
     icon: Brain,
-    accent: "#5b7183",
+    accent: "#17c2e0",
   },
   {
     role: "Çocuk Gelişim Uzmanı",
     text: `Her danışan için haftalık program oluşturun; ${PLATFORM_STATS.activityCount} hazır aktiviteden ${PLATFORM_STATS.homeExerciseCount} tanesi ev programına uygun.`,
     module: "Haftalık Plan",
     icon: Heart,
-    accent: "#3f7d4f",
+    accent: "#12b886",
   },
   {
     role: "Özel Eğitim Uzmanı",
     text: "Kanıta dayalı protokolleri takip edin, SOAP formatında not tutun ve hedef bazlı ilerleme kaydedin.",
     module: "Terapi Programı",
     icon: Users,
-    accent: "#b8763a",
+    accent: "#f59e0b",
   },
 ];
 
@@ -317,7 +317,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
   };
 
   return (
-    <div id="top" className="min-h-screen bg-(--color-page-bg) font-(--font-sans) relative">
+    <div id="top" className="min-h-screen font-(--font-sans) relative">
       <ScrollProgress />
       <SectionDots sections={SECTION_DOTS} />
       <FloatingCTA onRegister={onRegister} />
@@ -376,8 +376,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               <button
                 type="button"
                 onClick={onRegister}
-                className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-(--shadow-md)"
-                style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }}
+                className="btn-signature text-sm font-semibold px-5 py-2.5 rounded-xl"
               >
                 Hemen Başla
               </button>
@@ -462,8 +461,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                   setMenuOpen(false);
                   onRegister();
                 }}
-                className="w-full py-3.5 text-center font-semibold rounded-xl"
-                style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }}
+                className="btn-signature w-full py-3.5 text-center font-semibold rounded-xl"
               >
                 Hemen Başla
               </button>
@@ -508,7 +506,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               >
                 <span
                   className="halo-dot w-1.5 h-1.5 rounded-full"
-                  style={{ color: "#1d5a8c", background: "#1d5a8c" }}
+                  style={{ color: "#2b62f5", background: "#2b62f5" }}
                 />
                 Ölçüm temelli ergoterapi platformu
               </motion.span>
@@ -543,9 +541,9 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                     onClick={onRegister}
                     className="group relative flex items-center justify-center gap-2.5 font-semibold px-7 py-3.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 text-sm w-full sm:w-auto overflow-hidden"
                     style={{
-                      background: "var(--color-primary)",
-                      color: "var(--color-text-inverse)",
-                      boxShadow: "var(--shadow-md)",
+                      background: "var(--gradient-signature)",
+                      color: "#ffffff",
+                      boxShadow: "var(--shadow-primary)",
                     }}
                   >
                     <span className="beam-sweep opacity-40" />
@@ -778,7 +776,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 className="relative glass-strong rounded-2xl md:rounded-3xl overflow-hidden"
                 style={{
                   boxShadow:
-                    "0 25px 60px rgba(0,0,0,0.2), 0 0 80px rgba(29, 90, 140,0.08)",
+                    "0 25px 60px rgba(0,0,0,0.2), 0 0 80px rgba(43, 98, 245,0.08)",
                 }}
               >
                 
@@ -787,9 +785,9 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                   style={{ background: "var(--color-surface)" }}
                 >
                   <div className="flex gap-2">
-                    <div className="w-3 h-3 rounded-full bg-[#e2705f]/60" />
-                    <div className="w-3 h-3 rounded-full bg-[#dda05e]/60" />
-                    <div className="w-3 h-3 rounded-full bg-[#6fb87f]/60" />
+                    <div className="w-3 h-3 rounded-full bg-[#f0708a]/60" />
+                    <div className="w-3 h-3 rounded-full bg-[#f5c26b]/60" />
+                    <div className="w-3 h-3 rounded-full bg-[#19d19b]/60" />
                   </div>
                   <div className="flex-1 mx-4 max-w-sm">
                     <div className="h-6 rounded-lg bg-(--color-surface-elevated) border border-(--color-line) flex items-center justify-center">
@@ -840,7 +838,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                           className="h-5 rounded-full w-40"
                           style={{
                             background:
-                              "linear-gradient(90deg, var(--color-primary), rgba(42, 114, 172,0.6))",
+                              "linear-gradient(90deg, var(--color-primary), rgba(77, 125, 255,0.6))",
                             opacity: 0.7,
                           }}
                         />
@@ -861,29 +859,29 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                         {
                           label: "Toplam Seans",
                           value: "24",
-                          bg: "rgba(29, 90, 140,0.12)",
-                          color: "rgba(29, 90, 140,0.6)",
+                          bg: "rgba(43, 98, 245,0.12)",
+                          color: "rgba(43, 98, 245,0.6)",
                           icon: CalendarDays,
                         },
                         {
                           label: "Danışanlar",
                           value: "8",
-                          bg: "rgba(63, 125, 79,0.12)",
-                          color: "rgba(63, 125, 79,0.6)",
+                          bg: "rgba(18, 184, 134,0.12)",
+                          color: "rgba(18, 184, 134,0.6)",
                           icon: Users,
                         },
                         {
                           label: "Ort. Skor",
                           value: "84",
-                          bg: "rgba(184, 118, 58,0.12)",
-                          color: "rgba(184, 118, 58,0.6)",
+                          bg: "rgba(245, 158, 11,0.12)",
+                          color: "rgba(245, 158, 11,0.6)",
                           icon: TrendingUp,
                         },
                         {
                           label: "Bu Hafta",
                           value: "6",
-                          bg: "rgba(91, 113, 131,0.12)",
-                          color: "rgba(91, 113, 131,0.6)",
+                          bg: "rgba(23, 194, 224,0.12)",
+                          color: "rgba(23, 194, 224,0.6)",
                           icon: Target,
                         },
                       ].map((s) => (
@@ -914,19 +912,19 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                           name: "Ela Selin",
                           game: "Sıra Hafızası",
                           score: 92,
-                          color: "#1d5a8c",
+                          color: "#2b62f5",
                         },
                         {
                           name: "Tuna Akarsu",
                           game: "Mavi Nabız",
                           score: 78,
-                          color: "#2a72ac",
+                          color: "#4d7dff",
                         },
                         {
                           name: "Asya Demir",
                           game: "Hedef Tarama",
                           score: 85,
-                          color: "#5b7183",
+                          color: "#17c2e0",
                         },
                       ].map((s) => (
                         <div
@@ -1225,7 +1223,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               <span className="inline-flex w-fit items-center gap-2 text-xs font-semibold text-(--color-text-muted) px-3 py-1.5 rounded-full border border-(--color-line) bg-(--color-surface-elevated)">
                 <span
                   className="halo-dot w-1.5 h-1.5 rounded-full"
-                  style={{ color: "#3f7d4f", background: "#3f7d4f" }}
+                  style={{ color: "#12b886", background: "#12b886" }}
                 />
                 Tüm sistemler çalışıyor
               </span>

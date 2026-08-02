@@ -255,28 +255,28 @@ const WALKTHROUGH = [
     title: "Danışanı Tanıyın",
     body: "Demografik, klinik not ve değerlendirme verilerini tek ekranda toplayın. Her danışan için bir hafıza merkezi.",
     icon: Users,
-    accent: "#4a95cc",
+    accent: "#4d7dff",
     preview: "clients",
   },
   {
     title: "Haftalık Planı Oluşturun",
     body: "Terapi hedeflerine göre domainleri (motor, bilişsel, duyusal) seçin. Akıllı öneri motoru günün programını hazırlar.",
     icon: LayoutDashboard,
-    accent: "#4a95cc",
+    accent: "#4d7dff",
     preview: "plan",
   },
   {
     title: "Seansı Oyunlaştırın",
     body: `${PLATFORM_STATS.gameCount} terapi oyunundan birini başlatın. Skorlar anlık kaydedilir, zorluk danışan profiline göre seçilir.`,
     icon: Gamepad2,
-    accent: "#8ba0b0",
+    accent: "#9a80ff",
     preview: "game",
   },
   {
     title: "Gelişimi Raporlayın",
     body: "Yazdırılabilir raporlar ve grafiklerle ilerlemeyi görselleştirin; seans verilerini CSV olarak dışa aktarın.",
     icon: BarChart3,
-    accent: "#6fb87f",
+    accent: "#19d19b",
     preview: "report",
   },
 ] as const;
@@ -573,7 +573,7 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
           <div className="flex items-center gap-1.5">
             <span
               className="halo-dot w-2 h-2 rounded-full"
-              style={{ color: "#a8392c", background: "#a8392c" }}
+              style={{ color: "#d63d63", background: "#d63d63" }}
             />
             <span className="text-[10px] font-bold text-(--color-text-body)">CANLI</span>
           </div>
@@ -679,8 +679,8 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
           </p>
           <div className="flex items-center gap-2">
             <span className="text-lg font-extrabold text-(--color-text-strong)">86</span>
-            <TrendingUp size={13} style={{ color: "#6fb87f" }} />
-            <span className="text-[10px] font-bold" style={{ color: "#6fb87f" }}>
+            <TrendingUp size={13} style={{ color: "#19d19b" }} />
+            <span className="text-[10px] font-bold" style={{ color: "#19d19b" }}>
               +12
             </span>
           </div>
@@ -691,8 +691,8 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
           </p>
           <div className="flex items-center gap-2">
             <span className="text-lg font-extrabold text-(--color-text-strong)">79</span>
-            <TrendingUp size={13} style={{ color: "#6fb87f" }} />
-            <span className="text-[10px] font-bold" style={{ color: "#6fb87f" }}>
+            <TrendingUp size={13} style={{ color: "#19d19b" }} />
+            <span className="text-[10px] font-bold" style={{ color: "#19d19b" }}>
               +8
             </span>
           </div>
@@ -780,7 +780,7 @@ export function ComparisonSection() {
                                 <div className="relative flex items-start gap-2">
                   <ShieldCheck
                     size={16}
-                    className="shrink-0 mt-0.5 text-[#6fb87f]"
+                    className="shrink-0 mt-0.5 text-[#19d19b]"
                   />
                   <span className="text-sm font-semibold text-(--color-text-strong)">
                     {row.mimio}
@@ -969,7 +969,7 @@ export function FloatingCTA({ onRegister }: FloatingCTAProps) {
           <span className="hidden sm:flex items-center gap-2 text-xs font-bold text-(--color-text-body) pr-1">
             <span
               className="halo-dot w-2 h-2 rounded-full"
-              style={{ color: "#3f7d4f", background: "#3f7d4f" }}
+              style={{ color: "#12b886", background: "#12b886" }}
             />
             Ücretsiz
           </span>
@@ -1010,13 +1010,13 @@ interface GameEntry {
 }
 // Platformdaki gerçek 7 oyun (GAME_LABELS ile birebir aynı adlar)
 const EXTENDED_GAMES: readonly GameEntry[] = [
-  { key: "memory", label: "Sıra Hafızası", area: "Çalışma Belleği", desc: "Sırayla yanan kutuları hatırlayıp aynı sırayla tekrar et; çalışma belleğini güçlendir.", color: "#1d5a8c", icon: Brain },
-  { key: "pairs", label: "Kart Eşle", area: "Görsel Hafıza", desc: "Kapalı kartları açarak eşleşen çiftleri bul; görsel hafızayı pekiştir.", color: "#b8763a", icon: Sparkles },
-  { key: "pulse", label: "Mavi Nabız", area: "El-Göz Koordinasyonu", desc: "Beliren hedeflere hızla dokunarak el-göz koordinasyonunu geliştir.", color: "#2a72ac", icon: Target },
-  { key: "route", label: "Komut Rotası", area: "Yön & Planlama", desc: "Gösterilen yön komutlarını doğru sırayla uygula; işlem hızını artır.", color: "#3f7d4f", icon: Activity },
-  { key: "difference", label: "Fark Avcısı", area: "Görsel Ayrım", desc: "Benzer kartlar arasından farklı olanı bul; görsel ayrım becerisini destekle.", color: "#b8503f", icon: Eye },
-  { key: "scan", label: "Hedef Tarama", area: "Seçici Dikkat", desc: "Hedef simgeyi ızgara içinde tara ve bul; seçici dikkati çalıştır.", color: "#5b7183", icon: Zap },
-  { key: "logic", label: "Dizi Mantık", area: "Yürütücü İşlevler", desc: "Matristeki örüntüyü çöz, eksik hücreyi tamamla; akıl yürütmeyi geliştir.", color: "#8ba0b0", icon: Puzzle },
+  { key: "memory", label: "Sıra Hafızası", area: "Çalışma Belleği", desc: "Sırayla yanan kutuları hatırlayıp aynı sırayla tekrar et; çalışma belleğini güçlendir.", color: "#2b62f5", icon: Brain },
+  { key: "pairs", label: "Kart Eşle", area: "Görsel Hafıza", desc: "Kapalı kartları açarak eşleşen çiftleri bul; görsel hafızayı pekiştir.", color: "#f59e0b", icon: Sparkles },
+  { key: "pulse", label: "Mavi Nabız", area: "El-Göz Koordinasyonu", desc: "Beliren hedeflere hızla dokunarak el-göz koordinasyonunu geliştir.", color: "#4d7dff", icon: Target },
+  { key: "route", label: "Komut Rotası", area: "Yön & Planlama", desc: "Gösterilen yön komutlarını doğru sırayla uygula; işlem hızını artır.", color: "#12b886", icon: Activity },
+  { key: "difference", label: "Fark Avcısı", area: "Görsel Ayrım", desc: "Benzer kartlar arasından farklı olanı bul; görsel ayrım becerisini destekle.", color: "#f0708a", icon: Eye },
+  { key: "scan", label: "Hedef Tarama", area: "Seçici Dikkat", desc: "Hedef simgeyi ızgara içinde tara ve bul; seçici dikkati çalıştır.", color: "#17c2e0", icon: Zap },
+  { key: "logic", label: "Dizi Mantık", area: "Yürütücü İşlevler", desc: "Matristeki örüntüyü çöz, eksik hücreyi tamamla; akıl yürütmeyi geliştir.", color: "#9a80ff", icon: Puzzle },
 ];
 
 export function GamesCarousel({ onLogin }: { onLogin: () => void }) {

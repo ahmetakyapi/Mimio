@@ -103,18 +103,18 @@ export function generateClientReport(data: {
   <title>Mimio — ${data.clientName} Raporu</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #2b3f52; padding: 2rem; max-width: 800px; margin: 0 auto; }
+    body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #3d5670; padding: 2rem; max-width: 800px; margin: 0 auto; }
     h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
-    h2 { font-size: 1.1rem; margin-top: 2rem; margin-bottom: 0.75rem; color: #1d5a8c; }
-    .meta { color: #65788a; font-size: 0.85rem; margin-bottom: 2rem; }
+    h2 { font-size: 1.1rem; margin-top: 2rem; margin-bottom: 0.75rem; color: #2b62f5; }
+    .meta { color: #94a8bf; font-size: 0.85rem; margin-bottom: 2rem; }
     .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; }
-    .stat { background: #eef4fa; border-radius: 12px; padding: 1rem; text-align: center; }
-    .stat-value { font-size: 1.75rem; font-weight: 800; color: #1d5a8c; }
-    .stat-label { font-size: 0.75rem; color: #65788a; margin-top: 0.25rem; }
+    .stat { background: #eaf2ff; border-radius: 12px; padding: 1rem; text-align: center; }
+    .stat-value { font-size: 1.75rem; font-weight: 800; color: #2b62f5; }
+    .stat-label { font-size: 0.75rem; color: #94a8bf; margin-top: 0.25rem; }
     table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-    th { background: #eef4fa; text-align: left; padding: 0.5rem 0.75rem; font-weight: 600; }
+    th { background: #eaf2ff; text-align: left; padding: 0.5rem 0.75rem; font-weight: 600; }
     td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #d8e2ea; }
-    .footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #d8e2ea; color: #8fa1b2; font-size: 0.75rem; text-align: center; }
+    .footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #d8e2ea; color: #7b91ab; font-size: 0.75rem; text-align: center; }
     @media print { body { padding: 0; } .no-print { display: none; } }
   </style>
 </head>

@@ -1,6 +1,6 @@
 "use client";
 
-const CONFETTI_COLORS = ["#8ba0b0","#2a72ac","#b8503f","#b8763a","#3f7d4f","#b8763a","#5b7183","#2a72ac"];
+const CONFETTI_COLORS = ["#9a80ff","#4d7dff","#f0708a","#f59e0b","#12b886","#f59e0b","#17c2e0","#4d7dff"];
 const CONFETTI_SEEDS = Array.from({ length: 24 }, (_, i) => ({
   id: `cp-${i}`,
   left: 5 + (i / 24) * 90,

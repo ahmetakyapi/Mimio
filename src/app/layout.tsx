@@ -1,31 +1,39 @@
 import type { Metadata, Viewport } from "next";
-import { Schibsted_Grotesk, IBM_Plex_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, Space_Grotesk, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
 /*
- * İki aile, üç ses.
+ * Üç aile, üç ses.
  *
- * Önceki kurgu üç aile taşıyordu (Bricolage Grotesque + Instrument Sans +
- * IBM Plex Mono). Bricolage'ın hafif tuhaf harf biçimleri klinik bir ölçüm
- * aracının tonuyla çekişiyordu: sayfa "oyuncu" görünüyor ama ürün bir kayıt
- * defteri. Tek bir grotesk aileye indirildi.
+ * Önceki kurgu tek aileye (Schibsted Grotesk) indirilmişti: kontrast
+ * yalnızca ağırlık ve harf aralığından geliyordu. Pratikte ekran başlığı
+ * ("İyi sabahlar, Ahmet.") ile arayüz başlığı ("Haftalık Plan") aynı
+ * sesle konuşuyor, sayfada hiyerarşinin en üst basamağı kayboluyordu.
+ * Deniz üç rol tanımlar ve her rolü ayrı bir aileye verir:
  *
- *   · Schibsted Grotesk — başlıklardan düğme etiketine kadar her şey.
- *     Değişken ekseni 400-900; kontrast ağırlık, boyut ve harf aralığından
- *     geliyor, ikinci bir aileden değil. Haber-editoryal kökenli: dar
- *     apertürleri sıkı başlıkta karakter veriyor, 400'de gövde metni olarak
- *     sessizleşiyor. latin-ext ile Türkçe aksanlar tam.
- *   · IBM Plex Mono — yalnızca sayısal okumalar. Skor, süre, persentil ve
+ *   · Space Grotesk — ekran başlığı ve büyük sayı. Yalnızca 500'de,
+ *     -0.035em aralıkla. Geometrik iskeleti ve kısa çıkıntıları büyük
+ *     puntoda sıkı bir blok kuruyor; küçük puntoda hiç kullanılmaz.
+ *   · Plus Jakarta Sans — arayüz ve gövde. Yuvarlak terminalleri klinik
+ *     yüzeye "çocuk sıcaklığı" katan tek tipografik hamle; 400'de
+ *     seans notu, 600-700'de düğme ve etiket.
+ *   · IBM Plex Mono — yalnızca sayısal okuma. Skor, süre, persentil ve
  *     span değerleri gövde metninden ayrılmalı; klinik veri hizalı okunur.
  *
- * Tek ailenin iki değişkeni ayrı ayrı yükleniyor: başlıklar 600-900,
- * gövde 400-600. Bu, `font-synthesis` kaynaklı sahte kalınlığı önler.
+ * Üçü de latin-ext taşıyor — Türkçe aksanlar (ı, İ, ğ, ş) tam.
  */
-const grotesk = Schibsted_Grotesk({
+const sans = Plus_Jakarta_Sans({
   subsets: ["latin", "latin-ext"],
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: ["400", "500", "600", "700", "800"],
   variable: "--font-body-face",
+  display: "swap",
+});
+
+const display = Space_Grotesk({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-display-face",
   display: "swap",
 });
 
@@ -69,8 +77,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f4efe4" },
-    { media: "(prefers-color-scheme: dark)", color: "#0c1620" },
+    { media: "(prefers-color-scheme: light)", color: "#eef3fa" },
+    { media: "(prefers-color-scheme: dark)", color: "#050b16" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -83,7 +91,7 @@ export default function RootLayout({ children }: { readonly children: React.Reac
   return (
     // suppressHydrationWarning: aşağıdaki inline script, React hidrasyondan
     // önce data-theme'i yazar; bu kasıtlı sunucu/istemci farkıdır.
-    <html lang="tr" suppressHydrationWarning className={`${grotesk.variable} ${mono.variable}`}>
+    <html lang="tr" suppressHydrationWarning className={`${sans.variable} ${display.variable} ${mono.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('mimio-theme');var v=(t==='dark'||t==='high-contrast')?t:(t==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):'light');document.documentElement.setAttribute('data-theme',v);}catch(e){document.documentElement.setAttribute('data-theme','light');}` }} />
         <link rel="manifest" href="/manifest.json" />
