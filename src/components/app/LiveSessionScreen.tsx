@@ -55,6 +55,12 @@ interface Props {
   readonly roundLabel: string;
   readonly instruction: ReactNode;
   readonly board: ReactNode;
+  /**
+   * "card": dokümandaki yuvarlatılmış cam tahta + tur çipi + yönerge.
+   * "bare": tahta alanı çıplak — oyun alanı kendi başlığını, yönergesini
+   *   ve ipuçlarını zaten üretiyorsa ikisini üst üste basmamak için.
+   */
+  readonly variant?: "card" | "bare";
   /** Tahta altındaki ilerleme çentikleri ve etiketi */
   readonly progress?: { done: number; total: number; label: string };
   readonly metrics: readonly LiveMetric[];
@@ -88,6 +94,7 @@ export function LiveSessionScreen({
   onAddSupport,
   note,
   onNoteChange,
+  variant = "card",
 }: Props) {
   const [tagsUsed, setTagsUsed] = useState<readonly string[]>([]);
 
@@ -201,6 +208,9 @@ export function LiveSessionScreen({
 
       <div className="flex flex-1 min-h-0">
         {/* ── Oyun alanı ── */}
+        {variant === "bare" ? (
+          <div className="flex-1 flex flex-col min-w-0 min-h-0">{board}</div>
+        ) : (
         <div className="flex-1 flex flex-col items-center min-w-0 overflow-y-auto" style={{ padding: 34 }}>
           <div className="flex items-center gap-3 mb-[22px] self-center">
             <span
@@ -251,6 +261,7 @@ export function LiveSessionScreen({
             </div>
           )}
         </div>
+        )}
 
         {/* ── Canlı ölçüm rayı ── */}
         <aside

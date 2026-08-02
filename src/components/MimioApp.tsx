@@ -81,6 +81,7 @@ import { DEFAULT_PREFS, type AppPrefs } from "@/components/app/SettingsScreen";
 import { AuthScreen } from "@/components/app/AuthScreen";
 import { ActivityLibraryScreen } from "@/components/app/ActivityLibraryScreen";
 import { MobileTabBar, MobileMoreSheet, MobileTopBar } from "@/components/app/MobileChrome";
+import { LiveSessionScreen, type SupportKind } from "@/components/app/LiveSessionScreen";
 import { ScreenHeader, Card, CardTitle, Eyebrow, Avatar } from "@/components/app/primitives";
 import { startOfWeek as denizWeekStart, isoDate as denizIso, DOMAIN_ORDER, DOMAIN_META, gameDomain, INDEPENDENCE_STEPS } from "@/lib/deniz-derive";
 import { MEASURE_KIND_LABELS } from "@/lib/outcome-measures";
@@ -362,6 +363,24 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
    */
   const [gameStage, setGameStage] = useState<"library" | "live" | "review">("library");
   const [moreOpen, setMoreOpen] = useState(false);
+
+  /*
+   * Seans sırasında kabuk gizlenir. Doküman canlı seansı ve seans sonunu
+   * tam ekran veriyor: seans bir "yer" değil bir "an" — terapist o sırada
+   * başka bölüme gitmiyor, çocuk ekrana bakıyor. Gezinme görünürse hem
+   * dikkat dağıtıyor hem yanlışlıkla seansı terk etme riski doğuyor.
+   */
+  const sessionFullscreen = activeAppView === "games" && (gameStage === "live" || gameStage === "review");
+
+  /* ── Canlı seans durumu (1j/1k) ── */
+  const [sessionPaused, setSessionPaused] = useState(false);
+  /* Zorluk seans içinde geçici olarak değiştirilebilir; danışan profilindeki
+     varsayılanı kalıcı değiştirmiyor — terapist "bugün biraz kolaylaştıralım"
+     diyebilmeli, bu bir profil kararı değil. */
+  const [clientDiffOverride, setClientDiffOverride] = useState<1 | 2 | 3 | null>(null);
+  const [supportCounts, setSupportCounts] = useState<Record<SupportKind, number>>({ verbal: 0, visual: 0, physical: 0 });
+  /* Tur tur doğru/yanlış — sağ raydaki tepki izi bunu çiziyor. */
+  const [sessionTrace, setSessionTrace] = useState<boolean[]>([]);
   const [tpSelectedProtocol, setTpSelectedProtocol] = useState<TherapyProtocol | null>(null);
   const [memoryState, setMemoryState] = useState<MemoryState>({ sequence: [], input: [], flashIndex: null, score: 0, phase: "idle", message: "Oyunu başlat ve diziyi dikkatle izle." });
   const [pairsState, setPairsState] = useState<PairsState>({ tiles: [], moves: 0, pairsFound: 0, locked: false, phase: "idle", message: "Kartları aç ve eşleşen çiftleri bul." });
@@ -425,6 +444,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   function triggerFeedback(correct: boolean, combo = 0, points?: number) {
     if (feedbackTimerRef.current) window.clearTimeout(feedbackTimerRef.current);
     setLastFeedback({ correct, combo, timestamp: Date.now() });
+    /* Tepki izi buradan besleniyor: her geri bildirim bir tur. Son 16 tur
+       tutuluyor — sağ raydaki çubuk grafik o kadarını gösteriyor. */
+    setSessionTrace((t) => [...t, correct].slice(-16));
     feedbackTimerRef.current = window.setTimeout(() => setLastFeedback(null), 700);
     if (typeof points === "number" && points !== 0) {
       const id = Date.now() + Math.random();
@@ -1929,7 +1951,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const activeTherapist = therapistOptions.find((profile) => profile.id === activeTherapistId) ?? therapistOptions[0] ?? null;
   const activeClient = clientOptions.find((profile) => profile.id === activeClientId) ?? clientOptions[0] ?? null;
   // ── Adaptive difficulty derived from active client ──
-  const clientDiffLevel = getDifficultyLevel(activeClient?.difficultyLevel);
+  const clientDiffLevel = clientDiffOverride ?? getDifficultyLevel(activeClient?.difficultyLevel);
   const visibleTabs = GAME_TABS.filter((tab) => tab.category === activeTab.category);
   // Compute nextInSet for the current game's result overlay
   const sessionSetNextInSet = sessionSet?.phase === "running" && sessionSet.currentIndex < sessionSet.games.length - 1
@@ -2035,6 +2057,23 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const btnPrimary = "btn-signature text-sm font-semibold px-4 py-2 rounded-xl cursor-pointer";
   const btnSecondary = "bg-(--color-surface-strong) text-(--color-text-body) text-sm font-medium px-4 py-2 rounded-xl border border-(--color-line) hover:border-(--color-line-strong) hover:text-(--color-primary) transition-all cursor-pointer disabled:opacity-50";
   const inputCls = "w-full px-3 py-2.5 border border-(--color-line) rounded-xl bg-(--color-surface-strong) text-(--color-text-strong) text-sm placeholder:text-(--color-text-muted) focus:outline-none focus:ring-2 focus:ring-(--color-primary)/25 focus:border-(--color-primary) transition-colors";
+
+  /*
+   * Canlı ölçümler. Skor tahtası ve son geri bildirimden türetiliyor —
+   * seans sırasında gerçekten değişen dört değer. Elde olmayanı boş
+   * bırakıyoruz; "0" yazmak ölçüm alınmış izlenimi verirdi.
+   */
+  const liveScore = scoreboard[activeGame];
+  const liveTrace = sessionTrace;
+  const liveAccuracy = liveTrace.length
+    ? Math.round((liveTrace.filter(Boolean).length / liveTrace.length) * 100)
+    : null;
+  const liveMetrics = [
+    { label: "Doğruluk", value: liveAccuracy === null ? "—" : String(liveAccuracy), unit: "%", tone: "green" as const },
+    { label: "Seri", value: String(lastFeedback?.combo ?? 0), unit: "tur", tone: "primary" as const },
+    { label: "En iyi", value: String(liveScore?.best ?? 0), unit: "puan", tone: "primary" as const },
+    { label: "Hata", value: String(liveTrace.filter((x) => !x).length), unit: "tur", tone: "amber" as const },
+  ];
 
   const earnedAchievementCount = earnedAchievements.length;
 
@@ -2244,6 +2283,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
   return (
     <main id="main-content" className="flex h-dvh overflow-hidden" role="main">
+      {!sessionFullscreen && (
       <Sidebar
         activeView={activeAppView}
         onNavigate={setActiveAppView}
@@ -2253,9 +2293,11 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         weekDone={thisWeekCount}
         weekCapacity={weekCapacity}
       />
+      )}
 
       {/* İçerik sütunu: üst çubuk + kayan gövde. Sidebar dışarıda kalır. */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0">
+      {!sessionFullscreen && (
       <TopBar
         search={clientSearch}
         onSearchChange={setClientSearch}
@@ -2270,11 +2312,13 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         onAccountToggle={() => setAccountMenuOpen((open) => !open)}
         accountMenu={denizAccountMenu}
       />
+      )}
 
       {/* ── Mobil üst çubuk (2a–2v) ──
           Doküman telefonda kromu sadeleştiriyor: arama ve tema masaüstünde
           kalıyor, üstte yalnızca ekran adı ve hesap erişimi duruyor. Küçük
           ekranda krom, içeriğin payına giriyor. */}
+      {!sessionFullscreen && (
       <MobileTopBar
         title={MOBILE_TITLES[activeAppView] ?? "Mimio"}
         action={
@@ -2289,6 +2333,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           </button>
         }
       />
+      )}
 
       {/*
         Tek kaydırma kuralı.
@@ -2449,7 +2494,16 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               onSelectClient={setActiveClientId}
               sessions={platformOverview.recentSessions}
               activityCount={THERAPY_DOMAINS.reduce((n, d) => n + (d.activities?.length ?? 0), 0)}
-              onStart={(key) => { setActiveGame(key as GameKey); setGameStage("live"); }}
+              onStart={(key) => {
+                /* Yeni seans temiz ölçümle başlar; önceki seansın izi ve
+                   ipucu sayaçları taşınırsa kayıt yanlış olur. */
+                setSessionTrace([]);
+                setSupportCounts({ verbal: 0, visual: 0, physical: 0 });
+                setClientDiffOverride(null);
+                setSessionPaused(false);
+                setActiveGame(key as GameKey);
+                setGameStage("live");
+              }}
               onStartSequence={(keys) => { if (keys[0]) setActiveGame(keys[0] as GameKey); setGameStage("live"); }}
             />
           </div>
@@ -2529,417 +2583,36 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             )}
 
             {/*
-              Seans çubuğu. Önceki başlık kendi başına bir krom katmanıydı —
-              logo, ekran adı, veritabanı rozeti ve "← Panel" düğmesi taşıyordu;
-              hepsi artık sidebar ve üst çubukta var, ikisi üst üste biniyordu.
-              Burada yalnızca seans sırasında gerçekten gereken üç şey kaldı:
-              kiminle çalışıldığı, hangi zorlukta, ne kadar süredir.
+              Canlı Seans kabuğu (1j/1k). Oyun alanı `board` olarak içeri
+              veriliyor; `variant="bare"` çünkü GameArena kendi başlığını,
+              yönergesini ve ipucu satırını zaten üretiyor — dokümandaki tur
+              çipi + yönerge satırını da basmak ikisini üst üste koyardı.
             */}
-            <div className="hidden lg:flex items-center gap-3 px-[28px] h-[54px] shrink-0"
-              style={{ borderBottom: "1px solid var(--color-line)", background: "var(--color-chrome-section)", backdropFilter: "blur(18px)" }}>
-              <button type="button" onClick={() => setGameStage("library")}
-                className="flex items-center gap-1.5 text-[12.5px] font-semibold cursor-pointer transition-colors text-(--color-text-body) hover:text-(--color-primary) shrink-0"
-                style={{ padding: "7px 12px", borderRadius: 10, background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
-                ‹ Seanstan Çık
-              </button>
-              {activeClient ? (
-                <span className="flex items-center gap-2.5">
-                  <Avatar name={activeClient.displayName} id={activeClient.id} size={30} radius={10} />
-                  <span>
-                    <span className="block text-[12.5px] font-bold text-(--color-text-strong) leading-tight">{activeClient.displayName}</span>
-                    <span className="block text-[10px] text-(--color-text-soft) leading-tight">{activeClient.primaryGoal || "Hedef girilmemiş"}</span>
-                  </span>
-                </span>
-              ) : (
-                <button type="button" onClick={() => setActiveAppView("clients")}
-                  className="text-[12.5px] font-semibold text-(--color-primary) bg-transparent border-none p-0 cursor-pointer hover:underline">
-                  Danışan Seç →
-                </button>
-              )}
-
-              {activeClient && (
-                <span className="text-[11px] font-semibold shrink-0"
-                  style={{ padding: "5px 11px", borderRadius: 8, background: `color-mix(in srgb, ${DIFFICULTY_COLORS[clientDiffLevel]} 13%, transparent)`, color: DIFFICULTY_COLORS[clientDiffLevel] }}>
-                  {DIFFICULTY_LABELS[clientDiffLevel]}
-                </span>
-              )}
-
-              {/* Aktif hedef — seans sırasında neye çalışıldığını hatırlatır */}
-              {activeClient && clientGoals.length > 0 && (() => {
-                const topGoal = clientGoals.find((g) => g.currentValue < g.targetValue) ?? clientGoals[0];
-                const pct = topGoal.targetValue > 0 ? Math.round((topGoal.currentValue / topGoal.targetValue) * 100) : 0;
-                return (
-                  <span className="hidden xl:flex items-center gap-2 max-w-56 shrink-0"
-                    style={{ padding: "5px 11px", borderRadius: 8, background: "var(--color-primary-light)" }}>
-                    <Target size={11} className="shrink-0" style={{ color: "var(--color-primary)" }} />
-                    <span className="text-[11px] font-medium text-(--color-text-body) truncate">{topGoal.title}</span>
-                    <span className="numeral text-[11px] font-semibold shrink-0" style={{ color: "var(--color-primary-ink)" }}>%{pct}</span>
-                  </span>
-                );
-              })()}
-
-              {/* Süre — seansın tek canlı ölçümü, bu yüzden çalışırken yeşile döner */}
-              <span className="ml-auto flex items-center gap-2 shrink-0"
-                style={{
-                  padding: "6px 12px",
-                  borderRadius: 10,
-                  background: gameElapsed > 0 ? "color-mix(in srgb, var(--color-accent-green) 10%, transparent)" : "var(--color-surface-strong)",
-                  border: `1px solid ${gameElapsed > 0 ? "color-mix(in srgb, var(--color-accent-green) 28%, transparent)" : "var(--color-line)"}`,
-                }}>
-                <Clock size={13} style={{ color: gameElapsed > 0 ? "var(--color-accent-green)" : "var(--color-text-soft)" }} />
-                <span className="numeral text-[13px] font-semibold" style={{ color: gameElapsed > 0 ? "var(--color-accent-green)" : "var(--color-text-strong)" }}>
-                  {formatElapsed(gameElapsed)}
-                </span>
-                <button type="button" onClick={resetSessionClock}
-                  className="text-[11px] font-semibold bg-transparent border-none cursor-pointer transition-opacity hover:opacity-70"
-                  style={{ color: gameElapsed > 0 ? "var(--color-accent-green)" : "var(--color-text-soft)" }}>
-                  Sıfırla
-                </button>
-              </span>
-
-              {/* Seansı değerlendirmeye taşır — akışın üçüncü aşaması. */}
-              <button type="button" onClick={() => setGameStage("review")}
-                className="btn-signature shrink-0 text-[12.5px] font-semibold cursor-pointer"
-                style={{ padding: "9px 16px", borderRadius: 11 }}>
-                Seansı Bitir
-              </button>
-            </div>
-
-            {/* ── Session duration warning banner ── */}
-            {gameElapsed > 0 && !sessionWarningDismissed && gameElapsed >= sessionWarnThreshold * 60 && (
-              <div className="flex items-center gap-3 px-4 py-2.5 shrink-0 border-b" style={{ background: "rgba(245, 158, 11,0.1)", borderColor: "rgba(245, 158, 11,0.25)" }}>
-                <Timer size={14} style={{ color: "#f59e0b", flexShrink: 0 }} />
-                <p className="flex-1 text-xs font-semibold m-0" style={{ color: "#f59e0b" }}>
-                  ⏱ {sessionWarnThreshold} dakika geçti — seans sona yaklaşıyor
-                </p>
-                <div className="flex items-center gap-2 shrink-0">
-                  {([30, 45, 60] as const).map(t => (
-                    <button key={t} type="button"
-                      className="text-[10px] font-bold px-2 py-0.5 rounded-full border cursor-pointer hover:opacity-80"
-                      style={{ background: t === sessionWarnThreshold ? "rgba(245, 158, 11,0.2)" : "transparent", borderColor: "rgba(245, 158, 11,0.3)", color: "#f59e0b" }}
-                      onClick={() => { setSessionWarnThreshold(t); try { localStorage.setItem("mimio-session-warn-min", String(t)); } catch { /* ignore */ } }}>
-                      {t}dk
-                    </button>
-                  ))}
-                  <button type="button" className="text-[10px] font-bold px-2 py-0.5 rounded-full border cursor-pointer hover:opacity-80" style={{ borderColor: "rgba(245, 158, 11,0.3)", color: "#f59e0b" }} onClick={() => setSessionWarningDismissed(true)}>
-                    Kapat
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ── Game suggestion HUD ── */}
-            {activeClient && (() => {
-              const clientSess = platformOverview.recentSessions.filter(s => s.clientId === activeClient.id);
-              if (clientSess.length < 3) return null;
-              // Find weakest game (lowest avg score among played games)
-              const gameAvgs: { key: string; avg: number; plays: number }[] = Object.entries(
-                clientSess.reduce<Record<string, { sum: number; count: number }>>((acc, s) => {
-                  if (!acc[s.gameKey]) acc[s.gameKey] = { sum: 0, count: 0 };
-                  acc[s.gameKey].sum += s.score;
-                  acc[s.gameKey].count++;
-                  return acc;
-                }, {})
-              ).map(([key, { sum, count }]) => ({ key, avg: Math.round(sum / count), plays: count }));
-              const weakest = gameAvgs.length > 0 ? gameAvgs.slice().sort((a, b) => a.avg - b.avg)[0] : null;
-              if (!weakest || weakest.key === activeGame) return null;
-              const suggestedLabel = GAME_LABELS[weakest.key as PlatformGameKey] ?? weakest.key;
-              return (
-                <div className="flex items-center gap-2.5 px-4 py-2 shrink-0 border-b" style={{ background: "rgba(43, 98, 245,0.07)", borderColor: "rgba(43, 98, 245,0.15)" }}>
-                  <Lightbulb size={14} className="shrink-0 text-(--color-text-muted)" />
-                  <p className="flex-1 text-xs text-(--color-text-soft) m-0">
-                    <strong style={{ color: "#4d7dff" }}>{activeClient.displayName}</strong> için öneri:{" "}
-                    <span style={{ color: "#4d7dff" }}>{suggestedLabel}</span> oynanmamış / en düşük skor ({weakest.avg} ort.)
-                  </p>
-                  <button type="button"
-                    className="text-[10px] font-bold px-2.5 py-1 rounded-lg border-none cursor-pointer shrink-0 transition-opacity hover:opacity-80"
-                    style={{ background: "rgba(43, 98, 245,0.2)", color: "#4d7dff" }}
-                    onClick={() => setActiveGame(weakest.key as PlatformGameKey)}>
-                    Geç →
-                  </button>
-                </div>
-              );
-            })()}
-
-            {/* ── Mobile game nav ── */}
-            <div className="flex md:hidden flex-col gap-1.5 px-3 py-2.5 border-b border-(--color-line) shrink-0" style={{ background: "var(--color-chrome-header)", backdropFilter: "blur(20px)" }}>
-              {/* Row 1: selectors + timer */}
-              <div className="flex items-center gap-1.5">
-                <select value={activeTherapist?.id ?? ""} onChange={(event) => setActiveTherapistId(event.target.value)} className="flex-1 text-xs px-2 py-1.5 border border-(--color-line) rounded-lg bg-(--color-surface-strong) text-(--color-text-body) min-w-0">
-                  {therapistOptions.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}</option>)}
-                </select>
-                <select value={activeClient?.id ?? ""} onChange={(event) => setActiveClientId(event.target.value)} className="flex-1 text-xs px-2 py-1.5 border border-(--color-line) rounded-lg bg-(--color-surface-strong) text-(--color-text-body) min-w-0">
-                  {clientOptions.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}</option>)}
-                </select>
-                <div className="flex items-center gap-1 rounded-lg px-2 py-1.5 border shrink-0" style={{ background: gameElapsed > 0 ? "rgba(18, 184, 134,0.1)" : "var(--color-surface-strong)", borderColor: gameElapsed > 0 ? "rgba(18, 184, 134,0.3)" : "var(--color-line)" }}>
-                  <Clock size={10} style={{ color: gameElapsed > 0 ? "#12b886" : "var(--color-text-muted)" }} />
-                  <span className="font-mono font-bold text-xs tabular-nums" style={{ color: gameElapsed > 0 ? "#12b886" : "var(--color-text-strong)" }}>{formatElapsed(gameElapsed)}</span>
-                  <button type="button" className="hover:opacity-70 bg-transparent border-none cursor-pointer ml-0.5 transition-opacity" style={{ color: gameElapsed > 0 ? "#12b886" : "var(--color-primary)" }} onClick={resetSessionClock}><RotateCcw size={9} /></button>
-                </div>
-              </div>
-              {/* Row 2: category + game tabs — scroll snap */}
-              <div className="flex gap-1.5 overflow-x-auto pb-0.5 tab-scroll">
-                {GAME_CATEGORIES.map((category) => {
-                  const isActive = activeTab.category === category.key;
-                  const CI = CATEGORY_ICONS[category.key];
-                  return (
-                    <button key={category.key} type="button" className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-bold border cursor-pointer transition-all ${isActive ? "bg-(--color-primary) text-white border-(--color-primary)" : "bg-(--color-surface-elevated) text-(--color-text-soft) border-(--color-line)"}`} onClick={() => openCategory(category.key)}>
-                      <CI size={11} /> {category.title.split(" ")[0]}
-                    </button>
-                  );
-                })}
-                <div className="w-px h-4 shrink-0 self-center" style={{ background: "var(--color-line)" }} />
-                {visibleTabs.map((tab) => (
-                  <button key={tab.key} type="button" className={`shrink-0 px-2.5 py-1.5 rounded-full text-[11px] font-bold border cursor-pointer transition-all ${activeGame === tab.key ? "border-(--color-primary)/40 text-(--color-primary)" : "bg-(--color-surface-elevated) text-(--color-text-soft) border-(--color-line)"}`}
-                    style={activeGame === tab.key ? { background: "rgba(43, 98, 245,0.1)" } : {}}
-                    onClick={() => setActiveGame(tab.key)}>
-                    {tab.title}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex flex-1 overflow-hidden">
-              {/* ── Premium Game Sidebar ── */}
-              <aside className="hidden md:flex flex-col w-56 lg:w-72 shrink-0 border-r border-(--color-line) overflow-y-auto" style={{ background: "var(--color-sidebar)", backdropFilter: "blur(24px)" }}>
-
-                {/*
-                  Seans durumu kartı. Seans çubuğu zaten süreyi ve danışanı
-                  taşıyor; buradaki kart artık "aktif mi" sorusunu tek bir
-                  noktayla cevaplıyor ve degradesini imza jetonundan alıyor.
-                */}
-                <div className="p-3 lg:p-4 border-b border-(--color-line) space-y-2.5 lg:space-y-3">
-                  <div className="rounded-[16px] p-3.5"
-                    style={{
-                      background: gameElapsed > 0
-                        ? "color-mix(in srgb, var(--color-accent-green) 10%, transparent)"
-                        : "var(--gradient-signature-soft)",
-                      border: `1px solid ${gameElapsed > 0 ? "color-mix(in srgb, var(--color-accent-green) 26%, transparent)" : "var(--color-line-strong)"}`,
-                    }}>
-                    <div className="flex items-center justify-between mb-2.5">
-                      <span className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full shrink-0"
-                          style={{ background: gameElapsed > 0 ? "var(--color-accent-green)" : "var(--color-primary)" }} />
-                        <span className="text-[11px] font-semibold"
-                          style={{ color: gameElapsed > 0 ? "var(--color-accent-green)" : "var(--color-primary-ink)" }}>
-                          {gameElapsed > 0 ? "Seans Aktif" : "Seans Bekliyor"}
-                        </span>
-                      </span>
-                      <span className="numeral text-[11px] font-semibold"
-                        style={{ color: gameElapsed > 0 ? "var(--color-accent-green)" : "var(--color-text-soft)" }}>
-                        {formatElapsed(gameElapsed)}
-                      </span>
-                    </div>
-                    {activeClient ? (
-                      <span className="flex items-center gap-2">
-                        <Avatar name={activeClient.displayName} id={activeClient.id} size={24} radius={8} />
-                        <span className="text-[12px] font-semibold text-(--color-text-strong) truncate">{activeClient.displayName}</span>
-                      </span>
-                    ) : (
-                      <span className="text-[11.5px] text-(--color-text-soft)">Aşağıdan Bir Danışan Seç</span>
-                    )}
-                  </div>
-
-                  {/* Selectors */}
-                  <div className="space-y-2">
-                    <label className="flex flex-col gap-1">
-                      <span className="text-[10px] text-(--color-text-muted) font-extrabold uppercase tracking-widest">Terapist</span>
-                      <select value={activeTherapist?.id ?? ""} onChange={(event) => setActiveTherapistId(event.target.value)} className={inputCls}>
-                        {therapistOptions.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}</option>)}
-                      </select>
-                    </label>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[10px] text-(--color-text-muted) font-extrabold uppercase tracking-widest">Danışan</span>
-                      {/* Quick client avatar row */}
-                      {clientOptions.length > 1 && (
-                        <div className="flex flex-wrap gap-1.5 mb-1">
-                          {clientOptions.slice(0, 6).map((c) => {
-                            const isActive = c.id === (activeClient?.id ?? "");
-                            /* Renk kimlikten türüyor: aynı danışan uygulamanın
-                               her yerinde aynı avatarı taşısın. */
-                            return (
-                              <button key={c.id} type="button" title={c.displayName}
-                                className="rounded-xl cursor-pointer border-none bg-transparent p-0 transition-transform hover:scale-110"
-                                style={{ opacity: isActive ? 1 : 0.45, boxShadow: isActive ? "0 0 0 2px var(--color-primary)" : "none" }}
-                                onClick={() => setActiveClientId(c.id)}>
-                                <Avatar name={c.displayName} id={c.id} size={32} radius={10} />
-                              </button>
-                            );
-                          })}
-                          {clientOptions.length > 6 && (
-                            <span className="w-8 h-8 rounded-xl flex items-center justify-center text-[9px] font-bold" style={{ background: "var(--color-surface-elevated)", color: "var(--color-text-muted)" }}>
-                              +{clientOptions.length - 6}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      <select value={activeClient?.id ?? ""} onChange={(event) => setActiveClientId(event.target.value)} className={inputCls}>
-                        {clientOptions.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}</option>)}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* CTA */}
-                  <button type="button"
-                    className={`w-full flex items-center justify-center gap-2 font-semibold text-sm px-4 py-2.5 rounded-xl cursor-pointer border-none transition-all active:scale-[0.98] ${gameElapsed > 0 ? "text-white hover:opacity-90" : "btn-signature"}`}
-                    style={gameElapsed > 0 ? { background: "var(--color-accent-green)" } : undefined}
-                    onClick={resetSessionClock}>
-                    {gameElapsed > 0 ? <RotateCcw size={14} /> : <Play size={14} />}
-                    {gameElapsed > 0 ? "Yeni Seans" : "Seansı Başlat"}
-                  </button>
-
-                  {/* Session Set trigger */}
-                  {sessionSet?.phase === "running" ? (
-                    <div className="rounded-2xl p-3" style={{ background: "var(--color-surface-elevated)", border: "1px solid var(--color-line-strong)" }}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-(--color-primary)">Seri Aktif</span>
-                        <button type="button" onClick={() => setSessionSet(null)} className="text-(--color-text-muted) hover:text-(--color-text-body) text-xs font-bold cursor-pointer border-none bg-transparent" title="Seriyi iptal et">✕</button>
-                      </div>
-                      <p className="text-(--color-text-strong) text-sm font-semibold m-0 mb-2.5">{sessionSet.presetLabel}</p>
-                      <div className="flex gap-1">
-                        {sessionSet.games.map((g, i) => (
-                          <div key={g} className="flex-1 h-1.5 rounded-full" style={{ background: i < sessionSet.entries.length ? "var(--color-accent-green)" : i === sessionSet.currentIndex ? "var(--color-primary)" : "var(--color-line-strong)" }} />
-                        ))}
-                      </div>
-                      <p className="text-(--color-text-muted) text-[11px] mt-2 m-0"><span className="numeral">{sessionSet.entries.length}/{sessionSet.games.length}</span> tamamlandı</p>
-                    </div>
-                  ) : (
-                    <button type="button"
-                      onClick={() => setShowSessionSetPicker(prev => !prev)}
-                      className="w-full flex items-center justify-center gap-2 font-semibold text-xs px-4 py-2.5 rounded-xl cursor-pointer border transition-colors hover:bg-(--color-surface-elevated)"
-                      style={{ background: "transparent", borderColor: "var(--color-line-strong)", color: "var(--color-primary)" }}>
-                      <Zap size={13} /> Seri Modu
-                    </button>
-                  )}
-
-                  {/* Session Set preset picker */}
-                  {showSessionSetPicker && !sessionSet && (
-                    <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(43, 98, 245,0.2)", background: "var(--color-surface-elevated)" }}>
-                      <div className="px-3 py-2" style={{ borderBottom: "1px solid var(--color-line)" }}>
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-(--color-text-muted)">Set Seç</span>
-                      </div>
-                      <div className="p-2 space-y-1">
-                        {SESSION_SET_PRESETS.map(preset => (
-                          <button key={preset.id} type="button"
-                            onClick={() => startSessionSet(preset)}
-                            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl cursor-pointer border-none transition-colors hover:bg-(--color-surface-elevated) text-left">
-                            <span className="text-base shrink-0">{preset.emoji}</span>
-                            <div className="flex-1 min-w-0">
-                              <span className="text-xs font-bold text-(--color-text-strong) block truncate">{preset.label}</span>
-                              <span className="text-[10px] text-(--color-text-muted)">{preset.description}</span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Oyun listesi — kategoriler ayrı bir blok değil, listenin başlıkları.
-                    Böylece yedi oyunun tamamı kaydırma olmadan görünür. */}
-                <div className="p-3 lg:p-4 border-b border-(--color-line)">
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-(--color-text-muted) block mb-2 px-1">Oyunlar</span>
-                  {(() => {
-                    const thisWeekPlan = allWeeklyPlans.find(p => p.clientId === (activeClient?.id ?? "") && p.weekStartDate === getWeekStart());
-                    const plannedGameKeys = new Set(
-                      thisWeekPlan ? Object.values(thisWeekPlan.days).flat().map(e => e.gameKey) : []
-                    );
-                    return (
-                      <div className="flex flex-col gap-2">
-                        {GAME_CATEGORIES.map((category) => {
-                          const tabs = GAME_TABS.filter((tab) => tab.category === category.key);
-                          if (tabs.length === 0) return null;
-                          const CatIcon = CATEGORY_ICONS[category.key];
-                          return (
-                            <div key={category.key} className="flex flex-col gap-0.5">
-                              <div className="flex items-center gap-1.5 px-1 pt-1">
-                                <CatIcon size={11} className="text-(--color-text-muted) shrink-0" />
-                                <span className="text-[10px] font-bold text-(--color-text-muted) truncate">{category.title}</span>
-                              </div>
-                              {tabs.map((tab) => {
-                                const isActive = activeGame === tab.key;
-                                const isPlanned = plannedGameKeys.has(tab.key as PlatformGameKey);
-                                const best = scoreboard[tab.key].best;
-                                return (
-                                  /*
-                                    Aktif oyun dolu bir kapsülle işaretlenir.
-                                    Önceki hâlde yalnızca ince bir çubuk ve
-                                    renk değişimi vardı; hangi oyunda olduğun
-                                    listeye bakınca anlaşılmıyordu.
-                                  */
-                                  <button key={tab.key} type="button" aria-pressed={isActive}
-                                    className={`relative flex items-center gap-2 pl-3 pr-2.5 py-2 rounded-xl cursor-pointer w-full text-left transition-colors border ${isActive ? "nav-active" : "border-transparent"}`}
-                                    style={isActive ? undefined : { background: "transparent" }}
-                                    onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = "var(--color-primary-light)"; }}
-                                    onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
-                                    onClick={() => setActiveGame(tab.key)}>
-                                    <span className="text-[13px] truncate flex-1"
-                                      style={{
-                                        color: isActive ? "var(--color-primary-ink)" : "var(--color-text-body)",
-                                        fontWeight: isActive ? 700 : 500,
-                                      }}>{tab.title}</span>
-                                    {isPlanned && <CalendarDays size={10} className="shrink-0 text-(--color-text-muted)" aria-label="Bu haftanın planında" />}
-                                    {best > 0 && (
-                                      <span className="numeral shrink-0 text-[11px] font-bold"
-                                        style={{ color: isActive ? "var(--color-primary-ink)" : "var(--color-text-muted)", opacity: isActive ? 0.85 : 1 }}>{best}</span>
-                                    )}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                {/* Score summary */}
-                <div className="p-3 lg:p-4 border-b border-(--color-line)">
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-(--color-text-muted) block mb-2 lg:mb-3 px-1">Skor Özeti</span>
-                  <div className="flex flex-col gap-2.5">
-                    {scoreCards.map((card) => (
-                      <div key={card.label} className="flex flex-col gap-1">
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <span className="flex-1 text-(--color-text-soft) truncate font-medium">{card.label}</span>
-                          <span
-                            data-tooltip={card.plays > 0 ? `En iyi: ${card.best} · Son: ${card.last} · ${card.plays}× oynadı` : "Henüz oynanmadı"}
-                            data-tooltip-dir="left"
-                            className="font-extrabold tabular-nums" style={{ color: card.best > 0 ? "var(--color-primary)" : "var(--color-text-muted)" }}>{card.best}</span>
-                          <span className="text-(--color-text-muted) text-[10px]">{card.plays}×</span>
-                        </div>
-                        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--color-surface-elevated)" }}>
-                          <div className="h-full rounded-full transition-all duration-500" style={{ width: card.best > 0 ? `${Math.min(100, card.best)}%` : "0%", background: "linear-gradient(90deg, var(--color-primary), #4d7dff)" }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Recent sessions */}
-                {recentSessionFeed.length > 0 && (
-                  <div className="p-3 lg:p-4">
-                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-(--color-text-muted) block mb-2 lg:mb-3 px-1">Son Oturumlar</span>
-                    <div className="flex flex-col gap-2">
-                      {recentSessionFeed.slice(0, 3).map((session) => (
-                        <div key={session.id}
-                          data-tooltip={`${session.clientName} · Skor: ${session.score}`}
-                          data-tooltip-dir="right"
-                          className="flex items-center gap-3 rounded-2xl px-3 py-2.5 border border-(--color-line)" style={{ background: "var(--color-surface-elevated)" }}>
-                          <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xs font-extrabold" style={{ background: "color-mix(in srgb, var(--color-primary) 10%, transparent)", color: "var(--color-primary)" }}>
-                            {session.score}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <strong className="text-(--color-text-strong) text-xs font-semibold block truncate">{session.gameLabel}</strong>
-                            <p className="text-(--color-text-muted) text-[11px] m-0 truncate">{session.clientName} · {formatPlayedAt(session.playedAt)}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </aside>
-
+            <LiveSessionScreen
+              client={activeClient}
+              gameTitle={activeTab.title}
+              gameSubtitle={activeTab.kicker}
+              elapsed={formatElapsed(gameElapsed)}
+              paused={sessionPaused}
+              onTogglePause={() => setSessionPaused((v) => !v)}
+              difficulty={DIFFICULTY_LABELS[clientDiffLevel]}
+              difficultyOptions={[DIFFICULTY_LABELS[1], DIFFICULTY_LABELS[2], DIFFICULTY_LABELS[3]]}
+              onDifficultyChange={(d) => {
+                const idx = [DIFFICULTY_LABELS[1], DIFFICULTY_LABELS[2], DIFFICULTY_LABELS[3]].indexOf(d);
+                if (idx >= 0) setClientDiffOverride((idx + 1) as 1 | 2 | 3);
+              }}
+              onExit={() => setGameStage("library")}
+              onFinish={() => setGameStage("review")}
+              roundLabel=""
+              instruction=""
+              variant="bare"
+              metrics={liveMetrics}
+              trace={liveTrace}
+              supports={supportCounts}
+              onAddSupport={(k) => setSupportCounts((c) => ({ ...c, [k]: c[k] + 1 }))}
+              note={sessionNote}
+              onNoteChange={setSessionNote}
+              board={
               <section className="relative flex-1 min-h-0 flex flex-col overflow-hidden" style={{ background: "var(--color-page-bg)" }}>
 
                 {/* ── Float Score Overlay ── */}
@@ -3652,7 +3325,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 );
               })()}
               </section>
-            </div>
+              }
+            />
           </div>
         )}
 
@@ -3678,11 +3352,13 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       </div>
 
       {/* ── Mobil kabuk (2a–2v) ── */}
+      {!sessionFullscreen && (
       <MobileTabBar
         activeView={activeAppView}
         onNavigate={setActiveAppView}
         onMore={() => setMoreOpen(true)}
       />
+      )}
       {moreOpen && (
         <MobileMoreSheet
           activeView={activeAppView}
