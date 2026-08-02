@@ -72,6 +72,7 @@ import { ClientsScreen } from "@/components/app/ClientsScreen";
 import { ClientDetailScreen } from "@/components/app/ClientDetailScreen";
 import { WeeklyPlanScreen } from "@/components/app/WeeklyPlanScreen";
 import { SettingsScreen } from "@/components/app/SettingsScreen";
+import { GameLibraryScreen } from "@/components/app/GameLibraryScreen";
 import { ScreenHeader, Card, CardTitle, Eyebrow, Avatar } from "@/components/app/primitives";
 import { startOfWeek as denizWeekStart, isoDate as denizIso } from "@/lib/deniz-derive";
 import { MEASURE_KIND_LABELS } from "@/lib/outcome-measures";
@@ -331,6 +332,14 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const [logicState, setLogicState] = useState<LogicState>({ puzzle: null, round: 0, score: 0, phase: "idle", message: "Matrisi analiz et ve eksik hücreyi bul.", selectedIdx: null, showResult: false });
   const [sessionSet, setSessionSet] = useState<SessionSetState | null>(null);
   const [showSessionSetPicker, setShowSessionSetPicker] = useState(false);
+
+  /*
+   * Oyun akışının aşaması. Tasarım dokümanı oyunu üç ekrana ayırıyor:
+   * Kitaplık (1l/1m) → Canlı Seans (1j/1k) → Seans Sonu (1n). Uygulamada
+   * üçü tek görünüme sıkışmıştı; kitaplık artık varsayılan, oyun alanı
+   * yalnızca bir seans başlatıldığında açılıyor.
+   */
+  const [gameStage, setGameStage] = useState<"library" | "live">("library");
   const [tpSelectedProtocol, setTpSelectedProtocol] = useState<TherapyProtocol | null>(null);
   const [memoryState, setMemoryState] = useState<MemoryState>({ sequence: [], input: [], flashIndex: null, score: 0, phase: "idle", message: "Oyunu başlat ve diziyi dikkatle izle." });
   const [pairsState, setPairsState] = useState<PairsState>({ tiles: [], moves: 0, pairsFound: 0, locked: false, phase: "idle", message: "Kartları aç ve eşleşen çiftleri bul." });
@@ -2486,7 +2495,21 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         )}
 
         {/* ── Games View ── */}
-        {activeAppView === "games" && (
+        {activeAppView === "games" && gameStage === "library" && (
+          <div className="app-shell h-full p-4 lg:p-[26px_28px]">
+            <GameLibraryScreen
+              clients={clientOptions}
+              activeClient={activeClient}
+              onSelectClient={setActiveClientId}
+              sessions={platformOverview.recentSessions}
+              activityCount={THERAPY_DOMAINS.reduce((n, d) => n + (d.activities?.length ?? 0), 0)}
+              onStart={(key) => { setActiveGame(key as GameKey); setGameStage("live"); }}
+              onStartSequence={(keys) => { if (keys[0]) setActiveGame(keys[0] as GameKey); setGameStage("live"); }}
+            />
+          </div>
+        )}
+
+        {activeAppView === "games" && gameStage === "live" && (
           <div className="flex flex-col flex-1 min-h-0">
 
             {/* ── Session Set Summary Overlay ── */}
@@ -2507,6 +2530,11 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             */}
             <div className="hidden lg:flex items-center gap-3 px-[28px] h-[54px] shrink-0"
               style={{ borderBottom: "1px solid var(--color-line)", background: "var(--color-chrome-section)", backdropFilter: "blur(18px)" }}>
+              <button type="button" onClick={() => setGameStage("library")}
+                className="flex items-center gap-1.5 text-[12.5px] font-semibold cursor-pointer transition-colors text-(--color-text-body) hover:text-(--color-primary) shrink-0"
+                style={{ padding: "7px 12px", borderRadius: 10, background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
+                ‹ Seanstan Çık
+              </button>
               {activeClient ? (
                 <span className="flex items-center gap-2.5">
                   <Avatar name={activeClient.displayName} id={activeClient.id} size={30} radius={10} />
