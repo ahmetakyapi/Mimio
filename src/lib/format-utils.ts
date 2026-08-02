@@ -110,9 +110,14 @@ export function parseWeeklyPlans(value: unknown): WeeklyPlan[] {
       for (const key of DAY_KEYS) {
         const d = days[key as DayKey];
         if (Array.isArray(d)) {
+          /* `time` ve `completed` de taşınmalı: ayrıştırıcı yalnızca gameKey/goal
+             okuduğu sürece saat bilgisi her yeniden yüklemede sessizce siliniyor,
+             Bugün ekranındaki çizelge de saatsiz kalıyordu. */
           parsedDays[key as DayKey] = d.filter((e): e is Record<string, unknown> => !!e && typeof e === "object").map((e) => ({
             gameKey: typeof e.gameKey === "string" && e.gameKey in GAME_LABELS ? (e.gameKey as PlatformGameKey) : "memory",
             goal: typeof e.goal === "string" ? e.goal : "",
+            ...(typeof e.time === "string" && /^\d{2}:\d{2}$/.test(e.time) ? { time: e.time } : {}),
+            ...(typeof e.completed === "boolean" ? { completed: e.completed } : {}),
           }));
         }
       }

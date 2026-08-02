@@ -40,6 +40,14 @@
   /* Ölçüm çubuğu: soldan sağa dolduğu için degrade de yatay. */
   --gradient-bar: linear-gradient(90deg, #4d7dff, #2ad6ef);
 
+  /* Avatar degradeleri — danışan kimliğinden türeyen dört sabit varyant.
+     Rastgele değil: id'nin hash'i seçtiği için aynı kişi her ekranda aynı
+     rengi taşır ve terapist listeyi renkten tanıyabilir. */
+  --gradient-avatar-1: linear-gradient(135deg, #4d7dff, #2ad6ef);
+  --gradient-avatar-2: linear-gradient(135deg, #19d19b, #2ad6ef);
+  --gradient-avatar-3: linear-gradient(135deg, #9a80ff, #4d7dff);
+  --gradient-avatar-4: linear-gradient(135deg, #f5c26b, #f0708a);
+
   /* ── Vurgu ── cyan: ölçüm uçları, canlı nokta, seri sonu işaretçisi. */
   --color-signal: #2ad6ef;
   --color-signal-soft: #7ee0b8;
@@ -377,6 +385,11 @@ html[data-theme='light'] {
   --gradient-signature-soft: linear-gradient(135deg, rgba(43, 98, 245, 0.13), rgba(23, 194, 224, 0.10));
   --gradient-bar: linear-gradient(90deg, #2b62f5, #17c2e0);
 
+  --gradient-avatar-1: linear-gradient(135deg, #2b62f5, #17c2e0);
+  --gradient-avatar-2: linear-gradient(135deg, #12b886, #17c2e0);
+  --gradient-avatar-3: linear-gradient(135deg, #7c5cff, #2b62f5);
+  --gradient-avatar-4: linear-gradient(135deg, #f59e0b, #f0708a);
+
   /* Vurgu cyan */
   --color-signal: #0b7f95;
   --color-signal-soft: #17c2e0;
@@ -465,6 +478,10 @@ html[data-theme='high-contrast'] {
   --gradient-signature: none;
   --gradient-signature-soft: none;
   --gradient-bar: #ffff00;
+  --gradient-avatar-1: #ffff00;
+  --gradient-avatar-2: #ffff00;
+  --gradient-avatar-3: #ffff00;
+  --gradient-avatar-4: #ffff00;
   --aurora-dark: none;
   --aurora-light: none;
   --grain-opacity: 0;
@@ -1888,23 +1905,20 @@ html[data-theme='light'] .section-games {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  /* Kılcal ızgara tonları bilinçli olarak `--color-line*` yerine burada
-     tanımlı: çizgi jetonları kart kenarları için ayarlı, zeminde tam bir
-     ton daha koyu olmaları gerekiyor yoksa hiç görünmüyorlar. */
-  /* Tek bir ızgara. İnce+kalın iki katman denendi; ince olan görünür
-     olacak kadar koyulaştırıldığında zemin gürültülü, görünmez kalacak
-     kadar açıldığında ise anlamsızdı. Kalan tek ızgara 112px'te ve
-     gerçekten görülüyor — niyet buydu. */
-  --paper-rule: color-mix(in srgb, var(--color-text-strong) 11%, transparent);
-  background-image:
-    linear-gradient(to right, var(--paper-rule) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--paper-rule) 1px, transparent 1px);
-  background-size: 112px 112px, 112px 112px;
+  /*
+   * Deniz'de zemin motifi ızgara değil aurora.
+   *
+   * Kılcal kâğıt ızgarası "Mavi Baskı"nın (teknik çizim + dosya kâğıdı)
+   * motifiydi; yeni sistemin üç katmanlı zeminiyle (aurora → grain → cam)
+   * aynı yüzeyde çakışıyor, ikisi birden gürültü üretiyordu. Sınıf adı
+   * çağrı yerlerini kırmamak için korunuyor; artık bölüm başlarına yerel
+   * bir aurora yayı bırakıyor.
+   */
+  background:
+    radial-gradient(680px 320px at 12% 0%, color-mix(in srgb, var(--color-primary) 12%, transparent), transparent 64%),
+    radial-gradient(560px 280px at 88% 6%, color-mix(in srgb, var(--color-signature-to) 11%, transparent), transparent 62%);
   mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.45) 62%, transparent 100%);
   -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.45) 62%, transparent 100%);
-}
-html[data-theme='dark'] .paper-grid {
-  --paper-rule: rgba(255, 255, 255, 0.06);
 }
 
 /* Noise overlay — subtle film grain for that "tactile" feel */

@@ -64,6 +64,15 @@ import {
   type ProgressEntry,
 } from "@/lib/therapy-program-data";
 import { buildTherapyPlan, type ClientContext } from "@/lib/therapy-matching";
+
+// ── Deniz ekranları ──
+import { Sidebar, TopBar } from "@/components/app/AppChrome";
+import { TodayScreen } from "@/components/app/TodayScreen";
+import { ClientsScreen } from "@/components/app/ClientsScreen";
+import { ClientDetailScreen } from "@/components/app/ClientDetailScreen";
+import { WeeklyPlanScreen } from "@/components/app/WeeklyPlanScreen";
+import { SettingsScreen } from "@/components/app/SettingsScreen";
+import { startOfWeek as denizWeekStart, isoDate as denizIso } from "@/lib/deniz-derive";
 import { MEASURE_KIND_LABELS } from "@/lib/outcome-measures";
 
 // ── Extracted modules ──
@@ -247,7 +256,7 @@ interface MimioAppProps {
 }
 
 export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps = {}) {
-  const { theme, toggle: toggleTheme, setTheme } = useTheme();
+  const { theme, preference, toggle: toggleTheme, setTheme } = useTheme();
   // ── New multi-screen state ──
   const [activeAppView, setActiveAppView] = useState<AppView>(initialAppView);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
@@ -435,14 +444,36 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     }
   }, []);
 
-  useEffect(() => { try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(scoreboard)); } catch { /* ignore */ } }, [scoreboard]);
-  useEffect(() => { try { window.localStorage.setItem(SESSION_CONTEXT_KEY, JSON.stringify({ activeTherapistId, activeClientId, sessionNote, sessionStartedAt })); } catch { /* ignore */ } }, [activeClientId, activeTherapistId, sessionNote, sessionStartedAt]);
-  useEffect(() => { try { window.localStorage.setItem(NOTES_KEY, JSON.stringify(allNotes)); } catch { /* ignore */ } }, [allNotes]);
-  useEffect(() => { try { window.localStorage.setItem(WEEKLY_PLANS_KEY, JSON.stringify(allWeeklyPlans)); } catch { /* ignore */ } }, [allWeeklyPlans]);
-  useEffect(() => { try { window.localStorage.setItem(THERAPY_PROGRESS_KEY, JSON.stringify(tpProgressEntries)); } catch { /* ignore */ } }, [tpProgressEntries]);
-  useEffect(() => { try { window.localStorage.setItem(THERAPY_FAVORITES_KEY, JSON.stringify(tpFavoriteActivities)); } catch { /* ignore */ } }, [tpFavoriteActivities]);
-  useEffect(() => { try { window.localStorage.setItem(THERAPY_CUSTOM_NOTES_KEY, JSON.stringify(tpCustomNotes)); } catch { /* ignore */ } }, [tpCustomNotes]);
-  useEffect(() => { try { window.localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(earnedAchievements)); } catch { /* ignore */ } }, [earnedAchievements]);
+  /*
+   * Kalıcılık, hidrasyon tamamlanmadan yazmaz.
+   *
+   * Önceki hâlde her yazma efekti mount anında ilk (boş) durumla bir kez
+   * çalışıyordu. Yukarıdaki okuma efekti localStorage'ı state'e taşısa bile
+   * aynı mount'ta çalışan yazma efekti kapanışındaki eski boş değeri geri
+   * yazıyor, StrictMode'un ikinci mount'unda okuma bu boşaltılmış değeri
+   * görüyordu: notlar ve haftalık planlar sayfa yenilendiğinde siliniyordu.
+   *
+   * `hydrated` bayrağı yazmayı ilk okumadan sonraya erteler.
+   */
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
+
+  /* Bayrak `ref` değil `state`: ref mount sırasında zaten dolu olacağı için
+     yazma efektlerinin ilk (boş) çalışmasını durduramazdı. State ise ikinci
+     bir render tetikliyor; yazma o renderdaki gerçek değerlerle çalışıyor. */
+  const persist = (key: string, value: unknown) => {
+    if (!hydrated) return;
+    try { window.localStorage.setItem(key, JSON.stringify(value)); } catch { /* kota dolu */ }
+  };
+
+  useEffect(() => { persist(STORAGE_KEY, scoreboard); }, [scoreboard, hydrated]);
+  useEffect(() => { persist(SESSION_CONTEXT_KEY, { activeTherapistId, activeClientId, sessionNote, sessionStartedAt }); }, [activeClientId, activeTherapistId, sessionNote, sessionStartedAt, hydrated]);
+  useEffect(() => { persist(NOTES_KEY, allNotes); }, [allNotes, hydrated]);
+  useEffect(() => { persist(WEEKLY_PLANS_KEY, allWeeklyPlans); }, [allWeeklyPlans, hydrated]);
+  useEffect(() => { persist(THERAPY_PROGRESS_KEY, tpProgressEntries); }, [tpProgressEntries, hydrated]);
+  useEffect(() => { persist(THERAPY_FAVORITES_KEY, tpFavoriteActivities); }, [tpFavoriteActivities, hydrated]);
+  useEffect(() => { persist(THERAPY_CUSTOM_NOTES_KEY, tpCustomNotes); }, [tpCustomNotes, hydrated]);
+  useEffect(() => { persist(ACHIEVEMENTS_KEY, earnedAchievements); }, [earnedAchievements, hydrated]);
 
   useEffect(() => {
     if (!activeTherapistId && !activeClientId) return;
@@ -623,6 +654,72 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         body: JSON.stringify({ clientId: selectedClientId, therapistId: activeTherapistId || undefined, weekStartDate: planWeekStart, days: planEdits }),
       });
     } catch { /* already saved locally */ }
+  }
+
+  /*
+   * Haftalık Plan ekranının tek yazma yolu. Mevcut `handleSaveWeeklyPlanDB`
+   * "seçili danışanın tüm haftasını kaydet" varsayımıyla çalışıyor; yeni ekran
+   * ise haftaya *herhangi* bir danışan için tek blok ekliyor. Bu yüzden ayrı
+   * bir mutasyon: hangi danışanın planı değişiyorsa yalnızca o yazılır.
+   */
+  async function mutateWeeklyPlan(
+    clientId: string,
+    mutate: (days: Record<DayKey, WeeklyPlanEntry[]>) => Record<DayKey, WeeklyPlanEntry[]>,
+  ) {
+    const weekStartDate = denizIso(denizWeekStart(new Date()));
+    const existing = allWeeklyPlans.find((p) => p.clientId === clientId && p.weekStartDate.slice(0, 10) === weekStartDate);
+    const base: Record<DayKey, WeeklyPlanEntry[]> =
+      existing?.days ?? { mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: [] };
+    const days = mutate(base);
+
+    const plan: WeeklyPlan = {
+      id: existing?.id ?? `plan-${clientId}-${weekStartDate}`,
+      clientId,
+      therapistId: activeTherapistId,
+      weekStartDate,
+      days,
+      updatedAt: new Date().toISOString(),
+    };
+
+    setAllWeeklyPlans((current) => {
+      const idx = current.findIndex((p) => p.clientId === clientId && p.weekStartDate.slice(0, 10) === weekStartDate);
+      return idx >= 0 ? current.map((p, i) => (i === idx ? plan : p)) : [...current, plan];
+    });
+
+    try {
+      await fetch("/api/platform/plans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId, therapistId: activeTherapistId || undefined, weekStartDate, days }),
+      });
+    } catch { /* yerelde kaydedildi, çevrimdışı çalışmaya devam */ }
+  }
+
+  function handlePlanAddEntry(clientId: string, day: DayKey, entry: WeeklyPlanEntry) {
+    void mutateWeeklyPlan(clientId, (days) => ({ ...days, [day]: [...(days[day] ?? []), entry] }));
+    showToast("Seans plana eklendi", "success");
+  }
+
+  function handlePlanRemoveEntry(clientId: string, day: DayKey, index: number) {
+    void mutateWeeklyPlan(clientId, (days) => ({
+      ...days,
+      [day]: (days[day] ?? []).filter((_, i) => i !== index),
+    }));
+    showToast("Blok kaldırıldı", "info");
+  }
+
+  /* Bir danışanı seçip doğrudan oyuna geçen tek yol — üç ekran da bunu kullanır. */
+  function handleStartSessionFor(clientId: string, gameKey?: PlatformGameKey) {
+    setActiveClientId(clientId);
+    if (gameKey) setActiveGame(gameKey as GameKey);
+    setActiveAppView("games");
+  }
+
+  function handleOpenClient(clientId: string) {
+    setSelectedClientId(clientId);
+    setActiveAppView("client-detail");
+    void loadClientNotesFromDB(clientId);
+    void loadClientGoals(clientId);
   }
 
   // ── Load notes from DB when client selected ──
@@ -1941,354 +2038,239 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const btnSecondary = "bg-(--color-surface-strong) text-(--color-text-body) text-sm font-medium px-4 py-2 rounded-xl border border-(--color-line) hover:border-(--color-line-strong) hover:text-(--color-primary) transition-all cursor-pointer disabled:opacity-50";
   const inputCls = "w-full px-3 py-2.5 border border-(--color-line) rounded-xl bg-(--color-surface-strong) text-(--color-text-strong) text-sm placeholder:text-(--color-text-muted) focus:outline-none focus:ring-2 focus:ring-(--color-primary)/25 focus:border-(--color-primary) transition-colors";
 
-  const navLinks: Array<{ view: AppView; icon: typeof LayoutDashboard; label: string; tooltip: string; matchViews?: AppView[]; badge?: string | number }> = [
-    { view: "dashboard", icon: LayoutDashboard, label: "Panel", tooltip: "Genel bakış & istatistikler" },
-    { view: "clients", icon: Users, label: "Danışanlar", tooltip: "Danışan listesi & profilleri", matchViews: ["clients", "client-detail"], badge: clientOptions.length > 0 ? clientOptions.length : undefined },
-    { view: "games", icon: Gamepad2, label: "Oyun Alanı", tooltip: "Terapi oyunlarını başlat", badge: GAME_TABS.length },
-    { view: "therapy-program", icon: Stethoscope, label: "Terapi", tooltip: "Program, aktiviteler & ilerleme" },
-    { view: "reports", icon: BarChart3, label: "Raporlar", tooltip: "Analitik & performans raporları", badge: thisWeekCount > 0 ? `${thisWeekCount}↑` : undefined },
-  ];
-
   const earnedAchievementCount = earnedAchievements.length;
 
   /* Kendi iç kaydırıcısını yöneten görünümler — dış sarmalayıcı bunlarda kaymaz. */
-  const ownsScroll = activeAppView === "games" || activeAppView === "reports" || activeAppView === "therapy-program";
+  const ownsScroll =
+    activeAppView === "games" ||
+    activeAppView === "reports" ||
+    activeAppView === "therapy-program" ||
+    /* Deniz ekranları kendi yüksekliğini yönetiyor: zaman çizelgesi, hafta
+       ızgarası ve radar görünür alanı doldurmalı, sayfayla birlikte uzamamalı. */
+    activeAppView === "dashboard" ||
+    activeAppView === "clients" ||
+    activeAppView === "client-detail" ||
+    activeAppView === "weekly-plan" ||
+    activeAppView === "settings";
 
-  return (
-    <main id="main-content" className="flex h-dvh overflow-hidden" role="main">
-      {/* ── Sidebar Navigation ── */}
-      {/*
-        Sidebar üç bölgeye ayrıldı: sabit başlık, kayan link listesi, sabit
-        profil bloğu. Önceden tüm nav `overflow-y-auto` idi; CSS spec gereği
-        bir eksen `visible` değilse diğeri de `auto` olur, bu yüzden tooltip
-        pseudo-elementleri sidebar'ı yatayda kaydırıyordu.
-      */}
-      <nav className="hidden lg:flex flex-col w-64 shrink-0 relative overflow-hidden" role="navigation" aria-label="Ana gezinme"
-        style={{
-          background: "var(--color-sidebar)",
-          borderRight: "1px solid var(--color-line)",
-          backdropFilter: "blur(24px)",
-        }}>
-        <div className="absolute top-0 left-0 right-0 h-32 pointer-events-none"
-          style={{ background: "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(43, 98, 245,0.12), transparent)" }} />
+  /*
+   * Deniz kabuğu tek bir "şimdi"yi paylaşır. Her ekran kendi `new Date()`ini
+   * kurarsa gece yarısını geçen bir seansta çizelge ile başlık farklı güne
+   * bakabiliyor; tarih burada bir kez üretilip aşağı iniyor.
+   */
+  const now = new Date();
+  const weekCapacity = 25;
 
-        {/* Logo area */}
-        <div className="relative flex items-center gap-3 px-5 py-5" style={{ borderBottom: "1px solid var(--color-line)" }}>
-          {/* Marka işareti imza degradesini taşıyan üç yerden biri —
-              sidebar'ın tepesinde paletin kaynağını gösteriyor. */}
-          <div className="tile-signature relative w-8 h-8 shrink-0 flex items-center justify-center rounded-[10px]"
-            style={{ boxShadow: "var(--shadow-primary)" }}>
-            <BlockMark size={18} color="#ffffff" />
-          </div>
-          <div>
-            <p className="font-display font-bold text-(--color-text-strong) text-sm leading-tight m-0">Mimio</p>
-            <p className="numeral text-(--color-text-soft) text-[10px] m-0">Ergoterapi platformu</p>
-          </div>
-          <div className="ml-auto flex items-center gap-1 px-2 py-0.5 rounded-full"
-            style={{ background: "rgba(18, 184, 134,0.1)", border: "1px solid rgba(18, 184, 134,0.2)" }}>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#19d19b]" style={{ boxShadow: "0 0 6px rgba(18, 184, 134,0.7)" }} />
-            <span className="text-[10px] font-bold text-[#19d19b]">Aktif</span>
-          </div>
-        </div>
+  /* Sıradaki seansı olan ama bugün henüz oynamamış danışan sayısı — zil rozeti. */
+  const pendingCount = platformOverview.recentSessions.length > 0
+    ? clientOptions.filter((c) => {
+        const last = platformOverview.recentSessions.find((sx) => sx.clientId === c.id);
+        return !last || Date.now() - new Date(last.playedAt).getTime() > 7 * 86400000;
+      }).length
+    : 0;
 
-        {/* Nav links */}
-        <div className="flex flex-col gap-0.5 p-3 flex-1 min-h-0 relative overflow-y-auto overflow-x-hidden">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-(--color-text-muted) px-3 py-1 mt-1 mb-0.5">Ana Menü</p>
-          {navLinks.map(({ view, icon: Icon, label, tooltip, matchViews, badge }) => {
-            const isActive = matchViews ? matchViews.includes(activeAppView) : activeAppView === view;
-            return (
-              <button key={view} type="button"
-                title={tooltip}
-                aria-current={isActive ? "page" : undefined}
-                className={`${navItem} ${isActive ? navItemActive : ""}`}
-                onClick={() => setActiveAppView(view)}>
-                {/*
-                  Seçili satırın işareti tek: degrade zemin + kenarlık.
-                  Önceden bunun yanında sol çubuk, ikon çipi ve sağda bir
-                  nokta da vardı — dört ayrı sinyal aynı tek şeyi söylüyordu.
-                */}
-                <Icon size={17} strokeWidth={1.9} className="shrink-0" />
-                <span className="text-sm flex-1">{label}</span>
-                {badge !== undefined && (
-                  <span className="numeral ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-md shrink-0"
-                    style={{
-                      background: isActive ? "rgba(255, 255, 255, 0.18)" : "var(--color-primary-light)",
-                      color: isActive ? "inherit" : "var(--color-text-soft)",
-                    }}>
-                    {badge}
+  const denizAccountMenu = (
+    <>
+          {accountMenuOpen && (
+        <>
+          <button
+            type="button"
+            aria-label="Menüyü kapat"
+            className="fixed inset-0 z-40 cursor-default bg-transparent border-none"
+            onClick={() => setAccountMenuOpen(false)}
+          />
+          {/*
+            Hesap menüsü.
+
+            Düzen bilinçli olarak "satır" temelli: her satır tek bir iş
+            yapar, hepsi aynı yükseklikte, aralarında kılcal ayraç var.
+            Önceki sürümde tema seçici tam genişlikte iri bir blok olduğu
+            için menünün ağırlık merkezi oraya kayıyor, geri kalanı
+            iliştirilmiş gibi duruyordu. Artık tema, kendi satırında
+            sağa yaslı küçük bir segment.
+          */}
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute top-full right-0 mt-2 z-50 w-64 rounded-2xl overflow-hidden origin-top-right"
+            style={{
+              background: "var(--color-surface-strong)",
+              border: "1px solid var(--color-line-strong)",
+              boxShadow: "var(--shadow-lg)",
+            }}
+            role="menu"
+          >
+            {/* Kimlik */}
+            <div className="flex items-center gap-2.5 px-3 py-3">
+              <span
+                className="w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0"
+                style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }}
+              >
+                {activeTherapist?.displayName?.[0]?.toLocaleUpperCase("tr") ?? "T"}
+              </span>
+              <span className="min-w-0 flex-1">
+                <strong className="block text-[13px] font-bold text-(--color-text-strong) truncate leading-tight">
+                  {activeTherapist?.displayName ?? "Terapist"}
+                </strong>
+                <span className="block text-[11px] text-(--color-text-muted) truncate leading-tight mt-0.5">
+                  {activeTherapist?.clinicName || "Bağımsız terapist"}
+                </span>
+              </span>
+            </div>
+
+            {/* Uzmanlık — varsa rozet, yoksa doldurmaya davet eden satır.
+                Boş durumu "Uzmanlık girilmemiş" diye pasif yazmak yerine
+                tıklanabilir bir eylem yapıyoruz. */}
+            {activeTherapist?.specialty ? (
+              <div className="px-3 pb-3 -mt-0.5">
+                <span
+                  className="inline-block text-[10px] font-bold px-2 py-1 rounded-md"
+                  style={{ background: "var(--color-primary-light)", color: "var(--color-primary)" }}
+                >
+                  {activeTherapist.specialty}
+                </span>
+              </div>
+            ) : null}
+
+            <div style={{ height: 1, background: "var(--color-line)" }} />
+
+            <div className="p-1">
+              <button
+                type="button"
+                role="menuitem"
+                className="menu-row"
+                onClick={() => {
+                  setTherapistEditDraft({
+                    displayName: activeTherapist?.displayName ?? "",
+                    clinicName: activeTherapist?.clinicName ?? "",
+                    specialty: activeTherapist?.specialty ?? "",
+                  });
+                  setShowEditTherapist(true);
+                  setAccountMenuOpen(false);
+                }}
+              >
+                <Edit2 size={14} className="shrink-0 text-(--color-text-muted)" />
+                <span className="flex-1 text-left">
+                  {activeTherapist?.specialty ? "Profili düzenle" : "Profili tamamla"}
+                </span>
+                {!activeTherapist?.specialty && (
+                  <span
+                    className="w-1.5 h-1.5 rounded-full shrink-0"
+                    style={{ background: "var(--color-signal)" }}
+                    title="Uzmanlık alanı girilmemiş"
+                  />
+                )}
+              </button>
+
+              <button
+                type="button"
+                role="menuitem"
+                className="menu-row"
+                onClick={() => { setAccountMenuOpen(false); setShowAchievements(true); }}
+              >
+                <Award size={14} className="shrink-0 text-(--color-text-muted)" />
+                <span className="flex-1 text-left">Başarımlar</span>
+                {earnedAchievementCount > 0 && (
+                  <span className="numeral text-[11px] text-(--color-text-muted)">
+                    {earnedAchievementCount}
                   </span>
                 )}
               </button>
-            );
-          })}
-
-          {/* Achievements button */}
-          <button type="button"
-            title="Başarımlar & rozetler"
-            className={`${navItem} mt-2`}
-            onClick={() => setShowAchievements(true)}>
-            <Award size={17} strokeWidth={1.9} className="shrink-0" />
-            <span className="text-sm flex-1">Başarımlar</span>
-            {earnedAchievementCount > 0 && (
-              <span className="numeral ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-md shrink-0"
-                style={{ background: "var(--color-signal-light)", color: "var(--color-accent-amber)" }}>
-                {earnedAchievementCount}
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/*
-          Bugün kartı. Sidebar'ın ortası boştu; terapistin seans sırasında en
-          çok ihtiyaç duyduğu iki bilgi buraya kondu: bugün kaç seans yapıldı
-          ve şu an hangi danışan seçili. Danışan seçiliyse tek tıkla oyuna gider.
-        */}
-        {(() => {
-          const today = new Date(); today.setHours(0, 0, 0, 0);
-          const todayCount = platformOverview.recentSessions.filter(
-            (session) => new Date(session.playedAt).getTime() >= today.getTime(),
-          ).length;
-          return (
-            <div className="shrink-0 mx-3 mb-3 rounded-2xl overflow-hidden"
-              style={{ background: "var(--gradient-signature-soft)", border: "1px solid var(--color-line-strong)" }}>
-              <div className="flex items-stretch">
-                <div className="flex-1 px-3 py-2.5" style={{ borderRight: "1px solid var(--color-line)" }}>
-                  <span className="figure block text-xl leading-none text-(--color-text-strong)">{todayCount}</span>
-                  <span className="text-[10px] text-(--color-text-soft)">bugün</span>
-                </div>
-                <div className="flex-1 px-3 py-2.5">
-                  <span className="figure block text-xl leading-none text-(--color-text-strong)">{thisWeekCount}</span>
-                  <span className="text-[10px] text-(--color-text-soft)">bu hafta</span>
-                </div>
-              </div>
-              <button type="button"
-                onClick={() => setActiveAppView("games")}
-                className="w-full flex items-center gap-2 px-3 py-2.5 cursor-pointer text-left transition-colors hover:bg-(--color-primary-light) bg-transparent"
-                style={{ borderTop: "1px solid var(--color-line)" }}>
-                <span className="w-1.5 h-1.5 rounded-full shrink-0"
-                  style={{ background: activeClient ? "var(--color-accent-green)" : "var(--color-text-disabled)" }} />
-                <span className="flex-1 min-w-0">
-                  <span className="block text-[10px] text-(--color-text-muted) leading-tight">
-                    {activeClient ? "Seçili danışan" : "Danışan seçilmedi"}
-                  </span>
-                  <span className="block text-xs font-semibold text-(--color-text-strong) truncate leading-tight">
-                    {activeClient?.displayName ?? "Oyun alanından seç"}
-                  </span>
-                </span>
-                <ChevronRight size={13} className="shrink-0 text-(--color-text-muted)" />
-              </button>
             </div>
-          );
-        })()}
 
-        {/*
-          Hesap bloğu. Önceki sürümde üç daraltılmış düğme (Açık/Düzenle/Çıkış)
-          yan yana sıkışıyor, etiketler kırpılıyordu. Artık: profil satırına
-          basınca açılan bir menü — her eylem tam etiketiyle ve çalışır hâlde.
-        */}
-        <div className="relative shrink-0 p-3" style={{ borderTop: "1px solid var(--color-line)" }}>
-          {accountMenuOpen && (
-            <>
+            <div style={{ height: 1, background: "var(--color-line)" }} />
+
+            {/* Tema — kendi satırında, sağa yaslı segment */}
+            <div className="flex items-center gap-2 px-3 py-2">
+              <span className="flex-1 text-[13px] font-medium text-(--color-text-body)">Görünüm</span>
+              <div
+                className="relative flex p-0.5 rounded-lg shrink-0"
+                style={{ background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}
+                role="radiogroup"
+                aria-label="Tema"
+              >
+                {([
+                  { key: "light", label: "Açık tema", Icon: Sun },
+                  { key: "dark", label: "Koyu tema", Icon: Moon },
+                  { key: "high-contrast", label: "Yüksek kontrast", Icon: Eye },
+                ] as const).map(({ key, label, Icon }) => {
+                  const on = theme === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      aria-label={label}
+                      title={label}
+                      onClick={() => setTheme(key)}
+                      className="relative w-7 h-6 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent transition-colors"
+                      style={{ color: on ? "var(--color-text-inverse)" : "var(--color-text-muted)" }}
+                    >
+                      {on && (
+                        <motion.span
+                          layoutId="theme-pill"
+                          transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                          className="absolute inset-0 rounded-md"
+                          style={{ background: "var(--color-primary)" }}
+                        />
+                      )}
+                      <Icon size={13} className="relative" />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ height: 1, background: "var(--color-line)" }} />
+
+            <div className="p-1">
               <button
                 type="button"
-                aria-label="Menüyü kapat"
-                className="fixed inset-0 z-40 cursor-default bg-transparent border-none"
-                onClick={() => setAccountMenuOpen(false)}
-              />
-              {/*
-                Hesap menüsü.
-
-                Düzen bilinçli olarak "satır" temelli: her satır tek bir iş
-                yapar, hepsi aynı yükseklikte, aralarında kılcal ayraç var.
-                Önceki sürümde tema seçici tam genişlikte iri bir blok olduğu
-                için menünün ağırlık merkezi oraya kayıyor, geri kalanı
-                iliştirilmiş gibi duruyordu. Artık tema, kendi satırında
-                sağa yaslı küçük bir segment.
-              */}
-              <motion.div
-                initial={{ opacity: 0, y: 6, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
-                className="absolute bottom-full left-3 right-3 mb-2 z-50 rounded-2xl overflow-hidden origin-bottom"
-                style={{
-                  background: "var(--color-surface-strong)",
-                  border: "1px solid var(--color-line-strong)",
-                  boxShadow: "var(--shadow-lg)",
-                }}
-                role="menu"
+                role="menuitem"
+                className="menu-row menu-row-danger"
+                onClick={() => { setAccountMenuOpen(false); handleLogout(); }}
               >
-                {/* Kimlik */}
-                <div className="flex items-center gap-2.5 px-3 py-3">
-                  <span
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0"
-                    style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }}
-                  >
-                    {activeTherapist?.displayName?.[0]?.toLocaleUpperCase("tr") ?? "T"}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <strong className="block text-[13px] font-bold text-(--color-text-strong) truncate leading-tight">
-                      {activeTherapist?.displayName ?? "Terapist"}
-                    </strong>
-                    <span className="block text-[11px] text-(--color-text-muted) truncate leading-tight mt-0.5">
-                      {activeTherapist?.clinicName || "Bağımsız terapist"}
-                    </span>
-                  </span>
-                </div>
+                <LogOut size={14} className="shrink-0" />
+                <span className="flex-1 text-left">Çıkış yap</span>
+              </button>
+            </div>
+          </motion.div>
+        </>
+      )}
 
-                {/* Uzmanlık — varsa rozet, yoksa doldurmaya davet eden satır.
-                    Boş durumu "Uzmanlık girilmemiş" diye pasif yazmak yerine
-                    tıklanabilir bir eylem yapıyoruz. */}
-                {activeTherapist?.specialty ? (
-                  <div className="px-3 pb-3 -mt-0.5">
-                    <span
-                      className="inline-block text-[10px] font-bold px-2 py-1 rounded-md"
-                      style={{ background: "var(--color-primary-light)", color: "var(--color-primary)" }}
-                    >
-                      {activeTherapist.specialty}
-                    </span>
-                  </div>
-                ) : null}
+    </>
+  );
 
-                <div style={{ height: 1, background: "var(--color-line)" }} />
+  return (
+    <main id="main-content" className="flex h-dvh overflow-hidden" role="main">
+      <Sidebar
+        activeView={activeAppView}
+        onNavigate={setActiveAppView}
+        clinicName={activeTherapist?.clinicName || "Ergoterapi platformu"}
+        clientCount={clientOptions.length}
+        gameCount={GAME_TABS.length}
+        weekDone={thisWeekCount}
+        weekCapacity={weekCapacity}
+      />
 
-                <div className="p-1">
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="menu-row"
-                    onClick={() => {
-                      setTherapistEditDraft({
-                        displayName: activeTherapist?.displayName ?? "",
-                        clinicName: activeTherapist?.clinicName ?? "",
-                        specialty: activeTherapist?.specialty ?? "",
-                      });
-                      setShowEditTherapist(true);
-                      setAccountMenuOpen(false);
-                    }}
-                  >
-                    <Edit2 size={14} className="shrink-0 text-(--color-text-muted)" />
-                    <span className="flex-1 text-left">
-                      {activeTherapist?.specialty ? "Profili düzenle" : "Profili tamamla"}
-                    </span>
-                    {!activeTherapist?.specialty && (
-                      <span
-                        className="w-1.5 h-1.5 rounded-full shrink-0"
-                        style={{ background: "var(--color-signal)" }}
-                        title="Uzmanlık alanı girilmemiş"
-                      />
-                    )}
-                  </button>
-
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="menu-row"
-                    onClick={() => { setAccountMenuOpen(false); setShowAchievements(true); }}
-                  >
-                    <Award size={14} className="shrink-0 text-(--color-text-muted)" />
-                    <span className="flex-1 text-left">Başarımlar</span>
-                    {earnedAchievementCount > 0 && (
-                      <span className="numeral text-[11px] text-(--color-text-muted)">
-                        {earnedAchievementCount}
-                      </span>
-                    )}
-                  </button>
-                </div>
-
-                <div style={{ height: 1, background: "var(--color-line)" }} />
-
-                {/* Tema — kendi satırında, sağa yaslı segment */}
-                <div className="flex items-center gap-2 px-3 py-2">
-                  <span className="flex-1 text-[13px] font-medium text-(--color-text-body)">Görünüm</span>
-                  <div
-                    className="relative flex p-0.5 rounded-lg shrink-0"
-                    style={{ background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}
-                    role="radiogroup"
-                    aria-label="Tema"
-                  >
-                    {([
-                      { key: "light", label: "Açık tema", Icon: Sun },
-                      { key: "dark", label: "Koyu tema", Icon: Moon },
-                      { key: "high-contrast", label: "Yüksek kontrast", Icon: Eye },
-                    ] as const).map(({ key, label, Icon }) => {
-                      const on = theme === key;
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          role="radio"
-                          aria-checked={on}
-                          aria-label={label}
-                          title={label}
-                          onClick={() => setTheme(key)}
-                          className="relative w-7 h-6 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent transition-colors"
-                          style={{ color: on ? "var(--color-text-inverse)" : "var(--color-text-muted)" }}
-                        >
-                          {on && (
-                            <motion.span
-                              layoutId="theme-pill"
-                              transition={{ type: "spring", stiffness: 420, damping: 34 }}
-                              className="absolute inset-0 rounded-md"
-                              style={{ background: "var(--color-primary)" }}
-                            />
-                          )}
-                          <Icon size={13} className="relative" />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div style={{ height: 1, background: "var(--color-line)" }} />
-
-                <div className="p-1">
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="menu-row menu-row-danger"
-                    onClick={() => { setAccountMenuOpen(false); handleLogout(); }}
-                  >
-                    <LogOut size={14} className="shrink-0" />
-                    <span className="flex-1 text-left">Çıkış yap</span>
-                  </button>
-                </div>
-              </motion.div>
-            </>
-          )}
-
-          <button
-            type="button"
-            aria-haspopup="menu"
-            aria-expanded={accountMenuOpen}
-            onClick={() => setAccountMenuOpen((open) => !open)}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors text-left hover:bg-(--color-surface-elevated)"
-            style={{
-              background: accountMenuOpen ? "var(--color-surface-elevated)" : "transparent",
-              border: "1px solid var(--color-line)",
-            }}
-          >
-            <span
-              className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0"
-              style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }}
-            >
-              {activeTherapist?.displayName?.[0]?.toLocaleUpperCase("tr") ?? "T"}
-            </span>
-            <span className="flex flex-col flex-1 min-w-0">
-              <strong className="text-(--color-text-strong) text-xs font-semibold truncate leading-tight">
-                {activeTherapist?.displayName ?? "Terapist"}
-              </strong>
-              <span className="text-(--color-text-muted) text-[10px] truncate">
-                {activeTherapist?.clinicName || "Bağımsız terapist"}
-              </span>
-            </span>
-            <ChevronDown
-              size={14}
-              className="shrink-0 text-(--color-text-muted) transition-transform"
-              style={{ transform: accountMenuOpen ? "rotate(180deg)" : "none" }}
-            />
-          </button>
-        </div>
-      </nav>
+      {/* İçerik sütunu: üst çubuk + kayan gövde. Sidebar dışarıda kalır. */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
+      <TopBar
+        search={clientSearch}
+        onSearchChange={setClientSearch}
+        onSearchSubmit={() => setActiveAppView("clients")}
+        theme={theme}
+        onThemeChange={setTheme}
+        notificationCount={pendingCount}
+        onNotifications={() => setActiveAppView("clients")}
+        therapistName={activeTherapist?.displayName ?? "Terapist"}
+        therapistRole={activeTherapist?.specialty || "Ergoterapist"}
+        accountOpen={accountMenuOpen}
+        onAccountToggle={() => setAccountMenuOpen((open) => !open)}
+        accountMenu={denizAccountMenu}
+      />
 
       {/* ── Mobile top bar ── */}
       <header className="flex lg:hidden items-center justify-between px-4 shrink-0 fixed top-0 left-0 right-0 z-30"
@@ -2404,464 +2386,18 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
         {/* ── Dashboard ── */}
         {activeAppView === "dashboard" && (
-          <div className="app-shell p-4 lg:p-6 space-y-5 lg:space-y-8">
-
-            {/* Header — degrade metin ve emoji kaldırıldı. Bir klinik
-                aracın ana ekranı selamlaşma değil, günün durumu ile
-                açılmalı: tarih, bağlantı durumu, sonra kim olduğun. */}
-            <div className="flex items-start justify-between pt-1 gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-(--color-text-muted) hidden sm:inline">{formatDate(getTodayString())}</span>
-                  <span className="w-1 h-1 rounded-full bg-(--color-text-muted) hidden sm:inline-block" />
-                  <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest"
-                    style={{ color: platformStatus === "online" ? "var(--color-accent-green)" : "var(--color-signal)" }}>
-                    <span className="w-1.5 h-1.5 rounded-full"
-                      style={{ background: platformStatus === "online" ? "var(--color-accent-green)" : "var(--color-signal)" }} />
-                    {getDatabaseStatusLabel(platformStatus)}
-                  </span>
-                </div>
-                <h1 className="text-2xl lg:text-4xl font-extrabold m-0 leading-tight truncate text-(--color-text-strong)">
-                  Merhaba, {activeTherapist?.displayName?.split(" ")[0] ?? "Terapist"}
-                </h1>
-                <p className="text-(--color-text-soft) text-xs lg:text-sm mt-1.5 m-0">
-                  {clientOptions.length} danışan · {effectiveSessionCount} toplam seans
-                </p>
-              </div>
-              <button type="button"
-                className="btn-signature flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs lg:text-sm font-semibold cursor-pointer shrink-0"
-                onClick={() => setActiveAppView("games")}>
-                <Gamepad2 size={14} /> <span className="hidden sm:inline">Oyun Başlat</span><span className="sm:hidden">Oyna</span>
-              </button>
-            </div>
-
-            {/* Stats */}
-            {(() => {
-              const avgScore = effectiveSessionCount > 0
-                ? Math.round(platformOverview.totals.totalScore / effectiveSessionCount)
-                : 0;
-
-              /* ── Kart grafikleri gerçek seans kaydından türetilir ──
-                 Son 14 günün günlük seans sayısı ve günlük ortalama skoru.
-                 Veri yoksa StatCard grafiği hiç çizmez. */
-              const DAY_MS = 86_400_000;
-              const todayStart = new Date();
-              todayStart.setHours(0, 0, 0, 0);
-              const dayBuckets = Array.from({ length: 14 }, (_, i) => {
-                const start = todayStart.getTime() - (13 - i) * DAY_MS;
-                const sessions = platformOverview.recentSessions.filter((s) => {
-                  const t = new Date(s.playedAt).getTime();
-                  return t >= start && t < start + DAY_MS;
-                });
-                return {
-                  count: sessions.length,
-                  avg: sessions.length > 0
-                    ? sessions.reduce((sum, s) => sum + s.score, 0) / sessions.length
-                    : 0,
-                };
-              });
-              const countSeries = dayBuckets.map((d) => d.count);
-              /* Ortalama skor serisinde boş günler seriyi sıfıra çekip
-                 grafiği yanıltıyordu; yalnızca seans olan günler alınıyor. */
-              const scoreSeries = dayBuckets.filter((d) => d.count > 0).map((d) => Math.round(d.avg));
-
-              /* Geçen haftaya göre seans farkı — uydurma "trend: up" oku
-                 yerine gerçek bir karşılaştırma. */
-              const nowMs = Date.now();
-              const lastWeekCount = platformOverview.recentSessions.filter((s) => {
-                const age = nowMs - new Date(s.playedAt).getTime();
-                return age >= 7 * DAY_MS && age < 14 * DAY_MS;
-              }).length;
-              const weekDelta = lastWeekCount > 0 || thisWeekCount > 0 ? thisWeekCount - lastWeekCount : null;
-
-              const statItems = [
-                {
-                  v: effectiveSessionCount, l: "Toplam Seans", sub: "tüm zamanlar",
-                  tooltip: "Tüm zamanlarda kaydedilen toplam oyun seansı sayısı",
-                  Icon: Gamepad2,
-                  accent: "var(--color-domain-motor)",
-                  series: countSeries,
-                },
-                {
-                  v: clientOptions.length, l: "Danışan", sub: "kayıtlı profil",
-                  tooltip: "Sisteme kayıtlı toplam danışan profili",
-                  Icon: Users,
-                  accent: "var(--color-accent-green)",
-                },
-                {
-                  v: thisWeekCount, l: "Bu Hafta", sub: "son 7 gün",
-                  tooltip: "Son 7 gün içinde oynanan seans sayısı; rozet geçen haftayla farkı gösterir",
-                  Icon: TrendingUp,
-                  accent: "var(--color-signal)",
-                  series: countSeries.slice(7),
-                  delta: weekDelta,
-                  deltaUnit: "seans",
-                },
-                {
-                  v: avgScore, l: "Ort. Skor", sub: "seans başına",
-                  tooltip: "Tüm seansların skor ortalaması",
-                  Icon: Award,
-                  /* Nötr mavi-gri: ortalama skor bir uyarı değil, bir okuma. */
-                  accent: "var(--color-accent-teal)",
-                  series: scoreSeries,
-                },
-              ];
-              return (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
-                  {statItems.map((item) => (
-                    <StatCard key={item.l} {...item} />
-                  ))}
-                </div>
-              );
-            })()}
-
-            {/* Quick Actions —
-                Kartlar artık degrade yıkanmış renkli kutular değil; tek
-                yüzey, kılcal çerçeve ve renkli bir ikon karesi. Renk yalnız
-                hangi modüle gittiğini söyler, kartı boyamaz. */}
-            {(() => {
-              const actions = [
-                {
-                  Icon: UserPlus, title: "Yeni Danışan Ekle", sub: "Profil oluştur ve seans başlat",
-                  action: () => { setShowAddClient(true); setActiveAppView("clients"); },
-                  accent: "var(--color-accent-green)",
-                  meta: null as string | null,
-                },
-                {
-                  Icon: Gamepad2, title: "Oyun Alanını Aç", sub: "Seans çalışma alanı",
-                  action: () => setActiveAppView("games"),
-                  accent: "var(--color-domain-motor)",
-                  /* Sayı GAME_TABS'tan gelir; elle yazılan "6 Oyun" rozeti
-                     oyun eklenince yanlışa düşüyordu. */
-                  meta: `${GAME_TABS.length} oyun` as string | null,
-                },
-                {
-                  Icon: Stethoscope, title: "Terapi Programı", sub: "Aktivite önerileri ve haftalık plan",
-                  action: () => setActiveAppView("therapy-program"),
-                  accent: "var(--color-accent-teal)",
-                  meta: null as string | null,
-                },
-                {
-                  Icon: BarChart3, title: "Raporlar & Analitik", sub: "Skor grafikleri, danışan gelişimi",
-                  action: () => setActiveAppView("reports"),
-                  accent: "var(--color-signal)",
-                  meta: null as string | null,
-                },
-              ] as const;
-              return (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
-                  {actions.map(({ Icon, title, sub, action, accent, meta }) => (
-                    <button key={title} type="button" onClick={action}
-                      aria-label={`${title} — ${sub}`}
-                      className="flex flex-col gap-2 p-4 lg:p-5 rounded-2xl text-left cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:border-(--color-line-strong) hover:shadow-(--shadow-sm) group relative active:translate-y-0"
-                      style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
-                      <span className="flex items-center justify-between gap-2">
-                        <span className="w-9 h-9 lg:w-10 lg:h-10 rounded-lg flex items-center justify-center shrink-0"
-                          style={{ background: `color-mix(in srgb, ${accent} 13%, transparent)` }}>
-                          <Icon size={17} style={{ color: accent }} />
-                        </span>
-                        <ArrowUpRight
-                          size={15}
-                          className="shrink-0 text-(--color-text-disabled) transition-all duration-200 group-hover:text-(--color-text-soft) group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-                        />
-                      </span>
-                      <strong className="text-(--color-text-strong) text-sm font-semibold leading-tight mt-1">{title}</strong>
-                      <span className="text-(--color-text-muted) text-[11px] lg:text-xs leading-snug">
-                        {sub}{meta ? ` · ${meta}` : ""}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              );
-            })()}
-
-            {/* Game Categories */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xs font-bold text-(--color-text-muted) uppercase tracking-widest m-0">Oyun Kategorileri</h2>
-                <button type="button" className="text-xs font-semibold text-(--color-primary) bg-transparent border-none cursor-pointer hover:underline" onClick={() => setActiveAppView("games")}>
-                  Tümünü gör →
-                </button>
-              </div>
-              {/* Kategori kartları hızlı eylemlerle aynı dili konuşur:
-                  tek yüzey, kılcal çerçeve, renkli ikon karesi. Kategori
-                  rengi alan jetonlarından gelir — uygulamanın her yerinde
-                  aynı beceri alanı aynı rengi taşır. */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
-                {GAME_CATEGORIES.map((cat, catIdx) => {
-                  const count = GAME_TABS.filter((g) => g.category === cat.key).length;
-                  const CatIcon = CATEGORY_ICONS[cat.key];
-                  const accent = CATEGORY_ACCENTS[cat.key];
-                  return (
-                    <button key={cat.key} type="button"
-                      className="flex sm:flex-col flex-row items-center sm:items-start gap-3 sm:gap-2.5 p-3.5 sm:p-5 rounded-2xl text-left cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:border-(--color-line-strong) hover:shadow-(--shadow-sm) group relative"
-                      style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}
-                      onClick={() => { openCategory(cat.key); }}>
-                      <span className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                        style={{ background: `color-mix(in srgb, ${accent} 13%, transparent)` }}>
-                        <CatIcon size={18} style={{ color: accent }} />
-                      </span>
-                      <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                        <strong className="text-(--color-text-strong) text-sm font-semibold">{cat.title}</strong>
-                        <span className="text-[11px] text-(--color-text-muted)">
-                          <span className="numeral">{count}</span> oyun
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* ── Weekly comparison widget ── */}
-            {effectiveSessionCount > 0 && (() => {
-              const now = Date.now();
-              const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
-              const thisWeekSessions = platformOverview.recentSessions.filter(s => now - new Date(s.playedAt).getTime() < oneWeekMs);
-              const lastWeekSessions = platformOverview.recentSessions.filter(s => {
-                const age = now - new Date(s.playedAt).getTime();
-                return age >= oneWeekMs && age < 2 * oneWeekMs;
-              });
-              const thisAvg = thisWeekSessions.length > 0 ? Math.round(thisWeekSessions.reduce((a, s) => a + s.score, 0) / thisWeekSessions.length) : 0;
-              const lastAvg = lastWeekSessions.length > 0 ? Math.round(lastWeekSessions.reduce((a, s) => a + s.score, 0) / lastWeekSessions.length) : 0;
-              const countDelta = thisWeekSessions.length - lastWeekSessions.length;
-              const avgDelta = thisAvg - lastAvg;
-              const cols = [
-                { label: "Bu Hafta Seans", this: thisWeekSessions.length, last: lastWeekSessions.length, delta: countDelta, unit: "seans" },
-                { label: "Bu Hafta Ort. Skor", this: thisAvg, last: lastAvg, delta: avgDelta, unit: "puan" },
-              ];
-              return (
-                <div className="rounded-2xl overflow-hidden" style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
-                  <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid var(--color-line)" }}>
-                    <div className="flex items-center gap-2">
-                      <CalendarDays size={13} className="text-(--color-text-muted)" />
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-(--color-text-muted)">Haftalık Karşılaştırma</span>
-                    </div>
-                    <span className="text-[10px] text-(--color-text-muted)">Bu hafta / geçen hafta</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    {cols.map((col, i) => (
-                      <div key={col.label} className="p-4 space-y-1.5" style={{ borderLeft: i > 0 ? "1px solid var(--color-line)" : undefined }}>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-(--color-text-muted) m-0">{col.label}</p>
-                        <div className="flex items-end gap-2">
-                          <strong className="numeral text-3xl font-extrabold leading-none text-(--color-text-strong)">{col.this}</strong>
-                          <div className="flex items-center gap-1 pb-0.5">
-                            {col.delta !== 0 && (
-                              <span className="numeral text-[11px] font-bold" style={{ color: col.delta > 0 ? "var(--color-accent-green)" : "var(--color-accent-red)" }}>
-                                {col.delta > 0 ? "+" : "−"}{Math.abs(col.delta)} <span className="font-medium text-(--color-text-muted)">{col.unit}</span>
-                              </span>
-                            )}
-                            {col.delta === 0 && col.last > 0 && <span className="text-[10px] text-(--color-text-muted)">değişmedi</span>}
-                          </div>
-                        </div>
-                        <p className="text-[10px] text-(--color-text-muted) m-0">
-                          Geçen hafta <span className="numeral">{col.last}</span> {col.unit}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* ── Birthday reminders ── */}
-            {(() => {
-              const today = new Date();
-              const todayMD = `${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-              const upcomingDays = 7;
-              const upcoming = clientOptions.filter(c => {
-                if (!c.birthDate) return false;
-                const bd = c.birthDate.slice(5); // MM-DD
-                const bdDate = new Date(today.getFullYear(), parseInt(bd.slice(0, 2)) - 1, parseInt(bd.slice(3)));
-                if (bdDate < today) bdDate.setFullYear(today.getFullYear() + 1);
-                const diff = Math.round((bdDate.getTime() - today.getTime()) / 86400000);
-                return diff >= 0 && diff <= upcomingDays;
-              }).map(c => {
-                const bd = c.birthDate!.slice(5);
-                const bdDate = new Date(today.getFullYear(), parseInt(bd.slice(0, 2)) - 1, parseInt(bd.slice(3)));
-                if (bdDate < today) bdDate.setFullYear(today.getFullYear() + 1);
-                const diff = Math.round((bdDate.getTime() - today.getTime()) / 86400000);
-                return { ...c, daysUntil: diff };
-              }).sort((a, b) => a.daysUntil - b.daysUntil);
-              if (upcoming.length === 0) return null;
-              return (
-                <div className="rounded-2xl overflow-hidden" style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
-                  <div className="px-4 py-2.5 flex items-center gap-2" style={{ borderBottom: "1px solid var(--color-line)" }}>
-                    <Cake size={13} style={{ color: "var(--color-signal)" }} />
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-(--color-text-muted)">Yaklaşan Doğum Günleri</span>
-                  </div>
-                  <div className="px-4 py-3 space-y-2">
-                    {upcoming.map(c => (
-                      <div key={c.id} className="flex items-center justify-between gap-3">
-                        <span className="text-sm font-semibold text-(--color-text-body) truncate">{c.displayName}</span>
-                        <span className="text-[11px] font-bold px-2.5 py-1 rounded-md shrink-0"
-                          style={{
-                            background: c.daysUntil === 0 ? "var(--color-signal-light)" : "var(--color-surface-elevated)",
-                            color: c.daysUntil === 0 ? "var(--color-signal)" : "var(--color-text-muted)",
-                          }}>
-                          {c.daysUntil === 0 ? "Bugün" : `${c.daysUntil} gün kaldı`}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* ── Streak widget ──
-                Emoji üçlüsü (🏆/🔥/⚡) ve tebrik cümleleri kaldırıldı:
-                bir klinik aracın ana ekranı terapisti tebrik etmez, ritmini
-                gösterir. Kalan şey son yedi günün nokta dizisi ve sayı. */}
-            {sessionStreak > 0 && (
-              <div className="rounded-2xl flex items-center gap-4 px-4 py-3.5"
-                style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
-                <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: "color-mix(in srgb, var(--color-signal) 13%, transparent)" }}>
-                  <Flame size={16} style={{ color: "var(--color-signal)" }} />
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="m-0 text-sm font-semibold text-(--color-text-strong)">
-                    <span className="numeral">{sessionStreak}</span> günlük seans serisi
-                  </p>
-                  <p className="m-0 text-[11px] text-(--color-text-muted) mt-0.5">
-                    Art arda seans kaydı girilen gün sayısı
-                  </p>
-                </div>
-                <div className="flex gap-1 shrink-0" aria-hidden="true">
-                  {Array.from({ length: 7 }).map((_, i) => (
-                    <span key={i} className="w-1.5 h-4 rounded-full"
-                      style={{
-                        background: i < Math.min(sessionStreak, 7) ? "var(--color-signal)" : "var(--color-line-strong)",
-                      }} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ── Session Reminder Banner ── */}
-            <SessionReminderBanner
+          <div className="app-shell h-full p-4 lg:p-[26px_28px]">
+            <TodayScreen
+              now={now}
+              therapistFirstName={(activeTherapist?.displayName ?? "Terapist").split(" ")[0]}
               clients={clientOptions}
               sessions={platformOverview.recentSessions}
-              onSelectClient={(cid) => { handleSelectClient(cid); }}
+              plans={allWeeklyPlans}
+              averageScore={effectiveAverageScore}
+              onNavigate={setActiveAppView}
+              onStartSession={handleStartSessionFor}
+              onOpenClient={handleOpenClient}
             />
-
-            {/* ── Quick Session Start ── */}
-            {activeClient && (
-              <QuickSessionStart
-                clients={clientOptions}
-                activeClientId={activeClientId}
-                recentSessions={platformOverview.recentSessions}
-                onSelectClient={setActiveClientId}
-                onStartGame={(key) => { openGameView(key); }}
-                onStartSessionSet={() => { setShowSessionSetPicker(true); setActiveAppView("games"); }}
-              />
-            )}
-
-            {/* ── Weekly Summary Analytics ── */}
-            {effectiveSessionCount > 0 && (
-              <WeeklySummaryCard
-                sessions={platformOverview.recentSessions}
-                totalClients={clientOptions.length}
-                totalGoals={clientGoals.length}
-              />
-            )}
-
-            {/* ── Game Distribution Chart ── */}
-            {effectiveSessionCount > 3 && (
-              <GameDistributionChart sessions={platformOverview.recentSessions} />
-            )}
-
-            {/* Recent Sessions */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xs font-bold text-(--color-text-muted) uppercase tracking-widest m-0">Son Seanslar</h2>
-                {recentSessionFeed.length > 0 && (
-                  <button type="button" className="text-xs font-semibold text-(--color-primary) bg-transparent border-none cursor-pointer hover:underline" onClick={() => setActiveAppView("reports")}>
-                    Tümünü gör →
-                  </button>
-                )}
-              </div>
-              {recentSessionFeed.length === 0 ? (
-                <div className="rounded-2xl border border-(--color-line) p-10 text-center flex flex-col items-center gap-4"
-                  style={{ background: "var(--color-surface-strong)" }}>
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                    style={{ background: "var(--color-primary-light)" }}>
-                    <Gamepad2 size={24} strokeWidth={1.5} style={{ color: "var(--color-primary)" }} />
-                  </div>
-                  <div>
-                    <p className="text-(--color-text-strong) text-sm font-semibold m-0 mb-1">Henüz seans kaydı yok</p>
-                    <p className="text-(--color-text-muted) text-xs m-0">Oyun alanına geçerek ilk seansını başlatabilirsin.</p>
-                  </div>
-                  <button type="button" className={btnPrimary} onClick={() => setActiveAppView("games")}>Oyun Alanını Aç</button>
-                </div>
-              ) : (
-                /*
-                  Seans akışı.
-
-                  Önceki sürümde her satırın rengi elle yazılmış bir tablodan
-                  geliyordu; "pairs" turkuaz bir zemin ile mavi bir metni
-                  eşleştiriyor, "memory" ile "difference" ise birbirinin aynısı
-                  oluyordu. Renk artık oyunun kendi beceri alanından türüyor —
-                  kategori kartlarındakiyle aynı üç jeton. İkon da öyle: her
-                  satırda aynı gamepad yerine alanın simgesi.
-                */
-                <div className="rounded-2xl overflow-hidden" style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
-                  <div className="flex flex-col">
-                    {recentSessionFeed.map((session, idx) => {
-                      const tab = GAME_TABS.find((g) => g.key === session.gameKey);
-                      const accent = tab ? CATEGORY_ACCENTS[tab.category] : "var(--color-primary)";
-                      const RowIcon = tab ? CATEGORY_ICONS[tab.category] : Gamepad2;
-                      const isLast = idx === recentSessionFeed.length - 1;
-                      return (
-                        <div key={session.id}
-                          className="relative flex items-center gap-3.5 px-4 py-3.5 transition-colors duration-150 hover:bg-(--color-surface-elevated) group cursor-pointer"
-                          style={{ borderBottom: !isLast ? "1px solid var(--color-line-soft)" : "none" }}
-                          onClick={() => { const c = clientOptions.find(cl => cl.id === session.clientId); if (c) handleSelectClient(c.id); }}>
-                          <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                            style={{ background: `color-mix(in srgb, ${accent} 13%, transparent)` }}>
-                            <RowIcon size={15} style={{ color: accent }} />
-                          </span>
-
-                          <div className="flex-1 min-w-0">
-                            <strong className="text-(--color-text-strong) text-sm font-semibold block truncate leading-tight">{session.gameLabel}</strong>
-                            <div className="flex items-center gap-2.5 mt-1 flex-wrap">
-                              <span className="text-(--color-text-muted) text-xs">{session.clientName}</span>
-                              {session.durationSeconds && (
-                                <span className="flex items-center gap-1 text-(--color-text-muted) text-[11px] tabular-nums">
-                                  <Clock size={9} />
-                                  {formatDuration(session.durationSeconds)}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex flex-col items-end gap-0.5 shrink-0">
-                            <span className="flex items-baseline gap-1">
-                              <strong className="numeral text-base font-bold leading-none text-(--color-text-strong)">{session.score}</strong>
-                              <span className="text-[10px] text-(--color-text-muted)">puan</span>
-                            </span>
-                            <span className="text-[11px] text-(--color-text-muted)">{formatPlayedAt(session.playedAt)}</span>
-                          </div>
-
-                          <ChevronRight size={14} className="text-(--color-text-disabled) opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="px-4 py-3 flex items-center justify-between" style={{ borderTop: "1px solid var(--color-line)" }}>
-                    <span className="text-xs text-(--color-text-muted)">
-                      <span className="numeral">{effectiveSessionCount}</span> toplam seans kaydı
-                    </span>
-                    <button type="button"
-                      className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer transition-colors hover:bg-(--color-surface-elevated)"
-                      style={{ background: "transparent", border: "1px solid var(--color-line-strong)", color: "var(--color-text-body)" }}
-                      onClick={() => setActiveAppView("reports")}>
-                      <BarChart3 size={11} /> Tam Raporu Gör
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
         )}
 
@@ -2869,1690 +2405,81 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
         {/* ── Clients List ── */}
         {activeAppView === "clients" && (
-          <div className="app-shell p-4 lg:p-6 space-y-5 lg:space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between pt-1">
-              <div>
-                <h1 className="text-xl lg:text-2xl text-(--color-text-strong) m-0">Danışanlar</h1>
-                <span className="text-(--color-text-muted) text-xs lg:text-sm">{clientOptions.length} kayıtlı danışan</span>
-              </div>
-              <div className="flex items-center gap-2">
-                {clientOptions.length > 0 && (
-                  <button type="button" title="CSV Dışa Aktar"
-                    className="w-9 h-9 rounded-xl flex items-center justify-center border cursor-pointer hover:opacity-80 transition-opacity"
-                    style={{ background: "rgba(25, 209, 155,0.1)", borderColor: "rgba(25, 209, 155,0.25)", color: "#19d19b" }}
-                    onClick={handleExportClientsCsv}>
-                    <Download size={14} />
-                  </button>
-                )}
-                <button type="button" title="CSV İçe Aktar"
-                  className="w-9 h-9 rounded-xl flex items-center justify-center border cursor-pointer hover:opacity-80 transition-opacity"
-                  style={{ background: "rgba(43, 98, 245,0.1)", borderColor: "rgba(43, 98, 245,0.25)", color: "#4d7dff" }}
-                  onClick={() => setShowCsvImport(true)}>
-                  <Upload size={14} />
-                </button>
-                <button type="button"
-                  className="btn-signature flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl text-sm font-semibold cursor-pointer shrink-0"
-                  onClick={() => setShowAddClient(!showAddClient)}>
-                  <UserPlus size={14} />
-                  <span className="hidden sm:inline">Yeni Danışan</span>
-                  <span className="sm:hidden">Ekle</span>
-                </button>
-              </div>
-            </div>
-
-            {showAddClient && (
-              <div className="rounded-2xl border p-4 lg:p-6 relative overflow-hidden"
-                style={{ background: "var(--color-surface-strong)", borderColor: "rgba(43, 98, 245,0.25)", boxShadow: "0 0 40px rgba(43, 98, 245,0.08)" }}>
-                <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(43, 98, 245,0.5), transparent)" }} />
-                <h3 className="text-(--color-text-strong) font-bold mb-4 flex items-center gap-2">
-                  <span className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(43, 98, 245,0.15)" }}>
-                    <UserPlus size={14} style={{ color: "#4d7dff" }} />
-                  </span>
-                  Yeni Danışan Ekle
-                </h3>
-                <form className="grid grid-cols-1 sm:grid-cols-2 gap-3" onSubmit={handleAddClient}>
-                  <input value={addClientDraft.displayName} onChange={(e) => setAddClientDraft((c) => ({ ...c, displayName: e.target.value }))} placeholder="Danışan adı (örn. Ada Y.)" className={`${inputCls} sm:col-span-2`} required />
-                  <input value={addClientDraft.ageGroup} onChange={(e) => setAddClientDraft((c) => ({ ...c, ageGroup: e.target.value }))} placeholder="Yaş grubu (örn. 7-9 yaş)" className={inputCls} />
-                  <input value={addClientDraft.primaryGoal} onChange={(e) => setAddClientDraft((c) => ({ ...c, primaryGoal: e.target.value }))} placeholder="Birincil hedef (örn. Görsel tarama)" className={inputCls} />
-                  <input value={addClientDraft.supportLevel} onChange={(e) => setAddClientDraft((c) => ({ ...c, supportLevel: e.target.value }))} placeholder="Destek düzeyi (örn. Orta destek)" className={`${inputCls} sm:col-span-2`} />
-                  <div className="flex gap-2 sm:col-span-2 mt-1">
-                    <button type="submit" className={btnPrimary}>Kaydet</button>
-                    <button type="button" className={btnSecondary} onClick={() => setShowAddClient(false)}>İptal</button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {/* Search */}
-            {clientOptions.length > 0 && (
-              <div className="relative">
-                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--color-text-muted)" }} />
-                <input type="text" value={clientSearch} onChange={(e) => setClientSearch(e.target.value)} placeholder="Danışan ara..."
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm border"
-                  style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)", color: "var(--color-text-body)", outline: "none" }} />
-                {clientSearch && (
-                  <button type="button" onClick={() => setClientSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer border-none bg-transparent p-0">
-                    <X size={13} style={{ color: "var(--color-text-muted)" }} />
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* Filters */}
-            {clientOptions.length > 0 && (() => {
-              const ageOptions = Array.from(new Set(clientOptions.map(c => c.ageGroup).filter(Boolean)));
-              const supportOptions = Array.from(new Set(clientOptions.map(c => c.supportLevel).filter(Boolean)));
-              const hasFilters = clientFilterAge || clientFilterSupport || clientFilterActivity !== "all";
-              if (ageOptions.length === 0 && supportOptions.length === 0) return null;
-              return (
-                <div className="flex flex-wrap items-center gap-2">
-                  {ageOptions.length > 0 && (
-                    <select value={clientFilterAge} onChange={e => setClientFilterAge(e.target.value)}
-                      className="text-xs font-semibold px-2.5 py-1.5 rounded-xl border cursor-pointer"
-                      style={{ background: clientFilterAge ? "rgba(43, 98, 245,0.12)" : "var(--color-surface-strong)", borderColor: clientFilterAge ? "rgba(43, 98, 245,0.4)" : "var(--color-line)", color: clientFilterAge ? "#4d7dff" : "var(--color-text-soft)", outline: "none" }}>
-                      <option value="">Tüm yaş grupları</option>
-                      {ageOptions.map(a => <option key={a} value={a}>{a}</option>)}
-                    </select>
-                  )}
-                  {supportOptions.length > 0 && (
-                    <select value={clientFilterSupport} onChange={e => setClientFilterSupport(e.target.value)}
-                      className="text-xs font-semibold px-2.5 py-1.5 rounded-xl border cursor-pointer"
-                      style={{ background: clientFilterSupport ? "rgba(43, 98, 245,0.12)" : "var(--color-surface-strong)", borderColor: clientFilterSupport ? "rgba(43, 98, 245,0.4)" : "var(--color-line)", color: clientFilterSupport ? "#4d7dff" : "var(--color-text-soft)", outline: "none" }}>
-                      <option value="">Tüm destek düzeyleri</option>
-                      {supportOptions.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  )}
-                  <select value={clientFilterActivity} onChange={e => setClientFilterActivity(e.target.value as "all" | "inactive" | "new")}
-                    className="text-xs font-semibold px-2.5 py-1.5 rounded-xl border cursor-pointer"
-                    style={{ background: clientFilterActivity !== "all" ? "rgba(43, 98, 245,0.12)" : "var(--color-surface-strong)", borderColor: clientFilterActivity !== "all" ? "rgba(43, 98, 245,0.4)" : "var(--color-line)", color: clientFilterActivity !== "all" ? "#4d7dff" : "var(--color-text-soft)", outline: "none" }}>
-                    <option value="all">Tüm aktivite</option>
-                    <option value="inactive">14+ gün inaktif</option>
-                    <option value="new">Hiç oynanmadı</option>
-                  </select>
-                  {hasFilters && (
-                    <button type="button" onClick={() => { setClientFilterAge(""); setClientFilterSupport(""); setClientFilterActivity("all"); }}
-                      className="text-[10px] font-bold px-2.5 py-1.5 rounded-xl border cursor-pointer flex items-center gap-1 hover:opacity-80 transition-opacity"
-                      style={{ background: "rgba(214, 61, 99,0.1)", borderColor: "rgba(214, 61, 99,0.25)", color: "#d63d63" }}>
-                      <X size={9} /> Filtreleri temizle
-                    </button>
-                  )}
-                </div>
-              );
-            })()}
-
-            {/* Archive confirm modal */}
-            {archiveTargetId && (() => {
-              const archiveTarget = clientOptions.find((c) => c.id === archiveTargetId);
-              return (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="archive-dialog-title" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={() => setArchiveTargetId(null)}>
-                  <div className="rounded-2xl sm:rounded-3xl border p-5 sm:p-6 max-w-sm w-full space-y-4 result-overlay-in" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }} onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(245, 158, 11,0.15)" }}>
-                        <Archive size={18} style={{ color: "#f59e0b" }} />
-                      </div>
-                      <div>
-                        <h3 id="archive-dialog-title" className="font-extrabold text-(--color-text-strong) m-0">Danışanı Arşivle</h3>
-                        <p className="text-(--color-text-muted) text-xs m-0">Bu işlem geri alınabilir</p>
-                      </div>
-                    </div>
-                    <p className="text-(--color-text-body) text-sm m-0"><strong>{archiveTarget?.displayName}</strong> arşive taşınacak. Seans verileri korunur.</p>
-                    <div className="flex gap-2">
-                      <button type="button" className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white border-none cursor-pointer transition-all active:scale-95" style={{ background: "linear-gradient(135deg,#f59e0b,#d63d63)" }} onClick={() => { void handleArchiveClient(archiveTargetId); }}>Arşivle</button>
-                      <button type="button" className="flex-1 py-2.5 rounded-xl text-sm font-bold border cursor-pointer transition-all active:scale-95" style={{ background: "var(--color-surface)", borderColor: "var(--color-line)", color: "var(--color-text-soft)" }} onClick={() => setArchiveTargetId(null)}>İptal</button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* CSV Import Modal */}
-            {showCsvImport && (
-              <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={() => { setShowCsvImport(false); setCsvImportError(""); setCsvImportText(""); }}>
-                <div className="rounded-2xl sm:rounded-3xl border p-5 sm:p-6 max-w-md w-full space-y-4" style={{ background: "var(--color-surface-strong)", borderColor: "rgba(43, 98, 245,0.25)" }} onClick={(e) => e.stopPropagation()}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(43, 98, 245,0.15)" }}>
-                        <Upload size={18} style={{ color: "#4d7dff" }} />
-                      </div>
-                      <div>
-                        <h3 className="font-extrabold text-(--color-text-strong) m-0">CSV İçe Aktar</h3>
-                        <p className="text-(--color-text-muted) text-xs m-0">Ad, Yaş Grubu, Birincil Hedef, Destek Düzeyi</p>
-                      </div>
-                    </div>
-                    <button type="button" onClick={() => { setShowCsvImport(false); setCsvImportError(""); setCsvImportText(""); }}
-                      className="w-8 h-8 rounded-xl flex items-center justify-center border-none cursor-pointer hover:opacity-80 bg-transparent"
-                      style={{ color: "var(--color-text-muted)" }}>
-                      <X size={16} />
-                    </button>
-                  </div>
-                  <div className="text-xs text-(--color-text-muted) p-3 rounded-xl" style={{ background: "var(--color-surface-elevated)", borderLeft: "3px solid rgba(43, 98, 245,0.5)" }}>
-                    <p className="m-0 font-bold mb-1">Format (başlık satırı zorunlu):</p>
-                    <code className="text-[10px]">Ad,Yaş Grubu,Birincil Hedef,Destek Düzeyi<br />Ada Y.,7-9 yaş,Görsel tarama,Orta destek</code>
-                  </div>
-                  <textarea value={csvImportText} onChange={e => setCsvImportText(e.target.value)}
-                    placeholder={"Ad,Yaş Grubu,Birincil Hedef,Destek Düzeyi\nAda Y.,7-9 yaş,Görsel tarama,Orta destek"}
-                    rows={6}
-                    className="w-full text-xs font-mono p-3 rounded-xl border resize-none outline-none"
-                    style={{ background: "var(--color-surface)", borderColor: "var(--color-line)", color: "var(--color-text-body)" }} />
-                  {csvImportError && (
-                    <p className="text-[11px] text-[#f0708a] m-0 px-1">{csvImportError}</p>
-                  )}
-                  <div className="flex gap-2">
-                    <button type="button" className={`${btnPrimary} flex-1 justify-center`} onClick={() => void handleImportCsv()}>
-                      <Upload size={13} /> İçe Aktar
-                    </button>
-                    <button type="button" className={`${btnSecondary} flex-1 justify-center`} onClick={() => { setShowCsvImport(false); setCsvImportError(""); setCsvImportText(""); }}>İptal</button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-
-
-            {(() => {
-              const filtered = clientOptions.filter((c) => {
-                if (clientSearch.trim()) {
-                  const q = clientSearch.toLowerCase();
-                  if (!c.displayName.toLowerCase().includes(q) && !c.primaryGoal?.toLowerCase().includes(q)) return false;
-                }
-                if (clientFilterAge && c.ageGroup !== clientFilterAge) return false;
-                if (clientFilterSupport && c.supportLevel !== clientFilterSupport) return false;
-                if (clientFilterActivity === "inactive") {
-                  if (!c.lastActiveAt) return false;
-                  const days = Math.floor((Date.now() - new Date(c.lastActiveAt).getTime()) / 86400000);
-                  if (days < 14) return false;
-                }
-                if (clientFilterActivity === "new" && c.lastActiveAt) return false;
-                return true;
-              });
-              return clientOptions.length === 0 ? (
-              <div className="rounded-2xl border border-(--color-line) p-12 text-center flex flex-col items-center gap-4"
-                style={{ background: "var(--color-surface-strong)" }}>
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                  style={{ background: "rgba(43, 98, 245,0.1)", border: "1px solid rgba(43, 98, 245,0.2)" }}>
-                  <Users size={28} strokeWidth={1.5} style={{ color: "#4d7dff" }} />
-                </div>
-                <div>
-                  <p className="text-(--color-text-strong) font-semibold m-0 mb-1">Henüz danışan eklenmedi</p>
-                  <p className="text-(--color-text-muted) text-sm m-0">Yukarıdaki butonu kullanarak ilk danışanı ekleyebilirsin.</p>
-                </div>
-              </div>
-            ) : filtered.length === 0 ? (
-              <div className="rounded-2xl border border-(--color-line) p-8 text-center" style={{ background: "var(--color-surface-strong)" }}>
-                <Search size={28} strokeWidth={1.5} className="mx-auto mb-2" style={{ color: "var(--color-text-muted)" }} />
-                <p className="text-(--color-text-muted) text-sm m-0">"{clientSearch}" için sonuç bulunamadı.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filtered.map((client, clientIdx) => {
-                  const sessionCount = platformOverview.recentSessions.filter((s) => s.clientId === client.id).length;
-                  const clientScores = platformOverview.recentSessions.filter((s) => s.clientId === client.id);
-                  const bestScore = clientScores.length > 0 ? Math.max(...clientScores.map(s => s.score)) : 0;
-                  /* Kart rengi listedeki sıradan geliyordu — aynı danışan
-                     filtre değişince renk değiştiriyordu, yani renk hiçbir şey
-                     anlatmıyordu. Tek nötr jeton seti. */
-                  const palette = {
-                    bg: "var(--color-primary-light)",
-                    color: "var(--color-primary)",
-                    border: "var(--color-line)",
-                    glow: "transparent",
-                    gradLine: "transparent",
-                  };
-                  return (
-                    <div key={client.id}
-                      className="rounded-2xl border flex flex-col gap-3 lg:gap-4 p-4 lg:p-5 card-hover group relative overflow-hidden cursor-pointer"
-                      style={{ background: "var(--color-surface-strong)", borderColor: palette.border }}
-                      onClick={() => handleSelectClient(client.id)}>
-                      {/* Header row */}
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl font-extrabold flex items-center justify-center text-lg shrink-0"
-                          style={{ background: palette.bg, color: palette.color }}>
-                          {client.displayName[0]?.toLocaleUpperCase("tr")}
-                        </div>
-                        <div className="flex flex-col min-w-0 flex-1">
-                          <div className="font-bold text-(--color-text-strong) text-sm truncate">{client.displayName}</div>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="w-1.5 h-1.5 rounded-full" style={{ background: palette.color }} />
-                            <span className="text-(--color-text-muted) text-xs">{sessionCount} seans kaydı</span>
-                          </div>
-                        </div>
-                        {bestScore > 0 && (
-                          <div className="flex flex-col items-center px-2.5 py-1.5 rounded-xl"
-                            style={{ background: palette.bg, border: `1px solid ${palette.border}` }}>
-                            <strong className="text-base font-extrabold leading-none" style={{ color: palette.color }}>{bestScore}</strong>
-                            <span className="text-[9px] font-bold uppercase tracking-wide mt-0.5" style={{ color: palette.color, opacity: 0.7 }}>en iyi</span>
-                          </div>
-                        )}
-                      </div>
-                      {/* Tags */}
-                      <div className="flex flex-wrap gap-1.5">
-                        {client.ageGroup && (
-                          <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
-                            style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>
-                            {client.ageGroup}
-                          </span>
-                        )}
-                        {client.supportLevel && (
-                          <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
-                            style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>
-                            {client.supportLevel}
-                          </span>
-                        )}
-                        {client.lastActiveAt && (() => {
-                          const daysSince = Math.floor((Date.now() - new Date(client.lastActiveAt!).getTime()) / 86400000);
-                          if (daysSince < 14) return null;
-                          return (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                              style={{ background: "rgba(245, 158, 11,0.1)", color: "#f59e0b", border: "1px solid rgba(245, 158, 11,0.25)" }}>
-                              {daysSince}g inaktif
-                            </span>
-                          );
-                        })()}
-                        {!client.lastActiveAt && (() => (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                            style={{ background: "rgba(156,163,175,0.1)", color: "#7b91ab", border: "1px solid rgba(156,163,175,0.2)" }}>
-                            hiç oynanmadı
-                          </span>
-                        ))()}
-                      </div>
-                      {client.primaryGoal && (
-                        <p className="text-(--color-text-soft) text-xs m-0 leading-relaxed line-clamp-2">{client.primaryGoal}</p>
-                      )}
-                      {/* Progress bar */}
-                      {sessionCount > 0 && (
-                        <div className="space-y-1">
-                          <div className="flex justify-between items-center">
-                            <span className="text-[10px] font-semibold text-(--color-text-muted) uppercase tracking-wider">Seans ilerleme</span>
-                            <span className="text-[10px] font-bold" style={{ color: palette.color }}>{sessionCount} / 10</span>
-                          </div>
-                          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--color-surface-elevated)" }}>
-                            <div className="h-full rounded-full transition-all duration-500"
-                              style={{ width: `${Math.min(100, (sessionCount / 10) * 100)}%`, background: "var(--gradient-bar)" }} />
-                          </div>
-                        </div>
-                      )}
-                      {/* Actions */}
-                      <div className="flex gap-2 mt-auto" onClick={(e) => e.stopPropagation()}>
-                        <button type="button" className={`${btnSecondary} flex-1 justify-center flex items-center gap-1.5`}
-                          onClick={() => handleSelectClient(client.id)}>
-                          Detay
-                        </button>
-                        <button type="button" className={`${btnPrimary} flex-1 justify-center flex items-center gap-1.5`}
-                          onClick={() => { setSelectedClientId(client.id); setActiveClientId(client.id); setActiveAppView("games"); }}>
-                          <Gamepad2 size={13} /> Oyna
-                        </button>
-                        <button type="button"
-                          title="Arşivle"
-                          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border cursor-pointer transition-all hover:opacity-80"
-                          style={{ background: "rgba(245, 158, 11,0.1)", borderColor: "rgba(245, 158, 11,0.25)", color: "#f59e0b" }}
-                          onClick={() => setArchiveTargetId(client.id)}>
-                          <Archive size={13} />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-            })()}
+          <div className="app-shell h-full p-4 lg:p-[26px_28px]">
+            <ClientsScreen
+              now={now}
+              clients={clientOptions}
+              sessions={platformOverview.recentSessions}
+              plans={allWeeklyPlans}
+              search={clientSearch}
+              onSearchChange={setClientSearch}
+              onOpenClient={handleOpenClient}
+              onStartSession={handleStartSessionFor}
+              onAddClient={() => setShowAddClient(true)}
+              onExport={handleExportClientsCsv}
+            />
           </div>
         )}
         {/* ── Client Detail ── */}
-        {activeAppView === "client-detail" && selectedClient && (() => {
-          /*
-           * Danışan başına dönen beş renkli palet kaldırıldı. Renk listedeki
-           * sıraya göre seçiliyordu — yani hiçbir şey anlatmıyordu; üstelik
-           * beşincisi palet dışı bir mordu (#9a80ff) ve metin rengiyle
-           * uyuşmuyordu. Ekran artık uygulamanın geri kalanıyla aynı tek
-           * yüzey + kılcal çerçeve dilini konuşuyor.
-           *
-           * `palette` yerinde duruyor ama artık tek ve sabit: aşağıdaki
-           * kırk küstur kullanım noktasını tek noktadan besler.
-           */
-          const isLight = theme === "light";
-          const palette = {
-            bg: "var(--color-primary-light)",
-            color: "var(--color-primary)",
-            border: "var(--color-line)",
-            glow: "transparent",
-            gradientFrom: "var(--color-surface-elevated)",
-          };
-          const clientSessions = platformOverview.recentSessions.filter((s) => s.clientId === selectedClientId);
-          const bestScore = clientSessions.length > 0 ? Math.max(...clientSessions.map((s) => s.score)) : 0;
-          return (
-            <div className="app-shell p-4 sm:p-5 lg:p-6 space-y-4 sm:space-y-6">
+        {activeAppView === "client-detail" && selectedClient && (
+          <div className="app-shell h-full p-4 lg:p-[26px_28px]">
+            <ClientDetailScreen
+              client={selectedClient}
+              sessions={platformOverview.recentSessions}
+              notes={allNotes}
+              goals={clientGoals}
+              therapistName={activeTherapist?.displayName ?? "Terapist"}
+              onBack={() => setActiveAppView("clients")}
+              onNavigate={setActiveAppView}
+              onStartSession={handleStartSessionFor}
+              onCreateReport={() => setActiveAppView("reports")}
+              onAddNote={() => setShowNoteForm(true)}
+            />
+          </div>
+        )}
 
-              {/* ── Back button ── */}
-              <button type="button" className="flex items-center gap-2 text-sm font-bold px-3 py-1.5 rounded-xl border cursor-pointer transition-all hover:opacity-80" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)", color: "var(--color-primary)" }} onClick={() => setActiveAppView("clients")}>
-                ← Danışanlar
-              </button>
+        {/* ── Haftalık Plan ── */}
+        {activeAppView === "weekly-plan" && (
+          <div className="app-shell h-full p-4 lg:p-[26px_28px]">
+            <WeeklyPlanScreen
+              now={now}
+              clients={clientOptions}
+              sessions={platformOverview.recentSessions}
+              plans={allWeeklyPlans}
+              weekCapacity={weekCapacity}
+              onNavigate={setActiveAppView}
+              onAddEntry={handlePlanAddEntry}
+              onRemoveEntry={handlePlanRemoveEntry}
+              onStartSession={handleStartSessionFor}
+            />
+          </div>
+        )}
 
-              {/* ── Hero card ── */}
-              <div className="rounded-2xl overflow-hidden" style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
-                <div className="p-4 lg:p-6">
-                  {/* Top row: avatar + name + meta */}
-                  <div className="flex items-start gap-3 lg:gap-4 mb-5">
-                    <span className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl font-bold flex items-center justify-center text-2xl shrink-0"
-                      style={{ background: "var(--color-primary-light)", color: "var(--color-primary)" }}>
-                      {selectedClient.displayName[0]?.toLocaleUpperCase("tr")}
-                    </span>
-                    <div className="flex-1 min-w-0 pt-0.5">
-                      <h1 className="text-xl lg:text-2xl font-extrabold m-0 mb-2 text-(--color-text-strong) truncate">{selectedClient.displayName}</h1>
-                      {/* Künye satırı: nötr jetonlar. Zorluk seviyesi tek
-                          vurgulu olan — klinik bir ayar, kimlik değil. */}
-                      <div className="flex flex-wrap gap-1.5">
-                        {selectedClient.ageGroup && <span className="text-[11px] font-semibold px-2.5 py-1 rounded-md" style={{ background: "var(--color-surface-elevated)", color: "var(--color-text-body)", border: "1px solid var(--color-line)" }}>{selectedClient.ageGroup} yaş</span>}
-                        {selectedClient.primaryGoal && <span className="text-[11px] font-semibold px-2.5 py-1 rounded-md hidden sm:inline-flex" style={{ background: "var(--color-surface-elevated)", color: "var(--color-text-body)", border: "1px solid var(--color-line)" }}>{selectedClient.primaryGoal}</span>}
-                        {selectedClient.supportLevel && <span className="text-[11px] font-semibold px-2.5 py-1 rounded-md hidden sm:inline-flex" style={{ background: "var(--color-surface-elevated)", color: "var(--color-text-body)", border: "1px solid var(--color-line)" }}>{selectedClient.supportLevel}</span>}
-                        {selectedClient.difficultyLevel && (
-                          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-md hidden sm:inline-flex items-center gap-1.5"
-                            style={{ background: "var(--color-signal-light)", color: "var(--color-signal)" }}>
-                            <Target size={11} /> {selectedClient.difficultyLevel}
-                          </span>
-                        )}
-                      </div>
-                      {/* Mobile-only: show goal/support as small text */}
-                      {(selectedClient.primaryGoal || selectedClient.supportLevel) && (
-                        <p className="sm:hidden text-xs text-(--color-text-muted) mt-1.5 m-0 truncate">
-                          {[selectedClient.primaryGoal, selectedClient.supportLevel, selectedClient.difficultyLevel].filter(Boolean).join(" · ")}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Mini stat row — emoji yerine ikon, mono rakam */}
-                  <div className="grid grid-cols-3 gap-px rounded-xl overflow-hidden mb-5" style={{ background: "var(--color-line)", border: "1px solid var(--color-line)" }}>
-                    {[
-                      { label: "Seans", value: String(clientSessions.length), Icon: Gamepad2 },
-                      { label: "En İyi", value: bestScore ? String(bestScore) : "—", Icon: Award },
-                      { label: "Not", value: String(clientNotes.length), Icon: FileText },
-                    ].map(({ label, value, Icon }) => (
-                      <div key={label} className="px-3 py-3" style={{ background: "var(--color-surface-strong)" }}>
-                        <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-(--color-text-muted)">
-                          <Icon size={11} /> {label}
-                        </span>
-                        <strong className="numeral block text-2xl font-extrabold leading-none mt-1.5 text-(--color-text-strong)">{value}</strong>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* ── Kilometre taşları ──
-                      Emoji rozetleri (🎯🔥⭐🏆💡🚀✅📋) her biri farklı boy ve
-                      renkte geliyor, sekiz taneye kadar çıkınca satır
-                      kalabalıklaşıyordu. Artık tek biçimli jetonlar: ikon
-                      alanı taşır, geri kalanı sakin. */}
-                  {(() => {
-                    const badges: { label: string; Icon: LucideIcon; done?: boolean }[] = [];
-                    if (clientSessions.length >= 1)  badges.push({ label: "İlk seans", Icon: Check });
-                    if (clientSessions.length >= 5)  badges.push({ label: "5 seans", Icon: Flame });
-                    if (clientSessions.length >= 10) badges.push({ label: "10 seans", Icon: Star });
-                    if (clientSessions.length >= 25) badges.push({ label: "25 seans", Icon: Trophy });
-                    if (bestScore >= 10)  badges.push({ label: "Yüksek skor", Icon: TrendingUp });
-                    if (bestScore >= 20)  badges.push({ label: "Üst düzey", Icon: Award });
-                    if (clientGoals.some(g => g.currentValue >= g.targetValue)) badges.push({ label: "Hedef tamamlandı", Icon: Target, done: true });
-                    if (clientNotes.length >= 5) badges.push({ label: "5+ seans notu", Icon: FileText });
-                    if (badges.length === 0) return null;
-                    return (
-                      <div className="flex flex-wrap gap-1.5 mb-4">
-                        {badges.map(({ label, Icon, done }) => (
-                          <span key={label}
-                            className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-md"
-                            style={done
-                              ? { background: "color-mix(in srgb, var(--color-accent-green) 12%, transparent)", color: "var(--color-accent-green)" }
-                              : { background: "var(--color-surface-elevated)", color: "var(--color-text-soft)", border: "1px solid var(--color-line)" }}>
-                            <Icon size={11} className="shrink-0" /> {label}
-                          </span>
-                        ))}
-                      </div>
-                    );
-                  })()}
-
-                  {/* ── Tags ── */}
-                  <div className="mb-4">
-                    <div className="flex flex-wrap gap-1.5 items-center">
-                      {(selectedClient.tags ?? []).map(tag => (
-                        <span key={tag} className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full border"
-                          style={{ background: "var(--color-primary-light)", color: "var(--color-primary)", borderColor: "transparent" }}>
-                          {tag}
-                          <button type="button" className="cursor-pointer bg-transparent border-none p-0 leading-none opacity-60 hover:opacity-100 transition-opacity"
-                            style={{ color: "var(--color-primary)" }}
-                            onClick={() => {
-                              const newTags = (selectedClient.tags ?? []).filter(t => t !== tag);
-                              void handleUpdateClientTags(selectedClient.id, newTags);
-                            }}>×</button>
-                        </span>
-                      ))}
-                      {showTagInput ? (
-                        <input
-                          autoFocus
-                          value={tagInput}
-                          onChange={e => setTagInput(e.target.value)}
-                          onKeyDown={e => {
-                            if (e.key === "Enter" || e.key === ",") {
-                              e.preventDefault();
-                              const val = tagInput.trim().replace(/,$/, "");
-                              if (val && !(selectedClient.tags ?? []).includes(val)) {
-                                const newTags = [...(selectedClient.tags ?? []), val];
-                                void handleUpdateClientTags(selectedClient.id, newTags);
-                              }
-                              setTagInput("");
-                              setShowTagInput(false);
-                            } else if (e.key === "Escape") {
-                              setTagInput("");
-                              setShowTagInput(false);
-                            }
-                          }}
-                          onBlur={() => {
-                            const val = tagInput.trim();
-                            if (val && !(selectedClient.tags ?? []).includes(val)) {
-                              void handleUpdateClientTags(selectedClient.id, [...(selectedClient.tags ?? []), val]);
-                            }
-                            setTagInput("");
-                            setShowTagInput(false);
-                          }}
-                          placeholder="Etiket yaz, Enter ile ekle"
-                          className="text-[11px] font-semibold px-2.5 py-1 rounded-full outline-none w-36"
-                          style={{ background: "var(--color-primary-light)", color: "var(--color-primary)", border: "1px dashed var(--color-primary)" }}
-                        />
-                      ) : (
-                        <button type="button"
-                          className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full cursor-pointer border-none transition-opacity hover:opacity-100 opacity-50"
-                          style={{ background: "transparent", color: "var(--color-text-muted)", border: "1px dashed var(--color-line-strong)" }}
-                          onClick={() => setShowTagInput(true)}>
-                          + Etiket
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* ── Birth date ── */}
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="flex items-center gap-1.5 text-[11px] text-(--color-text-muted) font-semibold shrink-0"><Cake size={12} /> Doğum tarihi</span>
-                    <input
-                      type="date"
-                      value={selectedClient.birthDate ?? ""}
-                      onChange={e => void handleUpdateClientBirthDate(selectedClient.id, e.target.value || null)}
-                      className="text-[11px] font-semibold rounded-lg px-2 py-0.5 border outline-none"
-                      style={{ background: "var(--color-surface)", borderColor: "var(--color-line)", color: "var(--color-text-body)" }}
-                    />
-                    {selectedClient.birthDate && (
-                      <span className="text-[11px] text-(--color-text-muted)">
-                        ({(() => {
-                          const today = new Date();
-                          const bd = new Date(selectedClient.birthDate!);
-                          const age = today.getFullYear() - bd.getFullYear() - (today.getMonth() < bd.getMonth() || (today.getMonth() === bd.getMonth() && today.getDate() < bd.getDate()) ? 1 : 0);
-                          return `${age} yaş`;
-                        })()})
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button type="button" className="btn-signature flex-1 flex items-center justify-center gap-2 font-semibold text-sm px-5 py-3 rounded-xl cursor-pointer" onClick={() => { setActiveClientId(selectedClient.id); setActiveAppView("games"); }}>
-                      <Gamepad2 size={15} /> Bu Danışanla Oyna
-                    </button>
-                    <button type="button" data-tooltip="Özet Kart (A6)" data-tooltip-dir="top"
-                      className="flex items-center justify-center gap-1.5 font-bold text-sm px-4 py-2.5 lg:py-3 rounded-xl lg:rounded-2xl cursor-pointer border-none transition-all hover:opacity-90 active:scale-[0.98]"
-                      style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)", color: "var(--color-text-soft)" }}
-                      onClick={() => handlePrintSummaryCard(selectedClient)}>
-                      <CreditCard size={14} />
-                    </button>
-                    <button type="button" data-tooltip="Tam Rapor Al" data-tooltip-dir="top"
-                      className="flex items-center justify-center gap-1.5 font-bold text-sm px-4 py-2.5 lg:py-3 rounded-xl lg:rounded-2xl cursor-pointer border-none transition-all hover:opacity-90 active:scale-[0.98]"
-                      style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)", color: "var(--color-text-soft)" }}
-                      onClick={() => handlePrintReport(selectedClient)}>
-                      <FileText size={14} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* ── Tabs ── */}
-              <div className="flex gap-1 p-1 rounded-2xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
-                {([
-                  { key: "notes",       label: "Notlar", Icon: FileText },
-                  { key: "plan",        label: "Plan", Icon: CalendarDays },
-                  { key: "scores",      label: "Skorlar", Icon: BarChart3 },
-                  { key: "progress",    label: "İlerleme", Icon: TrendingUp },
-                  { key: "suggestions", label: "Öneri", Icon: Lightbulb },
-                ] as const).map(({ key, label, Icon }) => {
-                  const on = clientDetailTab === (key as typeof clientDetailTab);
-                  return (
-                    <button key={key} type="button"
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors duration-150 border-none cursor-pointer"
-                      style={{
-                        background: on ? "var(--color-surface-strong)" : "transparent",
-                        color: on ? "var(--color-text-strong)" : "var(--color-text-soft)",
-                        boxShadow: on ? "var(--shadow-sm)" : "none",
-                      }}
-                      onClick={() => setClientDetailTab(key as typeof clientDetailTab)}>
-                      <Icon size={13} className="shrink-0" />
-                      <span className="truncate">{label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* ── Notes ── */}
-              {clientDetailTab === "notes" && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-sm font-extrabold uppercase tracking-wider text-(--color-text-muted) m-0">Seans Notları</h3>
-                    <div className="flex gap-2 shrink-0">
-                      {/* Auto Clinical Summary generator */}
-                      <button type="button"
-                        data-tooltip="Seans verilerinden SOAP özeti üret"
-                        data-tooltip-dir="top"
-                        className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl cursor-pointer border transition-all hover:opacity-80 active:scale-95"
-                        style={{ background: "transparent", borderColor: "var(--color-line-strong)", color: "var(--color-text-body)" }}
-                        onClick={() => {
-                          const suggestion = generateTherapySuggestions(selectedClient, platformOverview.recentSessions);
-                          const s = suggestion.soapDraft;
-                          setSoapDraft({ s: s.s, o: s.o, a: s.a, p: s.p });
-                          setNoteForm({ date: getTodayString(), content: "" });
-                          setNoteMode("soap");
-                          setShowNoteForm(true);
-                        }}>
-                        <FileText size={13} /> Özet Üret
-                      </button>
-                      <button type="button" className="flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-xl cursor-pointer border-none transition-colors hover:opacity-90" style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }} onClick={() => setShowNoteForm(!showNoteForm)}>+ Not Ekle</button>
-                    </div>
-                  </div>
-
-                  {/* Note search + date filter */}
-                  {clientNotes.length > 2 && (
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <div className="relative flex-1">
-                        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--color-text-muted)" }} />
-                        <input type="text" value={noteSearch} onChange={e => setNoteSearch(e.target.value)} placeholder="Notlarda ara…"
-                          className="w-full pl-8 pr-3 py-2 rounded-xl text-sm border outline-none"
-                          style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)", color: "var(--color-text-body)" }} />
-                        {noteSearch && <button type="button" onClick={() => setNoteSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 border-none bg-transparent cursor-pointer p-0"><X size={12} style={{ color: "var(--color-text-muted)" }} /></button>}
-                      </div>
-                      <input type="date" value={noteFilterFrom} onChange={e => setNoteFilterFrom(e.target.value)} title="Başlangıç tarihi"
-                        className="px-3 py-2 rounded-xl text-xs border outline-none"
-                        style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)", color: "var(--color-text-body)" }} />
-                      <input type="date" value={noteFilterTo} onChange={e => setNoteFilterTo(e.target.value)} title="Bitiş tarihi"
-                        className="px-3 py-2 rounded-xl text-xs border outline-none"
-                        style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)", color: "var(--color-text-body)" }} />
-                      {(noteSearch || noteFilterFrom || noteFilterTo) && (
-                        <button type="button" onClick={() => { setNoteSearch(""); setNoteFilterFrom(""); setNoteFilterTo(""); }}
-                          className="px-3 py-2 rounded-xl text-xs font-bold border cursor-pointer hover:opacity-80"
-                          style={{ background: "rgba(214, 61, 99,0.1)", borderColor: "rgba(214, 61, 99,0.25)", color: "#d63d63" }}>
-                          Temizle
-                        </button>
-                      )}
-                    </div>
-                  )}
-
-                  {showNoteForm && (
-                    <div className="rounded-2xl border p-5 space-y-3 relative overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: palette.border }}>
-                                            <div className="flex items-center justify-between pt-1">
-                        <h4 className="text-(--color-text-strong) font-bold m-0">Yeni Not</h4>
-                        {/* Mode toggle */}
-                        <div className="flex gap-1 p-0.5 rounded-xl" style={{ background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}>
-                          {(["free", "soap"] as NoteMode[]).map((m) => (
-                            <button key={m} type="button"
-                              className="px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer border-none"
-                              style={{
-                                background: noteMode === m ? "var(--color-surface-strong)" : "transparent",
-                                color: noteMode === m ? palette.color : "var(--color-text-muted)",
-                                boxShadow: noteMode === m ? "0 1px 4px rgba(0,0,0,0.15)" : "none",
-                              }}
-                              onClick={() => {
-                                setNoteMode(m);
-                                if (m === "soap" && !soapDraft.o) {
-                                  // Auto-populate O field with today's planned game goals
-                                  const todayKey = (["sun","mon","tue","wed","thu","fri","sat"] as DayKey[])[new Date().getDay()];
-                                  const thisWeekPlan = allWeeklyPlans.find(p => p.clientId === selectedClientId && p.weekStartDate === getWeekStart());
-                                  const todayEntries = thisWeekPlan?.days[todayKey] ?? [];
-                                  if (todayEntries.length > 0) {
-                                    const goalText = todayEntries.map(e => `${GAME_LABELS[e.gameKey as GameKey] ?? e.gameKey}${e.goal ? ` — ${e.goal}` : ""}`).join("; ");
-                                    setSoapDraft(d => ({ ...d, o: `Planlı seans: ${goalText}` }));
-                                  }
-                                }
-                              }}>
-                              {m === "free" ? "Serbest" : "SOAP"}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <input type="date" value={noteForm.date} onChange={(e) => setNoteForm((c) => ({ ...c, date: e.target.value }))} className={inputCls} />
-                      {noteMode === "free" ? (
-                        <>
-                          {/* Note templates */}
-                          <div className="flex flex-wrap gap-1.5">
-                            {([
-                              { label: "🌱 Başlangıç", text: "İlk seans. Danışan oyunları tanıdı, temel performans düzeyi belirlendi. Adaptasyon süreci başladı." },
-                              { label: "Değerlendirme", text: "Değerlendirme seansı. Performans ölçüldü, hedef güncellendi. Gelişim izleniyor." },
-                              { label: "İyi Gün", text: "Danışan yüksek motivasyon gösterdi. Tüm hedefler başarıyla tamamlandı. Zorluk artırılabilir." },
-                              { label: "😔 Zor Gün", text: "Danışan dikkat güçlüğü yaşadı, süre kısaltıldı. Bir sonraki seans daha kısa tutulabilir." },
-                              { label: "Gelişim Notu", text: "Önceki seansa kıyasla belirgin gelişim gözlemlendi. Hedef başarı oranı arttı." },
-                            ] as const).map(({ label, text }) => (
-                              <button key={label} type="button"
-                                className="text-[10px] font-semibold px-2 py-1 rounded-lg border cursor-pointer transition-all hover:opacity-80"
-                                style={{ background: "var(--color-surface-elevated)", borderColor: "var(--color-line)", color: "var(--color-text-soft)" }}
-                                onClick={() => setNoteForm(c => ({ ...c, content: c.content ? `${c.content}\n${text}` : text }))}>
-                                {label}
-                              </button>
-                            ))}
-                          </div>
-                          <textarea value={noteForm.content} onChange={(e) => setNoteForm((c) => ({ ...c, content: e.target.value }))} placeholder="Seans notu, gözlem veya hedef..." className={`${inputCls} resize-none`} rows={4} />
-                        </>
-                      ) : (
-                        <div className="space-y-2">
-                          {(["s", "o", "a", "p"] as (keyof SoapNoteContent)[]).map((field) => {
-                            const labels = { s: "S — Subjektif", o: "O — Objektif", a: "A — Assessment", p: "P — Plan" };
-                            const hints = {
-                              s: "Danışan ne hissetti / söyledi? (ör. 'Yoruldum ama eğlendim')",
-                              o: "Skor, hata sayısı, süre, hedef başarı oranı (ör. 'Pairs: 245p / 12 hata')",
-                              a: "Bu sonuç terapötik amaca ulaşmada ne gösteriyor?",
-                              p: "Sonraki seans önerileri, zorluk ayarı veya ev ödevi",
-                            };
-                            const snippets: Record<keyof SoapNoteContent, string[]> = {
-                              s: ["Yoruldum ama eğlendim", "Çok beğendim, tekrar oynayalım", "Zor geldi", "Dikkatim dağıldı", "Heyecanlandım"],
-                              o: ["Hedef %100 tamamlandı", "Hata sayısı azaldı", "Süre kısaldı", "İlk denemede başarılı", "3 tekrar gerekti"],
-                              a: ["Dikkat süresi gelişiyor", "Motor koordinasyon iyileşiyor", "Görsel tarama hızlandı", "Zorluk artırılabilir", "Mevcut seviye uygun"],
-                              p: ["Sonraki seans zorluk artır", "Aynı aktiviteye devam", "Ev ödevi: günlük 10 dk", "Aile bilgilendirildi", "Bir sonraki seans planlandı"],
-                            };
-                            return (
-                              <div key={field} className="space-y-1">
-                                <p className="text-[10px] font-extrabold uppercase tracking-wider m-0" style={{ color: palette.color }}>{labels[field]}</p>
-                                <textarea value={soapDraft[field]} onChange={(e) => setSoapDraft((c) => ({ ...c, [field]: e.target.value }))} placeholder={hints[field]} className={`${inputCls} resize-none`} rows={2} />
-                                <div className="flex flex-wrap gap-1">
-                                  {snippets[field].map(s => (
-                                    <button key={s} type="button"
-                                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer hover:opacity-80 transition-opacity"
-                                      style={{ background: "var(--color-surface-elevated)", borderColor: "var(--color-line)", color: "var(--color-text-muted)" }}
-                                      onClick={() => setSoapDraft(d => ({ ...d, [field]: d[field] ? `${d[field]}. ${s}` : s }))}>
-                                      + {s}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                      <div className="flex gap-2">
-                        <button type="button" disabled={isNotesLoading} className="flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-xl text-white cursor-pointer border-none transition-all hover:opacity-90 disabled:opacity-50" style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }} onClick={() => { void handleAddNoteDB(); }}>Kaydet</button>
-                        <button type="button" className={btnSecondary} onClick={() => { setShowNoteForm(false); setNoteMode("free"); setSoapDraft({ s: "", o: "", a: "", p: "" }); }}>İptal</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {clientNotes.length === 0 ? (
-                    <div className="rounded-2xl border border-(--color-line) p-12 text-center" style={{ background: "var(--color-surface-strong)" }}>
-                      <div className="w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center" style={{ background: "var(--color-surface-elevated)" }}><FileText size={20} className="text-(--color-text-muted)" /></div>
-                      <p className="text-(--color-text-muted) text-sm m-0 font-medium">Henüz not eklenmedi.</p>
-                      <p className="text-(--color-text-muted) text-xs mt-1 m-0">İlk seans notunu eklemek için yukarıdaki butona tıklayın.</p>
-                    </div>
-                  ) : (
-                    <div className="relative">
-                      {/* Timeline vertical line */}
-                      <div className="absolute left-5 top-0 bottom-0 w-px" style={{ background: "var(--color-line)" }} />
-                      <div className="space-y-3">
-                        {clientNotes.filter(note => {
-                          if (noteSearch && !note.content.toLowerCase().includes(noteSearch.toLowerCase())) return false;
-                          if (noteFilterFrom && note.date < noteFilterFrom) return false;
-                          if (noteFilterTo && note.date > noteFilterTo) return false;
-                          return true;
-                        }).map((note) => {
-                          // Find sessions on the same date
-                          const sameDaySessions = clientSessions.filter(s => s.playedAt?.slice(0, 10) === note.date);
-                          const noteTypeLabel = note.noteMode === "soap" ? "SOAP" : null;
-                          return (
-                            <div key={note.id} className="flex gap-4">
-                              {/* Timeline dot */}
-                              <div className="relative shrink-0 mt-3.5">
-                                <div className="w-10 h-10 rounded-xl flex items-center justify-center z-10 relative" style={{ background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}>
-                                  <FileText size={14} className="text-(--color-text-muted)" />
-                                </div>
-                              </div>
-                              <div className="flex-1 min-w-0 rounded-2xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}>
-                                                                <div className="px-4 py-3.5">
-                                  <div className="flex items-center justify-between mb-2 gap-2">
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                      <span className="text-xs font-semibold text-(--color-text-strong)">{formatDate(note.date)}</span>
-                                      {noteTypeLabel && (
-                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md" style={{ background: "var(--color-primary-light)", color: "var(--color-primary)" }}>{noteTypeLabel}</span>
-                                      )}
-                                      {sameDaySessions.length > 0 && sameDaySessions.map(s => (
-                                        <span key={s.id} className="text-[10px] font-medium px-2 py-0.5 rounded-md" style={{ background: "var(--color-surface-elevated)", color: "var(--color-text-muted)", border: "1px solid var(--color-line)" }}>
-                                          {s.gameLabel} · {s.score}p{s.durationSeconds ? ` · ${Math.round(s.durationSeconds / 60)}dk` : ""}
-                                        </span>
-                                      ))}
-                                    </div>
-                                    <button type="button" title="Notu sil" aria-label="Notu sil" className="w-7 h-7 flex items-center justify-center rounded-lg border-none cursor-pointer shrink-0 bg-transparent text-(--color-text-disabled) transition-colors hover:text-(--color-accent-red) hover:bg-(--color-surface-elevated)" onClick={() => { void handleDeleteNoteDB(note.id); }}><X size={13} /></button>
-                                  </div>
-                                  <p className="text-(--color-text-body) text-sm m-0 leading-relaxed">{note.content}</p>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* ── Weekly Plan ── */}
-              {clientDetailTab === "plan" && (
-                <div className="space-y-4">
-
-                  {/* ── Weekly Completion Summary ── */}
-                  {(() => {
-                    const allEntries = Object.values(planEdits).flat();
-                    const totalPlan = allEntries.length;
-                    const totalDone = allEntries.filter(e => e.completed).length;
-                    if (totalPlan === 0) return null;
-                    const pct = Math.round((totalDone / totalPlan) * 100);
-                    return (
-                      <div className="rounded-2xl border border-(--color-line) p-4" style={{ background: "var(--color-surface-strong)" }}>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted)">Haftalık Tamamlanma</span>
-                          <span className="text-sm font-extrabold tabular-nums" style={{ color: totalDone === totalPlan ? "#12b886" : pct > 50 ? "#f59e0b" : "var(--color-primary)" }}>
-                            {totalDone}/{totalPlan} · %{pct}
-                          </span>
-                        </div>
-                        <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--color-surface-elevated)" }}>
-                          <div className="h-full rounded-full transition-all duration-500" style={{
-                            width: `${pct}%`,
-                            background: totalDone === totalPlan ? "linear-gradient(90deg,#12b886,#0a7a58)" : pct > 50 ? "linear-gradient(90deg,#f59e0b,#12b886)" : "linear-gradient(90deg,var(--color-primary),#4d7dff)",
-                          }} />
-                        </div>
-                        {totalDone === totalPlan && totalPlan > 0 && (
-                          <p className="text-xs text-[#12b886] font-bold m-0 mt-2">🎉 Haftalık plan tamamlandı!</p>
-                        )}
-                      </div>
-                    );
-                  })()}
-
-                  {/* Week navigation */}
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <button type="button"
-                      className="w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center border text-(--color-text-soft) hover:text-(--color-text-strong) transition-all cursor-pointer shrink-0 text-base"
-                      style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}
-                      aria-label="Önceki hafta"
-                      onClick={() => setPlanWeekStart(addDays(planWeekStart, -7))}>
-                      ←
-                    </button>
-                    <div className="flex-1 text-center min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-(--color-text-muted) m-0 mb-0.5">Haftalık Plan</p>
-                      <strong className="text-xs sm:text-sm font-bold text-(--color-text-strong)">{formatDate(planWeekStart)} – {formatDate(addDays(planWeekStart, 6))}</strong>
-                    </div>
-                    <button type="button"
-                      className="w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center border text-(--color-text-soft) hover:text-(--color-text-strong) transition-all cursor-pointer shrink-0 text-base"
-                      style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}
-                      aria-label="Sonraki hafta"
-                      onClick={() => setPlanWeekStart(addDays(planWeekStart, 7))}>
-                      →
-                    </button>
-                  </div>
-
-                  {/* Day rows */}
-                  <div className="space-y-2">
-                    {DAY_KEYS.map((day, dayIndex) => {
-                      const dayDate = addDays(planWeekStart, dayIndex);
-                      const entries = planEdits[day];
-                      const isToday = dayDate === getTodayString();
-                      const isWeekend = dayIndex >= 5;
-                      const dayNames: Record<DayKey, string> = { mon: "Pazartesi", tue: "Salı", wed: "Çarşamba", thu: "Perşembe", fri: "Cuma", sat: "Cumartesi", sun: "Pazar" };
-                      return (
-                        <div key={day} className="rounded-2xl border overflow-hidden" style={{
-                          borderColor: isToday ? palette.border : "var(--color-line)",
-                          background: isToday
-                            ? "var(--color-primary-light)"
-                            : "var(--color-surface-strong)",
-                          boxShadow: isToday && !isLight ? `0 0 24px ${palette.glow}` : "none",
-                          opacity: isWeekend && !isToday ? 0.75 : 1,
-                        }}>
-
-                          {/* Row header */}
-                          <div className="flex items-center gap-2.5 sm:gap-4 px-3 sm:px-4 py-2.5 sm:py-3">
-                            {/* Date badge */}
-                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex flex-col items-center justify-center shrink-0" style={{
-                              background: isToday ? palette.bg : (isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)"),
-                              border: `1px solid ${isToday ? palette.border : "var(--color-line)"}`,
-                            }}>
-                              <span className="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider leading-none" style={{ color: isToday ? palette.color : "var(--color-text-muted)" }}>
-                                {DAY_LABELS[day]}
-                              </span>
-                              <strong className="text-base sm:text-lg font-extrabold leading-tight" style={{ color: isToday ? palette.color : "var(--color-text-strong)" }}>
-                                {dayDate.slice(8)}
-                              </strong>
-                            </div>
-
-                            {/* Day name + today badge */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold" style={{ color: isToday ? palette.color : (isWeekend ? "var(--color-text-soft)" : "var(--color-text-strong)") }}>
-                                  {dayNames[day]}
-                                </span>
-                                {isToday && (
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: palette.bg, color: palette.color }}>
-                                    Bugün
-                                  </span>
-                                )}
-                              </div>
-                              {entries.length > 0 && (() => {
-                                const completedCount = entries.filter(e => e.completed).length;
-                                return (
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-(--color-text-muted)">{entries.length} aktivite</span>
-                                    {completedCount > 0 && (
-                                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(18, 184, 134,0.12)", color: "#12b886" }}>
-                                        {completedCount}/{entries.length} ✓
-                                      </span>
-                                    )}
-                                  </div>
-                                );
-                              })()}
-                            </div>
-
-                            {/* Add button */}
-                            <button type="button"
-                              className="shrink-0 text-xs font-semibold px-3 py-2 sm:py-1.5 rounded-xl border cursor-pointer transition-all hover:opacity-75"
-                              style={{
-                                background: isToday ? palette.bg : (isLight ? "rgba(43, 98, 245,0.08)" : "rgba(43, 98, 245,0.1)"),
-                                borderColor: isToday ? palette.border : (isLight ? "rgba(43, 98, 245,0.2)" : "rgba(43, 98, 245,0.18)"),
-                                color: isToday ? palette.color : (isLight ? "#123252" : "#4d7dff"),
-                              }}
-                              onClick={() => { setPlanEdits((current) => ({ ...current, [day]: [...current[day], { gameKey: "memory" as PlatformGameKey, goal: "" }] })); }}>
-                              + Oyun Ekle
-                            </button>
-                          </div>
-
-                          {/* Entries */}
-                          {entries.length > 0 && (
-                            <div className="px-3 sm:px-4 pb-3 sm:pb-4 space-y-2">
-                              <div className="h-px" style={{ background: isToday ? palette.border : "var(--color-line)" }} />
-                              <div className="pt-1 space-y-2">
-                                {entries.map((entry, entryIndex) => (
-                                  <div key={entryIndex} className="flex items-start gap-2.5 sm:gap-3 rounded-xl px-2.5 sm:px-3 py-2.5 transition-all" style={{
-                                    background: entry.completed ? "rgba(18, 184, 134,0.06)" : (isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)"),
-                                    border: `1px solid ${entry.completed ? "rgba(18, 184, 134,0.2)" : (isToday ? palette.border : "var(--color-line)")}`,
-                                    opacity: entry.completed ? 0.75 : 1,
-                                  }}>
-                                    {/* Completed checkbox */}
-                                    <button type="button"
-                                      className="w-7 h-7 sm:w-6 sm:h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 border-none cursor-pointer transition-all"
-                                      style={{
-                                        background: entry.completed ? palette.color : palette.bg,
-                                        border: `1.5px solid ${palette.border}`,
-                                      }}
-                                      title={entry.completed ? "Tamamlandı" : "Tamamlandı işaretle"}
-                                      aria-label={entry.completed ? `${GAME_LABELS[entry.gameKey] ?? entry.gameKey} tamamlandı` : `${GAME_LABELS[entry.gameKey] ?? entry.gameKey} tamamlandı işaretle`}
-                                      onClick={() => {
-                                        setPlanEdits((current) => {
-                                          const updated = [...current[day]];
-                                          updated[entryIndex] = { ...updated[entryIndex], completed: !updated[entryIndex].completed };
-                                          return { ...current, [day]: updated };
-                                        });
-                                      }}>
-                                      {entry.completed ? <Check size={12} className="text-white" /> : <span className="text-[9px] sm:text-[8px] font-extrabold" style={{ color: palette.color }}>{entryIndex + 1}</span>}
-                                    </button>
-
-                                    {/* Game select + goal input */}
-                                    <div className="flex-1 min-w-0 space-y-1.5">
-                                      <select
-                                        value={entry.gameKey}
-                                        className="w-full text-sm font-semibold bg-transparent border-none outline-none cursor-pointer"
-                                        style={{ color: "var(--color-text-strong)", textDecoration: entry.completed ? "line-through" : "none" }}
-                                        onChange={(e) => {
-                                          const newKey = e.target.value as PlatformGameKey;
-                                          setPlanEdits((current) => { const updated = [...current[day]]; updated[entryIndex] = { ...updated[entryIndex], gameKey: newKey }; return { ...current, [day]: updated }; });
-                                        }}>
-                                        {GAME_TABS.map((g) => <option key={g.key} value={g.key}>{g.title}</option>)}
-                                      </select>
-                                      <input
-                                        value={entry.goal}
-                                        placeholder="Hedef notu ekle..."
-                                        className="w-full text-xs bg-transparent border-none outline-none"
-                                        style={{ color: "var(--color-text-soft)" }}
-                                        onChange={(e) => {
-                                          const val = e.target.value;
-                                          setPlanEdits((current) => { const updated = [...current[day]]; updated[entryIndex] = { ...updated[entryIndex], goal: val }; return { ...current, [day]: updated }; });
-                                        }} />
-                                    </div>
-
-                                    {/* Delete */}
-                                    <button type="button"
-                                      className="shrink-0 w-8 h-8 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center border-none cursor-pointer text-sm sm:text-xs font-bold transition-opacity hover:opacity-70"
-                                      style={{ background: "rgba(214, 61, 99,0.1)", color: "#d63d63" }}
-                                      aria-label={`${GAME_LABELS[entry.gameKey] ?? entry.gameKey} aktivitesini sil`}
-                                      onClick={() => { setPlanEdits((current) => { const updated = current[day].filter((_, i) => i !== entryIndex); return { ...current, [day]: updated }; }); }}>
-                                      ×
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* ── Goal-Based Session Planner ── */}
-                  {clientGoals.length > 0 && (() => {
-                    const GOAL_GAME_MAP: Record<string, GameKey[]> = {
-                      dikkat:         ["scan", "difference", "logic"],
-                      odak:           ["scan", "difference", "logic"],
-                      hafıza:         ["memory", "pairs"],
-                      bellek:         ["memory", "pairs"],
-                      motor:          ["pulse", "route"],
-                      koordinasyon:   ["pulse", "route"],
-                      görsel:         ["difference", "scan"],
-                      algı:           ["difference", "scan"],
-                      planlama:       ["route", "logic"],
-                      mantık:         ["logic", "route"],
-                      yürütücü:       ["route", "logic"],
-                    };
-                    function getGoalGames(goalTitle: string): GameKey[] {
-                      const lower = goalTitle.toLowerCase();
-                      for (const [kw, games] of Object.entries(GOAL_GAME_MAP)) {
-                        if (lower.includes(kw)) return games;
-                      }
-                      return ["memory", "scan", "pulse"];
-                    }
-                    const activeGoals = clientGoals.filter(g => g.currentValue < g.targetValue);
-                    if (activeGoals.length === 0) return null;
-                    return (
-                      <div className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
-                        <div className="px-4 py-3 border-b border-(--color-line)" style={{ background: "rgba(43, 98, 245,0.06)" }}>
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-(--color-text-muted) m-0">Hedef Bazlı Oyun Önerisi</p>
-                        </div>
-                        <div className="p-4 space-y-3">
-                          {activeGoals.slice(0, 3).map(goal => {
-                            const games = getGoalGames(goal.title);
-                            return (
-                              <div key={goal.id} className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-xs font-bold text-(--color-text-strong) truncate flex-1">{goal.title}</span>
-                                  <span className="text-[10px] text-(--color-text-muted) shrink-0 ml-2">{Math.round((goal.currentValue / Math.max(goal.targetValue, 1)) * 100)}%</span>
-                                </div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  {games.map(g => (
-                                    <button key={g} type="button"
-                                      onClick={() => {
-                                        const entry: WeeklyPlanEntry = { gameKey: g as PlatformGameKey, goal: goal.title };
-                                        setPlanEdits(cur => {
-                                          const updated = { ...cur };
-                                          for (const day of DAY_KEYS) {
-                                            if (!updated[day].some(e => e.gameKey === g)) {
-                                              updated[day] = [...updated[day], entry];
-                                            }
-                                          }
-                                          return updated;
-                                        });
-                                      }}
-                                      className="flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border cursor-pointer transition-all hover:opacity-80"
-                                      style={{ background: "rgba(43, 98, 245,0.08)", borderColor: "rgba(43, 98, 245,0.2)", color: "var(--color-primary)" }}>
-                                      + {GAME_LABELS[g]}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            );
-                          })}
-                          <p className="text-[10px] text-(--color-text-muted) m-0">Butona tıklayarak ilgili oyunu haftanın tüm planlanmış günlerine ekleyebilirsiniz.</p>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  <button type="button" className={btnPrimary} onClick={() => { void handleSaveWeeklyPlanDB(); }}>
-                    Planı Kaydet
-                  </button>
-                </div>
-              )}
-
-              {/* ── Score History ── */}
-              {clientDetailTab === "scores" && (
-                <div className="space-y-4">
-                  {/* ── Skill Radar Chart ── */}
-                  {selectedClientId && clientSessions.length > 0 && (
-                    <ClientProgressRadar sessions={platformOverview.recentSessions} clientId={selectedClientId} />
-                  )}
-
-                  {/* ── Weekly Progress Report ── */}
-                  {selectedClient && clientSessions.length > 0 && (
-                    <WeeklyProgressReport
-                      client={selectedClient}
-                      sessions={clientSessions}
-                      goals={clientGoals}
-                      therapistName={activeTherapist?.displayName ?? "Terapist"}
-                      clinicName={activeTherapist?.clinicName}
-                      allNotes={clientNotes}
-                    />
-                  )}
-
-                  {/* ── Overall score summary strip ── */}
-                  {clientSessions.length > 0 && (() => {
-                    const avgScore = Math.round(clientSessions.reduce((s,ss) => s + ss.score, 0) / clientSessions.length);
-                    const maxS = Math.max(...clientSessions.map(s => s.score));
-                    const minS = Math.min(...clientSessions.map(s => s.score));
-                    return (
-                      <div className="relative overflow-hidden rounded-3xl border p-5" style={{ borderColor: "var(--color-line)", background: "var(--color-surface-strong)" }}>
-                                                <div className="flex items-center gap-6">
-                          {/* Mini SVG sparkline */}
-                          <div className="shrink-0">
-                            <svg width="96" height="48" viewBox="0 0 96 48" className="overflow-visible">
-                              <defs>
-                                <linearGradient id={`spark-grad-${selectedClientId}`} x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor={palette.color} stopOpacity="0.3" />
-                                  <stop offset="100%" stopColor={palette.color} stopOpacity="0" />
-                                </linearGradient>
-                              </defs>
-                              {(() => {
-                                const pts = clientSessions.slice(0, 8).reverse();
-                                if (pts.length < 2) return null;
-                                const maxV = Math.max(...pts.map(p => p.score), 1);
-                                const minV = Math.min(...pts.map(p => p.score), 0);
-                                const range = maxV - minV || 1;
-                                const xs = pts.map((_, i) => (i / (pts.length - 1)) * 88 + 4);
-                                const ys = pts.map(p => 44 - ((p.score - minV) / range) * 40);
-                                const d = xs.map((x, i) => `${i === 0 ? "M" : "L"}${x},${ys[i]}`).join(" ");
-                                const area = `${d} L${xs[xs.length-1]},48 L${xs[0]},48 Z`;
-                                return (
-                                  <>
-                                    <path d={area} fill={`url(#spark-grad-${selectedClientId})`} />
-                                    <path d={d} fill="none" stroke={palette.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                    {xs.map((x, i) => (
-                                      <circle key={i} cx={x} cy={ys[i]} r="2.5" fill={palette.color} />
-                                    ))}
-                                  </>
-                                );
-                              })()}
-                            </svg>
-                            <p className="text-[10px] text-(--color-text-muted) text-center mt-1">Son {Math.min(clientSessions.length, 8)} seans</p>
-                          </div>
-                          <div className="grid grid-cols-3 gap-4 flex-1">
-                            {[
-                              { l: "Ortalama", v: avgScore },
-                              { l: "En Yüksek", v: maxS },
-                              { l: "En Düşük", v: minS },
-                            ].map(({ l, v }) => (
-                              <div key={l} className="text-center">
-                                <strong className="numeral text-2xl font-extrabold text-(--color-text-strong)">{v}</strong>
-                                <span className="text-[10px] text-(--color-text-muted) block mt-1">{l}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* ── Score Trend Chart ── */}
-                  {clientSessions.length >= 3 && (() => {
-                    const sorted = [...clientSessions].sort((a, b) => (a.playedAt ?? "").localeCompare(b.playedAt ?? "")).slice(-20);
-                    const maxV = Math.max(...sorted.map(s => s.score), 1);
-                    const W = 420; const H = 90; const PAD = 8;
-                    const xs = sorted.map((_, i) => PAD + (i / Math.max(sorted.length - 1, 1)) * (W - PAD * 2));
-                    const ys = sorted.map(s => H - PAD - ((s.score / maxV) * (H - PAD * 2)));
-                    const linePath = xs.map((x, i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(" ");
-                    const areaPath = `${linePath} L${xs[xs.length-1].toFixed(1)},${H} L${xs[0].toFixed(1)},${H} Z`;
-                    const gradId = `trend-${selectedClientId}`;
-                    // 3-session moving average
-                    const MA = 3;
-                    const maPoints = sorted.map((_, i) => {
-                      if (i < MA - 1) return null;
-                      const avg = sorted.slice(i - MA + 1, i + 1).reduce((s, x) => s + x.score, 0) / MA;
-                      return { x: xs[i], y: H - PAD - ((avg / maxV) * (H - PAD * 2)) };
-                    }).filter((p): p is { x: number; y: number } => p !== null);
-                    const maPath = maPoints.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
-                    // Trend label: compare first half avg vs second half avg
-                    const half = Math.ceil(sorted.length / 2);
-                    const firstHalfAvg = sorted.slice(0, half).reduce((s, x) => s + x.score, 0) / half;
-                    const secondHalfAvg = sorted.slice(half).reduce((s, x) => s + x.score, 0) / Math.max(sorted.length - half, 1);
-                    const trendPct = firstHalfAvg > 0 ? ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100 : 0;
-                    const trendLabel = trendPct >= 8 ? "↑ Gelişiyor" : trendPct <= -8 ? "↓ Düşüş" : "→ Stabil";
-                    const trendColor = trendPct >= 8 ? "#12b886" : trendPct <= -8 ? "#d63d63" : "#f59e0b";
-                    return (
-                      <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}>
-                        <div className="px-4 pt-4 pb-1 flex items-center justify-between">
-                          <span className="text-xs font-extrabold uppercase tracking-wider text-(--color-text-muted)">Skor Trendi</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${trendColor}18`, color: trendColor, border: `1px solid ${trendColor}33` }}>{trendLabel}</span>
-                            <span className="text-[10px] text-(--color-text-muted)">Son {sorted.length} seans</span>
-                          </div>
-                        </div>
-                        <div className="px-4 pb-2">
-                          <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: "90px" }}>
-                            <defs>
-                              <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor={palette.color} stopOpacity="0.2" />
-                                <stop offset="100%" stopColor={palette.color} stopOpacity="0" />
-                              </linearGradient>
-                            </defs>
-                            <path d={areaPath} fill={`url(#${gradId})`} />
-                            <path d={linePath} fill="none" stroke={palette.color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.6" />
-                            {maPoints.length >= 2 && (
-                              <path d={maPath} fill="none" stroke={palette.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="0" />
-                            )}
-                            {xs.map((x, i) => (
-                              <circle key={i} cx={x} cy={ys[i]} r="2.5" fill={palette.color} fillOpacity="0.7" />
-                            ))}
-                            {/* MA dots */}
-                            {maPoints.map((p, i) => (
-                              <circle key={`ma-${i}`} cx={p.x} cy={p.y} r="3.5" fill="none" stroke={palette.color} strokeWidth="1.5" />
-                            ))}
-                          </svg>
-                        </div>
-                        <div className="px-4 pb-3 flex items-center justify-between">
-                          <span className="text-[9px] text-(--color-text-muted)">{sorted[0]?.playedAt?.slice(0, 10) ?? ""}</span>
-                          <div className="flex items-center gap-3 text-[9px] text-(--color-text-muted)">
-                            <span className="flex items-center gap-1"><span className="w-5 h-0.5 inline-block rounded opacity-60" style={{ background: palette.color }} /> ham skor</span>
-                            <span className="flex items-center gap-1"><span className="w-5 h-0.5 inline-block rounded" style={{ background: palette.color }} /> 3 seans ort.</span>
-                          </div>
-                          <span className="text-[9px] text-(--color-text-muted)">{sorted[sorted.length-1]?.playedAt?.slice(0, 10) ?? ""}</span>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Oyun bazlı skor trendi — kendi bileşeninde; içindeki
-                      useState MimioApp'in kanca sırasını bozuyordu. */}
-                  <GameTrendChart sessions={clientSessions} />
-
-                  {/* ── Session Duration Analysis ── */}
-                  {clientSessions.filter(s => s.durationSeconds).length >= 2 && (() => {
-                    const withDur = clientSessions.filter(s => s.durationSeconds).sort((a, b) => (a.playedAt ?? "").localeCompare(b.playedAt ?? ""));
-                    const avgDur = Math.round(withDur.reduce((s, x) => s + (x.durationSeconds ?? 0), 0) / withDur.length);
-                    const recent3Avg = withDur.length >= 3 ? Math.round(withDur.slice(-3).reduce((s, x) => s + (x.durationSeconds ?? 0), 0) / 3) : null;
-                    const isFatiguing = recent3Avg !== null && recent3Avg < avgDur * 0.75;
-                    const isImproving = recent3Avg !== null && recent3Avg > avgDur * 1.1;
-                    return (
-                      <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: isFatiguing ? "rgba(245, 158, 11,0.3)" : "var(--color-line)" }}>
-                        {isFatiguing && <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg,#f59e0b,transparent)" }} />}
-                        <div className="p-4 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-extrabold uppercase tracking-wider text-(--color-text-muted)">Seans Süresi</span>
-                            {isFatiguing && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(245, 158, 11,0.12)", color: "#f59e0b", border: "1px solid rgba(245, 158, 11,0.25)" }}>
-                                Yorgunluk olabilir
-                              </span>
-                            )}
-                            {isImproving && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(18, 184, 134,0.12)", color: "#12b886", border: "1px solid rgba(18, 184, 134,0.25)" }}>
-                                ↗ Süre artıyor
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex gap-3">
-                            {[
-                              { label: "Ortalama", value: formatDuration(avgDur) },
-                              { label: "Son 3 Seans", value: recent3Avg ? formatDuration(recent3Avg) : "—" },
-                              { label: "Toplam", value: formatDuration(withDur.reduce((s, x) => s + (x.durationSeconds ?? 0), 0)) },
-                            ].map(({ label, value }) => (
-                              <div key={label} className="flex-1 text-center rounded-xl p-3" style={{ background: "var(--color-surface-elevated)" }}>
-                                <strong className="text-sm font-bold tabular-nums text-(--color-text-strong)">{value}</strong>
-                                <span className="text-[10px] text-(--color-text-muted) block mt-1">{label}</span>
-                              </div>
-                            ))}
-                          </div>
-                          {isFatiguing && recent3Avg !== null && (
-                            <p className="text-xs text-(--color-text-muted) m-0 italic">Son 3 seans ortalaması ({formatDuration(recent3Avg)}) genel ortalamanın %25+ altında — danışan yorulmuş olabilir.</p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* ── Activity heatmap (12 weeks) ── */}
-                  {clientSessions.length > 0 && (() => {
-                    const WEEKS = 12;
-                    const DAYS = WEEKS * 7;
-                    const today = new Date();
-                    // Build day cells from oldest (left-top) to today (right-bottom)
-                    const cells: { date: string; count: number }[] = [];
-                    for (let i = DAYS - 1; i >= 0; i--) {
-                      const d = new Date(today);
-                      d.setDate(today.getDate() - i);
-                      const dateStr = d.toISOString().slice(0, 10);
-                      const count = clientSessions.filter(s => (s.playedAt ?? "").startsWith(dateStr)).length;
-                      cells.push({ date: dateStr, count });
-                    }
-                    const maxCount = Math.max(...cells.map(c => c.count), 1);
-                    const cellSize = 10; const gap = 2; const totalW = WEEKS * (cellSize + gap) - gap;
-                    const weekDayLabels = ["Pt", "Sa", "Ça", "Pe", "Cu", "Ct", "Pz"];
-                    return (
-                      <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}>
-                        <div className="px-4 pt-4 pb-2 flex items-center justify-between">
-                          <span className="text-xs font-extrabold uppercase tracking-wider text-(--color-text-muted)">Aktivite Isı Haritası</span>
-                          <span className="text-[10px] text-(--color-text-muted)">Son 12 hafta</span>
-                        </div>
-                        <div className="px-4 pb-4 overflow-x-auto">
-                          <svg viewBox={`0 0 ${totalW} ${7 * (cellSize + gap) - gap}`} style={{ width: "100%", minWidth: `${totalW}px`, height: `${7 * (cellSize + gap) - gap}px` }}>
-                            {cells.map((cell, idx) => {
-                              const weekIdx = Math.floor(idx / 7);
-                              const dayIdx = idx % 7;
-                              const x = weekIdx * (cellSize + gap);
-                              const y = dayIdx * (cellSize + gap);
-                              const intensity = cell.count === 0 ? 0 : 0.2 + (cell.count / maxCount) * 0.8;
-                              const fill = cell.count === 0
-                                ? (isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)")
-                                : palette.color;
-                              return (
-                                <rect key={cell.date} x={x} y={y} width={cellSize} height={cellSize} rx="2" fill={fill} opacity={cell.count === 0 ? 1 : intensity}>
-                                  <title>{cell.date}: {cell.count} seans</title>
-                                </rect>
-                              );
-                            })}
-                          </svg>
-                          <div className="flex items-center gap-2 mt-2 justify-end">
-                            <span className="text-[9px] text-(--color-text-muted)">Az</span>
-                            {[0.15, 0.35, 0.6, 0.85, 1].map(op => (
-                              <span key={op} className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: palette.color, opacity: op }} />
-                            ))}
-                            <span className="text-[9px] text-(--color-text-muted)">Çok</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  <h3 className="text-sm font-extrabold uppercase tracking-wider text-(--color-text-muted) m-0">Oyun Bazlı Skorlar</h3>
-                  {GAME_TABS.map((game) => {
-                    const gameSessions = platformOverview.recentSessions.filter((s) => s.gameKey === game.key && s.clientId === selectedClient.id);
-                    const gameScore = scoreboard[game.key];
-                    if (gameScore.plays === 0) return null;
-                    const maxScore = Math.max(gameScore.best, 1);
-                    const pct = Math.min(100, (gameScore.best / maxScore) * 100);
-                    return (
-                      <div key={game.key} className="rounded-2xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}>
-                                                <div className="p-5 space-y-4">
-                          <div className="flex items-center justify-between">
-                            <strong className="text-(--color-text-strong) font-bold">{game.title}</strong>
-                            <div className="flex items-center gap-2">
-                              <span className="numeral text-xs font-bold px-3 py-1.5 rounded-md" style={{ background: "var(--color-primary-light)", color: "var(--color-primary)" }}>{gameScore.best}</span>
-                              <span className="text-(--color-text-muted) text-xs font-semibold">{gameScore.plays}× oynadı</span>
-                            </div>
-                          </div>
-                          <div className="h-2 rounded-full overflow-hidden" style={{ background: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)" }}>
-                            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: "var(--gradient-bar)" }} />
-                          </div>
-                          {gameSessions.length > 0 && (
-                            <div className="grid gap-1.5">
-                              {gameSessions.slice(0, 5).map((session) => (
-                                <div key={session.id} className="flex items-center justify-between rounded-xl px-3 py-2.5 border" style={{ background: isLight ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.02)", borderColor: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)" }}>
-                                  <div className="flex items-center gap-2.5">
-                                    <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: palette.bg }}>
-                                      <span className="text-[10px] font-extrabold" style={{ color: palette.color }}>▶</span>
-                                    </div>
-                                    <div>
-                                      <span className="text-(--color-text-soft) text-xs font-medium">{formatPlayedAt(session.playedAt)}</span>
-                                      {session.durationSeconds ? <span className="text-(--color-text-muted) text-[10px] ml-1.5">· {formatDuration(session.durationSeconds)}</span> : null}
-                                    </div>
-                                  </div>
-                                  <strong className="text-lg font-extrabold tabular-nums" style={{ color: palette.color }}>{session.score}</strong>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {GAME_TABS.every((g) => scoreboard[g.key].plays === 0) && (
-                    <div className="rounded-2xl border border-(--color-line) p-12 text-center" style={{ background: "var(--color-surface-strong)" }}>
-                      <div className="w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center" style={{ background: "var(--color-surface-elevated)" }}><Gamepad2 size={20} className="text-(--color-text-muted)" /></div>
-                      <p className="text-(--color-text-muted) text-sm m-0 font-medium">Henüz oyun skoru yok.</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* ── Progress Tab (Client Detail) ── */}
-              {clientDetailTab === "progress" && (() => {
-                const clientProgress = tpProgressEntries.filter(e => e.clientId === selectedClientId).sort((a,b) => b.date.localeCompare(a.date));
-                const domain = tpSelectedDomain ? THERAPY_DOMAINS.find(d => d.key === tpSelectedDomain) : null;
-                const goals = domain?.goals ?? [];
-                const goalAverages = goals.map(goal => {
-                  const entries = clientProgress.filter(e => e.goalId === goal.id);
-                  const avg = entries.length > 0 ? Math.round(entries.reduce((s,e) => s + e.value, 0) / entries.length) : 0;
-                  return { ...goal, average: avg, count: entries.length, entries };
+        {/* ── Ayarlar ──
+            Gezinmedeki yedinci bölüm. Tercihlerin çoğu hesap menüsünde
+            yaşıyor; burası onların tam etiketli, aranabilir hâli. */}
+        {activeAppView === "settings" && (
+          <div className="app-shell h-full p-4 lg:p-[26px_28px]">
+            <SettingsScreen
+              therapist={activeTherapist}
+              theme={theme}
+              preference={preference}
+              onThemeChange={setTheme}
+              onEditProfile={() => {
+                setTherapistEditDraft({
+                  displayName: activeTherapist?.displayName ?? "",
+                  clinicName: activeTherapist?.clinicName ?? "",
+                  specialty: activeTherapist?.specialty ?? "",
                 });
-                const overallAvg = goalAverages.length > 0 ? Math.round(goalAverages.reduce((s,g) => s + g.average, 0) / goalAverages.length) : 0;
-
-                return (
-                  <div className="space-y-5">
-                    {/* ── Donut + Overall ── */}
-                    <div className="relative overflow-hidden rounded-3xl border p-6" style={{ borderColor: "var(--color-line)", background: "var(--color-surface-strong)" }}>
-                                            <div className="flex items-center gap-6">
-                        <div className="relative w-24 h-24 shrink-0">
-                          <svg viewBox="0 0 36 36" className="w-24 h-24 -rotate-90">
-                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
-                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={palette.color} strokeWidth="3" strokeDasharray={`${overallAvg}, 100`} strokeLinecap="round" />
-                          </svg>
-                          <span className="absolute inset-0 flex items-center justify-center text-xl font-black" style={{ color: palette.color }}>{overallAvg}%</span>
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-lg font-extrabold text-(--color-text-strong) m-0 mb-1">Genel Bağımsızlık Düzeyi</h3>
-                          <p className="text-(--color-text-soft) text-sm m-0">{clientProgress.length} kayıt · {goalAverages.filter(g => g.count > 0).length}/{goals.length} hedef takipte</p>
-                          <div className="mt-3 h-2 rounded-full overflow-hidden" style={{ background: "var(--color-line)" }}>
-                            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${overallAvg}%`, background: "var(--gradient-bar)" }} />
-                          </div>
-                          {clientProgress.length === 0 && (
-                            <button type="button"
-                              className="mt-3 text-xs font-bold px-3 py-1.5 rounded-xl text-white border-none cursor-pointer transition-all"
-                              style={{ background: "var(--color-primary)" }}
-                              onClick={() => { setTpSelectedClientId(selectedClientId); setActiveAppView("therapy-program"); setTpActiveTab("progress"); }}>
-                              Terapi Programına Git →
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* ── Goal bars ── */}
-                    {goalAverages.length > 0 ? (
-                      <div className="space-y-3">
-                        <h4 className="text-xs font-extrabold uppercase tracking-widest text-(--color-text-muted) m-0">Hedef Bazlı İlerleme</h4>
-                        {goalAverages.map((ga) => {
-                          const barColor = ga.average >= 75 ? "#12b886" : ga.average >= 50 ? "#f59e0b" : ga.average >= 25 ? "#2b62f5" : "#d63d63";
-                          const barLabel = ga.average >= 75 ? "Bağımsız" : ga.average >= 50 ? "Min. Yardım" : ga.average >= 25 ? "Orta Yardım" : "Max. Yardım";
-                          return (
-                            <div key={ga.id} className="rounded-2xl border border-(--color-line) p-4" style={{ background: "var(--color-surface-strong)" }}>
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm text-(--color-text-body) font-semibold flex-1 mr-2">{ga.label}</span>
-                                <div className="flex items-center gap-2 shrink-0">
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ background: barColor }}>{barLabel}</span>
-                                  <span className="text-lg font-extrabold tabular-nums" style={{ color: barColor }}>{ga.average}%</span>
-                                </div>
-                              </div>
-                              <div className="h-2.5 rounded-full overflow-hidden" style={{ background: "var(--color-line)" }}>
-                                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${ga.average}%`, background: `linear-gradient(90deg, ${barColor}, ${barColor}99)` }} />
-                              </div>
-                              {ga.count > 0 && (
-                                <p className="text-[10px] text-(--color-text-muted) mt-1.5 m-0">{ga.count} ölçüm · son güncelleme: {ga.entries[0]?.date ?? "—"}</p>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="rounded-2xl border border-dashed border-(--color-line) p-10 text-center" style={{ background: "var(--color-surface-strong)" }}>
-                        <div className="w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center" style={{ background: "var(--color-surface-elevated)" }}><TrendingUp size={20} className="text-(--color-text-muted)" /></div>
-                        <p className="text-(--color-text-muted) text-sm m-0 mb-3">İlerleme takibi için önce Terapi Programından bir alan seçin.</p>
-                        <button type="button"
-                          className="text-xs font-bold px-4 py-2 rounded-xl text-white border-none cursor-pointer"
-                          style={{ background: "var(--color-primary)" }}
-                          onClick={() => { setTpSelectedClientId(selectedClientId); setActiveAppView("therapy-program"); setTpActiveTab("domains"); }}>
-                          Terapi Programını Aç →
-                        </button>
-                      </div>
-                    )}
-
-                    {/* ── Recent progress log ── */}
-                    {clientProgress.length > 0 && (
-                      <div className="space-y-2">
-                        <h4 className="text-xs font-extrabold uppercase tracking-widest text-(--color-text-muted) m-0">Son Kayıtlar</h4>
-                        {clientProgress.slice(0, 6).map((entry, i) => {
-                          const goal = goals.find(g => g.id === entry.goalId);
-                          const barColor = entry.value >= 75 ? "#12b886" : entry.value >= 50 ? "#f59e0b" : "#2b62f5";
-                          return (
-                            <div key={entry.id} className="flex items-start gap-3 p-3.5 rounded-2xl border border-(--color-line)" style={{ background: "var(--color-surface-elevated)", animation: `result-stat-in 0.3s ease ${i * 0.05}s both` }}>
-                              <div className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-white text-xs font-black" style={{ background: barColor }}>
-                                {entry.value}%
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-(--color-text-strong) m-0 truncate">{goal?.label ?? "Hedef"}</p>
-                                {entry.note && <p className="text-xs text-(--color-text-muted) m-0 mt-0.5 italic">"{entry.note}"</p>}
-                              </div>
-                              <span className="text-[10px] text-(--color-text-muted) shrink-0 tabular-nums">{entry.date}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* ── SMART Goals ── */}
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-extrabold uppercase tracking-widest text-(--color-text-muted) m-0">SMART Hedefler</h4>
-                        <button type="button" onClick={() => setShowGoalForm(v => !v)}
-                          className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl text-white border-none cursor-pointer transition-all hover:opacity-80"
-                          style={{ background: "var(--color-primary)" }}>
-                          <Plus size={12} /> Hedef Ekle
-                        </button>
-                      </div>
-
-                      {showGoalForm && (
-                        <div className="rounded-2xl border border-(--color-line) p-4 space-y-3" style={{ background: "var(--color-surface-strong)" }}>
-                          <input value={goalDraft.title} onChange={e => setGoalDraft(d => ({ ...d, title: e.target.value }))}
-                            placeholder="Hedef başlığı (örn. Makas kullanımı)" className={inputCls} />
-                          <input value={goalDraft.description} onChange={e => setGoalDraft(d => ({ ...d, description: e.target.value }))}
-                            placeholder="Açıklama (isteğe bağlı)" className={inputCls} />
-                          <div className="flex gap-2">
-                            <div className="flex-1">
-                              <label className="text-[10px] text-(--color-text-muted) font-bold uppercase tracking-wider mb-1 block">Hedef Değer (%)</label>
-                              <input type="number" min={1} max={100} value={goalDraft.targetValue} onChange={e => setGoalDraft(d => ({ ...d, targetValue: Number(e.target.value) }))}
-                                className={inputCls} />
-                            </div>
-                            <div className="flex-1">
-                              <label className="text-[10px] text-(--color-text-muted) font-bold uppercase tracking-wider mb-1 block">Son Tarih</label>
-                              <input type="date" value={goalDraft.deadline} onChange={e => setGoalDraft(d => ({ ...d, deadline: e.target.value }))}
-                                className={inputCls} />
-                            </div>
-                          </div>
-                          <div className="flex gap-2 justify-end">
-                            <button type="button" onClick={() => setShowGoalForm(false)}
-                              className="text-xs font-bold px-3 py-1.5 rounded-xl cursor-pointer border border-(--color-line) text-(--color-text-muted) hover:opacity-80 transition-all" style={{ background: "transparent" }}>
-                              İptal
-                            </button>
-                            <button type="button" onClick={handleAddGoal} disabled={!goalDraft.title.trim()}
-                              className="text-xs font-bold px-4 py-1.5 rounded-xl text-white border-none cursor-pointer transition-all hover:opacity-80 disabled:opacity-40"
-                              style={{ background: "var(--color-primary)" }}>
-                              Kaydet
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {clientGoals.length === 0 && !showGoalForm && (
-                        <div className="rounded-2xl border border-dashed border-(--color-line) p-8 text-center" style={{ background: "var(--color-surface-strong)" }}>
-                          <div className="w-12 h-12 mx-auto mb-2 rounded-xl flex items-center justify-center" style={{ background: "var(--color-surface-elevated)" }}><Target size={20} className="text-(--color-text-muted)" /></div>
-                          <p className="text-(--color-text-muted) text-sm m-0">Bu danışan için henüz SMART hedef tanımlanmadı.</p>
-                        </div>
-                      )}
-
-                      {clientGoals.map((g, i) => {
-                        const pct = Math.round((g.currentValue / Math.max(g.targetValue, 1)) * 100);
-                        const clampedPct = Math.min(pct, 100);
-                        const goalColor = clampedPct >= 100 ? "#12b886" : clampedPct >= 60 ? "#f59e0b" : palette.color;
-                        const isOverdue = g.deadline && g.deadline < getTodayString() && clampedPct < 100;
-                        return (
-                          <div key={g.id} className="rounded-2xl border border-(--color-line) p-4 space-y-3" style={{ background: "var(--color-surface-strong)", animation: `result-stat-in 0.3s ease ${i * 0.06}s both` }}>
-                            <div className="flex items-start gap-2">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="text-sm font-bold text-(--color-text-strong)">{g.title}</span>
-                                  {clampedPct >= 100 && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ background: "#12b886" }}>✓ Tamamlandı</span>}
-                                  {isOverdue && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ background: "#d63d63" }}>Gecikmiş</span>}
-                                </div>
-                                {g.description && <p className="text-xs text-(--color-text-muted) m-0 mt-0.5">{g.description}</p>}
-                                {g.deadline && <p className="text-[10px] text-(--color-text-muted) m-0 mt-0.5">Son tarih: {g.deadline}</p>}
-                              </div>
-                              <button type="button" onClick={() => handleDeleteGoal(g.id)}
-                                className="text-(--color-text-muted) hover:text-[#f0708a] transition-colors cursor-pointer border-none bg-transparent p-1 shrink-0">
-                                <X size={14} />
-                              </button>
-                            </div>
-                            <div>
-                              <div className="flex items-center justify-between mb-1.5">
-                                <span className="text-[10px] text-(--color-text-muted) font-bold uppercase tracking-wider">İlerleme</span>
-                                <span className="text-sm font-extrabold tabular-nums" style={{ color: goalColor }}>{g.currentValue}/{g.targetValue} <span className="text-[10px] text-(--color-text-muted)">({clampedPct}%)</span></span>
-                              </div>
-                              <div className="h-2.5 rounded-full overflow-hidden" style={{ background: "var(--color-line)" }}>
-                                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${clampedPct}%`, background: `linear-gradient(90deg, ${goalColor}, ${goalColor}99)` }} />
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <input type="range" min={0} max={g.targetValue} value={g.currentValue}
-                                onChange={e => handleUpdateGoalProgress(g.id, Number(e.target.value))}
-                                className="flex-1 h-1.5 rounded-full cursor-pointer accent-[#4d7dff]" />
-                              <span className="text-[10px] text-(--color-text-muted) shrink-0 w-16 text-right tabular-nums">{g.currentValue}/{g.targetValue}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* ── AI Suggestions Tab (Rule-Based) ── */}
-              {clientDetailTab === "suggestions" && (() => {
-                const suggestion = generateTherapySuggestions(selectedClient, platformOverview.recentSessions);
-                const TrendIcon = suggestion.overallTrend === "improving" ? TrendingUp : suggestion.overallTrend === "declining" ? ArrowDownRight : suggestion.overallTrend === "insufficient_data" ? Search : Minus;
-                const trendColor = suggestion.overallTrend === "improving" ? "var(--color-accent-green)" : suggestion.overallTrend === "declining" ? "var(--color-accent-red)" : "var(--color-text-muted)";
-                return (
-                  <div className="space-y-4">
-                    {/* Header */}
-                    <div className="rounded-2xl p-4" style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
-                      <div className="flex items-start gap-3">
-                        <span className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "var(--color-primary-light)" }}>
-                          <Lightbulb size={17} style={{ color: "var(--color-primary)" }} />
-                        </span>
-                        <div>
-                          <h3 className="text-sm font-bold text-(--color-text-strong) m-0 mb-1">Seans Verisi Analizi</h3>
-                          <p className="text-(--color-text-soft) text-xs m-0 leading-relaxed">{suggestion.performanceSummary}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Overall trend */}
-                    <div className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
-                      <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: `color-mix(in srgb, ${trendColor} 13%, transparent)` }}>
-                        <TrendIcon size={16} style={{ color: trendColor }} />
-                      </span>
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider m-0 text-(--color-text-muted)">Genel Trend</p>
-                        <p className="text-sm font-semibold text-(--color-text-strong) m-0">
-                          {suggestion.overallTrend === "improving" ? "Gelişme görülüyor" : suggestion.overallTrend === "declining" ? "Düşüş var — ek destek öneriliyor" : suggestion.overallTrend === "insufficient_data" ? "Yeterli veri bekleniyor" : "Stabil seyir"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Strengths */}
-                    {suggestion.strengths.length > 0 && (
-                      <div className="space-y-2">
-                        <h4 className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider m-0" style={{ color: "var(--color-accent-green)" }}><Check size={12} /> Güçlü Alanlar</h4>
-                        <div className="grid grid-cols-1 gap-2">
-                          {suggestion.strengths.map(s => (
-                            <div key={s.gameKey} className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl" style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
-                              <span className="w-1.5 h-8 rounded-full shrink-0" style={{ background: "var(--color-accent-green)" }} />
-                              <div className="flex-1 min-w-0">
-                                <span className="text-sm font-semibold text-(--color-text-strong)">{s.label}</span>
-                                <span className="text-[11px] text-(--color-text-muted) ml-2">{s.trend === "improving" ? "gelişiyor" : "stabil"}</span>
-                              </div>
-                              <span className="numeral text-sm font-bold" style={{ color: "var(--color-accent-green)" }}>~{s.last3Avg}p</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Attention areas */}
-                    {suggestion.attentionAreas.length > 0 && (
-                      <div className="space-y-2">
-                        <h4 className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider m-0" style={{ color: "var(--color-signal)" }}><Target size={12} /> Dikkat Gereken Alanlar</h4>
-                        <div className="grid grid-cols-1 gap-2">
-                          {suggestion.attentionAreas.map(a => (
-                            <div key={a.gameKey} className="flex items-start gap-3 px-3.5 py-2.5 rounded-xl" style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
-                              <span className="w-1.5 h-8 rounded-full shrink-0" style={{ background: "var(--color-signal)" }} />
-                              <div className="min-w-0">
-                                <span className="text-sm font-semibold text-(--color-text-strong) block">{a.label}</span>
-                                <span className="text-[11px] text-(--color-text-muted)">{a.reason}</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Recommended session set */}
-                    {suggestion.recommendedSet.length > 0 && (
-                      <div className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
-                        <div className="px-4 py-3 border-b border-(--color-line)">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-(--color-text-muted) m-0">Önerilen Seans Seti</p>
-                        </div>
-                        <div className="p-4 space-y-2">
-                          {suggestion.recommendedSet.map((k, i) => (
-                            <div key={k} className="flex items-center gap-3 px-3 py-2 rounded-xl" style={{ background: "var(--color-surface-elevated)" }}>
-                              <span className="numeral w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold shrink-0" style={{ background: "var(--color-primary-light)", color: "var(--color-primary)" }}>{i + 1}</span>
-                              <span className="text-xs font-semibold text-(--color-text-strong)">{GAME_LABELS[k]}</span>
-                            </div>
-                          ))}
-                          <button type="button"
-                            className="w-full mt-3 flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-xs border-none cursor-pointer transition-opacity hover:opacity-90"
-                            style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }}
-                            onClick={() => {
-                              startCustomSessionSet("Öneri seti", suggestion.recommendedSet);
-                              setActiveAppView("games");
-                            }}>
-                            <Play size={13} /> Bu Seti Oyna
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Protocol recommendation */}
-                    {suggestion.protocolName && (
-                      <div className="px-4 py-3.5 rounded-2xl border border-(--color-line)" style={{ background: "var(--color-surface-strong)" }}>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-(--color-text-muted) m-0 mb-1.5">Protokol Önerisi</p>
-                        <p className="text-sm font-bold text-(--color-text-strong) m-0 mb-1">{suggestion.protocolName}</p>
-                        <p className="text-xs text-(--color-text-muted) m-0">Danışanın hedefleriyle eşleşen hazır protokol şablonu.</p>
-                        <button type="button"
-                          onClick={() => { setActiveAppView("therapy-program"); setTpActiveTab("protocols"); }}
-                          className="mt-2.5 text-xs font-bold cursor-pointer border-none bg-transparent p-0 underline"
-                          style={{ color: "var(--color-primary)" }}>
-                          Protokolleri Görüntüle →
-                        </button>
-                      </div>
-                    )}
-
-                    {/* SOAP draft */}
-                    <div className="rounded-2xl border border-(--color-line) overflow-hidden" style={{ background: "var(--color-surface-strong)" }}>
-                      <div className="px-4 py-3 border-b border-(--color-line)">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-(--color-text-muted) m-0">Otomatik SOAP Taslağı</p>
-                      </div>
-                      <div className="p-4 space-y-3">
-                        {(["s", "o", "a", "p"] as const).map(key => (
-                          <div key={key}>
-                            <span className="text-[10px] font-black uppercase tracking-widest block mb-1" style={{ color: "var(--color-primary)" }}>
-                              {key === "s" ? "S — Subjektif" : key === "o" ? "O — Objektif" : key === "a" ? "A — Analiz" : "P — Plan"}
-                            </span>
-                            <p className="text-xs text-(--color-text-soft) m-0 leading-relaxed">{suggestion.soapDraft[key]}</p>
-                          </div>
-                        ))}
-                        <button type="button"
-                          onClick={() => {
-                            const s = suggestion.soapDraft;
-                            const text = `S: ${s.s}\n\nO: ${s.o}\n\nA: ${s.a}\n\nP: ${s.p}`;
-                            setNoteForm({ date: getTodayString(), content: text });
-                            setNoteMode("free");
-                            setClientDetailTab("notes");
-                            setShowNoteForm(true);
-                          }}
-                          className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-xs border cursor-pointer transition-all hover:opacity-80"
-                          style={{ background: "transparent", borderColor: "var(--color-line)", color: "var(--color-text-soft)" }}>
-                          Not Olarak Kaydet
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-            </div>
-          );
-        })()}
+                setShowEditTherapist(true);
+              }}
+              onShowAchievements={() => setShowAchievements(true)}
+              achievementCount={earnedAchievementCount}
+              databaseStatus={platformOverview.database}
+              onLogout={handleLogout}
+            />
+          </div>
+        )}
 
         {/* ── Games View ── */}
         {activeAppView === "games" && (
@@ -7484,6 +5411,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           </div>
         )}
 
+      </div>
       </div>
 
       {/* ── Mobile Bottom Navigation ── */}

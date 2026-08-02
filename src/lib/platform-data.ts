@@ -203,7 +203,23 @@ export function isPlatformGameKey(value: string): value is PlatformGameKey {
 
 // ── New multi-screen architecture types ──
 
-export type AppView = "login" | "register" | "dashboard" | "clients" | "client-detail" | "games" | "therapy-program" | "reports";
+/*
+ * Gezinme, Deniz tasarım sistemindeki yedi bölümü karşılar:
+ *   Bugün → dashboard, Danışanlar → clients/client-detail,
+ *   Haftalık Plan → weekly-plan, Oyunlar → games, Raporlar → reports,
+ *   Aktivite Kitaplığı → therapy-program, Ayarlar → settings.
+ */
+export type AppView =
+  | "login"
+  | "register"
+  | "dashboard"
+  | "clients"
+  | "client-detail"
+  | "weekly-plan"
+  | "games"
+  | "therapy-program"
+  | "reports"
+  | "settings";
 
 export interface SessionNote {
   id: string;
@@ -220,6 +236,15 @@ export interface WeeklyPlanEntry {
   gameKey: PlatformGameKey;
   goal: string;
   completed?: boolean;
+  /**
+   * Seans saati, "HH:MM". İsteğe bağlı — plan modeli başlangıçta yalnızca
+   * "bu gün şu oyun" diyordu, saat taşımıyordu. Bugün ekranındaki zaman
+   * çizelgesi bunu gerektiriyor. Saatsiz kayıtlar geçerli kalır; çizelgede
+   * saatli olanların ardına, giriş sırasına göre dizilirler.
+   *
+   * `days` sütunu JSONB olduğu için bu alan şema değişikliği istemez.
+   */
+  time?: string;
 }
 
 export type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
