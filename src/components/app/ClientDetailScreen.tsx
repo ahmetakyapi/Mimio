@@ -86,7 +86,7 @@ export function ClientDetailScreen({
       <div className="flex items-start gap-5 flex-wrap">
         <Avatar name={client.displayName} id={client.id} size={74} radius={22} className="!text-[30px] font-display" />
         <div className="flex-1 min-w-0">
-          <h1 className="m-0 mb-2 text-[clamp(1.5rem,2.6vw,2.125rem)] leading-none text-(--color-text-strong)">
+          <h1 className="m-0 mb-2 text-[clamp(1.3125rem,2.1vw,1.8125rem)] leading-none text-(--color-text-strong)">
             {client.displayName}
           </h1>
           <div className="flex flex-wrap gap-[7px]">
@@ -150,7 +150,7 @@ export function ClientDetailScreen({
         </button>
       </div>
 
-      <div className="grid gap-4 flex-1 min-h-0" style={{ gridTemplateColumns: "262px minmax(0,1fr) 268px" }}>
+      <div className="grid gap-4 flex-1 min-h-0 deniz-split" style={{ ["--split" as string]: "262px minmax(0,1fr) 268px" }}>
         {/* ── Sol: sabit bilgi ── */}
         <div className="flex flex-col gap-3.5 min-h-0 overflow-y-auto">
           <Card pad="p-[18px_20px]">

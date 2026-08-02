@@ -116,7 +116,7 @@ export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
         <div className="flex items-start justify-between gap-4" style={{ padding: "24px 26px 0" }}>
           <div>
             <Eyebrow>Adım {step} / 3</Eyebrow>
-            <h2 className="font-display m-0 mt-1.5 text-[20px] font-bold tracking-[-0.025em] text-(--color-text-strong)">
+            <h2 className="font-display m-0 mt-1.5 text-[18px] font-bold tracking-[-0.025em] text-(--color-text-strong)">
               {stepTitle}
             </h2>
           </div>

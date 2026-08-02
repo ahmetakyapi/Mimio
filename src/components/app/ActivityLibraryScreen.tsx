@@ -94,7 +94,7 @@ export function ActivityLibraryScreen({ onAddToPlan }: Props) {
         }
       />
 
-      <div className="grid gap-4 flex-1 min-h-0" style={{ gridTemplateColumns: "250px minmax(0,1fr) 316px" }}>
+      <div className="grid gap-4 flex-1 min-h-0 deniz-split" style={{ ["--split" as string]: "250px minmax(0,1fr) 316px" }}>
         {/* ── Sol: alan + filtre ── */}
         <div className="flex flex-col gap-3.5 overflow-y-auto min-h-0">
           <div className="glass rounded-[18px]" style={{ padding: "18px 20px" }}>
@@ -202,7 +202,7 @@ export function ActivityLibraryScreen({ onAddToPlan }: Props) {
               {selected.subSkill}
             </span>
 
-            <h2 className="font-display m-0 mb-2 text-[16px] font-bold tracking-[-0.02em] text-(--color-text-strong)">
+            <h2 className="font-display m-0 mb-2 text-[15px] font-bold tracking-[-0.02em] text-(--color-text-strong)">
               {selected.label}
             </h2>
             <p className="m-0 mb-4 text-[11.5px] leading-[1.6] text-(--color-text-body)">{selected.description}</p>

@@ -196,7 +196,7 @@ export function ClientsScreen({
       ) : (
         <>
           {/* Sütun başlıkları — kart değil, çıplak. Tablo hissi için. */}
-          <div className="grid gap-3.5 px-[18px]" style={{ gridTemplateColumns: COLS }}>
+          <div className="grid gap-3.5 px-[18px] client-cols client-head" style={{ ["--cols" as string]: COLS }}>
             {["Danışan", "Hedef", "Bağımsızlık", "Son Seans", "Eğilim / Skor", "Sıradaki", ""].map((h, i) => (
               <Eyebrow key={i} className="!tracking-[0.1em]">{h}</Eyebrow>
             ))}
@@ -275,7 +275,7 @@ function ClientRow({
 
   return (
     <div
-      className="glass grid gap-3.5 items-center transition-colors hover:border-(--color-line-strong)"
+      className="glass grid gap-3.5 items-center transition-colors hover:border-(--color-line-strong) client-cols client-row"
       style={{ gridTemplateColumns: COLS, padding: "13px 18px", borderRadius: 14 }}
     >
       {/* Danışan */}

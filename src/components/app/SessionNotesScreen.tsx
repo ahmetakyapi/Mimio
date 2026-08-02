@@ -139,7 +139,7 @@ export function SessionNotesScreen({ notes, clients, sessions, onNewNote, onExpo
           </div>
         </div>
       ) : (
-        <div className="grid gap-4 flex-1 min-h-0" style={{ gridTemplateColumns: "minmax(0,1fr) 400px" }}>
+        <div className="grid gap-4 flex-1 min-h-0 deniz-split" style={{ ["--split" as string]: "minmax(0,1fr) 400px" }}>
           {/* Not akışı */}
           <div className="flex flex-col gap-2 overflow-y-auto min-h-0 pr-1">
             {rows.map((n) => {
@@ -212,7 +212,7 @@ export function SessionNotesScreen({ notes, clients, sessions, onNewNote, onExpo
               <div className="flex items-center gap-[11px] mb-5">
                 <Avatar name={selectedClient?.displayName ?? "?"} id={selected.clientId} size={40} radius={13} />
                 <span className="min-w-0 flex-1">
-                  <span className="font-display block text-[15px] font-bold tracking-[-0.02em] text-(--color-text-strong) truncate">
+                  <span className="font-display block text-[14px] font-bold tracking-[-0.02em] text-(--color-text-strong) truncate">
                     {selectedClient?.displayName ?? "Danışan"}
                   </span>
                   <span className="block text-[10.5px] text-(--color-text-soft) truncate">

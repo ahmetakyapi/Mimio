@@ -81,7 +81,7 @@ export function AuthScreen({
           </span>
         </button>
 
-        <h1 className="m-0 mt-auto mb-4 text-[clamp(2rem,3.4vw,2.75rem)] leading-[1.08] text-(--color-text-strong)">
+        <h1 className="m-0 mt-auto mb-4 text-[clamp(1.75rem,2.9vw,2.25rem)] leading-[1.08] text-(--color-text-strong)">
           Terapi seanslarını<br />
           <span style={{ color: "var(--color-primary)" }}>oyuna dönüştür.</span>
         </h1>
@@ -141,7 +141,7 @@ export function AuthScreen({
             })}
           </div>
 
-          <h2 className="font-display m-0 mb-1.5 text-[24px] font-bold tracking-[-0.03em] text-(--color-text-strong)">
+          <h2 className="font-display m-0 mb-1.5 text-[21px] font-bold tracking-[-0.03em] text-(--color-text-strong)">
             {mode === "login" ? greeting : "Hesabını oluştur."}
           </h2>
           <p className="m-0 mb-6 text-[12.5px] text-(--color-text-soft)">

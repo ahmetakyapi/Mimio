@@ -129,11 +129,21 @@ function isSchemaMissingError(error: unknown) {
     return false;
   }
 
+  /*
+   * Yalnızca "yok" anlamına gelen hatalar şema eksikliğidir.
+   *
+   * Önceki hâl `message.includes("column")` diyordu; bu, sütun *adı geçen*
+   * her hatayı — örneğin "column reference \"id\" is ambiguous" — şema
+   * eksikliği sayıyordu. Sonuç: gerçek bir SQL hatası "şema kurulmamış"
+   * diye raporlanıyor, arayüz sessizce boş veri gösteriyordu. Danışan
+   * listesinin hiç yüklenmemesinin sebebi tam olarak buydu.
+   */
+  const m = error.message.toLowerCase();
   return (
-    error.message.includes("does not exist") ||
-    error.message.includes("relation") ||
-    error.message.includes("undefined_table") ||
-    error.message.includes("column")
+    m.includes("does not exist") ||
+    m.includes("undefined_table") ||
+    m.includes("undefined_column") ||
+    /relation ".*" does not exist/.test(m)
   );
 }
 
@@ -208,7 +218,6 @@ export async function getPlatformOverviewFromDatabase(): Promise<PlatformOvervie
 
     const clientRows = (await sql.query(
       `SELECT
-        id::text,
         cp.id::text,
         cp.display_name,
         COALESCE(cp.age_group, '') AS age_group,

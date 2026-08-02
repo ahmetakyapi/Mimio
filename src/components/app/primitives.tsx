@@ -41,7 +41,7 @@ export function Eyebrow({ children, className = "" }: { readonly children: React
 /** Kart başlığı — display ailesi, 15px. */
 export function CardTitle({ children, className = "" }: { readonly children: ReactNode; readonly className?: string }) {
   return (
-    <span className={`font-display font-bold text-[15px] tracking-[-0.02em] text-(--color-text-strong) ${className}`}>
+    <span className={`font-display font-bold text-[14px] tracking-[-0.02em] text-(--color-text-strong) ${className}`}>
       {children}
     </span>
   );
@@ -340,8 +340,8 @@ export function ScreenHeader({
         <div className="numeral text-[10px] font-medium uppercase tracking-[0.16em] text-(--color-text-soft) mb-2">
           {eyebrow}
         </div>
-        <h1 className="m-0 mb-[7px] text-[clamp(1.5rem,2.4vw,2.0625rem)] leading-[1.1] text-(--color-text-strong)">{title}</h1>
-        {sub && <p className="m-0 text-[13.5px] text-(--color-text-body)">{sub}</p>}
+        <h1 className="m-0 mb-[7px] text-[clamp(1.3125rem,1.9vw,1.75rem)] leading-[1.1] text-(--color-text-strong)">{title}</h1>
+        {sub && <p className="m-0 text-[12.5px] text-(--color-text-body)">{sub}</p>}
       </div>
       {actions && <div className="flex items-center gap-2.5 shrink-0">{actions}</div>}
     </div>

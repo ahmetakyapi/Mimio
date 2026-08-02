@@ -265,7 +265,7 @@ export function LiveSessionScreen({
           }}
           aria-label="Canlı ölçümler"
         >
-          <h2 className="font-display m-0 text-[15px] font-bold tracking-[-0.02em] text-(--color-text-strong)">
+          <h2 className="font-display m-0 text-[14px] font-bold tracking-[-0.02em] text-(--color-text-strong)">
             Canlı Ölçümler
           </h2>
 

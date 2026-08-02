@@ -151,7 +151,7 @@ export function ProgressReportScreen({
           <p className="m-0 text-[12.5px] text-(--color-text-soft)">Rapor için bir danışan seç.</p>
         </div>
       ) : (
-        <div className="grid gap-4 flex-1 min-h-0" style={{ gridTemplateColumns: "236px minmax(0,1fr) 250px" }}>
+        <div className="grid gap-4 flex-1 min-h-0 deniz-split" style={{ ["--split" as string]: "236px minmax(0,1fr) 250px" }}>
           {/* ── Sol: bölümler + dönem ── */}
           <div className="flex flex-col gap-3.5 overflow-y-auto min-h-0">
             <div className="glass rounded-[18px]" style={{ padding: "18px 20px" }}>
@@ -229,7 +229,7 @@ export function ProgressReportScreen({
                   </span>
                 </div>
 
-                <h2 className="font-display m-0 mb-2.5 text-[17px] font-bold tracking-[-0.02em] text-(--color-text-strong)">
+                <h2 className="font-display m-0 mb-2.5 text-[15.5px] font-bold tracking-[-0.02em] text-(--color-text-strong)">
                   {shown(client.displayName)} — Gelişim Özeti
                 </h2>
                 <p className="m-0 text-[12px] leading-[1.65] text-(--color-text-body)">

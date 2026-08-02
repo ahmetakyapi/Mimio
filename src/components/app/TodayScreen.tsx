@@ -107,7 +107,7 @@ export function TodayScreen({
       />
 
       {/* ── Ölçüm satırı ── */}
-      <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}>
+      <div className="grid gap-3.5" style={{ gridTemplateColumns: "var(--stat-cols, repeat(4, minmax(0, 1fr)))" }}>
         <Card pad="p-[17px_18px]">
           <div className="flex items-center justify-between mb-3">
             <span className="text-[11px] font-semibold text-(--color-text-soft)">Bugünün Seansı</span>
@@ -271,7 +271,7 @@ export function TodayScreen({
       </div>
 
       {/* ── Çizelge + paneller ── */}
-      <div className="grid gap-4 flex-1 min-h-0" style={{ gridTemplateColumns: "1.35fr 1fr" }}>
+      <div className="grid gap-4 flex-1 min-h-0 deniz-split" style={{ ["--split" as string]: "1.35fr 1fr" }}>
         <Agenda items={agenda} onStart={onStartSession} onOpenClient={onOpenClient} onPlan={() => onNavigate("weekly-plan")} />
 
         <div className="flex flex-col gap-4 min-h-0">

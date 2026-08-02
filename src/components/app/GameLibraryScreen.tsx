@@ -230,7 +230,7 @@ export function GameLibraryScreen({
       {/* Oyun ızgarası */}
       <div
         className="grid gap-[13px] flex-1 min-h-0 overflow-y-auto content-start pb-1"
-        style={{ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}
+        style={{ gridTemplateColumns: "var(--card-cols, repeat(4, minmax(0, 1fr)))" }}
       >
         {games.map((g) => {
           const key = g.key as PlatformGameKey;

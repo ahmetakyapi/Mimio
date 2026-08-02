@@ -89,7 +89,7 @@ export function SettingsScreen({
               {initials(therapist?.displayName ?? "T")}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="font-display block text-[15px] font-bold tracking-[-0.02em] text-(--color-text-strong) truncate">
+              <span className="font-display block text-[14px] font-bold tracking-[-0.02em] text-(--color-text-strong) truncate">
                 {therapist?.displayName ?? "Terapist"}
               </span>
               <span className="block text-[11px] text-(--color-text-soft) truncate">

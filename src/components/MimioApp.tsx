@@ -80,6 +80,7 @@ import { NewClientFlow, type NewClientDraft } from "@/components/app/NewClientFl
 import { DEFAULT_PREFS, type AppPrefs } from "@/components/app/SettingsScreen";
 import { AuthScreen } from "@/components/app/AuthScreen";
 import { ActivityLibraryScreen } from "@/components/app/ActivityLibraryScreen";
+import { MobileTabBar, MobileMoreSheet, MobileTopBar } from "@/components/app/MobileChrome";
 import { ScreenHeader, Card, CardTitle, Eyebrow, Avatar } from "@/components/app/primitives";
 import { startOfWeek as denizWeekStart, isoDate as denizIso, DOMAIN_ORDER, DOMAIN_META, gameDomain, INDEPENDENCE_STEPS } from "@/lib/deniz-derive";
 import { MEASURE_KIND_LABELS } from "@/lib/outcome-measures";
@@ -264,6 +265,19 @@ interface MimioAppProps {
   onLogout?: () => void;
 }
 
+/* Mobil üst çubuktaki ekran adları — sidebar telefonda yok, başlık onun yerini alır. */
+const MOBILE_TITLES: Partial<Record<AppView, string>> = {
+  dashboard: "Bugün",
+  clients: "Danışanlar",
+  "client-detail": "Danışan",
+  "weekly-plan": "Haftalık Plan",
+  games: "Oyunlar",
+  notes: "Seans Notları",
+  reports: "İlerleme Raporu",
+  "therapy-program": "Aktivite Kitaplığı",
+  settings: "Ayarlar",
+};
+
 export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps = {}) {
   const { theme, preference, toggle: toggleTheme, setTheme } = useTheme();
   // ── New multi-screen state ──
@@ -347,6 +361,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
    * yalnızca bir seans başlatıldığında açılıyor.
    */
   const [gameStage, setGameStage] = useState<"library" | "live" | "review">("library");
+  const [moreOpen, setMoreOpen] = useState(false);
   const [tpSelectedProtocol, setTpSelectedProtocol] = useState<TherapyProtocol | null>(null);
   const [memoryState, setMemoryState] = useState<MemoryState>({ sequence: [], input: [], flashIndex: null, score: 0, phase: "idle", message: "Oyunu başlat ve diziyi dikkatle izle." });
   const [pairsState, setPairsState] = useState<PairsState>({ tiles: [], moves: 0, pairsFound: 0, locked: false, phase: "idle", message: "Kartları aç ve eşleşen çiftleri bul." });
@@ -581,6 +596,13 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     try { window.localStorage.setItem(ACTIVE_THERAPIST_KEY, JSON.stringify({ therapistId })); } catch { /* ignore */ }
     setActiveTherapistId(therapistId);
     setActiveAppView("dashboard");
+    /*
+     * Genel bakış yalnızca mount'ta çekiliyordu; o an oturum cookie'si henüz
+     * yoktu ve sunucu boş yük dönüyordu. Giriş yapan kullanıcı, sayfayı elle
+     * yenileyene kadar panelde sıfır görüyordu. Oturum kurulduktan sonra
+     * yeniden çekmek şart.
+     */
+    void loadPlatformOverview();
   }
 
   function handleLogout() {
@@ -2249,98 +2271,24 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         accountMenu={denizAccountMenu}
       />
 
-      {/* ── Mobile top bar ── */}
-      <header className="flex lg:hidden items-center justify-between px-4 shrink-0 fixed top-0 left-0 right-0 z-30"
-        style={{
-          height: "calc(56px + env(safe-area-inset-top, 0px))",
-          paddingTop: "env(safe-area-inset-top, 0px)",
-          background: "var(--color-chrome-nav)",
-          backdropFilter: "blur(24px)",
-          WebkitBackdropFilter: "blur(24px)",
-          borderBottom: "1px solid var(--color-line)",
-        }}>
-        {/* Logo */}
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-extrabold text-xs shrink-0"
-            style={{ background: "linear-gradient(135deg, #2b62f5, #17c2e0)", boxShadow: "0 2px 8px rgba(43, 98, 245,0.45)" }}>
-            Mi
-          </div>
-          <div>
-            <span className="font-extrabold text-(--color-text-strong) text-sm tracking-tight block leading-none">Mimio</span>
-            <span className="text-[9px] font-semibold text-(--color-text-muted) leading-none">
-              {activeTherapist?.displayName?.split(" ")[0] ?? "Ergoterapi"}
-            </span>
-          </div>
-        </div>
-
-        {/* Right actions */}
-        <div className="flex items-center gap-1.5">
-          {/* Status badge */}
-          <div className="flex items-center gap-1 px-2 py-1 rounded-full"
-            style={{
-              background: platformStatus === "online" ? "rgba(18, 184, 134,0.1)" : "rgba(245, 158, 11,0.1)",
-              border: `1px solid ${platformStatus === "online" ? "rgba(18, 184, 134,0.25)" : "rgba(245, 158, 11,0.25)"}`,
-            }}>
-            <span className="w-1.5 h-1.5 rounded-full shrink-0"
-              style={{ background: platformStatus === "online" ? "#12b886" : "#f59e0b", boxShadow: `0 0 5px ${platformStatus === "online" ? "rgba(18, 184, 134,0.7)" : "rgba(245, 158, 11,0.7)"}` }} />
-            <span className="text-[9px] font-bold" style={{ color: platformStatus === "online" ? "#12b886" : "#f59e0b" }}>
-              {platformStatus === "online" ? "Canlı" : "Lokal"}
-            </span>
-          </div>
-          {/* Theme toggle */}
-          <button type="button"
-            className="w-8 h-8 rounded-xl flex items-center justify-center border-none cursor-pointer bg-transparent text-(--color-text-muted) hover:text-(--color-text-body) transition-colors"
-            onClick={toggleTheme}>
-            {theme === "dark" || theme === "high-contrast" ? <Sun size={15} /> : <Moon size={15} />}
+      {/* ── Mobil üst çubuk (2a–2v) ──
+          Doküman telefonda kromu sadeleştiriyor: arama ve tema masaüstünde
+          kalıyor, üstte yalnızca ekran adı ve hesap erişimi duruyor. Küçük
+          ekranda krom, içeriğin payına giriyor. */}
+      <MobileTopBar
+        title={MOBILE_TITLES[activeAppView] ?? "Mimio"}
+        action={
+          <button
+            type="button"
+            onClick={() => setActiveAppView("settings")}
+            aria-label="Ayarlar"
+            className="grid place-items-center shrink-0 cursor-pointer border-none font-bold text-white text-[11px]"
+            style={{ width: 30, height: 30, borderRadius: 10, background: "var(--gradient-avatar-3)" }}
+          >
+            {(activeTherapist?.displayName ?? "T").trim()[0]?.toLocaleUpperCase("tr-TR")}
           </button>
-          {/* Avatar / menu */}
-          <button type="button"
-            className="w-9 h-9 rounded-xl flex items-center justify-center border-none cursor-pointer transition-all active:scale-95"
-            style={{ background: "rgba(43, 98, 245,0.1)" }}
-            onClick={() => setShowUserMenu(v => !v)}>
-            <div className="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs"
-              style={{ background: "linear-gradient(135deg, #2b62f5, #17c2e0)", boxShadow: "0 2px 6px rgba(43, 98, 245,0.4)" }}>
-              {activeTherapist?.displayName?.[0]?.toUpperCase() ?? "T"}
-            </div>
-          </button>
-          {showUserMenu && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
-              <div className="absolute right-3 z-50 rounded-2xl shadow-(--shadow-elevated) border p-2 min-w-[200px] max-w-[calc(100vw-24px)]"
-                style={{ top: "60px", background: "var(--color-surface-strong)", borderColor: "rgba(43, 98, 245,0.2)", backdropFilter: "blur(20px)" }}>
-                {/* Top shimmer */}
-                <div className="absolute top-0 left-0 right-0 h-px rounded-t-2xl" style={{ background: "linear-gradient(90deg,transparent,rgba(43, 98, 245,0.4),transparent)" }} />
-                <div className="px-3 py-3 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
-                    style={{ background: "linear-gradient(135deg, #2b62f5, #17c2e0)", boxShadow: "0 2px 8px rgba(43, 98, 245,0.4)" }}>
-                    {activeTherapist?.displayName?.[0]?.toUpperCase() ?? "T"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <strong className="text-(--color-text-strong) text-sm block truncate">{activeTherapist?.displayName ?? "Terapist"}</strong>
-                    <span className="text-(--color-text-muted) text-xs">{activeTherapist?.clinicName || "Bağımsız terapist"}</span>
-                  </div>
-                </div>
-                <div className="h-px mx-2 my-1" style={{ background: "var(--color-line)" }} />
-                <button type="button" className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-(--color-text-body) hover:bg-(--color-surface-elevated) w-full text-left bg-transparent border-none cursor-pointer"
-                  onClick={() => { setShowUserMenu(false); setTherapistEditDraft({ displayName: activeTherapist?.displayName ?? "", clinicName: activeTherapist?.clinicName ?? "", specialty: activeTherapist?.specialty ?? "" }); setShowEditTherapist(true); }}>
-                  <Edit2 size={14} /> Profili Düzenle
-                </button>
-                <button type="button" className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-(--color-text-body) hover:bg-(--color-surface-elevated) w-full text-left bg-transparent border-none cursor-pointer" onClick={() => { setShowUserMenu(false); toggleTheme(); }}>
-                  {theme === "dark" || theme === "high-contrast" ? <Sun size={14} /> : <Moon size={14} />}
-                  {theme === "dark" || theme === "high-contrast" ? "Açık Tema" : "Koyu Tema"}
-                </button>
-                <button type="button" className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-(--color-text-body) hover:bg-(--color-surface-elevated) w-full text-left bg-transparent border-none cursor-pointer" onClick={() => { setShowUserMenu(false); setTheme(theme === "high-contrast" ? "dark" : "high-contrast"); }}>
-                  <span className="text-sm font-black" style={{ color: theme === "high-contrast" ? "#ffff00" : "inherit" }}>⊙</span>
-                  {theme === "high-contrast" ? "Normal Mod" : "Yüksek Kontrast"}
-                </button>
-                <button type="button" className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-(--color-accent-red) hover:bg-[#d63d63]/10 w-full text-left bg-transparent border-none cursor-pointer" onClick={() => { setShowUserMenu(false); handleLogout(); }}>
-                  <LogOut size={14} /> Çıkış Yap
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </header>
+        }
+      />
 
       {/*
         Tek kaydırma kuralı.
@@ -3729,53 +3677,19 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       </div>
       </div>
 
-      {/* ── Mobile Bottom Navigation ── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 lg:hidden" role="navigation" aria-label="Mobil gezinme" style={{ background: "var(--color-chrome-nav)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: "1px solid var(--color-line)", paddingBottom: "env(safe-area-inset-bottom)" }}>
-        <div className="flex items-stretch h-16 px-2">
-          {([
-            { view: "dashboard" as AppView, Icon: LayoutDashboard, label: "Panel", gradient: "linear-gradient(135deg,#2b62f5,#17c2e0)", tooltip: "Ana Panel" },
-            { view: "clients" as AppView, Icon: Users, label: "Danışanlar", gradient: "linear-gradient(135deg,#4d7dff,#f0708a)", tooltip: "Danışan Listesi" },
-            { view: "games" as AppView, Icon: Gamepad2, label: "Oyunlar", gradient: "linear-gradient(135deg,#12b886,#2b62f5)", tooltip: "Oyun Seç" },
-            { view: "therapy-program" as AppView, Icon: Stethoscope, label: "Terapi", gradient: "linear-gradient(135deg,#2b62f5,#17c2e0)", tooltip: "Terapi Programı" },
-            { view: "reports" as AppView, Icon: BarChart3, label: "Rapor", gradient: "linear-gradient(135deg,#f59e0b,#d63d63)", tooltip: "Raporlar & Analitik" },
-          ]).map(({ view, Icon, label, gradient, tooltip }) => {
-            const isActive = activeAppView === view || (view === "clients" && activeAppView === "client-detail");
-            return (
-              <button
-                key={view}
-                type="button"
-                data-tooltip={tooltip}
-                data-tooltip-dir="top"
-                aria-label={tooltip}
-                aria-current={isActive ? "page" : undefined}
-                className="flex-1 flex flex-col items-center justify-center gap-0.5 border-none cursor-pointer transition-all relative"
-                style={{ background: "transparent" }}
-                onClick={() => setActiveAppView(view)}
-              >
-                {/* Active top indicator bar */}
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 rounded-b-full transition-all duration-300"
-                  style={{
-                    width: isActive ? "32px" : "0px",
-                    height: "3px",
-                    background: isActive ? gradient : "transparent",
-                    boxShadow: isActive ? `0 2px 8px rgba(0,0,0,0.3)` : "none",
-                    opacity: isActive ? 1 : 0,
-                  }} />
-                <div
-                  className="w-9 h-9 rounded-2xl flex items-center justify-center transition-all duration-200"
-                  style={{
-                    background: isActive ? gradient : "transparent",
-                    boxShadow: isActive ? "0 4px 12px rgba(0,0,0,0.25)" : "none",
-                    transform: isActive ? "scale(1.12) translateY(-2px)" : "scale(1)",
-                  }}>
-                  <Icon size={18} className={isActive ? "text-white" : "text-(--color-text-muted)"} />
-                </div>
-                <span className={`text-[9px] font-bold leading-none tracking-wide transition-all duration-200 ${isActive ? "text-(--color-primary)" : "text-(--color-text-muted)"}`}>{label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+      {/* ── Mobil kabuk (2a–2v) ── */}
+      <MobileTabBar
+        activeView={activeAppView}
+        onNavigate={setActiveAppView}
+        onMore={() => setMoreOpen(true)}
+      />
+      {moreOpen && (
+        <MobileMoreSheet
+          activeView={activeAppView}
+          onNavigate={setActiveAppView}
+          onClose={() => setMoreOpen(false)}
+        />
+      )}
       <ToastContainer />
       <MilestoneContainer />
       <OnboardingTour />

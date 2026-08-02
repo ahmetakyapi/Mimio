@@ -187,7 +187,7 @@ export function WeeklyPlanScreen({
         </span>
       </div>
 
-      <div className="grid gap-4 flex-1 min-h-0" style={{ gridTemplateColumns: "minmax(0,1fr) 272px" }}>
+      <div className="grid gap-4 flex-1 min-h-0 deniz-split" style={{ ["--split" as string]: "minmax(0,1fr) 272px" }}>
         {/* ── Hafta ızgarası ── */}
         <Card className="min-h-0 overflow-hidden" pad="p-[16px_18px]">
           <div className="grid gap-[9px] h-full" style={{ gridTemplateColumns: "repeat(7, minmax(0,1fr))" }}>

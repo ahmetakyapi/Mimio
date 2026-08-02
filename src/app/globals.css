@@ -767,6 +767,77 @@ html[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
   50%      { opacity: 0.45; transform: scale(0.82); }
 }
 .live-pulse { animation: live-pulse-kf 1.6s ease-in-out infinite; }
+
+/* ─────────────────────────────────────────────
+   MOBİL DÜZEN (tasarım dokümanı 2a–2v)
+
+   Telefonda ekranlar masaüstünün sıkıştırılmışı değil: çok sütunlu her
+   düzen tek sütuna iniyor ve bloklar dokümandaki sırayla alt alta diziliyor.
+   Ölçüm satırları dörtten üçe düşüyor — 390px'te dört kartın sayısı
+   okunmuyor, üçü rahat sığıyor.
+
+   `--split` her ekranın kendi sütun tarifini taşır; kırılma noktası tek
+   yerde tanımlı olsun diye sınıf ortak.
+   ───────────────────────────────────────────── */
+.deniz-split {
+  grid-template-columns: var(--split);
+}
+
+@media (max-width: 1023px) {
+  .deniz-split {
+    grid-template-columns: 1fr;
+    /* Tek sütuna inince yükseklik içerikten gelmeli; sabit yükseklik
+       panelleri üst üste eziyordu. */
+    grid-auto-rows: min-content;
+  }
+  .deniz-split > * {
+    min-height: 0;
+    overflow: visible;
+  }
+
+  :root {
+    --stat-cols: repeat(3, minmax(0, 1fr));
+    --card-cols: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Mobil kabuk payı: üstte 52px başlık, altta 68px sekme çubuğu. */
+  .app-shell {
+    padding-top: calc(52px + env(safe-area-inset-top, 0px) + 12px);
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Danışan tablosu — telefonda tablo değil kart.
+   Yedi sütun 390px'te üst üste biniyordu; doküman mobilde (2c) satırları
+   kart olarak veriyor: avatar + ad üstte, ölçüler altında etiketli. */
+.client-cols { grid-template-columns: var(--cols); }
+
+@media (max-width: 1023px) {
+  .client-head { display: none; }
+  /* Izgarayı yeniden yerleştirmek yerine tamamen bırakıyoruz: yedi hücreyi
+     iki sütuna sıkıştırmak ad alanını eziyordu. Telefonda satır düz bir
+     kart — ad üstte, ölçüler altında, eylemler sağ üstte. */
+  .client-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+  }
+  .client-row > *:nth-child(1) { flex: 1 1 60%; min-width: 0; }
+  .client-row > *:nth-child(7) { flex: 0 0 auto; margin-left: auto; }
+  .client-row > *:nth-child(2) { flex: 1 1 100%; }
+  .client-row > *:nth-child(3),
+  .client-row > *:nth-child(4),
+  .client-row > *:nth-child(5),
+  .client-row > *:nth-child(6) { flex: 0 1 auto; }
+}
+
+@media (max-width: 560px) {
+  :root {
+    --stat-cols: repeat(2, minmax(0, 1fr));
+    --card-cols: 1fr;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .live-pulse { animation: none; }
 }

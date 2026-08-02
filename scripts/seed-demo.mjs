@@ -47,6 +47,8 @@ if (!process.env.DATABASE_URL) {
 
 const sql = neon(process.env.DATABASE_URL);
 const RESET = process.argv.includes("--reset");
+/* Şifre yalnızca açıkça istenirse değişir — seed'in yan etkisi olarak değil. */
+const SET_PASSWORD = process.argv.includes("--set-password");
 
 /* ── Sabitler ── */
 
@@ -193,6 +195,7 @@ let [therapist] = await sql.query(
   "SELECT id::text FROM therapist_profiles WHERE username = $1 LIMIT 1",
   [THERAPIST.username],
 );
+const therapistExisted = Boolean(therapist);
 
 if (!therapist) {
   [therapist] = await sql.query(
@@ -214,7 +217,15 @@ if (!therapist) {
      WHERE id = $1`,
     [therapist.id, THERAPIST.displayName, THERAPIST.clinicName, THERAPIST.specialty],
   );
-  console.log("   • terapist zaten var, mevcut bilgileri korundu");
+  if (SET_PASSWORD) {
+    await sql.query(
+      "UPDATE therapist_profiles SET password_hash = crypt($2, gen_salt('bf', 8)) WHERE id = $1",
+      [therapist.id, THERAPIST.password],
+    );
+    console.log(`   • terapist zaten var, şifre ${THERAPIST.password} olarak güncellendi`);
+  } else {
+    console.log("   • terapist zaten var, mevcut bilgileri ve şifresi korundu");
+  }
 }
 
 const therapistId = therapist.id;
@@ -341,4 +352,11 @@ for (const [name, slots] of Object.entries(SCHEDULE)) {
 console.log(`   • ${isoDate(weekStart)} haftasına ${blockCount} seans bloğu planlandı`);
 
 console.log("\n🎉  Demo verisi hazır.");
-console.log(`    Giriş: ${THERAPIST.username} / ${THERAPIST.password}`);
+if (therapistExisted) {
+  /* Var olan hesabın şifresine dokunmuyoruz; burada sabit bir parola
+     yazdırmak yanıltıcı olurdu. */
+  console.log(`    Giriş: ${THERAPIST.username} — mevcut şifrenizle (seed şifreyi değiştirmedi).`);
+  console.log("    Şifreyi sıfırlamak isterseniz: node scripts/seed-demo.mjs --set-password");
+} else {
+  console.log(`    Giriş: ${THERAPIST.username} / ${THERAPIST.password}`);
+}

@@ -139,7 +139,7 @@ export function SessionReviewScreen({
         </span>
       </header>
 
-      <div className="grid flex-1 min-h-0" style={{ gridTemplateColumns: "minmax(0,1fr) 380px" }}>
+      <div className="grid flex-1 min-h-0 deniz-split" style={{ ["--split" as string]: "minmax(0,1fr) 380px" }}>
         {/* ── Sol: sonuç ── */}
         <div className="flex flex-col gap-[18px] overflow-y-auto" style={{ padding: "30px 32px" }}>
           {/* Manşet — skor halkası + tek cümlelik yorum */}
@@ -158,7 +158,7 @@ export function SessionReviewScreen({
               <div className="numeral text-[10px] font-medium uppercase tracking-[0.16em] text-(--color-text-soft) mb-2">
                 Normalize Skor
               </div>
-              <h1 className="m-0 mb-3 text-[clamp(1.35rem,2.2vw,2rem)] leading-[1.1] text-(--color-text-strong)">
+              <h1 className="m-0 mb-3 text-[clamp(1.1875rem,1.8vw,1.625rem)] leading-[1.1] text-(--color-text-strong)">
                 {headline}
               </h1>
               <div className="flex flex-wrap gap-2">
@@ -191,7 +191,7 @@ export function SessionReviewScreen({
           </div>
 
           {/* Ölçümler */}
-          <div className="grid gap-[13px] shrink-0" style={{ gridTemplateColumns: "repeat(4, minmax(0,1fr))" }}>
+          <div className="grid gap-[13px] shrink-0" style={{ gridTemplateColumns: "var(--stat-cols, repeat(4, minmax(0,1fr)))" }}>
             {metrics.map((m) => (
               <div
                 key={m.label}
@@ -284,7 +284,7 @@ export function SessionReviewScreen({
             className="flex flex-col flex-1 min-h-0"
             style={{ padding: "22px 24px", borderRadius: 20, background: "var(--color-surface)", border: "1px solid var(--color-line)", backdropFilter: "blur(14px)" }}
           >
-            <h2 className="font-display m-0 text-[15px] font-bold tracking-[-0.02em] text-(--color-text-strong)">
+            <h2 className="font-display m-0 text-[14px] font-bold tracking-[-0.02em] text-(--color-text-strong)">
               Seans Notu
             </h2>
             <p className="m-0 mb-4 mt-1 text-[11px] text-(--color-text-soft)">SOAP formatı · otomatik ön dolgu</p>
