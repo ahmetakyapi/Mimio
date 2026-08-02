@@ -515,11 +515,12 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 variants={fadeUp}
                 className="text-[2.75rem] sm:text-6xl lg:text-[4.25rem] xl:text-7xl font-extrabold text-(--color-text-strong) leading-[1.02] m-0"
               >
-                Terapi
+                {/* Vurgu tek kelimede: dokümanda yalnızca "oyuna" renkleniyor.
+                    İki kelimeyi birden boyamak cümlenin ağırlık merkezini
+                    kaydırıyor — asıl iddia dönüşümün nereye olduğu. */}
+                Terapi Seanslarını
                 <br />
-                Seanslarını
-                <br />
-                <span className="accent-line">Oyuna Dönüştür</span>
+                <span className="accent-line">Oyuna</span> Dönüştür
               </motion.h1>
 
               <motion.p

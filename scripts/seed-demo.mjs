@@ -87,9 +87,10 @@ const CLIENTS = [
       { title: "Yürütücü işlev", description: "3×3 matris örüntü tamamlama", target: 9, current: 4 },
     ],
     notes: [
-      "Ev programı 3 aktiviteden oluşuyor; anne haftalık geri bildirim gönderiyor. Seans sonunda yorgunluk gözlendi, süre 20 dk'ya çekilebilir.",
-      "Sekans uzunluğu 5'te takıldı. Görsel ipucu verildiğinde 6'ya çıkıyor — ipucu silikleştirme denenecek.",
+      { s: 'Bugün istekliydi, "daha zor olsun" dedi.', o: "6 blok tam seri; 2 turda sözel ipucu gerekti.", a: "Görsel-uzamsal çalışma belleği hedefe ulaştı.", p: "7 blok + Dizi Mantık dönüşümlü; ev programına 1 aktivite." },
+      { s: "Seans başında dağınıktı, kısa uyum süreci gerekti.", o: "Sekans uzunluğu 5'te takıldı; görsel ipucuyla 6'ya çıktı.", a: "İpucuna bağımlılık sürüyor.", p: "İpucu silikleştirme denenecek." },
     ],
+
   },
   {
     displayName: "Tuna Akarsu", ageGroup: "9-11", primaryGoal: "El-göz koordinasyonu",
@@ -100,7 +101,7 @@ const CLIENTS = [
       { title: "Reaksiyon süresi", description: "Hedefe dokunma gecikmesi", target: 10, current: 9 },
       { title: "Motor planlama", description: "Yön komutu takibi", target: 8, current: 6 },
     ],
-    notes: ["Sağ el dominant; sol el görevlerinde 2 kat süre farkı var. Çift el aktiviteleri eklendi."],
+    notes: [{ s: "Yorgunluk belirtisi yok, istekli.", o: "Sağ el dominant; sol el görevlerinde 2 kat süre farkı.", a: "Bilateral koordinasyon gelişime açık.", p: "Çift el aktiviteleri eklendi." }],
   },
   {
     displayName: "Asya Demir", ageGroup: "6-8", primaryGoal: "Seçici dikkat",
@@ -108,7 +109,7 @@ const CLIENTS = [
     birthDate: "2018-11-20",
     games: ["scan", "difference", "memory"], base: 48, trend: "rise", sessions: 12, idleDays: 0,
     goals: [{ title: "Tarama hızı", description: "Izgarada hedef bulma", target: 12, current: 7 }],
-    notes: ["Kalabalık ızgarada dağılıyor. 4×4'ten başlanıp kademeli büyütülüyor."],
+    notes: [{ s: "Kalabalık ekranda huzursuzlandı.", o: "8×8 ızgarada tarama süresi iki katına çıktı.", a: "Görsel kalabalık toleransı düşük.", p: "4×4'ten başlanıp kademeli büyütülecek." }],
   },
   {
     displayName: "Mina Yıldız", ageGroup: "4-5", primaryGoal: "Görsel ayrım",
@@ -116,7 +117,7 @@ const CLIENTS = [
     birthDate: "2021-01-09",
     games: ["difference", "pairs"], base: 74, trend: "rise", sessions: 10, idleDays: 1,
     goals: [{ title: "Figür-zemin ayrımı", description: "Benzer kartlar arasında fark bulma", target: 15, current: 13 }],
-    notes: ["Yaşına göre ileri seviyede; zorluk 'Zor'da tutuluyor."],
+    notes: [{ s: "Kendinden emin, ek zorluk istedi.", o: "Zor seviyede %91 doğruluk.", a: "Yaşına göre ileri seviyede.", p: "Zorluk Zor'da tutulacak." }],
   },
   {
     displayName: "Kerem Arslan", ageGroup: "9-11", primaryGoal: "Örüntü tamamlama",
@@ -124,7 +125,7 @@ const CLIENTS = [
     birthDate: "2016-02-11",
     games: ["logic", "memory", "scan"], base: 55, trend: "dip", sessions: 13, idleDays: 2,
     goals: [{ title: "Tümevarım", description: "Kural çıkarma", target: 10, current: 5 }],
-    notes: ["Son iki seansta skor düştü; okul dönemi yorgunluğu olabilir. Zorluk bir kademe indirildi."],
+    notes: [{ s: "Yorgun geldi, okul haftası zor geçmiş.", o: "Son iki seansta skor 12 puan düştü.", a: "Performans düşüşü dönemsel görünüyor.", p: "Zorluk bir kademe indirildi." }],
   },
   {
     displayName: "Mert Yiğit", ageGroup: "12-14", primaryGoal: "Yürütücü işlev",
@@ -133,7 +134,7 @@ const CLIENTS = [
     /* Uzun süredir gelmiyor — "ara verdi" önerisini ve plandaki boş slotu tetikler. */
     games: ["logic", "route"], base: 70, trend: "plateau", sessions: 8, idleDays: 11,
     goals: [{ title: "Görev değiştirme", description: "Kural değişiminde uyum", target: 8, current: 6 }],
-    notes: ["11 gündür seans yok. Aile ile iletişime geçilecek."],
+    notes: [{ s: "—", o: "11 gündür seans kaydı yok.", a: "Devamsızlık ilerlemeyi riske atıyor.", p: "Aile ile iletişime geçilecek." }],
   },
 ];
 
@@ -272,12 +273,16 @@ for (let ci = 0; ci < CLIENTS.length; ci += 1) {
     );
   }
 
+  /* Notlar SOAP olarak yazılıyor: Seans Sonu ve Seans Notları ekranlarının
+     ikisi de bu formatın üstüne kurulu, demo veri onu göstermeli. */
   for (let ni = 0; ni < c.notes.length; ni += 1) {
     const d = new Date(now.getTime() - (c.idleDays + ni * 6) * DAY);
+    const n = c.notes[ni];
+    const flat = [n.s, n.o, n.a, n.p].filter((x) => x && x !== "—").join(" ");
     await sql.query(
-      `INSERT INTO client_notes (client_id, therapist_id, date, content, note_mode, created_at)
-       VALUES ($1,$2,$3,$4,$5,$6)`,
-      [row.id, therapistId, isoDate(d), c.notes[ni], "free", d.toISOString()],
+      `INSERT INTO client_notes (client_id, therapist_id, date, content, note_mode, soap_content, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7)`,
+      [row.id, therapistId, isoDate(d), flat, "soap", JSON.stringify(n), d.toISOString()],
     );
   }
 }
