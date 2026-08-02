@@ -78,6 +78,7 @@ import { SessionNotesScreen } from "@/components/app/SessionNotesScreen";
 import { ProgressReportScreen } from "@/components/app/ProgressReportScreen";
 import { NewClientFlow, type NewClientDraft } from "@/components/app/NewClientFlow";
 import { DEFAULT_PREFS, type AppPrefs } from "@/components/app/SettingsScreen";
+import { AuthScreen } from "@/components/app/AuthScreen";
 import { ScreenHeader, Card, CardTitle, Eyebrow, Avatar } from "@/components/app/primitives";
 import { startOfWeek as denizWeekStart, isoDate as denizIso, DOMAIN_ORDER, DOMAIN_META, gameDomain, INDEPENDENCE_STEPS } from "@/lib/deniz-derive";
 import { MEASURE_KIND_LABELS } from "@/lib/outcome-measures";
@@ -528,6 +529,53 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   useEffect(() => { return () => { clearMemoryTimers(); clearPairTimers(); }; }, []);
 
   // ── New handlers ──
+  const [authBusy, setAuthBusy] = useState(false);
+
+  /* Giriş ve kayıt tek yerde — iki ayrı form bloğu aynı çağrıyı iki kez
+     yazıyordu, hata mesajları da birbirinden ayrı düşüyordu. */
+  async function submitLogin(username: string, password: string) {
+    if (!username) { setLoginError("Kullanıcı adı zorunludur."); return; }
+    if (!password) { setLoginError("Şifre zorunludur."); return; }
+    setAuthBusy(true);
+    try {
+      const res = await fetch("/api/platform/profiles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "login", username, password }),
+      });
+      const data = (await res.json()) as { ok?: boolean; message?: string; profile?: { id: string } };
+      if (!res.ok || !data.profile) { setLoginError(data.message ?? "Giriş yapılamadı."); return; }
+      setLoginError("");
+      handleLogin(data.profile.id);
+    } catch {
+      setLoginError("Sunucuya ulaşılamadı.");
+    } finally {
+      setAuthBusy(false);
+    }
+  }
+
+  async function submitRegister(v: { username: string; password: string; displayName: string; clinicName: string }) {
+    if (!v.username) { setLoginError("Kullanıcı adı zorunludur."); return; }
+    if (!v.password || v.password.length < 4) { setLoginError("Şifre en az 4 karakter olmalıdır."); return; }
+    if (!v.displayName) { setLoginError("Ad soyad zorunludur."); return; }
+    setAuthBusy(true);
+    try {
+      const res = await fetch("/api/platform/profiles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "therapist", username: v.username, password: v.password, displayName: v.displayName, clinicName: v.clinicName }),
+      });
+      const data = (await res.json()) as { ok?: boolean; message?: string; profile?: { id: string } };
+      if (!res.ok || !data.profile) { setLoginError(data.message ?? "Kayıt oluşturulamadı."); return; }
+      setLoginError("");
+      handleLogin(data.profile.id);
+    } catch {
+      setLoginError("Sunucuya ulaşılamadı.");
+    } finally {
+      setAuthBusy(false);
+    }
+  }
+
   function handleLogin(therapistId: string) {
     try { window.localStorage.setItem(ACTIVE_THERAPIST_KEY, JSON.stringify({ therapistId })); } catch { /* ignore */ }
     setActiveTherapistId(therapistId);
@@ -1927,204 +1975,31 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const authInp = "w-full px-4 py-3 border border-(--color-line) rounded-2xl bg-(--color-surface-strong) text-(--color-text-strong) text-sm placeholder:text-(--color-text-muted) focus:outline-none focus:ring-2 focus:ring-(--color-primary)/25 focus:border-(--color-primary) transition-colors";
 
   // ── Register view ──
-  if (activeAppView === "register") {
+  if (activeAppView === "login" || activeAppView === "register") {
+    const mode = activeAppView === "login" ? "login" : "register";
     return (
-      <div className="min-h-dvh flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden" style={{ background: "var(--color-page-bg)" }}>
-        {/* Animated background orbs */}
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute w-[min(600px,100vw)] h-[min(600px,100vw)] rounded-full" style={{ background: "radial-gradient(circle, rgba(43, 98, 245,0.12) 0%, transparent 70%)", top: "-20%", left: "50%", transform: "translateX(-50%)" }} />
-          <div className="absolute w-[min(400px,80vw)] h-[min(400px,80vw)] rounded-full" style={{ background: "radial-gradient(circle, rgba(77, 125, 255,0.08) 0%, transparent 70%)", bottom: "-10%", right: "10%" }} />
-          <div className="absolute w-[min(300px,70vw)] h-[min(300px,70vw)] rounded-full" style={{ background: "radial-gradient(circle, rgba(240, 112, 138,0.06) 0%, transparent 70%)", bottom: "20%", left: "5%" }} />
-        </div>
-
-        {/* Logo */}
-        <button type="button" onClick={onLogout} className="flex flex-col items-center gap-2.5 mb-8 bg-transparent border-none cursor-pointer group">
-          <div className="w-14 h-14 rounded-3xl flex items-center justify-center transition-transform group-hover:scale-105" style={{ background: "var(--color-surface-elevated)", border: "1px solid var(--color-line-strong)" }}><BlockMark size={34} tile /></div>
-          <span className="font-extrabold text-(--color-text-strong) text-xl tracking-tight">Mimio</span>
-        </button>
-
-        {/* Card */}
-        <div className="w-full max-w-md rounded-2xl sm:rounded-3xl border border-(--color-line) p-5 sm:p-8 relative overflow-hidden" style={{ background: "var(--color-surface-strong)", backdropFilter: "blur(24px)", boxShadow: "0 24px 64px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.06)" }}>
-          <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "var(--gradient-bar)" }} />
-          {/* Badge */}
-          <div className="flex justify-center mb-5">
-            <span className="inline-flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-full" style={{ background: "color-mix(in srgb, var(--color-primary) 10%, transparent)", color: "var(--color-primary)", border: "1px solid color-mix(in srgb, var(--color-primary) 20%, transparent)" }}>
-              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--gradient-bar)" }} />
-              Ücretsiz Hesap Oluştur
-            </span>
-          </div>
-          <h2 className="text-2xl font-extrabold text-(--color-text-strong) text-center mb-1 tracking-tight">Hesabınızı Oluşturun</h2>
-          <p className="text-(--color-text-soft) text-sm text-center mb-6">Dakikalar içinde başlayın, danışanlarınızla çalışmaya başlayın.</p>
-
-          {loginError && (
-            <div role="alert" className="rounded-2xl px-4 py-3 mb-4 text-sm flex items-center gap-2" style={{ background: "rgba(214, 61, 99,0.08)", border: "1px solid rgba(214, 61, 99,0.2)", color: "#f0708a" }}>
-              {loginError}
-            </div>
-          )}
-
-          <form className="flex flex-col gap-3" onSubmit={async (e) => {
-            e.preventDefault();
-            setLoginError("");
-            const username = therapistDraft.username.trim().toLocaleLowerCase("tr-TR");
-            const password = therapistDraft.password;
-            const displayName = therapistDraft.displayName.trim();
-            if (!username) { setLoginError("Kullanıcı adı zorunludur."); return; }
-            if (!password || password.length < 4) { setLoginError("Şifre en az 4 karakter olmalıdır."); return; }
-            if (!displayName) { setLoginError("Ad soyad zorunludur."); return; }
-            try {
-              const response = await fetch("/api/platform/profiles", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ kind: "therapist", username, password, displayName, clinicName: therapistDraft.clinicName.trim(), specialty: therapistDraft.specialty.trim() }),
-              });
-              const data = await response.json().catch(() => null) as { ok?: boolean; profile?: TherapistProfile; message?: string } | null;
-              if (!response.ok || !data?.ok) { setLoginError(data?.message ?? "Kayıt sırasında bir hata oluştu."); return; }
-              await loadPlatformOverview();
-              setTherapistDraft({ username: "", password: "", displayName: "", clinicName: "", specialty: "" });
-              setLoginError("");
-              handleLogin(data.profile!.id);
-            } catch {
-              setLoginError("Sunucuya bağlanılamadı. Lütfen tekrar deneyin.");
-            }
-          }}>
-            <label className="flex flex-col gap-1">
-              <span className="text-xs font-semibold text-(--color-text-soft)">Kullanıcı Adı</span>
-              <input value={therapistDraft.username} onChange={(e) => { setLoginError(""); setTherapistDraft((c) => ({ ...c, username: e.target.value.replace(/\s/g, "").toLocaleLowerCase("tr-TR") })); }} placeholder="Boşluksuz, Benzersiz" className={authInp} required autoComplete="username" />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-xs font-semibold text-(--color-text-soft)">Şifre</span>
-              <input type="password" value={therapistDraft.password} onChange={(e) => { setLoginError(""); setTherapistDraft((c) => ({ ...c, password: e.target.value })); }} placeholder="En Az 4 Karakter" className={authInp} required autoComplete="new-password" />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-xs font-semibold text-(--color-text-soft)">Ad Soyad</span>
-              <input value={therapistDraft.displayName} onChange={(e) => setTherapistDraft((c) => ({ ...c, displayName: e.target.value }))} placeholder="Örn. Uzm. Erg. Elif Kara" className={authInp} required />
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-(--color-text-soft)">Kurum / Klinik</span>
-                <input value={therapistDraft.clinicName} onChange={(e) => setTherapistDraft((c) => ({ ...c, clinicName: e.target.value }))} placeholder="Opsiyonel" className={authInp} />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-(--color-text-soft)">Uzmanlık</span>
-                <input value={therapistDraft.specialty} onChange={(e) => setTherapistDraft((c) => ({ ...c, specialty: e.target.value }))} placeholder="Opsiyonel" className={authInp} />
-              </label>
-            </div>
-            <button type="submit" className="btn-signature relative w-full font-bold py-3.5 rounded-2xl text-sm cursor-pointer mt-1 overflow-hidden active:scale-[0.98]">
-              Hesabı Oluştur ve Gir →
-            </button>
-          </form>
-
-          <div className="flex items-center gap-3 my-5">
-            <div className="flex-1 h-px bg-(--color-line)" />
-            <span className="text-(--color-text-muted) text-xs font-medium">veya</span>
-            <div className="flex-1 h-px bg-(--color-line)" />
-          </div>
-
-          <p className="text-(--color-text-soft) text-sm text-center">
-            Zaten hesabınız var mı?{" "}
-            <button type="button" className="font-bold hover:underline bg-transparent border-none cursor-pointer" style={{ color: "var(--color-primary)" }} onClick={() => { setActiveAppView("login"); setLoginError(""); }}>Giriş Yapın</button>
-          </p>
-        </div>
-
-        {onLogout && (
-          <button type="button" className="mt-6 text-(--color-text-muted) text-sm bg-transparent border-none cursor-pointer hover:text-(--color-text-body) transition-colors flex items-center gap-1" onClick={onLogout}>
-            ← Ana Sayfaya Dön
-          </button>
-        )}
-      </div>
-    );
-  }
-
-  if (activeAppView === "login") {
-    return (
-      <div className="min-h-dvh flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden" style={{ background: "var(--color-page-bg)" }}>
-        {/* Animated background orbs */}
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute w-[min(700px,100vw)] h-[min(700px,100vw)] rounded-full" style={{ background: "radial-gradient(circle, rgba(43, 98, 245,0.10) 0%, transparent 70%)", top: "-30%", left: "50%", transform: "translateX(-50%)" }} />
-          <div className="absolute w-[min(400px,80vw)] h-[min(400px,80vw)] rounded-full" style={{ background: "radial-gradient(circle, rgba(77, 125, 255,0.07) 0%, transparent 70%)", bottom: "0%", right: "15%" }} />
-        </div>
-
-        {/* Logo */}
-        <button type="button" onClick={onLogout} className="flex flex-col items-center gap-2.5 mb-8 bg-transparent border-none cursor-pointer group">
-          <div className="w-14 h-14 rounded-3xl flex items-center justify-center transition-transform group-hover:scale-105" style={{ background: "var(--color-surface-elevated)", border: "1px solid var(--color-line-strong)" }}><BlockMark size={34} tile /></div>
-          <span className="font-extrabold text-(--color-text-strong) text-xl tracking-tight">Mimio</span>
-        </button>
-
-        {/* Card */}
-        <div className="w-full max-w-sm rounded-2xl sm:rounded-3xl border border-(--color-line) p-5 sm:p-8 relative overflow-hidden" style={{ background: "var(--color-surface-strong)", backdropFilter: "blur(24px)", boxShadow: "0 24px 64px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.06)" }}>
-          <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "var(--gradient-bar)" }} />
-          <h2 className="text-2xl font-extrabold text-(--color-text-strong) text-center mb-1 tracking-tight">Tekrar Hoş Geldiniz</h2>
-          <p className="text-(--color-text-soft) text-sm text-center mb-7">Hesabınıza giriş yapın ve çalışmaya devam edin.</p>
-
-          {loginError && (
-            <div role="alert" className="rounded-2xl px-4 py-3 mb-4 text-sm flex items-center gap-2" style={{ background: "rgba(214, 61, 99,0.08)", border: "1px solid rgba(214, 61, 99,0.2)", color: "#f0708a" }}>
-              {loginError}
-            </div>
-          )}
-
-          <form className="flex flex-col gap-3" onSubmit={async (e) => {
-            e.preventDefault();
-            setLoginError("");
-            const username = loginUsername.trim().toLocaleLowerCase("tr-TR");
-            const password = loginPassword;
-            if (!username) { setLoginError("Kullanıcı adı zorunludur."); return; }
-            if (!password) { setLoginError("Şifre zorunludur."); return; }
-            try {
-              const response = await fetch("/api/platform/profiles", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ kind: "login", username, password }),
-              });
-              const data = await response.json().catch(() => null) as { ok?: boolean; profile?: TherapistProfile; message?: string } | null;
-              if (!response.ok || !data?.ok) { setLoginError(data?.message ?? "Giriş sırasında bir hata oluştu."); return; }
-              await loadPlatformOverview();
-              setLoginUsername(""); setLoginPassword(""); setLoginError("");
-              handleLogin(data.profile!.id);
-            } catch {
-              setLoginError("Sunucuya bağlanılamadı. Lütfen tekrar deneyin.");
-            }
-          }}>
-            <label className="flex flex-col gap-1">
-              <span className="text-xs font-semibold text-(--color-text-soft)">Kullanıcı Adı</span>
-              <input value={loginUsername} onChange={(e) => { setLoginError(""); setLoginUsername(e.target.value.replace(/\s/g, "").toLocaleLowerCase("tr-TR")); }} placeholder="Kullanıcı Adınız" className={authInp} required autoComplete="username" />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-xs font-semibold text-(--color-text-soft)">Şifre</span>
-              <input type="password" value={loginPassword} onChange={(e) => { setLoginError(""); setLoginPassword(e.target.value); }} placeholder="Şifreniz" className={authInp} required autoComplete="current-password" />
-            </label>
-            <button type="submit" className="btn-signature relative w-full font-bold py-3.5 rounded-2xl text-sm cursor-pointer mt-1 overflow-hidden active:scale-[0.98]">
-              Giriş Yap →
-            </button>
-          </form>
-
-          <div className="flex items-center gap-3 my-5">
-            <div className="flex-1 h-px bg-(--color-line)" />
-            <span className="text-(--color-text-muted) text-xs font-medium">veya</span>
-            <div className="flex-1 h-px bg-(--color-line)" />
-          </div>
-
-          <p className="text-(--color-text-soft) text-sm text-center">
-            Hesabınız yok mu?{" "}
-            <button type="button" className="font-bold hover:underline bg-transparent border-none cursor-pointer" style={{ color: "var(--color-primary)" }} onClick={() => { setActiveAppView("register"); setLoginError(""); }}>Ücretsiz Kayıt Olun</button>
-          </p>
-        </div>
-
-        {onLogout && (
-          <button type="button" className="mt-5 text-(--color-text-muted) text-sm bg-transparent border-none cursor-pointer hover:text-(--color-text-body) transition-colors" onClick={onLogout}>
-            ← Ana Sayfaya Dön
-          </button>
-        )}
-
-        {/* Trust badges */}
-        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 mt-6 sm:mt-8 text-[10px] sm:text-xs text-(--color-text-muted)">
-          {["Ücretsiz Başla", "Kurulum Yok", "Veri Güvenliği"].map((t) => (
-            <span key={t} className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#12b886]" aria-hidden="true" />
-              {t}
-            </span>
-          ))}
-        </div>
-      </div>
+      <AuthScreen
+        mode={mode}
+        onModeChange={(m) => { setLoginError(""); setActiveAppView(m); }}
+        error={loginError}
+        busy={authBusy}
+        greeting="Tekrar hoş geldin."
+        subline={
+          platformOverview.clients.length > 0
+            ? `${platformOverview.clients.length} danışan kayıtlı.`
+            : "Hesabına giriş yap ve çalışmaya devam et."
+        }
+        stats={[
+          { value: String(GAME_TABS.length), label: "terapi oyunu" },
+          { value: String(THERAPY_DOMAINS.reduce((n, d) => n + (d.activities?.length ?? 0), 0)), label: "kanıtlı aktivite" },
+          { value: String(THERAPY_PROTOCOLS.length), label: "hazır protokol" },
+        ]}
+        dbOnline={platformOverview.database.configured}
+        onLogin={(username, password) => { void submitLogin(username, password); }}
+        onRegister={(v) => { void submitRegister(v); }}
+        onDemo={() => { void submitLogin("demo", "demo1234"); }}
+        onHome={() => { if (onLogout) onLogout(); }}
+      />
     );
   }
 
