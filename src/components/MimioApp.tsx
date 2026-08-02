@@ -76,8 +76,9 @@ import { GameLibraryScreen } from "@/components/app/GameLibraryScreen";
 import { SessionReviewScreen } from "@/components/app/SessionReviewScreen";
 import { SessionNotesScreen } from "@/components/app/SessionNotesScreen";
 import { ProgressReportScreen } from "@/components/app/ProgressReportScreen";
+import { NewClientFlow, type NewClientDraft } from "@/components/app/NewClientFlow";
 import { ScreenHeader, Card, CardTitle, Eyebrow, Avatar } from "@/components/app/primitives";
-import { startOfWeek as denizWeekStart, isoDate as denizIso, DOMAIN_ORDER, DOMAIN_META, gameDomain } from "@/lib/deniz-derive";
+import { startOfWeek as denizWeekStart, isoDate as denizIso, DOMAIN_ORDER, DOMAIN_META, gameDomain, INDEPENDENCE_STEPS } from "@/lib/deniz-derive";
 import { MEASURE_KIND_LABELS } from "@/lib/outcome-measures";
 
 // ── Extracted modules ──
@@ -1101,6 +1102,33 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       showToast(`👤 ${addClientDraft.displayName.trim()} eklendi`, "success");
     }
     setAddClientDraft({ displayName: "", ageGroup: "", primaryGoal: "", supportLevel: "" });
+    setShowAddClient(false);
+  }
+
+  /*
+   * Üç adımlı sihirbazın çıktısı. Eski tek-form akışı yalnızca dört alan
+   * topluyordu; sihirbaz doğum tarihi, uygulama alanı (etiket), sıklık ve
+   * bağımsızlık düzeyini de getiriyor.
+   */
+  async function handleCreateClientFromFlow(draft: NewClientDraft) {
+    const displayName = draft.displayName.trim();
+    if (!displayName) return;
+
+    const created = await createProfileInBackend(
+      {
+        kind: "client",
+        displayName,
+        ageGroup: draft.ageGroup,
+        primaryGoal: draft.primaryGoal,
+        supportLevel: INDEPENDENCE_STEPS[draft.independence - 1] ?? "Sözel ipucu",
+      },
+      "Danışan kaydedilemedi.",
+    );
+
+    if (created) {
+      await loadPlatformOverview();
+      showToast(`${displayName} eklendi`, "success");
+    }
     setShowAddClient(false);
   }
 
@@ -5297,6 +5325,14 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             </div>
           </div>
         </div>
+      )}
+
+      {showAddClient && (
+        <NewClientFlow
+          clinicName={activeTherapist?.clinicName || "Mimio Klinik"}
+          onClose={() => setShowAddClient(false)}
+          onSubmit={(d) => { void handleCreateClientFromFlow(d); }}
+        />
       )}
     </main>
   );
