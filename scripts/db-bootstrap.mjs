@@ -104,6 +104,62 @@ const SCHEMA_QUERIES = [
   "CREATE INDEX IF NOT EXISTS session_runs_played_at_idx ON session_runs (played_at DESC)",
   "CREATE INDEX IF NOT EXISTS session_runs_therapist_name_idx ON session_runs (therapist_name, played_at DESC)",
   "CREATE INDEX IF NOT EXISTS session_runs_client_name_idx ON session_runs (client_name, played_at DESC)",
+
+  /*
+   * Danışan profilinin sonradan eklenen alanları. Uygulama bunları okuyor;
+   * eski bir veritabanında sütun yoksa sorgu düşüyordu.
+   */
+  "ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS difficulty_level TEXT",
+  "ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ",
+  "ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}'",
+  "ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS birth_date DATE",
+
+  /*
+   * Aşağıdaki üç tablo şemada eksikti.
+   *
+   * `platform-db.ts` bunlara hem yazıyor hem okuyor ama bootstrap yalnızca
+   * therapist_profiles / client_profiles / session_runs oluşturuyordu. Temiz
+   * bir Neon veritabanında notlar, hedefler ve haftalık planlar sessizce
+   * kayboluyordu: sorgular try/catch içinde olduğu için hata bile görünmüyor,
+   * özellik yalnızca "çalışmıyor" gibi duruyordu.
+   */
+  `CREATE TABLE IF NOT EXISTS client_notes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID NOT NULL,
+    therapist_id UUID,
+    date DATE NOT NULL,
+    content TEXT NOT NULL DEFAULT '',
+    note_mode TEXT,
+    soap_content JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS client_notes_client_idx ON client_notes (client_id, created_at DESC)",
+
+  `CREATE TABLE IF NOT EXISTS weekly_plans (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID NOT NULL,
+    therapist_id UUID,
+    week_start_date DATE NOT NULL,
+    days JSONB NOT NULL DEFAULT '{}'::jsonb,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  /* saveWeeklyPlan ON CONFLICT (client_id, week_start_date) kullanıyor —
+     bu benzersiz indeks olmadan upsert hata veriyor. */
+  "CREATE UNIQUE INDEX IF NOT EXISTS weekly_plans_client_week_idx ON weekly_plans (client_id, week_start_date)",
+
+  `CREATE TABLE IF NOT EXISTS client_goals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID NOT NULL,
+    therapist_id UUID,
+    title TEXT NOT NULL,
+    description TEXT,
+    target_value INTEGER NOT NULL DEFAULT 0,
+    current_value INTEGER NOT NULL DEFAULT 0,
+    deadline DATE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS client_goals_client_idx ON client_goals (client_id, created_at ASC)",
 ];
 
 /* ── Çalıştır ── */

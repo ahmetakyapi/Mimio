@@ -307,8 +307,18 @@ export function buildInsights(
     const m = metricsFor(c, sessions);
     if (m.sessionCount === 0) continue;
 
+    /*
+     * Plato yalnızca "son üç skor birbirine yakın" değildir — istikrarlı
+     * ilerleyen bir danışan da dar bir bant çizer. Gerçek plato, bandın dar
+     * olması *ve* önceki üçlüye göre net kazanç kalmamasıdır. İlk kural tek
+     * başına yükselen danışanları da plato diye işaretliyordu.
+     */
     const last3 = m.series.slice(-3);
-    if (last3.length === 3 && Math.max(...last3) - Math.min(...last3) <= 3) {
+    const prev3 = m.series.slice(-6, -3);
+    const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    const flat = last3.length === 3 && Math.max(...last3) - Math.min(...last3) <= 3;
+    const noGain = prev3.length === 3 ? mean(last3) - mean(prev3) < 2 : true;
+    if (flat && noGain) {
       out.push({
         id: `plateau-${c.id}`,
         tone: "amber",
@@ -321,7 +331,7 @@ export function buildInsights(
       out.push({
         id: `near-${c.id}`,
         tone: "green",
-        label: "Hedef yakın",
+        label: "Hedef Yakın",
         text: `**${firstName(c.displayName)}** — ortalama hedefin %${Math.round((m.averageScore / targetScore) * 100)}'ünde. Bu hafta kapanabilir.`,
       });
     }
@@ -331,7 +341,7 @@ export function buildInsights(
       out.push({
         id: `idle-${c.id}`,
         tone: "primary",
-        label: "Ara verdi",
+        label: "Ara Verdi",
         text: `**${firstName(c.displayName)}** — ${days} gündür seans görmedi. Plana bir slot ekle.`,
       });
     }
@@ -343,7 +353,7 @@ export function buildInsights(
     out.push({
       id: `domain-${empty.key}`,
       tone: "amber",
-      label: "Alan boşluğu",
+      label: "Alan Boşluğu",
       text: `**${empty.label}** alanında hiç seans yok. Denge için 2 seans ekle.`,
     });
   }

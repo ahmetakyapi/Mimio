@@ -158,19 +158,26 @@ aurora sürüklenmesi kapalıdır; doku durur, hareket gider.
 
 | Rol | Aile | Ağırlık | Nerede |
 |-----|------|---------|--------|
-| Ekran başlığı | **Space Grotesk** | 500 (h1) / 600 (h2, `.figure`) | Sayfanın adını söyleyen tek satır; büyük sayı |
+| Ekran başlığı | **Schibsted Grotesk** | 600 (h1) / 700 (h2, `.figure`) | Sayfanın adını söyleyen tek satır; büyük sayı |
 | Arayüz + gövde | **Plus Jakarta Sans** | 400 gövde, 600–700 etiket | h3, h4 ve geri kalan her şey |
 | Sayısal okuma | **IBM Plex Mono** | 400–600 | Skor, süre, persentil, span (`.numeral`) |
 
 `h1`/`h2` ağırlığı `globals.css`te **sabitlenir** ve katmansız yazıldığı için
-bileşenlerdeki `font-bold` / `font-extrabold` yardımcılarını bastırır. Bu
-kasıtlı: Space Grotesk geometrik ve zaten iri görünür, 700+ ile blok hâline
-gelip klinik tondan çıkar.
+bileşenlerdeki `font-bold` / `font-extrabold` yardımcılarını bastırır.
+
+Aile seçimi tasarım dokümanından değil, ekosistem tipografi etüdünden geliyor
+(`~/dev-starter/knowledge/themes/mimio.md` § 3): doküman Space Grotesk
+kullanıyordu, Schibsted Grotesk'in haber-editoryal kökeni klinik tona daha
+yakın duruyor ve diğer projelerle ortak bir zemin kuruyor.
+
+**Metin düzeni:** başlık, alt başlık, düğme ve sekme etiketleri Title Case
+(`Yeni Danışan`); gövde cümleleri ve mono mikro etiketler cümle düzeninde
+kalır (`bağımsızlık 4/5`). Gerekçe ve Türkçe tuzakları: global CLAUDE.md.
 
 | Sınıf | Ne yapar |
 |-------|---------|
-| `.font-display` | Space Grotesk'e geçer (ağırlık dayatmaz) |
-| `.figure` | Büyük "manşet" sayı — display ailesi, 600, `-0.035em`, tabular |
+| `.font-display` | Schibsted Grotesk'e geçer (ağırlık dayatmaz) |
+| `.figure` | Büyük "manşet" sayı — display ailesi, 700, `-0.035em`, tabular |
 | `.numeral` | Hizalı ölçüm değeri — mono, tabular, `zero` özelliği açık |
 
 ---

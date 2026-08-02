@@ -8,7 +8,7 @@
  *   sağ (268px)  · karar: hedef halkaları ve öneri motoru
  *
  * Sıralama soldan sağa "ne biliyoruz → ne değişti → ne yapacağız" okunur.
- * Öneri motoru kartı her iki temada da koyu: ekrandaki tek karar bloğu ve
+ * Öneri Motoru kartı her iki temada da koyu: ekrandaki tek karar bloğu ve
  * çevresindeki açık yüzeylerden ayrılması isteniyor.
  */
 
@@ -101,14 +101,14 @@ export function ClientDetailScreen({
         </div>
         <div className="flex items-center gap-2.5 shrink-0">
           <button type="button" className={btnGhost} onClick={onCreateReport}>
-            <span className="inline-flex items-center gap-2"><FileText size={14} /> Rapor oluştur</span>
+            <span className="inline-flex items-center gap-2"><FileText size={14} /> Rapor Oluştur</span>
           </button>
           <button
             type="button"
             className="btn-signature px-[19px] py-[11px] rounded-xl text-[12.5px] font-semibold cursor-pointer"
             onClick={() => onStartSession(client.id)}
           >
-            Seansı başlat
+            Seansı Başlat
           </button>
         </div>
       </div>
@@ -116,7 +116,7 @@ export function ClientDetailScreen({
       {/* Sekmeler — alt çizgi, kutu değil: içerik yüzeyiyle aynı düzlemde kalsın */}
       <div className="flex items-center gap-[22px]" style={{ borderBottom: "1px solid var(--color-line)" }} role="tablist">
         {([
-          { key: "overview" as const, label: "Genel bakış" },
+          { key: "overview" as const, label: "Genel Bakış" },
           { key: "sessions" as const, label: "Seanslar" },
           { key: "notes" as const, label: `Notlar${clientNotes.length ? ` · ${clientNotes.length}` : ""}` },
         ]).map((t) => {
@@ -146,7 +146,7 @@ export function ClientDetailScreen({
           onClick={() => onNavigate("weekly-plan")}
           className="ml-auto text-[12px] font-semibold text-(--color-text-soft) hover:text-(--color-primary) bg-transparent border-none cursor-pointer transition-colors"
         >
-          Haftalık plan →
+          Haftalık Plan →
         </button>
       </div>
 
@@ -163,7 +163,7 @@ export function ClientDetailScreen({
           </Card>
 
           <Card pad="p-[18px_20px]">
-            <Eyebrow className="mb-3">Bağımsızlık ölçeği</Eyebrow>
+            <Eyebrow className="mb-3">Bağımsızlık Ölçeği</Eyebrow>
             {INDEPENDENCE_STEPS.map((label, i) => {
               const step = i + 1;
               const reached = step <= m.independence;
@@ -206,12 +206,12 @@ export function ClientDetailScreen({
               border: "1px solid var(--color-line-strong)",
             }}
           >
-            <Eyebrow className="!text-(--color-primary-ink) mb-2.5">Son not</Eyebrow>
+            <Eyebrow className="!text-(--color-primary-ink) mb-2.5">Son Not</Eyebrow>
             {clientNotes.length === 0 ? (
               <p className="m-0 text-[12px] leading-[1.55] text-(--color-text-soft)">
                 Bu danışan için henüz not yok.{" "}
                 <button type="button" onClick={onAddNote} className="font-semibold text-(--color-primary) bg-transparent border-none p-0 cursor-pointer hover:underline">
-                  Not ekle
+                  Not Ekle
                 </button>
               </p>
             ) : (
@@ -233,7 +233,7 @@ export function ClientDetailScreen({
               <Card pad="p-[18px_20px]" className="shrink-0">
                 <div className="flex items-start justify-between mb-3.5 gap-3">
                   <div>
-                    <CardTitle>Gelişim eğrisi</CardTitle>
+                    <CardTitle>Gelişim Eğrisi</CardTitle>
                     <div className="text-[11px] text-(--color-text-soft) mt-0.5">
                       {curve.length} seans · normalize skor
                     </div>
@@ -243,8 +243,8 @@ export function ClientDetailScreen({
                     value={range}
                     onChange={setRange}
                     options={[
-                      { value: "10", label: "10 seans" },
-                      { value: "90", label: "3 ay" },
+                      { value: "10", label: "10 Seans" },
+                      { value: "90", label: "3 Ay" },
                       { value: "all", label: "Tümü" },
                     ]}
                   />
@@ -270,7 +270,7 @@ export function ClientDetailScreen({
                   className="btn-signature flex items-center gap-1.5 text-[11.5px] font-semibold cursor-pointer"
                   style={{ padding: "7px 12px", borderRadius: 9 }}
                 >
-                  <Plus size={13} /> Not ekle
+                  <Plus size={13} /> Not Ekle
                 </button>
               </div>
               {clientNotes.length === 0 ? (
@@ -325,7 +325,7 @@ export function ClientDetailScreen({
           </Card>
 
           {/*
-            Öneri motoru — her iki temada koyu. Ekrandaki tek "karar" bloğu;
+            Öneri Motoru — her iki temada koyu. Ekrandaki tek "karar" bloğu;
             açık yüzeylerin arasında koyu bir ada olarak duruyor ki göz onu
             veri kartlarından ayırsın.
           */}
@@ -345,7 +345,7 @@ export function ClientDetailScreen({
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles size={15} strokeWidth={1.9} style={{ color: "#4d7dff" }} />
                 <span className="font-display font-bold text-[13px] tracking-[-0.02em]" style={{ color: "#eaf2ff" }}>
-                  Öneri motoru
+                  Öneri Motoru
                 </span>
               </div>
               <p className="m-0 mb-3 text-[12px] leading-[1.6]" style={{ color: "#b9cade" }}>
@@ -369,7 +369,7 @@ export function ClientDetailScreen({
                 className="w-full mt-3 text-[12px] font-semibold cursor-pointer border-none text-white transition-transform hover:-translate-y-px"
                 style={{ padding: 10, borderRadius: 11, background: "linear-gradient(135deg,#4d7dff,#2ad6ef)" }}
               >
-                Planı güncelle
+                Planı Güncelle
               </button>
             </div>
           </div>
@@ -394,7 +394,7 @@ function Row({ label, value, last = false }: { readonly label: string; readonly 
 }
 
 /**
- * Gelişim eğrisi. Hedef çizgisi kesikli — ölçülen değer değil, hedeflenen.
+ * Gelişim Eğrisi. Hedef çizgisi kesikli — ölçülen değer değil, hedeflenen.
  * Bu ayrım olmadan grafik "ulaşıldı mı?" sorusunu cevaplamıyor.
  */
 function GrowthCurve({ sessions }: { readonly sessions: readonly RecentSessionEntry[] }) {
@@ -417,7 +417,7 @@ function GrowthCurve({ sessions }: { readonly sessions: readonly RecentSessionEn
   const area = `${line} L${xs[xs.length - 1]} ${H - pad.b} L${xs[0]} ${H - pad.b} Z`;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: H }} className="block" role="img" aria-label="Gelişim eğrisi">
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: H }} className="block" role="img" aria-label="Gelişim Eğrisi">
       <defs>
         <linearGradient id="growth-fill" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.26" />
@@ -479,7 +479,7 @@ function SessionHistory({
   return (
     <Card className={`flex flex-col min-h-0 ${fill ? "flex-1" : "flex-1"}`} pad="p-[18px_20px]">
       <div className="flex items-center justify-between mb-3">
-        <CardTitle>Seans geçmişi</CardTitle>
+        <CardTitle>Seans Geçmişi</CardTitle>
         {onAll ? (
           <button
             type="button"
@@ -527,7 +527,7 @@ function SessionHistory({
   );
 }
 
-/* ── Öneri motoru kuralları ────────────────────────────────────────────── */
+/* ── Öneri Motoru kuralları ────────────────────────────────────────────── */
 
 function engineSummary(series: readonly number[], avg: number | null): string {
   if (series.length < 3) return "Öneri için en az üç seans gerekiyor. Motor eğilim arıyor, tek ölçüm değil.";
@@ -547,11 +547,11 @@ function engineActions(series: readonly number[], sessions: readonly RecentSessi
   const lastGame = sessions.length ? sessions[sessions.length - 1].gameKey : null;
 
   if (lastGame) {
-    out.push({ dot: "#19d19b", text: `${gameTitle(lastGame)} → ${stable ? "Zor" : "mevcut seviye"}` });
+    out.push({ dot: "#19d19b", text: `${gameTitle(lastGame)} → ${stable ? "Zor" : "Mevcut Seviye"}` });
   }
   const unplayed = (["logic", "scan", "route", "difference"] as const).find((k) => !played.has(k));
-  if (unplayed) out.push({ dot: "#4d7dff", text: `${gameTitle(unplayed)} ekle` });
-  out.push({ dot: "#f5c26b", text: "Ev programına 1 aktivite" });
+  if (unplayed) out.push({ dot: "#4d7dff", text: `${gameTitle(unplayed)} Ekle` });
+  out.push({ dot: "#f5c26b", text: "Ev Programına 1 Aktivite" });
 
   return out.slice(0, 3);
 }

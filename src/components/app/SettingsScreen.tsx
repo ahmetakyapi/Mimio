@@ -28,7 +28,7 @@ interface Props {
 const THEMES = [
   { key: "light", label: "Açık", desc: "Aydınlık odada gündüz çalışması", Icon: Sun },
   { key: "dark", label: "Koyu", desc: "Loş oda, akşam seansları", Icon: Moon },
-  { key: "high-contrast", label: "Yüksek kontrast", desc: "Degrade ve doku kapalı, kenarlar keskin", Icon: Eye },
+  { key: "high-contrast", label: "Yüksek Kontrast", desc: "Degrade ve doku kapalı, kenarlar keskin", Icon: Eye },
   { key: "system", label: "Sistem", desc: "İşletim sistemi tercihini izler", Icon: Check },
 ] as const;
 
@@ -89,12 +89,12 @@ export function SettingsScreen({
             <Field label="Uzmanlık" value={therapist?.specialty || "Girilmemiş"} muted={!therapist?.specialty} />
           </div>
           <button type="button" onClick={onEditProfile} className="w-full flex items-center justify-center gap-2 text-[12.5px] font-semibold cursor-pointer transition-colors text-(--color-text-body) hover:text-(--color-primary)" style={{ padding: 11, borderRadius: 11, background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
-            <Edit2 size={14} /> {therapist?.specialty ? "Profili düzenle" : "Profili tamamla"}
+            <Edit2 size={14} /> {therapist?.specialty ? "Profili Düzenle" : "Profili Tamamla"}
           </button>
         </Card>
 
         <Card pad="p-[18px_20px]">
-          <Eyebrow className="mb-3.5">Veri katmanı</Eyebrow>
+          <Eyebrow className="mb-3.5">Veri Katmanı</Eyebrow>
           <div className="flex items-start gap-3 mb-4">
             <span
               className="grid place-items-center shrink-0"
@@ -127,7 +127,7 @@ export function SettingsScreen({
           </button>
           <button type="button" onClick={onLogout} className="w-full mt-2 flex items-center gap-3 text-left cursor-pointer bg-transparent transition-colors" style={{ padding: "11px 13px", borderRadius: 12, border: "1px solid var(--color-line)", color: "var(--color-accent-red)" }}>
             <LogOut size={16} strokeWidth={1.9} />
-            <span className="flex-1 text-[13px] font-medium">Çıkış yap</span>
+            <span className="flex-1 text-[13px] font-medium">Çıkış Yap</span>
           </button>
         </Card>
       </div>

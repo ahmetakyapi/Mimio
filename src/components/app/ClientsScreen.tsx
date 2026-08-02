@@ -32,7 +32,7 @@ const COLS = "2.1fr 1.35fr .9fr 1fr 1.15fr .8fr auto";
 type SortKey = "recent" | "name" | "score" | "independence";
 
 const SORTS: ReadonlyArray<{ key: SortKey; label: string }> = [
-  { key: "recent", label: "Son seans" },
+  { key: "recent", label: "Son Seans" },
   { key: "name", label: "Ad" },
   { key: "score", label: "Skor" },
   { key: "independence", label: "Bağımsızlık" },
@@ -139,7 +139,7 @@ export function ClientsScreen({
           <>
             <button type="button" className={btnGhost} onClick={onExport} disabled={clients.length === 0}>
               <span className="inline-flex items-center gap-2">
-                <Download size={14} /> CSV dışa aktar
+                <Download size={14} /> CSV Dışa Aktar
               </span>
             </button>
             <button
@@ -147,7 +147,7 @@ export function ClientsScreen({
               className="btn-signature flex items-center gap-2 px-[19px] py-[11px] rounded-xl text-[12.5px] font-semibold cursor-pointer"
               onClick={onAddClient}
             >
-              <Plus size={15} strokeWidth={2.2} /> Yeni danışan
+              <Plus size={15} strokeWidth={2.2} /> Yeni Danışan
             </button>
           </>
         }
@@ -180,7 +180,7 @@ export function ClientsScreen({
       {clients.length === 0 ? (
         <Card className="flex-1 grid place-items-center">
           <div className="text-center">
-            <p className="m-0 mb-1 font-bold text-[15px] text-(--color-text-strong)">Henüz danışan eklenmedi</p>
+            <p className="m-0 mb-1 font-bold text-[15px] text-(--color-text-strong)">Henüz Danışan Eklenmedi</p>
             <p className="m-0 mb-4 text-[12.5px] text-(--color-text-soft)">
               İlk profili oluştur, seanslar ve ölçümler buraya düşsün.
             </p>
@@ -189,7 +189,7 @@ export function ClientsScreen({
               className="btn-signature px-[19px] py-[11px] rounded-xl text-[12.5px] font-semibold cursor-pointer"
               onClick={onAddClient}
             >
-              Yeni danışan
+              Yeni Danışan
             </button>
           </div>
         </Card>
@@ -197,7 +197,7 @@ export function ClientsScreen({
         <>
           {/* Sütun başlıkları — kart değil, çıplak. Tablo hissi için. */}
           <div className="grid gap-3.5 px-[18px]" style={{ gridTemplateColumns: COLS }}>
-            {["Danışan", "Hedef", "Bağımsızlık", "Son seans", "Eğilim / skor", "Sıradaki", ""].map((h, i) => (
+            {["Danışan", "Hedef", "Bağımsızlık", "Son Seans", "Eğilim / Skor", "Sıradaki", ""].map((h, i) => (
               <Eyebrow key={i} className="!tracking-[0.1em]">{h}</Eyebrow>
             ))}
           </div>
@@ -213,7 +213,7 @@ export function ClientsScreen({
                       onClick={() => onSearchChange("")}
                       className="ml-1.5 font-semibold text-(--color-primary) bg-transparent border-none p-0 cursor-pointer hover:underline"
                     >
-                      Aramayı temizle
+                      Aramayı Temizle
                     </button>
                   )}
                 </p>
@@ -335,7 +335,7 @@ function ClientRow({
         <button
           type="button"
           onClick={onStart}
-          title="Seansı başlat"
+          title="Seansı Başlat"
           aria-label={`${m.client.displayName} ile seansı başlat`}
           className="grid place-items-center cursor-pointer border-none transition-colors"
           style={{ width: 30, height: 30, borderRadius: 9, background: "var(--color-primary-light)", color: "var(--color-primary)" }}
@@ -345,7 +345,7 @@ function ClientRow({
         <button
           type="button"
           onClick={onOpen}
-          title="Profili aç"
+          title="Profili Aç"
           aria-label={`${m.client.displayName} profilini aç`}
           className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-soft) hover:text-(--color-primary) transition-colors"
           style={{ width: 30, height: 30, borderRadius: 9 }}

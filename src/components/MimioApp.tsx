@@ -72,6 +72,7 @@ import { ClientsScreen } from "@/components/app/ClientsScreen";
 import { ClientDetailScreen } from "@/components/app/ClientDetailScreen";
 import { WeeklyPlanScreen } from "@/components/app/WeeklyPlanScreen";
 import { SettingsScreen } from "@/components/app/SettingsScreen";
+import { ScreenHeader, Card, CardTitle, Eyebrow, Avatar } from "@/components/app/primitives";
 import { startOfWeek as denizWeekStart, isoDate as denizIso } from "@/lib/deniz-derive";
 import { MEASURE_KIND_LABELS } from "@/lib/outcome-measures";
 
@@ -1768,7 +1769,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     ? { gameName: GAME_LABELS[sessionSet.games[sessionSet.currentIndex + 1]], onNext: advanceSessionSet }
     : null;
   const activeScoreCard = scoreboard[activeGame];
-  const activeRemoteScore = platformOverview.remoteScores[activeGame];
+  /* Sunucu haritayı eksik döndürürse (yeni bir oyun anahtarı eklenmiş, eski
+     sürüm cevap veriyor) `.best` okuması tüm Oyunlar ekranını hata sınırına
+     düşürüyordu. Boş bir özet, çöken bir ekrandan iyidir. */
+  const activeRemoteScore = platformOverview.remoteScores[activeGame] ?? { best: 0, last: 0, lastPlayedAt: null, label: "" };
   const scoreCards = Object.values(scoreboard);
   const recentSessionFeed = platformOverview.recentSessions.slice(0, 6);
   const effectiveSessionCount = platformOverview.totals.sessionCount;
@@ -2494,63 +2498,69 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               />
             )}
 
-            {/* ── Premium Desktop Game Header ── */}
-            <div className="hidden lg:flex items-center justify-between px-6 h-16 border-b border-(--color-line) sticky top-0 z-20" style={{
-              background: "var(--color-chrome-header)",
-              backdropFilter: "blur(24px)",
-              boxShadow: "0 1px 0 var(--color-line), 0 4px 24px rgba(0,0,0,0.08)",
-            }}>
-              {/* Left: title + session info */}
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, var(--color-primary), #4d7dff)", boxShadow: "0 2px 8px color-mix(in srgb, var(--color-primary) 30%, transparent)" }}>
-                    <Gamepad2 size={15} className="text-white" />
-                  </div>
-                  <span className="font-bold text-(--color-text-strong) text-sm tracking-tight">Oyun Alanı</span>
-                </div>
-                <div className="w-px h-5 shrink-0" style={{ background: "var(--color-line)" }} />
-                <div className="flex items-center gap-2 rounded-full px-3 py-1.5" style={{ background: gameElapsed > 0 ? "rgba(18, 184, 134,0.08)" : "color-mix(in srgb, var(--color-primary) 8%, transparent)", border: gameElapsed > 0 ? "1px solid rgba(18, 184, 134,0.25)" : "1px solid color-mix(in srgb, var(--color-primary) 15%, transparent)" }}>
-                  <span className="w-2 h-2 rounded-full shrink-0 transition-all" style={{ background: gameElapsed > 0 ? "#12b886" : "var(--color-primary)", boxShadow: gameElapsed > 0 ? "0 0 6px rgba(18, 184, 134,0.7)" : "none" }} />
-                  <span className="text-xs font-semibold max-w-56 truncate" style={{ color: gameElapsed > 0 ? "#12b886" : "var(--color-primary)" }}>
-                    {activeTherapist?.displayName ?? "—"}&nbsp;·&nbsp;{activeClient?.displayName ?? "Danışan seç"}
+            {/*
+              Seans çubuğu. Önceki başlık kendi başına bir krom katmanıydı —
+              logo, ekran adı, veritabanı rozeti ve "← Panel" düğmesi taşıyordu;
+              hepsi artık sidebar ve üst çubukta var, ikisi üst üste biniyordu.
+              Burada yalnızca seans sırasında gerçekten gereken üç şey kaldı:
+              kiminle çalışıldığı, hangi zorlukta, ne kadar süredir.
+            */}
+            <div className="hidden lg:flex items-center gap-3 px-[28px] h-[54px] shrink-0"
+              style={{ borderBottom: "1px solid var(--color-line)", background: "var(--color-chrome-section)", backdropFilter: "blur(18px)" }}>
+              {activeClient ? (
+                <span className="flex items-center gap-2.5">
+                  <Avatar name={activeClient.displayName} id={activeClient.id} size={30} radius={10} />
+                  <span>
+                    <span className="block text-[12.5px] font-bold text-(--color-text-strong) leading-tight">{activeClient.displayName}</span>
+                    <span className="block text-[10px] text-(--color-text-soft) leading-tight">{activeClient.primaryGoal || "Hedef girilmemiş"}</span>
                   </span>
-                </div>
-                {activeClient && (
-                  <span className="text-[10px] font-bold px-2 py-1 rounded-full" style={{ background: `${DIFFICULTY_COLORS[clientDiffLevel]}18`, color: DIFFICULTY_COLORS[clientDiffLevel], border: `1px solid ${DIFFICULTY_COLORS[clientDiffLevel]}33` }}>
-                    {DIFFICULTY_LABELS[clientDiffLevel]}
-                  </span>
-                )}
-                {/* Active goal HUD */}
-                {activeClient && clientGoals.length > 0 && (() => {
-                  const topGoal = clientGoals.find(g => g.currentValue < g.targetValue) ?? clientGoals[0];
-                  const pct = topGoal.targetValue > 0 ? Math.round((topGoal.currentValue / topGoal.targetValue) * 100) : 0;
-                  return (
-                    <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 rounded-full border max-w-48"
-                      style={{ background: "rgba(43, 98, 245,0.08)", borderColor: "rgba(43, 98, 245,0.2)" }}>
-                      <Target size={10} style={{ color: "#4d7dff", flexShrink: 0 }} />
-                      <span className="text-[10px] font-semibold truncate" style={{ color: "var(--color-text-soft)" }}>{topGoal.title}</span>
-                      <span className="text-[10px] font-extrabold shrink-0" style={{ color: "#4d7dff" }}>{pct}%</span>
-                    </div>
-                  );
-                })()}
-                <span className={`text-xs font-semibold rounded-full px-2.5 py-1 border ${platformStatus === "online" ? "bg-[#12b886]/10 text-[#19d19b] border-[#12b886]/20" : platformStatus === "schema_missing" ? "bg-[#f59e0b]/10 text-[#f5c26b] border-[#f59e0b]/20" : platformStatus === "error" ? "bg-[#d63d63]/10 text-[#f0708a] border-[#d63d63]/20" : "bg-(--color-surface-elevated) text-(--color-text-muted) border-(--color-line)"}`}>
-                  {getDatabaseStatusLabel(platformStatus)}
                 </span>
-              </div>
-              {/* Right: timer + back */}
-              <div className="flex items-center gap-2.5">
-                <div className="flex items-center gap-2 rounded-2xl px-3 py-1.5 border" style={{
-                  background: gameElapsed > 0 ? "rgba(18, 184, 134,0.08)" : "var(--color-surface-strong)",
-                  borderColor: gameElapsed > 0 ? "rgba(18, 184, 134,0.25)" : "var(--color-line)",
-                }}>
-                  <Clock size={13} style={{ color: gameElapsed > 0 ? "#12b886" : "var(--color-primary)" }} />
-                  <span className="font-mono font-bold text-sm tabular-nums" style={{ color: gameElapsed > 0 ? "#12b886" : "var(--color-text-strong)", letterSpacing: "-0.02em" }}>{formatElapsed(gameElapsed)}</span>
-                  <button type="button" className="text-[11px] font-semibold hover:opacity-70 bg-transparent border-none cursor-pointer ml-0.5 transition-opacity" style={{ color: gameElapsed > 0 ? "#12b886" : "var(--color-primary)" }} onClick={resetSessionClock}>Sıfırla</button>
-                </div>
-                <button type="button" className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-xl border cursor-pointer transition-all hover:opacity-80" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)", color: "var(--color-text-soft)" }} onClick={() => setActiveAppView("dashboard")}>
-                  ← Panel
+              ) : (
+                <button type="button" onClick={() => setActiveAppView("clients")}
+                  className="text-[12.5px] font-semibold text-(--color-primary) bg-transparent border-none p-0 cursor-pointer hover:underline">
+                  Danışan Seç →
                 </button>
-              </div>
+              )}
+
+              {activeClient && (
+                <span className="text-[11px] font-semibold shrink-0"
+                  style={{ padding: "5px 11px", borderRadius: 8, background: `color-mix(in srgb, ${DIFFICULTY_COLORS[clientDiffLevel]} 13%, transparent)`, color: DIFFICULTY_COLORS[clientDiffLevel] }}>
+                  {DIFFICULTY_LABELS[clientDiffLevel]}
+                </span>
+              )}
+
+              {/* Aktif hedef — seans sırasında neye çalışıldığını hatırlatır */}
+              {activeClient && clientGoals.length > 0 && (() => {
+                const topGoal = clientGoals.find((g) => g.currentValue < g.targetValue) ?? clientGoals[0];
+                const pct = topGoal.targetValue > 0 ? Math.round((topGoal.currentValue / topGoal.targetValue) * 100) : 0;
+                return (
+                  <span className="hidden xl:flex items-center gap-2 max-w-56 shrink-0"
+                    style={{ padding: "5px 11px", borderRadius: 8, background: "var(--color-primary-light)" }}>
+                    <Target size={11} className="shrink-0" style={{ color: "var(--color-primary)" }} />
+                    <span className="text-[11px] font-medium text-(--color-text-body) truncate">{topGoal.title}</span>
+                    <span className="numeral text-[11px] font-semibold shrink-0" style={{ color: "var(--color-primary-ink)" }}>%{pct}</span>
+                  </span>
+                );
+              })()}
+
+              {/* Süre — seansın tek canlı ölçümü, bu yüzden çalışırken yeşile döner */}
+              <span className="ml-auto flex items-center gap-2 shrink-0"
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 10,
+                  background: gameElapsed > 0 ? "color-mix(in srgb, var(--color-accent-green) 10%, transparent)" : "var(--color-surface-strong)",
+                  border: `1px solid ${gameElapsed > 0 ? "color-mix(in srgb, var(--color-accent-green) 28%, transparent)" : "var(--color-line)"}`,
+                }}>
+                <Clock size={13} style={{ color: gameElapsed > 0 ? "var(--color-accent-green)" : "var(--color-text-soft)" }} />
+                <span className="numeral text-[13px] font-semibold" style={{ color: gameElapsed > 0 ? "var(--color-accent-green)" : "var(--color-text-strong)" }}>
+                  {formatElapsed(gameElapsed)}
+                </span>
+                <button type="button" onClick={resetSessionClock}
+                  className="text-[11px] font-semibold bg-transparent border-none cursor-pointer transition-opacity hover:opacity-70"
+                  style={{ color: gameElapsed > 0 ? "var(--color-accent-green)" : "var(--color-text-soft)" }}>
+                  Sıfırla
+                </button>
+              </span>
             </div>
 
             {/* ── Session duration warning banner ── */}
@@ -2651,33 +2661,40 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               {/* ── Premium Game Sidebar ── */}
               <aside className="hidden md:flex flex-col w-56 lg:w-72 shrink-0 border-r border-(--color-line) overflow-y-auto" style={{ background: "var(--color-sidebar)", backdropFilter: "blur(24px)" }}>
 
-                {/* Session card */}
+                {/*
+                  Seans durumu kartı. Seans çubuğu zaten süreyi ve danışanı
+                  taşıyor; buradaki kart artık "aktif mi" sorusunu tek bir
+                  noktayla cevaplıyor ve degradesini imza jetonundan alıyor.
+                */}
                 <div className="p-3 lg:p-4 border-b border-(--color-line) space-y-2.5 lg:space-y-3">
-                  {/* Status indicator */}
-                  <div className="rounded-xl lg:rounded-2xl p-3 lg:p-3.5 relative overflow-hidden" style={{
-                    background: gameElapsed > 0 ? "linear-gradient(135deg, rgba(18, 184, 134,0.12) 0%, rgba(18, 184, 134,0.04) 100%)" : "linear-gradient(135deg, rgba(43, 98, 245,0.08) 0%, rgba(43, 98, 245,0.02) 100%)",
-                    border: gameElapsed > 0 ? "1px solid rgba(18, 184, 134,0.25)" : "1px solid color-mix(in srgb, var(--color-primary) 15%, transparent)",
-                  }}>
-                    <div className="absolute top-0 right-0 w-20 h-20 rounded-full pointer-events-none" style={{ background: gameElapsed > 0 ? "#12b886" : "var(--color-primary)", opacity: 0.06, filter: "blur(20px)", transform: "translate(30%,-30%)" }} />
-                    <div className="relative flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: gameElapsed > 0 ? "#12b886" : "#94a8bf", boxShadow: gameElapsed > 0 ? "0 0 8px rgba(18, 184, 134,0.8)" : "none" }} />
-                        <span className="text-xs font-bold" style={{ color: gameElapsed > 0 ? "#12b886" : "var(--color-text-muted)" }}>
+                  <div className="rounded-[16px] p-3.5"
+                    style={{
+                      background: gameElapsed > 0
+                        ? "color-mix(in srgb, var(--color-accent-green) 10%, transparent)"
+                        : "var(--gradient-signature-soft)",
+                      border: `1px solid ${gameElapsed > 0 ? "color-mix(in srgb, var(--color-accent-green) 26%, transparent)" : "var(--color-line-strong)"}`,
+                    }}>
+                    <div className="flex items-center justify-between mb-2.5">
+                      <span className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full shrink-0"
+                          style={{ background: gameElapsed > 0 ? "var(--color-accent-green)" : "var(--color-primary)" }} />
+                        <span className="text-[11px] font-semibold"
+                          style={{ color: gameElapsed > 0 ? "var(--color-accent-green)" : "var(--color-primary-ink)" }}>
                           {gameElapsed > 0 ? "Seans Aktif" : "Seans Bekliyor"}
                         </span>
-                      </div>
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono font-bold text-xs tabular-nums" style={{ background: gameElapsed > 0 ? "rgba(18, 184, 134,0.15)" : "rgba(255,255,255,0.04)", color: gameElapsed > 0 ? "#12b886" : "var(--color-text-muted)" }}>
-                        <Clock size={10} />
+                      </span>
+                      <span className="numeral text-[11px] font-semibold"
+                        style={{ color: gameElapsed > 0 ? "var(--color-accent-green)" : "var(--color-text-soft)" }}>
                         {formatElapsed(gameElapsed)}
-                      </div>
+                      </span>
                     </div>
-                    {activeClient && (
-                      <div className="relative flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-extrabold shrink-0" style={{ background: gameElapsed > 0 ? "rgba(18, 184, 134,0.2)" : "color-mix(in srgb, var(--color-primary) 15%, transparent)", color: gameElapsed > 0 ? "#12b886" : "var(--color-primary)" }}>
-                          {activeClient.displayName[0]?.toUpperCase()}
-                        </div>
-                        <span className="text-xs font-semibold text-(--color-text-strong) truncate">{activeClient.displayName}</span>
-                      </div>
+                    {activeClient ? (
+                      <span className="flex items-center gap-2">
+                        <Avatar name={activeClient.displayName} id={activeClient.id} size={24} radius={8} />
+                        <span className="text-[12px] font-semibold text-(--color-text-strong) truncate">{activeClient.displayName}</span>
+                      </span>
+                    ) : (
+                      <span className="text-[11.5px] text-(--color-text-soft)">Aşağıdan Bir Danışan Seç</span>
                     )}
                   </div>
 
@@ -2694,16 +2711,16 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       {/* Quick client avatar row */}
                       {clientOptions.length > 1 && (
                         <div className="flex flex-wrap gap-1.5 mb-1">
-                          {clientOptions.slice(0, 6).map((c, i) => {
+                          {clientOptions.slice(0, 6).map((c) => {
                             const isActive = c.id === (activeClient?.id ?? "");
-                            const colors = ["#4d7dff","#19d19b","#f59e0b","#9a80ff","#4d7dff","#f0708a"];
-                            const col = colors[i % colors.length];
+                            /* Renk kimlikten türüyor: aynı danışan uygulamanın
+                               her yerinde aynı avatarı taşısın. */
                             return (
                               <button key={c.id} type="button" title={c.displayName}
-                                className="w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-extrabold text-white cursor-pointer border-2 transition-all hover:scale-110"
-                                style={{ background: isActive ? col : `${col}30`, borderColor: isActive ? col : "transparent", color: isActive ? "#fff" : col }}
+                                className="rounded-xl cursor-pointer border-none bg-transparent p-0 transition-transform hover:scale-110"
+                                style={{ opacity: isActive ? 1 : 0.45, boxShadow: isActive ? "0 0 0 2px var(--color-primary)" : "none" }}
                                 onClick={() => setActiveClientId(c.id)}>
-                                {c.displayName[0]?.toUpperCase()}
+                                <Avatar name={c.displayName} id={c.id} size={32} radius={10} />
                               </button>
                             );
                           })}
@@ -2721,7 +2738,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   </div>
 
                   {/* CTA */}
-                  <button type="button" className="w-full flex items-center justify-center gap-2 font-bold text-sm px-4 py-2.5 rounded-2xl text-white cursor-pointer border-none transition-all hover:opacity-90 active:scale-[0.98]" style={{ background: gameElapsed > 0 ? "var(--color-accent-green)" : "var(--color-primary)", boxShadow: "var(--shadow-sm)" }} onClick={resetSessionClock}>
+                  <button type="button"
+                    className={`w-full flex items-center justify-center gap-2 font-semibold text-sm px-4 py-2.5 rounded-xl cursor-pointer border-none transition-all active:scale-[0.98] ${gameElapsed > 0 ? "text-white hover:opacity-90" : "btn-signature"}`}
+                    style={gameElapsed > 0 ? { background: "var(--color-accent-green)" } : undefined}
+                    onClick={resetSessionClock}>
                     {gameElapsed > 0 ? <RotateCcw size={14} /> : <Play size={14} />}
                     {gameElapsed > 0 ? "Yeni Seans" : "Seansı Başlat"}
                   </button>
@@ -2806,23 +2826,20 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                                     listeye bakınca anlaşılmıyordu.
                                   */
                                   <button key={tab.key} type="button" aria-pressed={isActive}
-                                    className="relative flex items-center gap-2 pl-3 pr-2.5 py-2 rounded-xl cursor-pointer w-full text-left transition-colors"
-                                    style={{
-                                      background: isActive ? "var(--color-primary)" : "transparent",
-                                      boxShadow: isActive ? "var(--shadow-sm)" : "none",
-                                    }}
-                                    onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = "var(--color-surface-elevated)"; }}
+                                    className={`relative flex items-center gap-2 pl-3 pr-2.5 py-2 rounded-xl cursor-pointer w-full text-left transition-colors border ${isActive ? "nav-active" : "border-transparent"}`}
+                                    style={isActive ? undefined : { background: "transparent" }}
+                                    onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = "var(--color-primary-light)"; }}
                                     onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
                                     onClick={() => setActiveGame(tab.key)}>
                                     <span className="text-[13px] truncate flex-1"
                                       style={{
-                                        color: isActive ? "var(--color-text-inverse)" : "var(--color-text-body)",
+                                        color: isActive ? "var(--color-primary-ink)" : "var(--color-text-body)",
                                         fontWeight: isActive ? 700 : 500,
                                       }}>{tab.title}</span>
                                     {isPlanned && <CalendarDays size={10} className="shrink-0 text-(--color-text-muted)" aria-label="Bu haftanın planında" />}
                                     {best > 0 && (
                                       <span className="numeral shrink-0 text-[11px] font-bold"
-                                        style={{ color: isActive ? "var(--color-text-inverse)" : "var(--color-text-muted)", opacity: isActive ? 0.8 : 1 }}>{best}</span>
+                                        style={{ color: isActive ? "var(--color-primary-ink)" : "var(--color-text-muted)", opacity: isActive ? 0.85 : 1 }}>{best}</span>
                                     )}
                                   </button>
                                 );
@@ -4168,52 +4185,56 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         {/* ── Therapy Program ── */}
         {activeAppView === "therapy-program" && (
           <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-            {/* ── Premium Header ── */}
-            <div className="relative border-b border-(--color-line) overflow-hidden" style={{ background: "var(--color-chrome-section)", backdropFilter: "blur(20px)" }}>
-              <div className="app-shell flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4 px-4 lg:px-6 py-4 lg:py-5">
-              {/* Background glow */}
-              <div className="absolute top-0 left-0 w-64 h-32 rounded-full pointer-events-none" style={{ background: "var(--color-primary)", opacity: 0.04, filter: "blur(50px)", transform: "translate(-20%,-40%)" }} />
-              <div className="relative">
-                <h1 className="text-lg lg:text-xl font-extrabold text-(--color-text-strong) m-0 mb-1 tracking-tight">Terapi Programı</h1>
-                <p className="text-(--color-text-soft) text-xs lg:text-sm m-0 max-w-lg leading-relaxed hidden sm:block">Kanıta dayalı ergoterapi alanlarına göre kişiselleştirilmiş aktivite önerileri ve oyun eşlemeleri.</p>
-              </div>
-              {clientOptions.length > 0 && (
-                <div className="relative flex flex-col gap-1 shrink-0 sm:min-w-[180px] lg:min-w-[200px] w-full sm:w-auto">
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-(--color-text-muted)">Danışan Seç</span>
-                  <select value={tpSelectedClientId ?? ""} onChange={(e) => setTpSelectedClientId(e.target.value || null)} className={inputCls}>
-                    <option value="">Danışan seçin...</option>
-                    {clientOptions.map((c) => <option key={c.id} value={c.id}>{c.displayName}</option>)}
-                  </select>
-                </div>
-              )}
-              </div>
-            </div>
+            {/*
+              Başlık ve sekmeler Deniz diline geçti: ekran kendi krom
+              çubuğunu kurmuyor (üst çubuk zaten var), yalnızca göz kapağı +
+              display başlık + tek satır özet taşıyor. Sekmeler alt çizgili —
+              dolu degrade rozetler altı sekmede ekranı karnavala çeviriyordu.
+            */}
+            <div className="app-shell px-4 lg:px-[28px] pt-4 lg:pt-[26px] pb-4 flex flex-col gap-4">
+              <ScreenHeader
+                eyebrow={`${THERAPY_DOMAINS.length} uygulama alanı · ${THERAPY_PROTOCOLS.length} hazır protokol`}
+                title="Aktivite Kitaplığı"
+                sub="Kanıta dayalı alanlara göre aktivite önerileri ve oyun eşlemeleri."
+                actions={
+                  clientOptions.length > 0 ? (
+                    <label className="flex flex-col gap-1.5">
+                      <span className="numeral text-[9.5px] font-semibold uppercase tracking-[0.14em] text-(--color-text-soft)">Danışan</span>
+                      <select
+                        value={tpSelectedClientId ?? ""}
+                        onChange={(e) => setTpSelectedClientId(e.target.value || null)}
+                        className="text-[12.5px] font-semibold text-(--color-text-body) cursor-pointer outline-none min-w-[180px]"
+                        style={{ padding: "10px 12px", borderRadius: 11, background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}
+                      >
+                        <option value="">Danışan seçin…</option>
+                        {clientOptions.map((c) => <option key={c.id} value={c.id}>{c.displayName}</option>)}
+                      </select>
+                    </label>
+                  ) : undefined
+                }
+              />
 
-            {/* ── Premium Tabs ── */}
-            <div className="border-b border-(--color-line)" style={{ background: "var(--color-chrome-section)" }}>
-            <div className="app-shell tab-scroll flex gap-1 px-3 lg:px-4 py-2 lg:py-2.5">
-              {([
-                {key: "domains" as const, label: "Alanlar", labelFull: "Terapi Alanları", Icon: Stethoscope, disabled: false},
-                {key: "activities" as const, label: "Aktivite", labelFull: "Aktiviteler", Icon: ClipboardList, disabled: !tpSelectedDomain},
-                {key: "games" as const, label: "Oyunlar", labelFull: "Oyun Eşleme", Icon: Gamepad2, disabled: !tpSelectedDomain},
-                {key: "plan" as const, label: "Plan", labelFull: "Haftalık Plan", Icon: CalendarDays, disabled: !tpSelectedDomain},
-                {key: "progress" as const, label: "İlerleme", labelFull: "İlerleme", Icon: TrendingUp, disabled: !tpSelectedClientId},
-                {key: "protocols" as const, label: "Protokol", labelFull: "Protokoller", Icon: BookOpen, disabled: false},
-              ] as {key: "domains" | "activities" | "games" | "plan" | "progress" | "protocols"; label: string; labelFull: string; Icon: LucideIcon; disabled: boolean}[]).map(({key, label, labelFull, Icon, disabled}) => (
-                <button key={key} type="button"
-                  className="shrink-0 flex items-center gap-1 lg:gap-1.5 px-2.5 lg:px-3.5 py-1.5 lg:py-2 rounded-xl text-xs lg:text-sm font-semibold border-none cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{
-                    background: tpActiveTab === key ? "linear-gradient(135deg, var(--color-primary), #4d7dff)" : "transparent",
-                    color: tpActiveTab === key ? "white" : "var(--color-text-soft)",
-                    boxShadow: tpActiveTab === key ? "0 4px 12px color-mix(in srgb, var(--color-primary) 30%, transparent)" : "none",
-                  }}
-                  onClick={() => setTpActiveTab(key)} disabled={disabled}>
-                  <Icon size={13} className="shrink-0" />
-                  <span className="hidden sm:inline">{labelFull}</span>
-                  <span className="sm:hidden">{label}</span>
-                </button>
-              ))}
-            </div>
+              <div className="tab-scroll flex items-center gap-[22px]" style={{ borderBottom: "1px solid var(--color-line)" }} role="tablist">
+                {([
+                  {key: "domains" as const, label: "Alanlar", disabled: false},
+                  {key: "activities" as const, label: "Aktiviteler", disabled: !tpSelectedDomain},
+                  {key: "games" as const, label: "Oyun Eşleme", disabled: !tpSelectedDomain},
+                  {key: "plan" as const, label: "Haftalık Plan", disabled: !tpSelectedDomain},
+                  {key: "progress" as const, label: "İlerleme", disabled: !tpSelectedClientId},
+                  {key: "protocols" as const, label: "Protokoller", disabled: false},
+                ]).map(({key, label, disabled}) => {
+                  const on = tpActiveTab === key;
+                  return (
+                    <button key={key} type="button" role="tab" aria-selected={on} disabled={disabled}
+                      className={`relative shrink-0 bg-transparent border-none cursor-pointer text-[13px] transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${on ? "font-semibold text-(--color-primary)" : "font-medium text-(--color-text-soft) hover:text-(--color-text-body)"}`}
+                      style={{ padding: "9px 0" }}
+                      onClick={() => setTpActiveTab(key)}>
+                      {label}
+                      {on && <span className="absolute left-0 right-0" style={{ bottom: -1, height: 2, borderRadius: 2, background: "var(--gradient-bar)" }} />}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 lg:p-6">
@@ -4807,7 +4828,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
                         <div>
                           <span className="text-[11px] font-bold uppercase tracking-widest block" style={{ color: domain.color }}>{domain.label}</span>
-                          <h2 className="text-lg font-extrabold text-(--color-text-strong) m-0 tracking-tight">Haftalık plan</h2>
+                          <h2 className="text-lg font-extrabold text-(--color-text-strong) m-0 tracking-tight">Haftalık Plan</h2>
                           <p className="text-(--color-text-soft) text-sm m-0 mt-1">
                             Plan; danışanın yaşı, bağımsızlık düzeyi, ortamı ve oyun geçmişine göre üretilir.
                           </p>

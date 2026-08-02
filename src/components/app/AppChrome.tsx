@@ -20,6 +20,8 @@ import {
   Search,
   Bell,
   ChevronDown,
+  Sun,
+  Moon,
 } from "lucide-react";
 import type { AppView } from "@/lib/platform-data";
 import { BlockMark } from "@/components/brand/BlockMark";
@@ -132,7 +134,7 @@ export function Sidebar({
       </div>
 
       {/*
-        "Bu hafta" — sidebar'ın dip taşı. Terapistin gün içinde en sık sorduğu
+        "Bu Hafta" — sidebar'ın dip taşı. Terapistin gün içinde en sık sorduğu
         soru bu: kapasitenin neresindeyim? Sayı seans, çubuk doluluk.
       */}
       <button
@@ -147,7 +149,7 @@ export function Sidebar({
         }}
       >
         <span className="numeral block text-[9.5px] font-semibold uppercase tracking-[0.12em] text-(--color-primary-ink) mb-2">
-          Bu hafta
+          Bu Hafta
         </span>
         <span className="figure block text-[22px] text-(--color-text-strong) leading-none">
           {weekDone}
@@ -257,10 +259,13 @@ export function TopBar({
           role="radiogroup"
           aria-label="Tema"
         >
+          {/* Etiket yerine ikon: iki durumlu bir anahtarda "Açık/Koyu" sözcükleri
+              güneş ve ayın zaten söylediğini tekrar ediyordu. Erişilebilir ad
+              `aria-label`de kalıyor. */}
           {([
-            { key: "light", label: "Açık" },
-            { key: "dark", label: "Koyu" },
-          ] as const).map(({ key, label }) => {
+            { key: "light", label: "Açık tema", Icon: Sun },
+            { key: "dark", label: "Koyu tema", Icon: Moon },
+          ] as const).map(({ key, label, Icon }) => {
             const on = theme === key;
             return (
               <button
@@ -268,11 +273,13 @@ export function TopBar({
                 type="button"
                 role="radio"
                 aria-checked={on}
+                aria-label={label}
+                title={label}
                 onClick={() => onThemeChange(key)}
-                className={`text-[11px] font-semibold cursor-pointer border-none transition-colors ${on ? "text-white" : "text-(--color-text-soft) bg-transparent hover:text-(--color-text-body)"}`}
-                style={{ padding: "5px 10px", borderRadius: 7, background: on ? "var(--gradient-signature)" : undefined }}
+                className={`grid place-items-center cursor-pointer border-none transition-colors ${on ? "text-white" : "text-(--color-text-soft) bg-transparent hover:text-(--color-text-body)"}`}
+                style={{ width: 30, height: 26, borderRadius: 7, background: on ? "var(--gradient-signature)" : undefined }}
               >
-                {label}
+                <Icon size={14} strokeWidth={2} />
               </button>
             );
           })}

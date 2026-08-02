@@ -164,7 +164,7 @@ export function WeeklyPlanScreen({
               onClick={() => setComposer(todayKey)}
               disabled={clients.length === 0}
             >
-              <Plus size={15} strokeWidth={2.2} /> Seans planla
+              <Plus size={15} strokeWidth={2.2} /> Seans Planla
             </button>
           </>
         }
@@ -183,7 +183,7 @@ export function WeeklyPlanScreen({
         ))}
         <span className="ml-auto inline-flex items-center gap-[7px] text-[11px] font-medium text-(--color-text-soft)">
           <GripVertical size={13} />
-          Güne tıklayarak seans ekle
+          Güne Tıklayarak Seans Ekle
         </span>
       </div>
 
@@ -248,7 +248,7 @@ export function WeeklyPlanScreen({
           >
             <div className="flex items-center gap-2 mb-2.5">
               <Sparkles size={14} strokeWidth={1.9} style={{ color: "var(--color-primary)" }} />
-              <CardTitle className="!text-[13px]">Öneri motoru</CardTitle>
+              <CardTitle className="!text-[13px]">Öneri Motoru</CardTitle>
             </div>
             {idle ? (
               <>
@@ -272,7 +272,7 @@ export function WeeklyPlanScreen({
                     className="text-[11.5px] font-semibold text-(--color-text-body) cursor-pointer transition-colors hover:text-(--color-primary)"
                     style={{ padding: "8px 13px", borderRadius: 9, background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}
                   >
-                    Profili aç
+                    Profili Aç
                   </button>
                 </div>
               </>
@@ -284,7 +284,7 @@ export function WeeklyPlanScreen({
           </div>
 
           <Card className="shrink-0" pad="p-[15px_17px]">
-            <Eyebrow className="mb-3">Alan dengesi</Eyebrow>
+            <Eyebrow className="mb-3">Alan Dengesi</Eyebrow>
             {balance.map((b) => (
               <div key={b.key} className="mb-[9px]">
                 <div className="flex justify-between mb-1">
@@ -311,7 +311,7 @@ export function WeeklyPlanScreen({
           </Card>
 
           <Card className="flex-1 min-h-0 flex flex-col" pad="p-[15px_17px]">
-            <Eyebrow className="mb-2.5">Hazır protokoller</Eyebrow>
+            <Eyebrow className="mb-2.5">Hazır Protokoller</Eyebrow>
             <div className="flex-1 overflow-y-auto min-h-0">
               {THERAPY_PROTOCOLS.slice(0, 5).map((p) => (
                 <button
@@ -445,7 +445,7 @@ function Composer({
         <div className="flex items-center justify-between mb-4">
           <div>
             <Eyebrow>{dayLabel}</Eyebrow>
-            <CardTitle className="block mt-1">Seans planla</CardTitle>
+            <CardTitle className="block mt-1">Seans Planla</CardTitle>
           </div>
           <button type="button" onClick={onClose} aria-label="Kapat" className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-soft) hover:text-(--color-text-strong)" style={{ width: 30, height: 30 }}>
             <X size={16} />
@@ -506,7 +506,7 @@ function Composer({
             className="btn-signature flex-1 text-[12.5px] font-semibold cursor-pointer"
             style={{ padding: 11, borderRadius: 11 }}
           >
-            Plana ekle
+            Plana Ekle
           </button>
         </div>
       </div>

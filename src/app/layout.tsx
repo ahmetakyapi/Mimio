@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans, Space_Grotesk, IBM_Plex_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, Schibsted_Grotesk, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
@@ -12,9 +12,11 @@ import { ThemeProvider } from "@/components/ThemeProvider";
  * sesle konuşuyor, sayfada hiyerarşinin en üst basamağı kayboluyordu.
  * Deniz üç rol tanımlar ve her rolü ayrı bir aileye verir:
  *
- *   · Space Grotesk — ekran başlığı ve büyük sayı. Yalnızca 500'de,
- *     -0.035em aralıkla. Geometrik iskeleti ve kısa çıkıntıları büyük
- *     puntoda sıkı bir blok kuruyor; küçük puntoda hiç kullanılmaz.
+ *   · Schibsted Grotesk — ekran başlığı ve büyük sayı. Aile seçimi
+ *     `~/dev-starter/knowledge/themes/mimio.md` § 3'teki tipografi
+ *     etüdünden geliyor: haber-editoryal kökenli, dar apertürleri sıkı
+ *     başlıkta karakter veriyor. Tasarım dokümanı burada Space Grotesk
+ *     kullanıyordu; ekosistem etüdü bilinçli olarak onun yerine geçiyor.
  *   · Plus Jakarta Sans — arayüz ve gövde. Yuvarlak terminalleri klinik
  *     yüzeye "çocuk sıcaklığı" katan tek tipografik hamle; 400'de
  *     seans notu, 600-700'de düğme ve etiket.
@@ -30,9 +32,9 @@ const sans = Plus_Jakarta_Sans({
   display: "swap",
 });
 
-const display = Space_Grotesk({
+const display = Schibsted_Grotesk({
   subsets: ["latin", "latin-ext"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["500", "600", "700", "800"],
   variable: "--font-display-face",
   display: "swap",
 });

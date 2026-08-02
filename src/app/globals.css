@@ -111,15 +111,15 @@
      yalnızca ağırlıktan geliyordu ve ekran başlıkları arayüz başlıklarından
      ayrışmıyordu. Deniz üç rol tanımlar:
 
-       · Space Grotesk — ekran başlığı. Yalnızca 500'de, sıkı harf
-         aralığıyla; "İyi sabahlar, Ahmet." gibi tek satırlık selamlar.
+       · Schibsted Grotesk — ekran başlığı. Aile ~/dev-starter tipografi
+         etüdünden geliyor (knowledge/themes/mimio.md § 3).
        · Plus Jakarta Sans — arayüz ve gövde. Yuvarlak terminalleri
          klinik yüzeye çocuk sıcaklığı katan tek tipografik hamle.
        · IBM Plex Mono — yalnızca sayısal okuma. Skor, süre, persentil.
 
      Bkz. app/layout.tsx başındaki gerekçe. */
   --font-sans: var(--font-body-face), "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-display-face), "Space Grotesk", var(--font-body-face), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display-face), "Schibsted Grotesk", var(--font-body-face), ui-sans-serif, system-ui, sans-serif;
   --font-numeric: var(--font-mono-face), "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* ── Radius ── Deniz daha yumuşak: kartlar 16-18px, kontroller 10-12px */
@@ -585,8 +585,8 @@ h3, h4 {
   font-family: var(--font-sans);
 }
 
-h1 { font-weight: 500; letter-spacing: -0.035em; }
-h2 { font-weight: 600; letter-spacing: -0.03em; }
+h1 { font-weight: 600; letter-spacing: -0.035em; }
+h2 { font-weight: 700; letter-spacing: -0.03em; }
 h3 { letter-spacing: -0.02em; }
 h4 { letter-spacing: -0.015em; }
 
@@ -595,7 +595,7 @@ h4 { letter-spacing: -0.015em; }
    `.numeral` küçük ve hizalı okunması gereken değerlerde kalır. */
 .figure {
   font-family: var(--font-display);
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.035em;
   font-variant-numeric: tabular-nums;
   font-synthesis-weight: none;
