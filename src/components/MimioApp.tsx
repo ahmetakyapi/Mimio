@@ -77,6 +77,7 @@ import { SessionReviewScreen } from "@/components/app/SessionReviewScreen";
 import { SessionNotesScreen } from "@/components/app/SessionNotesScreen";
 import { ProgressReportScreen } from "@/components/app/ProgressReportScreen";
 import { NewClientFlow, type NewClientDraft } from "@/components/app/NewClientFlow";
+import { DEFAULT_PREFS, type AppPrefs } from "@/components/app/SettingsScreen";
 import { ScreenHeader, Card, CardTitle, Eyebrow, Avatar } from "@/components/app/primitives";
 import { startOfWeek as denizWeekStart, isoDate as denizIso, DOMAIN_ORDER, DOMAIN_META, gameDomain, INDEPENDENCE_STEPS } from "@/lib/deniz-derive";
 import { MEASURE_KIND_LABELS } from "@/lib/outcome-measures";
@@ -359,6 +360,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
      SOAP alanlarına dağıtılıyor; terapist boş sayfayla karşılaşmasın. */
   const [reviewSoap, setReviewSoap] = useState({ s: "", o: "", a: "", p: "" });
   const [reviewIndependence, setReviewIndependence] = useState(3);
+
+  /* Uygulama tercihleri — cihaz başına, hidrasyondan sonra yazılır. */
+  const PREFS_KEY = "mimio-prefs-v1";
+  const [prefs, setPrefs] = useState<AppPrefs>(DEFAULT_PREFS);
   const [gameTimerKey, setGameTimerKey] = useState(0);
 
   // ── New feature states ──
@@ -455,6 +460,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       if (storedFavs) { const p = JSON.parse(storedFavs); if (Array.isArray(p)) setTpFavoriteActivities(p); }
       const storedCNotes = window.localStorage.getItem(THERAPY_CUSTOM_NOTES_KEY);
       if (storedCNotes) { const p = JSON.parse(storedCNotes); if (p && typeof p === "object") setTpCustomNotes(p as Record<string, string>); }
+      const storedPrefs = window.localStorage.getItem("mimio-prefs-v1");
+      if (storedPrefs) { const pp = JSON.parse(storedPrefs); if (pp && typeof pp === "object") setPrefs({ ...DEFAULT_PREFS, ...pp }); }
       const storedAchievements = window.localStorage.getItem(ACHIEVEMENTS_KEY);
       if (storedAchievements) { const p = JSON.parse(storedAchievements); if (Array.isArray(p)) setEarnedAchievements(p); }
     } catch {
@@ -492,6 +499,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   useEffect(() => { persist(THERAPY_FAVORITES_KEY, tpFavoriteActivities); }, [tpFavoriteActivities, hydrated]);
   useEffect(() => { persist(THERAPY_CUSTOM_NOTES_KEY, tpCustomNotes); }, [tpCustomNotes, hydrated]);
   useEffect(() => { persist(ACHIEVEMENTS_KEY, earnedAchievements); }, [earnedAchievements, hydrated]);
+  useEffect(() => { persist(PREFS_KEY, prefs); }, [prefs, hydrated]);
 
   useEffect(() => {
     if (!activeTherapistId && !activeClientId) return;
@@ -2560,6 +2568,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               clinicName={activeTherapist?.clinicName || "Mimio Klinik"}
               onExportCsv={handleExportClientsCsv}
               onExportPdf={() => window.print()}
+              maskNames={prefs.maskClientNames}
             />
           </div>
         )}
@@ -2584,9 +2593,13 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           <div className="app-shell h-full p-4 lg:p-[26px_28px]">
             <SettingsScreen
               therapist={activeTherapist}
+              clientCount={clientOptions.length}
               theme={theme}
               preference={preference}
               onThemeChange={setTheme}
+              prefs={prefs}
+              onPrefsChange={setPrefs}
+              onExportAll={handleExportSessionsCSV}
               onEditProfile={() => {
                 setTherapistEditDraft({
                   displayName: activeTherapist?.displayName ?? "",

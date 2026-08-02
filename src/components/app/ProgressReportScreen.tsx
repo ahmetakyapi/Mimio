@@ -47,6 +47,8 @@ interface Props {
   readonly clinicName: string;
   readonly onExportCsv: () => void;
   readonly onExportPdf: () => void;
+  /** Ayarlar'daki "danışan adlarını maskele" tercihi */
+  readonly maskNames: boolean;
 }
 
 export function ProgressReportScreen({
@@ -58,7 +60,11 @@ export function ProgressReportScreen({
   clinicName,
   onExportCsv,
   onExportPdf,
+  maskNames,
 }: Props) {
+  /* Maskeleme raporun her yerinde aynı olmalı; tek yerde türetiliyor. */
+  const shown = (full: string) =>
+    maskNames ? full.trim().split(/\s+/).map((w) => `${w[0]?.toLocaleUpperCase("tr-TR") ?? ""}.`).join(" ") : full;
   const [period, setPeriod] = useState<(typeof PERIODS)[number]["key"]>("90");
   const [enabled, setEnabled] = useState<readonly SectionKey[]>(SECTIONS.map((s) => s.key));
 
@@ -108,7 +114,7 @@ export function ProgressReportScreen({
   return (
     <div className="flex flex-col gap-5 h-full min-h-0">
       <ScreenHeader
-        eyebrow={client ? `${client.displayName} · ${periodLabel}` : "Danışan seçilmedi"}
+        eyebrow={client ? `${shown(client.displayName)} · ${periodLabel}` : "Danışan seçilmedi"}
         title="İlerleme Raporu"
         sub="Aileyle paylaşılabilir · yazdırmaya hazır · CSV eki dahil"
         actions={
@@ -224,7 +230,7 @@ export function ProgressReportScreen({
                 </div>
 
                 <h2 className="font-display m-0 mb-2.5 text-[17px] font-bold tracking-[-0.02em] text-(--color-text-strong)">
-                  {client.displayName} — Gelişim Özeti
+                  {shown(client.displayName)} — Gelişim Özeti
                 </h2>
                 <p className="m-0 text-[12px] leading-[1.65] text-(--color-text-body)">
                   Dönem boyunca <strong className="font-bold text-(--color-text-strong)">{scoped.length} yapılandırılmış seans</strong> gerçekleştirildi.
@@ -385,7 +391,7 @@ export function ProgressReportScreen({
             <div className="glass rounded-[18px] flex items-center gap-2.5" style={{ padding: "14px 16px" }}>
               {client && <Avatar name={client.displayName} id={client.id} size={30} radius={10} />}
               <span className="min-w-0">
-                <span className="block text-[12px] font-bold text-(--color-text-strong) truncate">{client.displayName}</span>
+                <span className="block text-[12px] font-bold text-(--color-text-strong) truncate">{shown(client.displayName)}</span>
                 <span className="numeral block text-[9.5px] text-(--color-text-soft)">{scoped.length} seans · {periodLabel}</span>
               </span>
             </div>
