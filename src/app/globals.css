@@ -838,6 +838,90 @@ html[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
     --card-cols: 1fr;
   }
 }
+
+/* ── İlerleme raporu sütun sırası ──
+   Masaüstünde soldan sağa "ayar → belge → paylaşım". Telefonda tek sütuna
+   inince bu sıra ekranı ayar paneliyle açıyor, raporun kendisi ekranın
+   dışında kalıyordu. Küçük ekranda belge öne alınır. */
+@media (max-width: 1023px) {
+  .report-document { order: 1; }
+  .report-controls { order: 2; }
+  .report-share    { order: 3; }
+}
+
+/* ── Yazdırma ──
+   "PDF İndir" `window.print()` çağırıyor. Kural olmadığında tarayıcı tüm
+   uygulama kabuğunu — sidebar, üst çubuk, alt gezinme, modal katmanı —
+   kâğıda basıyordu; oysa ekran "yazdırmaya hazır" diyor. Burada yalnızca
+   rapor belgesi kalır, kabuk ve kontroller düşer. */
+@media print {
+  @page { margin: 14mm; }
+
+  html, body {
+    background: #fff !important;
+    color: #0f2033 !important;
+  }
+  /* Doku katmanları kâğıtta gri bir sis bırakıyor. */
+  body::before, body::after { display: none !important; }
+
+  nav, header, aside,
+  .report-controls, .report-share,
+  [role="dialog"], [role="status"] {
+    display: none !important;
+  }
+
+  /* Kabuğun kaydırma kutuları içeriği tek sayfaya hapsediyor; yazdırırken
+     her şey doğal yüksekliğine açılmalı ki rapor sayfalara bölünebilsin. */
+  main, .app-shell, .deniz-split, .report-document, .report-document > * {
+    display: block !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .report-document > * {
+    margin-bottom: 12px !important;
+    break-inside: avoid;
+    border: 1px solid #cddcf0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    padding: 14px 16px !important;
+  }
+
+  /* Ekran başlığı kâğıtta raporun üstünde kalsın, eylem düğmeleri gitsin. */
+  .print-hide { display: none !important; }
+}
+
+/* ── Haftalık plan ızgarası ──
+   Masaüstünde yedi sütun yan yana; hafta bir bakışta okunur. Telefonda aynı
+   ızgara sütun başına ~55px bırakıyor, danışan adları "Ela Se" diye
+   kesiliyordu. Küçük ekranda gün gün akan bir listeye dönüşür: aynı veri,
+   dikey eksen. */
+.plan-week {
+  display: grid;
+  gap: 9px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+@media (max-width: 1023px) {
+  .plan-week {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+  }
+  /* Bloklar yatay değil dikey akar; gün başlığı üstte kalır. */
+  .plan-day-blocks {
+    overflow: visible;
+  }
+  /* Seansı olmayan günler listeyi uzatmasın diye daralır ama kaybolmaz —
+     boş gün de bir bilgidir ve "+" ile doldurulabilir olmalı. */
+  .plan-day {
+    flex: 0 0 auto;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .live-pulse { animation: none; }
 }

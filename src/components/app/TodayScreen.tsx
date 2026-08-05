@@ -24,7 +24,8 @@ import {
   splitEmphasis,
   type AgendaItem,
 } from "@/lib/deniz-derive";
-import { Avatar, Card, CardTitle, Eyebrow, Radar, ScreenHeader, Sparkline, btnGhost } from "./primitives";
+import { Avatar, Card, CardTitle, Radar, ScreenHeader, Sparkline, btnGhost } from "./primitives";
+import { normalizeScore } from "@/lib/game-constants";
 
 interface Props {
   readonly now: Date;
@@ -61,12 +62,12 @@ export function TodayScreen({
 
   const dateLabel = now.toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
-  /* Ortalama skor eğilimi: son 12 seans, eskiden yeniye. */
+  /* Ortalama skor eğilimi: son 12 seans, eskiden yeniye, normalize. */
   const scoreSeries = sessions
     .slice()
     .sort((a, b) => new Date(a.playedAt).getTime() - new Date(b.playedAt).getTime())
     .slice(-12)
-    .map((s) => s.score);
+    .map((s) => Math.round(normalizeScore(s.gameKey as never, s.score) * 100));
 
   const prevAvg = scoreSeries.length >= 6
     ? Math.round(scoreSeries.slice(0, -3).reduce((a, b) => a + b, 0) / (scoreSeries.length - 3))
@@ -378,12 +379,14 @@ export function TodayScreen({
   );
 }
 
-/* Radar eksenleri: beş beceri alanı, her biri o alandaki seansların ortalaması. */
+/* Radar eksenleri: beş beceri alanı, her biri o alandaki seansların ortalaması.
+   Eksenler 0-100 olduğu için değerler normalize edilir; ham puanla bir
+   Kart Eşle seansı (280) radarı tek yöne çekip şekli okunmaz kılıyordu. */
 function radarAxes(sessions: readonly RecentSessionEntry[]) {
   const byGame = new Map<string, number[]>();
   for (const s of sessions) {
     const arr = byGame.get(s.gameKey) ?? [];
-    arr.push(s.score);
+    arr.push(Math.round(normalizeScore(s.gameKey as never, s.score) * 100));
     byGame.set(s.gameKey, arr);
   }
   const avgOf = (keys: string[]) => {

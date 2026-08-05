@@ -22,8 +22,9 @@ import {
   domainColor,
   shortDate,
   INDEPENDENCE_STEPS,
-  firstName,
 } from "@/lib/deniz-derive";
+import { normalizeScore, GAME_SCORE_SCALE } from "@/lib/game-constants";
+import { SessionTrendChart } from "@/components/shared/SessionTrendChart";
 import { Avatar, Card, CardTitle, Eyebrow, ScoreRing, ScreenHeader, SegmentedControl, Tag, btnGhost } from "./primitives";
 
 const TARGET_SCORE = 85;
@@ -277,7 +278,17 @@ export function ClientDetailScreen({
           )}
 
           {tab === "sessions" && (
-            <SessionHistory sessions={m.sessions.slice().reverse()} total={m.sessionCount} fill />
+            <>
+              {/* Alan renkli, normalize eğilim grafiği. Bileşen yazılmıştı ama
+                  hiçbir ekranda render edilmiyordu; yeri burası: "Seanslar"
+                  sekmesi zaman içindeki dağılımı soruyor. */}
+              {m.sessions.length >= 3 && (
+                <Card pad="p-[18px_20px]" className="shrink-0">
+                  <SessionTrendChart sessions={m.sessions} />
+                </Card>
+              )}
+              <SessionHistory sessions={m.sessions.slice().reverse()} total={m.sessionCount} fill />
+            </>
           )}
 
           {tab === "notes" && (
@@ -485,7 +496,10 @@ function GrowthCurve({ sessions }: { readonly sessions: readonly RecentSessionEn
 
   const xs = sessions.map((_, i) => pad.l + (i * (W - pad.l - pad.r)) / (sessions.length - 1));
   const y = (v: number) => pad.t + (1 - v / 100) * (H - pad.t - pad.b);
-  const pts = sessions.map((s, i) => `${xs[i].toFixed(1)} ${y(s.score).toFixed(1)}`);
+  /* Eksen 0-100; noktalar normalize skordan. Ham puanla çizildiğinde bir
+     Kart Eşle seansı (280) grafiğin dışına taşıyordu. */
+  const norm = (s: RecentSessionEntry) => Math.round(normalizeScore(s.gameKey as never, s.score) * 100);
+  const pts = sessions.map((s, i) => `${xs[i].toFixed(1)} ${y(norm(s)).toFixed(1)}`);
   const line = `M${pts.join(" L")}`;
   const area = `${line} L${xs[xs.length - 1]} ${H - pad.b} L${xs[0]} ${H - pad.b} Z`;
 
@@ -525,7 +539,7 @@ function GrowthCurve({ sessions }: { readonly sessions: readonly RecentSessionEn
       <path d={area} fill="url(#growth-fill)" />
       <path d={line} fill="none" stroke="var(--color-primary)" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
       {sessions.map((s, i) => (
-        <circle key={s.id} cx={xs[i]} cy={y(s.score)} r={3.4} fill="var(--color-signature-to)" stroke="var(--color-surface-strong)" strokeWidth={2} />
+        <circle key={s.id} cx={xs[i]} cy={y(norm(s))} r={3.4} fill="var(--color-signature-to)" stroke="var(--color-surface-strong)" strokeWidth={2} />
       ))}
       {sessions.map((s, i) =>
         sessions.length <= 12 || i % 2 === 0 ? (
@@ -586,12 +600,25 @@ function SessionHistory({
                 <div className="text-[12.5px] font-bold text-(--color-text-strong) truncate">{gameTitle(s.gameKey)}</div>
                 <div className="text-[10.5px] text-(--color-text-soft) truncate">{gameKicker(s.gameKey)}</div>
               </div>
-              <span
-                className="numeral text-[15px] font-semibold shrink-0"
-                style={{ color: s.score >= TARGET_SCORE ? "var(--color-accent-green)" : "var(--color-primary)" }}
-              >
-                {s.score}
-              </span>
+              {/* Listede ham puan kendi biriminde, altında normalize karşılığı:
+                  "184 puan" tek başına oyunlar arası kıyaslanamıyor, "%66"
+                  ise hedefe uzaklığı söylüyor. */}
+              {(() => {
+                const pct = Math.round(normalizeScore(s.gameKey as never, s.score) * 100);
+                return (
+                  <span className="shrink-0 text-right">
+                    <span
+                      className="numeral block text-[15px] font-semibold leading-none"
+                      style={{ color: pct >= TARGET_SCORE ? "var(--color-accent-green)" : "var(--color-primary)" }}
+                    >
+                      {s.score}
+                    </span>
+                    <span className="numeral block text-[9px] text-(--color-text-muted) mt-1">
+                      {GAME_SCORE_SCALE[s.gameKey as keyof typeof GAME_SCORE_SCALE]?.unit ?? "puan"} · %{pct}
+                    </span>
+                  </span>
+                );
+              })()}
             </div>
           ))}
         </div>

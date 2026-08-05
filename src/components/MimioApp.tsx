@@ -13,7 +13,6 @@ import {
 import { motion } from "framer-motion";
 import { GameArena } from "./game/GameArena";
 import { BlockMark } from "./brand/BlockMark";
-import { SessionTrendChart } from "./shared/SessionTrendChart";
 import {
   ARENA_KEYBOARD_HINT,
   differenceCue,
@@ -102,7 +101,7 @@ import {
   PHASE_LABELS, DAY_KEYS, DAY_LABELS,
   DIFFICULTY_LABELS, DIFFICULTY_COLORS, GAME_DIFF_CONFIG,
   LOGIC_SHAPES, LOGIC_COLORS,
-  GAME_SCORE_SCALE,
+  GAME_SCORE_SCALE, normalizeScore,
 } from "@/lib/game-constants";
 import {
   randomIndex, shuffleArray, createMemorySequence, getDifficultyLevel,
@@ -120,7 +119,7 @@ import { GameResultOverlay } from "@/components/shared/GameResultOverlay";
 import { SessionSetSummary } from "@/components/shared/SessionSetSummary";
 import { ToastContainer, showToast } from "@/components/shared/ToastContainer";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { MilestoneContainer } from "@/components/shared/MilestoneToast";
+import { MilestoneContainer, checkAndShowMilestones } from "@/components/shared/MilestoneToast";
 import { AchievementPanel, ACHIEVEMENTS, type AchievementStats, type EarnedAchievement } from "@/components/shared/AchievementBadge";
 import { ClientComparison } from "@/components/shared/ClientComparison";
 import { OnboardingTour } from "@/components/shared/OnboardingTour";
@@ -238,6 +237,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const [supportCounts, setSupportCounts] = useState<Record<SupportKind, number>>({ verbal: 0, visual: 0, physical: 0 });
   /* Tur tur doğru/yanlış — sağ raydaki tepki izi bunu çiziyor. */
   const [sessionTrace, setSessionTrace] = useState<boolean[]>([]);
+  /* Turlar arası gerçek tepki süreleri (ms). "Ort. tepki" ölçümünün kaynağı. */
+  const [responseTimes, setResponseTimes] = useState<number[]>([]);
+  const lastRoundAtRef = useRef<number | null>(null);
   const [memoryState, setMemoryState] = useState<MemoryState>({ sequence: [], input: [], flashIndex: null, score: 0, phase: "idle", message: "Oyunu başlat ve diziyi dikkatle izle." });
   const [pairsState, setPairsState] = useState<PairsState>({ tiles: [], moves: 0, pairsFound: 0, locked: false, phase: "idle", message: "Kartları aç ve eşleşen çiftleri bul." });
   const [pulseState, setPulseState] = useState<PulseState>({ activeIndex: null, round: 0, hits: 0, misses: 0, combo: 0, points: 0, phase: "idle", message: "Parmak, kalem veya ekran kalemiyle kontrollü hız denemesi yap." });
@@ -288,7 +290,11 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
   // ── Achievement & new feature states ──
   const ACHIEVEMENTS_KEY = "mimio-achievements-v1";
+  const PERFECT_GAMES_KEY = "mimio-perfect-games-v1";
   const [earnedAchievements, setEarnedAchievements] = useState<EarnedAchievement[]>([]);
+  /* Tüm turları doğru tamamlanan seans sayısı — "Kusursuz Oyun" başarımının
+     girdisi. Cihaz başına saklanır, skor tahtasıyla aynı ömürde. */
+  const [perfectGameCount, setPerfectGameCount] = useState(0);
   const [showComparison, setShowComparison] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
 
@@ -304,6 +310,19 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     /* Tepki izi buradan besleniyor: her geri bildirim bir tur. Son 16 tur
        tutuluyor — sağ raydaki çubuk grafik o kadarını gösteriyor. */
     setSessionTrace((t) => [...t, correct].slice(-16));
+    /*
+     * Tepki süresi: bir önceki turdan bu yana geçen süre. Seans Sonu'ndaki
+     * "Ort. tepki" alanı bugüne kadar sabit "—" gösteriyordu çünkü bu ölçüm
+     * hiçbir yerde alınmıyordu. İlk tur atlanır (öncesi yok) ve 30 sn üstü
+     * değerler dışarıda bırakılır: o aralık tepki değil, ara verme.
+     */
+    const now = Date.now();
+    const since = lastRoundAtRef.current;
+    lastRoundAtRef.current = now;
+    if (since !== null) {
+      const ms = now - since;
+      if (ms > 0 && ms < 30000) setResponseTimes((r) => [...r, ms].slice(-40));
+    }
     feedbackTimerRef.current = window.setTimeout(() => setLastFeedback(null), 700);
     if (typeof points === "number" && points !== 0) {
       const id = Date.now() + Math.random();
@@ -360,6 +379,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       if (storedPrefs) { const pp = JSON.parse(storedPrefs); if (pp && typeof pp === "object") setPrefs({ ...DEFAULT_PREFS, ...pp }); }
       const storedAchievements = window.localStorage.getItem(ACHIEVEMENTS_KEY);
       if (storedAchievements) { const p = JSON.parse(storedAchievements); if (Array.isArray(p)) setEarnedAchievements(p); }
+      const storedPerfect = window.localStorage.getItem(PERFECT_GAMES_KEY);
+      if (storedPerfect) { const p = JSON.parse(storedPerfect); if (typeof p === "number" && Number.isFinite(p)) setPerfectGameCount(p); }
     } catch {
       setScoreboard(EMPTY_SCOREBOARD);
     }
@@ -395,6 +416,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   useEffect(() => { persist(THERAPY_FAVORITES_KEY, tpFavoriteActivities); }, [tpFavoriteActivities, hydrated]);
   useEffect(() => { persist(THERAPY_CUSTOM_NOTES_KEY, tpCustomNotes); }, [tpCustomNotes, hydrated]);
   useEffect(() => { persist(ACHIEVEMENTS_KEY, earnedAchievements); }, [earnedAchievements, hydrated]);
+  useEffect(() => { persist(PERFECT_GAMES_KEY, perfectGameCount); }, [perfectGameCount, hydrated]);
   useEffect(() => { persist(PREFS_KEY, prefs); }, [prefs, hydrated]);
 
   useEffect(() => {
@@ -629,14 +651,23 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   }
 
   /* Alan kazanımı: her alanın son seansı ile ondan önceki ortalaması. */
+  /*
+   * Alan kazanımı: her alanın son seansı ile ondan önceki ortalaması.
+   *
+   * Değerler normalize edilir. Bir alanda farklı ölçekli oyunlar bir arada
+   * olabiliyor — "Görsel" altında hem Fark Avcısı (0-16 doğru tur) hem Kart
+   * Eşle (50-280 puan) var. Ham puanlarla çubuk genişliği yüzde olarak
+   * çizilince Kart Eşle her zaman taşıyor, Fark Avcısı hep sıfıra yapışıyordu.
+   */
   function buildDomainGains(mine: readonly RecentSessionEntry[]) {
     const out: Array<{ label: string; from: number; to: number; color: string }> = [];
+    const norm = (s: RecentSessionEntry) => Math.round(normalizeScore(s.gameKey as GameKey, s.score) * 100);
     for (const key of DOMAIN_ORDER) {
       const inDomain = mine.filter((x) => gameDomain(x.gameKey) === key);
       if (inDomain.length < 2) continue;
-      const to = inDomain[0].score;
+      const to = norm(inDomain[0]);
       const rest = inDomain.slice(1, 5);
-      const from = Math.round(rest.reduce((a, b) => a + b.score, 0) / rest.length);
+      const from = Math.round(rest.reduce((a, b) => a + norm(b), 0) / rest.length);
       out.push({ label: DOMAIN_META[key].label, from, to, color: DOMAIN_META[key].color });
       if (out.length === 3) break;
     }
@@ -669,7 +700,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
    */
   function handleStartSessionFor(clientId: string, gameKey?: PlatformGameKey) {
     setActiveClientId(clientId);
-    setSessionTrace([]);
+    setSessionTrace([]); setResponseTimes([]); lastRoundAtRef.current = null; setSessionWarningDismissed(false);
     setSupportCounts({ verbal: 0, visual: 0, physical: 0 });
     setClientDiffOverride(null);
     setSessionPaused(false);
@@ -1289,6 +1320,16 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       gameKey: game, gameLabel: GAME_LABELS[game], score: nextScore, source: "web-app", playedAt,
       sessionNote: sessionNote.trim() || null, durationSeconds,
     };
+    /*
+     * Kusursuz oyun: seansın tüm turları doğru. `perfectGames` sayacı daha
+     * önce sabit 0 yazılıyordu — "Kusursuz Oyun" başarımı hiç kazanılamıyordu.
+     * Gerçek tur izinden hesaplanıyor; en az üç tur şartı, tek turluk bir
+     * seansın kusursuz sayılmasını engelliyor.
+     */
+    const perfectRun = sessionTrace.length >= 3 && sessionTrace.every(Boolean);
+    if (perfectRun) setPerfectGameCount((n) => n + 1);
+
+    const wasNewBest = nextScore > scoreboard[game].best;
     setScoreboard((current) => {
       const entry = current[game];
       const isNewBest = nextScore > entry.best;
@@ -1299,6 +1340,22 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       }
       return { ...current, [game]: { ...entry, best: Math.max(entry.best, nextScore), last: nextScore, plays: entry.plays + 1 } };
     });
+
+    /*
+     * Kilometre taşı bildirimleri. `checkAndShowMilestones` yazılmış ama
+     * hiçbir yerden çağrılmıyordu; 10./25./50. seans, seri ve yeni rekor
+     * kutlamalarının hiçbiri görünmüyordu. Seans sayısı bu kaydı da
+     * içermeli, o yüzden +1.
+     */
+    if (nextScore > 0) {
+      checkAndShowMilestones({
+        totalSessions: effectiveSessionCount + 1,
+        sessionStreak,
+        uniqueGamesPlayed: new Set([...platformOverview.recentSessions.map((s) => s.gameKey), game]).size,
+        isNewBest: wasNewBest,
+        gameName: GAME_LABELS[game],
+      });
+    }
     // ── Adaptive difficulty suggestion ──
     if (activeClient && nextScore > 0) {
       const threshold = ADAPTIVE_THRESHOLDS[game];
@@ -1674,7 +1731,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     bestScore: Math.max(...Object.values(scoreboard).map(s => s.best), 0),
     uniqueGamesPlayed: new Set(platformOverview.recentSessions.map(s => s.gameKey)).size,
     sessionStreak,
-    perfectGames: 0, // tracked in commitScore
+    perfectGames: perfectGameCount,
     thisWeekSessions: thisWeekCount,
     totalClients: clientOptions.length,
     notesWritten: allNotes.length,
@@ -1695,6 +1752,19 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
    * planlı seanstan 15 dk önce uygulama içi uyarı düşer; aynı blok için
    * bir kez (ref) hatırlatılır.
    */
+  /*
+   * Uzun seans uyarısı. Eşik (`sessionWarnThreshold`) ve "kapatıldı" bayrağı
+   * yazılmış ama hiçbir yerde okunmuyordu — uyarı hiç görünmüyordu. Çocuk
+   * yorulduğunda ölçüm bozulur; süre klinik bir değişkendir, sessizce
+   * geçilmemeli. Seans başına bir kez uyarır.
+   */
+  useEffect(() => {
+    if (gameStage !== "live" || sessionPaused || sessionWarningDismissed) return;
+    if (gameElapsed < sessionWarnThreshold * 60) return;
+    setSessionWarningDismissed(true);
+    showToast(`Seans ${sessionWarnThreshold} dakikayı geçti — yorgunluk ölçümü etkileyebilir.`, "warning");
+  }, [gameElapsed, gameStage, sessionPaused, sessionWarnThreshold, sessionWarningDismissed]);
+
   const remindedSlotsRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (!prefs.sessionReminder) return;
@@ -1771,10 +1841,15 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const liveAccuracy = liveTrace.length
     ? Math.round((liveTrace.filter(Boolean).length / liveTrace.length) * 100)
     : null;
+  const liveAvgResponse = responseTimes.length
+    ? (responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length) / 1000
+    : null;
   const liveMetrics = [
     { label: "Doğruluk", value: liveAccuracy === null ? "—" : String(liveAccuracy), unit: "%", tone: "green" as const },
     { label: "Seri", value: String(lastFeedback?.combo ?? 0), unit: "tur", tone: "primary" as const },
-    { label: "En iyi", value: String(liveScore?.best ?? 0), unit: "puan", tone: "primary" as const },
+    /* Ölçüm rayı seans sırasında değişen değerleri gösterir; "En iyi" seansla
+       değişmiyordu. Yerine gerçek tepki süresi geldi. */
+    { label: "Ort. tepki", value: liveAvgResponse === null ? "—" : liveAvgResponse.toFixed(1), unit: "sn", tone: "primary" as const },
     { label: "Hata", value: String(liveTrace.filter((x) => !x).length), unit: "tur", tone: "amber" as const },
   ];
 
@@ -2211,7 +2286,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               onStart={(key) => {
                 /* Yeni seans temiz ölçümle başlar; önceki seansın izi ve
                    ipucu sayaçları taşınırsa kayıt yanlış olur. */
-                setSessionTrace([]);
+                setSessionTrace([]); setResponseTimes([]); lastRoundAtRef.current = null; setSessionWarningDismissed(false);
                 setSupportCounts({ verbal: 0, visual: 0, physical: 0 });
                 setClientDiffOverride(null);
                 setSessionPaused(false);
@@ -2222,7 +2297,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 /* Sıra başlatmak da tek oyun başlatmakla aynı temizliği ister.
                    Sıra bir "oyun seti" olarak kurulur: önceki hâl yalnızca ilk
                    oyunu açıyor, "sıra" hiçbir zaman ikinci oyuna geçmiyordu. */
-                setSessionTrace([]);
+                setSessionTrace([]); setResponseTimes([]); lastRoundAtRef.current = null; setSessionWarningDismissed(false);
                 setSupportCounts({ verbal: 0, visual: 0, physical: 0 });
                 setClientDiffOverride(null);
                 setSessionPaused(false);
@@ -2239,14 +2314,39 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           const mine = platformOverview.recentSessions.filter((x) => x.clientId === activeClient?.id);
           const last = mine[0];
           const prev = mine[1];
-          const score = last?.score ?? 0;
-          const delta = prev ? score - prev.score : null;
-          const best = mine.length ? Math.max(...mine.map((x) => x.score)) : 0;
-          /* Tur dizisi gerçek tur verisi taşımıyor; skordan doğru/yanlış oranı
-             türetiliyor ve bu ekranda açıkça "tur bazında" olarak sunuluyor. */
-          const total = 10;
-          const okCount = Math.round((score / 100) * total);
-          const rounds = Array.from({ length: total }, (_, i) => i < okCount || (i + okCount) % 3 !== 0);
+          const rawScore = last?.score ?? 0;
+          const gameKey = (last?.gameKey ?? activeGame) as GameKey;
+
+          /*
+           * Skorlar oyundan oyuna aynı birimde değil: Sıra Hafızası dizi
+           * uzunluğu (≈3-12), Kart Eşle hamle cezasından türeyen bir puan
+           * (50-280) veriyor. Bu ekran bugüne kadar ham puanı 0-100'lük bir
+           * yüzdeymiş gibi gösteriyordu — Kart Eşle'de "%280 doğruluk" ve
+           * taşan bir skor halkası anlamına geliyordu. `normalizeScore` tam
+           * bu iş için yazılmış ve üç ekranda zaten kullanılıyor; burada da
+           * kullanılıyor artık. Ham puan da kaybolmuyor, kendi biriminde
+           * ayrı bir ölçüm olarak duruyor.
+           */
+          const scale = GAME_SCORE_SCALE[gameKey];
+          const normalized = Math.round(normalizeScore(gameKey, rawScore) * 100);
+          const prevNormalized = prev ? Math.round(normalizeScore(prev.gameKey as GameKey, prev.score) * 100) : null;
+          const delta = prevNormalized !== null ? normalized - prevNormalized : null;
+          const best = mine.length
+            ? Math.max(...mine.map((x) => Math.round(normalizeScore(x.gameKey as GameKey, x.score) * 100)))
+            : 0;
+
+          /*
+           * Turlar gerçek: `sessionTrace` seans boyunca her geri bildirimde
+           * dolduruluyor. Önceki sürüm bu diziyi hiç kullanmayıp turları
+           * skordan uyduruyordu — sonuç, aynı ekranda "Tur 0/10" metriğinin
+           * yanında "6/10 doğru" başlığının durmasıydı. Henüz tur işlenmemiş
+           * bir seansta (terapist hemen bitirdiyse) grafik hiç çizilmez.
+           */
+          const rounds = sessionTrace;
+          const okCount = rounds.filter(Boolean).length;
+          const avgResponse = responseTimes.length
+            ? (responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length) / 1000
+            : null;
 
           return (
             <SessionReviewScreen
@@ -2255,9 +2355,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               whenLabel={last ? formatPlayedAt(last.playedAt) : "az önce"}
               difficulty={DIFFICULTY_LABELS[clientDiffLevel]}
               savedAt={new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
-              score={score}
+              score={normalized}
               headline={
-                score >= best && mine.length > 1
+                normalized >= best && mine.length > 1
                   ? "En iyi seans — kişisel rekor kırıldı."
                   : delta !== null && delta > 0
                     ? `Yükseliş sürüyor — ${delta} puan kazanım.`
@@ -2267,17 +2367,18 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 ...(delta !== null && delta !== 0
                   ? [{ text: `${delta > 0 ? "↑ +" : "↓ "}${Math.abs(delta)} önceki seansa göre`, tone: delta > 0 ? ("green" as const) : ("primary" as const) }]
                   : []),
-                ...(score >= best && mine.length > 1 ? [{ text: "Kişisel rekor", tone: "primary" as const }] : []),
-                { text: `Hedefin %${Math.round((score / 85) * 100)}'i`, tone: "violet" as const },
+                ...(normalized >= best && mine.length > 1 ? [{ text: "Kişisel rekor", tone: "primary" as const }] : []),
+                { text: `Hedefin %${Math.min(100, Math.round((normalized / 85) * 100))}'i`, tone: "violet" as const },
               ]}
               metrics={[
-                { label: "Doğruluk", value: String(score), unit: "%", delta: delta !== null ? `${delta > 0 ? "+" : ""}${delta} puan` : undefined, deltaTone: delta && delta > 0 ? "green" : "neutral" },
-                { label: "Ort. tepki", value: "—", unit: "sn" },
-                { label: "Süre", value: last?.durationSeconds ? formatElapsed(last.durationSeconds) : formatElapsed(gameElapsed), unit: "dk" },
-                { label: "Tur", value: `${okCount}/${total}`, unit: "doğru", deltaTone: "neutral" },
+                /* Ham puan kendi biriminde: "12 dizi uzunluğu", "184 puan". */
+                { label: "Ham Puan", value: String(rawScore), unit: scale?.unit ?? "puan", delta: delta !== null ? `${delta > 0 ? "+" : ""}${delta} normalize` : undefined, deltaTone: delta && delta > 0 ? "green" : "neutral" },
+                { label: "Ort. tepki", value: avgResponse === null ? "—" : avgResponse.toFixed(1), unit: "sn" },
+                { label: "Süre", value: last?.durationSeconds ? formatElapsed(last.durationSeconds) : formatElapsed(gameElapsed), unit: "dk:sn" },
+                { label: "Tur", value: rounds.length ? `${okCount}/${rounds.length}` : "—", unit: "doğru", deltaTone: "neutral" },
               ]}
               gains={buildDomainGains(mine)}
-              nextHint={score >= 85 ? "Bir sonraki seansta zorluk artırılabilir." : "Mevcut zorlukta bir seans daha önerilir."}
+              nextHint={normalized >= 85 ? "Bir sonraki seansta zorluk artırılabilir." : "Mevcut zorlukta bir seans daha önerilir."}
               rounds={rounds}
               soap={reviewSoap}
               onSoapChange={setReviewSoap}
@@ -3412,7 +3513,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   key={preset.id}
                   type="button"
                   onClick={() => {
-                    setSessionTrace([]);
+                    setSessionTrace([]); setResponseTimes([]); lastRoundAtRef.current = null; setSessionWarningDismissed(false);
                     setSupportCounts({ verbal: 0, visual: 0, physical: 0 });
                     setSessionPaused(false);
                     startSessionSet(preset);

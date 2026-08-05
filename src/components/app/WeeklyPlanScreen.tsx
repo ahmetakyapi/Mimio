@@ -188,27 +188,40 @@ export function WeeklyPlanScreen({
       </div>
 
       <div className="grid gap-4 flex-1 min-h-0 deniz-split" style={{ ["--split" as string]: "minmax(0,1fr) 272px" }}>
-        {/* ── Hafta ızgarası ── */}
+        {/*
+          ── Hafta ızgarası ──
+
+          Masaüstünde yedi sütun; telefonda yedi sütun 55px'e düşüyor ve
+          danışan adları "Ela Se", "Kerer" diye kesiliyordu — plan okunamaz
+          hâle geliyordu. Küçük ekranda aynı veri gün gün alt alta akıyor:
+          her gün kendi başlığıyla bir bölüm, bloklar tam genişlikte.
+        */}
         <Card className="min-h-0 overflow-hidden" pad="p-[16px_18px]">
-          <div className="grid gap-[9px] h-full" style={{ gridTemplateColumns: "repeat(7, minmax(0,1fr))" }}>
+          <div className="plan-week h-full">
             {DAY_KEYS.map((day, i) => {
               const isToday = day === todayKey;
               const list = blocks[day];
               return (
-                <div key={day} className="flex flex-col gap-[7px] min-h-0">
+                <div key={day} className="plan-day flex flex-col gap-[7px] min-h-0">
                   <div style={{ padding: "0 2px 7px", borderBottom: `1px solid ${isToday ? "var(--color-primary)" : "var(--color-line-soft)"}` }}>
                     <div className="flex items-baseline gap-[5px]">
                       <span className={`text-[10.5px] font-semibold ${isToday ? "text-(--color-primary)" : "text-(--color-text-soft)"}`}>
                         {DAY_LABELS[day]}
                       </span>
                       <span className="figure text-[15px] text-(--color-text-strong)">{dayDates[i].getDate()}</span>
+                      {isToday && (
+                        <span className="numeral text-[8.5px] font-semibold text-(--color-primary) lg:hidden">bugün</span>
+                      )}
+                      <span className="numeral ml-auto text-[8px] font-medium text-(--color-text-muted) lg:hidden">
+                        {list.length} seans
+                      </span>
                     </div>
-                    <span className="numeral block mt-[3px] text-[8px] font-medium text-(--color-text-muted)">
+                    <span className="numeral hidden lg:block mt-[3px] text-[8px] font-medium text-(--color-text-muted)">
                       {list.length} seans
                     </span>
                   </div>
 
-                  <div className="flex flex-col gap-[7px] flex-1 min-h-0 overflow-y-auto">
+                  <div className="plan-day-blocks flex flex-col gap-[7px] flex-1 min-h-0 overflow-y-auto">
                     {list.map((b) => (
                       <PlanBlock
                         key={`${b.clientId}-${b.index}-${b.entry.gameKey}`}

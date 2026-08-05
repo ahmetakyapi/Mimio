@@ -320,15 +320,20 @@ export function LiveSessionScreen({
                   {correct}/{trace.length} doğru
                 </span>
               </div>
+              {/* Yükseklik veriden gelir, desenden değil: tur ya doğru ya
+                  yanlış. Önceki sürüm `45 + (i * 13) % 55` ile rastgele
+                  yükseklikler üretiyordu — seansın ritmini okuduğunu sanan
+                  terapiste uydurma bir dalgalanma gösteriyordu. */}
               <div className="flex items-end gap-[3px]" style={{ height: 44 }}>
                 {trace.map((ok, i) => (
                   <span
                     key={i}
                     className="flex-1 rounded-[2px]"
                     style={{
-                      height: `${ok ? 45 + ((i * 13) % 55) : 22 + ((i * 7) % 20)}%`,
+                      height: ok ? "100%" : "34%",
                       background: ok ? "var(--color-primary)" : "var(--color-accent-red)",
                     }}
+                    title={`${i + 1}. tur — ${ok ? "doğru" : "yanlış"}`}
                   />
                 ))}
               </div>

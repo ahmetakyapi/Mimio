@@ -17,6 +17,7 @@ import { useMemo, useState } from "react";
 import { Download, FileText, Share2 } from "lucide-react";
 import type { ClientProfile, RecentSessionEntry, ClientGoal } from "@/lib/platform-data";
 import { gameTitle, metricsFor, INDEPENDENCE_STEPS, independenceOf } from "@/lib/deniz-derive";
+import { normalizeScore } from "@/lib/game-constants";
 import { Avatar, Eyebrow, ScreenHeader, Sparkline, StepBar, btnGhost } from "./primitives";
 import { BlockMark } from "@/components/brand/BlockMark";
 
@@ -82,14 +83,21 @@ export function ProgressReportScreen({
   const m = client ? metricsFor(client, scoped) : null;
   const first = scoped[0];
   const last = scoped[scoped.length - 1];
-  const growth = first && last && first.score > 0 ? Math.round(((last.score - first.score) / first.score) * 100) : null;
+  /* Büyüme yüzdesi normalize skorlar üzerinden: dönemin ilk seansı Kart Eşle,
+     sonuncusu Sıra Hafızası olduğunda ham puan farkı (280 → 9) "%97 azalış"
+     gibi anlamsız bir sonuç veriyordu. */
+  const firstNorm = first ? Math.round(normalizeScore(first.gameKey as never, first.score) * 100) : 0;
+  const lastNorm = last ? Math.round(normalizeScore(last.gameKey as never, last.score) * 100) : 0;
+  const growth = first && last && firstNorm > 0 ? Math.round(((lastNorm - firstNorm) / firstNorm) * 100) : null;
 
   /* Oyun bazında tablo — eğilim son iki ölçümün farkından. */
   const perGame = useMemo(() => {
     const map = new Map<string, number[]>();
     for (const s of scoped) {
       const arr = map.get(s.gameKey) ?? [];
-      arr.push(s.score);
+      /* Normalize: tablodaki "Ort." sütunu oyunlar arasında kıyaslanabilir
+         olmalı; ham puanla Kart Eşle hep en yüksek görünüyordu. */
+      arr.push(Math.round(normalizeScore(s.gameKey as never, s.score) * 100));
       map.set(s.gameKey, arr);
     }
     return Array.from(map.entries()).map(([key, xs]) => {
@@ -118,7 +126,7 @@ export function ProgressReportScreen({
         title="İlerleme Raporu"
         sub="Aileyle paylaşılabilir · yazdırmaya hazır · CSV eki dahil"
         actions={
-          <>
+          <span className="print-hide flex items-center gap-2.5">
             {clients.length > 0 && (
               <select
                 value={client?.id ?? ""}
@@ -142,7 +150,7 @@ export function ProgressReportScreen({
             >
               <Download size={15} /> PDF İndir
             </button>
-          </>
+          </span>
         }
       />
 
@@ -151,9 +159,12 @@ export function ProgressReportScreen({
           <p className="m-0 text-[12.5px] text-(--color-text-soft)">Rapor için bir danışan seç.</p>
         </div>
       ) : (
-        <div className="grid gap-4 flex-1 min-h-0 deniz-split" style={{ ["--split" as string]: "236px minmax(0,1fr) 250px" }}>
-          {/* ── Sol: bölümler + dönem ── */}
-          <div className="flex flex-col gap-3.5 overflow-y-auto min-h-0">
+        <div className="grid gap-4 flex-1 min-h-0 deniz-split report-split" style={{ ["--split" as string]: "236px minmax(0,1fr) 250px" }}>
+          {/* ── Sol: bölümler + dönem ──
+              Telefonda bu sütun (bir ayar paneli) ekranı kaplayıp asıl raporu
+              aşağı itiyordu; `report-controls` mobilde onu belgenin altına
+              alır. Ekranın konusu rapor, raporun ayarları değil. */}
+          <div className="report-controls flex flex-col gap-3.5 overflow-y-auto min-h-0">
             <div className="glass rounded-[18px]" style={{ padding: "18px 20px" }}>
               <Eyebrow className="mb-3">Bölümler</Eyebrow>
               <div className="flex flex-col gap-1">
@@ -210,7 +221,7 @@ export function ProgressReportScreen({
           </div>
 
           {/* ── Orta: belge ── */}
-          <div className="flex flex-col gap-3.5 overflow-y-auto min-h-0 pr-1">
+          <div className="report-document flex flex-col gap-3.5 overflow-y-auto min-h-0 pr-1">
             {on("summary") && (
               <div className="glass rounded-[18px]" style={{ padding: "22px 24px" }}>
                 {/* Antet — çıktı ile ekranın aynı olduğuna güven buradan gelir */}
@@ -251,7 +262,7 @@ export function ProgressReportScreen({
                   {[
                     { l: "Seans", v: String(scoped.length) },
                     { l: "Ort. Skor", v: m?.averageScore != null ? String(m.averageScore) : "—" },
-                    { l: "Son Skor", v: last ? String(last.score) : "—" },
+                    { l: "Son Skor", v: last ? String(lastNorm) : "—" },
                     { l: "Hedef", v: "85" },
                   ].map((x) => (
                     <div key={x.l} style={{ padding: "12px 14px", borderRadius: 13, background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
@@ -339,7 +350,11 @@ export function ProgressReportScreen({
                         {new Date(s.playedAt).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" })}
                       </span>
                       <span className="flex-1 text-(--color-text-body) truncate">{gameTitle(s.gameKey)}</span>
-                      <span className="numeral font-semibold text-(--color-text-strong)">{s.score}</span>
+                      {/* Ham veri bölümü: puan kendi biriminde, yanında normalize karşılığı. */}
+                      <span className="numeral text-(--color-text-soft)">{s.score}</span>
+                      <span className="numeral font-semibold text-(--color-text-strong)" style={{ width: 38, textAlign: "right" }}>
+                        %{Math.round(normalizeScore(s.gameKey as never, s.score) * 100)}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -348,7 +363,7 @@ export function ProgressReportScreen({
           </div>
 
           {/* ── Sağ: paylaşım ── */}
-          <div className="flex flex-col gap-3.5 overflow-y-auto min-h-0">
+          <div className="report-share flex flex-col gap-3.5 overflow-y-auto min-h-0">
             <div className="glass rounded-[18px]" style={{ padding: "18px 20px" }}>
               <div className="flex items-center gap-2 mb-2.5">
                 <Share2 size={15} strokeWidth={1.9} style={{ color: "var(--color-primary)" }} />

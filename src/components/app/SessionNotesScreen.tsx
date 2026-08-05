@@ -16,6 +16,7 @@ import { useMemo, useState } from "react";
 import { Plus, Download, Trash2 } from "lucide-react";
 import type { ClientProfile, SessionNote, RecentSessionEntry } from "@/lib/platform-data";
 import { gameTitle } from "@/lib/deniz-derive";
+import { normalizeScore } from "@/lib/game-constants";
 import { Avatar, ScreenHeader, btnGhost } from "./primitives";
 
 const SOAP_FIELDS = [
@@ -187,7 +188,7 @@ export function SessionNotesScreen({ notes, clients, sessions, onNewNote, onExpo
                       )}
                       {sess && (
                         <span className="numeral ml-auto text-[11.5px] font-semibold shrink-0" style={{ color: "var(--color-primary)" }}>
-                          {sess.score}
+                          %{Math.round(normalizeScore(sess.gameKey as never, sess.score) * 100)}
                         </span>
                       )}
                     </span>
@@ -223,8 +224,13 @@ export function SessionNotesScreen({ notes, clients, sessions, onNewNote, onExpo
                   </span>
                 </span>
                 {selectedSession && (
-                  <span className="numeral text-[20px] font-semibold shrink-0" style={{ color: "var(--color-primary)" }}>
-                    {selectedSession.score}
+                  <span className="shrink-0 text-right">
+                    <span className="numeral block text-[20px] font-semibold leading-none" style={{ color: "var(--color-primary)" }}>
+                      %{Math.round(normalizeScore(selectedSession.gameKey as never, selectedSession.score) * 100)}
+                    </span>
+                    <span className="numeral block text-[9px] text-(--color-text-muted) mt-1">
+                      {selectedSession.score} ham
+                    </span>
                   </span>
                 )}
                 <button

@@ -10,7 +10,7 @@
  * hâli kendi boş-durum metniyle karşılar.
  */
 
-import { GAME_TABS, GAME_CATEGORIES } from "./game-constants";
+import { GAME_TABS, GAME_CATEGORIES, normalizeScore } from "./game-constants";
 import type {
   ClientProfile,
   RecentSessionEntry,
@@ -96,9 +96,11 @@ export interface ClientMetrics {
   client: ClientProfile;
   sessions: RecentSessionEntry[];
   sessionCount: number;
-  /** Son 8 seansın skor dizisi (eskiden yeniye) — sparkline için */
+  /** Son 8 seansın **normalize** skor dizisi (0-100, eskiden yeniye) — sparkline için */
   series: number[];
+  /** Son seansın normalize skoru (0-100) */
   lastScore: number | null;
+  /** Tüm seansların normalize skor ortalaması (0-100) */
   averageScore: number | null;
   /** Son 4 seans ile önceki 4 seans arasındaki ortalama farkı */
   delta: number | null;
@@ -137,7 +139,18 @@ export function metricsFor(client: ClientProfile, all: readonly RecentSessionEnt
     .slice()
     .sort((a, b) => new Date(a.playedAt).getTime() - new Date(b.playedAt).getTime());
 
-  const scores = sessions.map((s) => s.score);
+  /*
+   * Skorlar normalize edilir (0-100). Oyunlar aynı birimde puanlamıyor:
+   * Sıra Hafızası dizi uzunluğu (≈3-12), Kart Eşle hamle cezasından türeyen
+   * bir puan (50-280) veriyor. Ham puanlar bu ölçülerde karıştırıldığında
+   * "ortalama skor" anlamsızlaşıyor, eğilim çizgisi tek bir Kart Eşle
+   * seansıyla tavana yapışıyor ve 85'lik hedef çizgisi kimi oyunda
+   * ulaşılamaz kimi oyunda ilk seansta geçiliyordu.
+   *
+   * Gelişim Eğrisi kartı alt başlığında zaten "normalize skor" yazıyordu;
+   * artık gerçekten öyle. Ham puan seans listesinde kendi biriminde durur.
+   */
+  const scores = sessions.map((s) => Math.round(normalizeScore(s.gameKey as never, s.score) * 100));
   const series = scores.slice(-8);
   const avg = (xs: number[]) => (xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : null);
 
@@ -173,7 +186,7 @@ export interface AgendaItem {
   gameKey: PlatformGameKey;
   goal: string;
   status: AgendaStatus;
-  /** Tamamlanan seansın skoru — yalnızca `done` için dolu */
+  /** Tamamlanan seansın **normalize** skoru (0-100) — yalnızca `done` için dolu */
   score: number | null;
 }
 
@@ -220,7 +233,7 @@ export function buildAgenda(
         gameKey: entry.gameKey,
         goal: entry.goal || gameKicker(entry.gameKey),
         status: match || entry.completed ? "done" : "planned",
-        score: match ? match.score : null,
+        score: match ? Math.round(normalizeScore(match.gameKey as never, match.score) * 100) : null,
       });
     });
   }
@@ -236,7 +249,7 @@ export function buildAgenda(
       gameKey: s.gameKey,
       goal: gameKicker(s.gameKey),
       status: "done",
-      score: s.score,
+      score: Math.round(normalizeScore(s.gameKey as never, s.score) * 100),
     });
   }
 

@@ -256,24 +256,46 @@ export function SessionReviewScreen({
                 <h2 className="font-display m-0 text-[14px] font-bold tracking-[-0.02em] text-(--color-text-strong)">
                   Tur Bazında
                 </h2>
-                <span className="numeral text-[10.5px] font-semibold" style={{ color: "var(--color-accent-green)" }}>
-                  {correct} / {rounds.length} doğru
-                </span>
-              </div>
-              <div className="flex-1 flex items-end gap-2 min-h-[110px]">
-                {rounds.map((ok, i) => (
-                  <span key={i} className="flex-1 flex flex-col items-center gap-1.5">
-                    <span
-                      className="w-full rounded-t-md"
-                      style={{
-                        height: `${ok ? 44 + ((i * 17) % 52) : 20 + ((i * 9) % 16)}px`,
-                        background: ok ? "var(--gradient-bar)" : "var(--color-accent-red)",
-                      }}
-                    />
-                    <span className="numeral text-[9px] text-(--color-text-muted)">{i + 1}</span>
+                {rounds.length > 0 && (
+                  <span className="numeral text-[10.5px] font-semibold" style={{ color: "var(--color-accent-green)" }}>
+                    {correct} / {rounds.length} doğru
                   </span>
-                ))}
+                )}
               </div>
+              {/*
+                Çubuklar iki durumlu: tur ya doğru ya yanlış. Önceki sürüm
+                yüksekliği `44 + (i * 17) % 52` ile üretiyordu — veriyle hiç
+                ilgisi olmayan, her seansta aynı çıkan dekoratif bir desen.
+                Sahte bir yükseklik, okuyanı "bu turda daha iyiydi" diye
+                yanıltır. Doğru/yanlış tek boyda okunur.
+
+                Çubuklar `maxWidth` ile sınırlı: az turlu bir seansta tek
+                çubuk ekranı boydan boya kaplayınca veri değil hata gibi
+                duruyordu.
+              */}
+              {rounds.length === 0 ? (
+                <div className="flex-1 grid place-items-center min-h-[110px]">
+                  <p className="m-0 text-center text-[11.5px] leading-[1.5] text-(--color-text-soft)">
+                    Bu seansta tur kaydı oluşmadı.<br />Oyun oynandığında her tur buraya düşer.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex-1 flex items-end justify-start gap-2 min-h-[110px]">
+                  {rounds.map((ok, i) => (
+                    <span key={i} className="flex flex-col items-center gap-1.5" style={{ flex: "1 1 0", maxWidth: 44 }}>
+                      <span
+                        className="w-full rounded-t-md"
+                        style={{
+                          height: ok ? 78 : 30,
+                          background: ok ? "var(--gradient-bar)" : "var(--color-accent-red)",
+                        }}
+                        title={`${i + 1}. tur — ${ok ? "doğru" : "yanlış"}`}
+                      />
+                      <span className="numeral text-[9px] text-(--color-text-muted)">{i + 1}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
