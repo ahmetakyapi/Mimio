@@ -13,7 +13,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { ChevronRight, Sparkles, FileText, Plus } from "lucide-react";
+import { ChevronRight, Sparkles, FileText, Plus, Minus, Archive, Trash2 } from "lucide-react";
 import type { AppView, ClientProfile, RecentSessionEntry, SessionNote, ClientGoal, PlatformGameKey } from "@/lib/platform-data";
 import {
   metricsFor,
@@ -41,6 +41,11 @@ interface Props {
   readonly onStartSession: (clientId: string, gameKey?: PlatformGameKey) => void;
   readonly onCreateReport: () => void;
   readonly onAddNote: () => void;
+  readonly onDeleteNote: (noteId: string) => void;
+  readonly onAddGoal: () => void;
+  readonly onUpdateGoal: (goalId: string, currentValue: number) => void;
+  readonly onDeleteGoal: (goalId: string) => void;
+  readonly onArchive: () => void;
 }
 
 export function ClientDetailScreen({
@@ -54,6 +59,11 @@ export function ClientDetailScreen({
   onStartSession,
   onCreateReport,
   onAddNote,
+  onDeleteNote,
+  onAddGoal,
+  onUpdateGoal,
+  onDeleteGoal,
+  onArchive,
 }: Props) {
   const [tab, setTab] = useState<TabKey>("overview");
   const [range, setRange] = useState<"10" | "90" | "all">("10");
@@ -160,6 +170,16 @@ export function ClientDetailScreen({
             <Row label="Destek" value={client.supportLevel || "—"} />
             <Row label="Zorluk" value={client.difficultyLevel || "—"} />
             <Row label="Terapist" value={therapistName} last />
+            {/* Arşiv — yıkıcı eylem köşede ve sessiz durur; onay MimioApp'teki
+                ConfirmDialog'dan geçer. Daha önce arşivleme hiçbir ekrandan
+                erişilemiyordu. */}
+            <button
+              type="button"
+              onClick={onArchive}
+              className="mt-2 flex items-center gap-1.5 text-[11px] font-medium bg-transparent border-none p-0 cursor-pointer text-(--color-text-muted) hover:text-(--color-accent-red) transition-colors"
+            >
+              <Archive size={12} /> Danışanı Arşivle
+            </button>
           </Card>
 
           <Card pad="p-[18px_20px]">
@@ -280,12 +300,23 @@ export function ClientDetailScreen({
               ) : (
                 <div className="flex-1 flex flex-col gap-2 overflow-y-auto min-h-0">
                   {clientNotes.map((n) => (
-                    <div key={n.id} style={{ padding: "12px 14px", borderRadius: 13, background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
-                      <div className="flex items-center justify-between mb-1.5">
+                    <div key={n.id} className="group" style={{ padding: "12px 14px", borderRadius: 13, background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
+                      <div className="flex items-center justify-between mb-1.5 gap-2">
                         <span className="numeral text-[10.5px] text-(--color-text-soft)">
                           {shortDate(new Date(n.createdAt))}
                         </span>
-                        {n.noteMode && <Tag tone="teal">{n.noteMode.toUpperCase()}</Tag>}
+                        <span className="flex items-center gap-2">
+                          {n.noteMode && <Tag tone="teal">{n.noteMode.toUpperCase()}</Tag>}
+                          <button
+                            type="button"
+                            aria-label="Notu sil"
+                            onClick={() => onDeleteNote(n.id)}
+                            className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-muted) hover:text-(--color-accent-red) opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                            style={{ width: 22, height: 22, borderRadius: 7 }}
+                          >
+                            <Trash2 size={12} strokeWidth={2} />
+                          </button>
+                        </span>
                       </div>
                       <p className="m-0 text-[12.5px] leading-[1.55] text-(--color-text-body)">{n.content}</p>
                     </div>
@@ -299,23 +330,65 @@ export function ClientDetailScreen({
         {/* ── Sağ: karar ── */}
         <div className="flex flex-col gap-3.5 min-h-0 overflow-y-auto">
           <Card pad="p-[18px_20px]">
-            <Eyebrow className="mb-3.5">Hedefler</Eyebrow>
+            <div className="flex items-center justify-between mb-3.5">
+              <Eyebrow>Hedefler</Eyebrow>
+              {/* Hedefler daha önce yalnızca seed'den gelebiliyordu: ekleme
+                  formu ve ilerleme güncelleme hiçbir yerden açılmıyordu. */}
+              <button
+                type="button"
+                onClick={onAddGoal}
+                className="flex items-center gap-1 text-[11px] font-semibold text-(--color-primary) bg-transparent border-none p-0 cursor-pointer hover:underline"
+              >
+                <Plus size={12} strokeWidth={2.4} /> Hedef Ekle
+              </button>
+            </div>
             {clientGoals.length === 0 ? (
               <p className="m-0 text-[12px] text-(--color-text-soft)">
                 Tanımlı hedef yok. Hedef eklendiğinde ilerleme halkası burada görünür.
               </p>
             ) : (
-              <div className="flex flex-col gap-3.5">
-                {clientGoals.slice(0, 3).map((g) => {
+              <div className="flex flex-col gap-3.5" style={{ maxHeight: 300, overflowY: "auto" }}>
+                {clientGoals.map((g) => {
                   const pct = g.targetValue > 0 ? Math.round((g.currentValue / g.targetValue) * 100) : 0;
                   return (
-                    <div key={g.id} className="flex items-center gap-3">
+                    <div key={g.id} className="flex items-center gap-3 group">
                       <ScoreRing value={pct} size={58} />
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="text-[12.5px] font-semibold text-(--color-text-strong) truncate">{g.title}</div>
                         <div className="text-[10.5px] text-(--color-text-soft) mt-0.5 truncate">
                           Hedef {g.targetValue} · şu an {g.currentValue}
                         </div>
+                      </div>
+                      {/* İlerleme tek dokunuşla işlenir — seans arasında form açtırmak fazla tören */}
+                      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                        <button
+                          type="button"
+                          aria-label={`${g.title} ilerlemesini azalt`}
+                          disabled={g.currentValue <= 0}
+                          onClick={() => onUpdateGoal(g.id, Math.max(0, g.currentValue - 1))}
+                          className="grid place-items-center cursor-pointer border-none text-(--color-text-soft) hover:text-(--color-primary) disabled:opacity-30 disabled:cursor-not-allowed"
+                          style={{ width: 22, height: 22, borderRadius: 7, background: "var(--color-primary-light)" }}
+                        >
+                          <Minus size={11} strokeWidth={2.4} />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`${g.title} ilerlemesini artır`}
+                          onClick={() => onUpdateGoal(g.id, g.currentValue + 1)}
+                          className="grid place-items-center cursor-pointer border-none text-(--color-text-soft) hover:text-(--color-primary)"
+                          style={{ width: 22, height: 22, borderRadius: 7, background: "var(--color-primary-light)" }}
+                        >
+                          <Plus size={11} strokeWidth={2.4} />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`${g.title} hedefini sil`}
+                          onClick={() => onDeleteGoal(g.id)}
+                          className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-muted) hover:text-(--color-accent-red)"
+                          style={{ width: 22, height: 22, borderRadius: 7 }}
+                        >
+                          <Trash2 size={11} strokeWidth={2} />
+                        </button>
                       </div>
                     </div>
                   );

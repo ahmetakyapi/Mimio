@@ -236,7 +236,15 @@ export function AuthScreen({
                   </span>
                   Beni Hatırla
                 </button>
-                <span className="text-[11.5px] text-(--color-text-muted)">Şifremi unuttum</span>
+                {/* "Şifremi unuttum" burada tıklanamaz bir süs olarak duruyordu;
+                    sıfırlama altyapısı yok. Seed'in şifre komutuna işaret eden
+                    dürüst bir ipucu bırakıyoruz. */}
+                <span
+                  className="text-[11.5px] text-(--color-text-muted) cursor-help"
+                  title="Şifre sıfırlama e-postası henüz yok. Demo kurulumunda: node scripts/seed-demo.mjs --set-password"
+                >
+                  Şifremi unuttum
+                </span>
               </div>
             )}
 

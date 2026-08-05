@@ -13,7 +13,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { Plus, Download, ArrowUpDown, Play, ChevronRight } from "lucide-react";
+import { Plus, Download, ArrowUpDown, Play, ChevronRight, GitCompareArrows } from "lucide-react";
 import type { ClientProfile, RecentSessionEntry, WeeklyPlan, PlatformGameKey } from "@/lib/platform-data";
 import {
   metricsFor,
@@ -49,6 +49,7 @@ interface Props {
   readonly onStartSession: (clientId: string, gameKey?: PlatformGameKey) => void;
   readonly onAddClient: () => void;
   readonly onExport: () => void;
+  readonly onCompare: () => void;
 }
 
 export function ClientsScreen({
@@ -62,6 +63,7 @@ export function ClientsScreen({
   onStartSession,
   onAddClient,
   onExport,
+  onCompare,
 }: Props) {
   const [tag, setTag] = useState<string>("all");
   const [sort, setSort] = useState<SortKey>("recent");
@@ -137,6 +139,12 @@ export function ClientsScreen({
         sub="Skor sütunu son 8 seansın eğilimini gösterir."
         actions={
           <>
+            {/* Karşılaştırma modalı koddaydı ama hiçbir düğme açmıyordu. */}
+            <button type="button" className={btnGhost} onClick={onCompare} disabled={clients.length < 2}>
+              <span className="inline-flex items-center gap-2">
+                <GitCompareArrows size={14} /> Karşılaştır
+              </span>
+            </button>
             <button type="button" className={btnGhost} onClick={onExport} disabled={clients.length === 0}>
               <span className="inline-flex items-center gap-2">
                 <Download size={14} /> CSV Dışa Aktar

@@ -10,7 +10,6 @@ import {
   Plus, Minus, Check, Archive, Edit2, Timer, X, Download, Upload, CreditCard, Printer, Cake, Play,
   type LucideIcon,
 } from "lucide-react";
-import { printClientReport, exportSessionsCSV as exportSessionsCSVUtil, exportGoalsCSV } from "@/lib/export-utils";
 import { motion } from "framer-motion";
 import { GameArena } from "./game/GameArena";
 import { BlockMark } from "./brand/BlockMark";
@@ -83,7 +82,7 @@ import { ActivityLibraryScreen } from "@/components/app/ActivityLibraryScreen";
 import { MobileTabBar, MobileMoreSheet, MobileTopBar } from "@/components/app/MobileChrome";
 import { LiveSessionScreen, type SupportKind } from "@/components/app/LiveSessionScreen";
 import { ScreenHeader, Card, CardTitle, Eyebrow, Avatar } from "@/components/app/primitives";
-import { startOfWeek as denizWeekStart, isoDate as denizIso, DOMAIN_ORDER, DOMAIN_META, gameDomain, INDEPENDENCE_STEPS } from "@/lib/deniz-derive";
+import { startOfWeek as denizWeekStart, isoDate as denizIso, DOMAIN_ORDER, DOMAIN_META, gameDomain, INDEPENDENCE_STEPS, buildAgenda } from "@/lib/deniz-derive";
 import { MEASURE_KIND_LABELS } from "@/lib/outcome-measures";
 
 // ── Extracted modules ──
@@ -110,156 +109,23 @@ import {
   createPairsDeck, createRouteCommand, createDifferenceRound, createScanRound,
   mergeScoreboard, renderLogicShape, createLogicPuzzle, moveGridCursor,
 } from "@/lib/game-logic";
-import { THERAPY_PROTOCOLS, GOAL_PROTOCOL_MAP } from "@/lib/therapy-protocols";
-import { analyzeClientGames, generateTherapySuggestions } from "@/lib/therapy-suggestions";
+import { THERAPY_PROTOCOLS } from "@/lib/therapy-protocols";
 import {
-  formatDuration, formatPlayedAt, formatDate, formatElapsed,
-  getTodayString, getWeekStart, addDays, getPhaseLabel,
-  getDatabaseStatusLabel, patternStyle,
+  formatPlayedAt, formatElapsed,
+  getTodayString, getWeekStart,
+  patternStyle,
   parseSessionNotes, parseWeeklyPlans,
 } from "@/lib/format-utils";
-import { ConfettiPieces } from "@/components/shared/ConfettiPieces";
-import { StarRating } from "@/components/shared/StarRating";
 import { GameResultOverlay } from "@/components/shared/GameResultOverlay";
 import { SessionSetSummary } from "@/components/shared/SessionSetSummary";
 import { ToastContainer, showToast } from "@/components/shared/ToastContainer";
-import { MilestoneContainer, checkAndShowMilestones } from "@/components/shared/MilestoneToast";
-import { WeeklySummaryCard, GameDistributionChart } from "@/components/shared/DashboardAnalytics";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { MilestoneContainer } from "@/components/shared/MilestoneToast";
 import { AchievementPanel, ACHIEVEMENTS, type AchievementStats, type EarnedAchievement } from "@/components/shared/AchievementBadge";
-import { QuickSessionStart } from "@/components/shared/QuickSessionStart";
-import { ClientProgressRadar } from "@/components/shared/ClientProgressRadar";
-import { SessionReminderBanner } from "@/components/shared/SessionReminder";
 import { ClientComparison } from "@/components/shared/ClientComparison";
-import { GameTrendChart } from "@/components/shared/GameTrendChart";
 import { OnboardingTour } from "@/components/shared/OnboardingTour";
-import { WeeklyProgressReport } from "@/components/shared/WeeklyProgressReport";
-import { useCountUp } from "@/hooks/useCountUp";
-
-// ── Remaining constants that depend on lucide-react icons ──
-const CATEGORY_ICONS = { memorySkills: Brain, motorSkills: Hand, visualSkills: Eye, cognitiveSkills: Grid3X3 } as const;
 
 
-const DOMAIN_ICON_MAP: Record<string, LucideIcon> = {
-  baby: Baby,
-  brain: Brain,
-  zap: Zap,
-  puzzle: Puzzle,
-  "person-standing": PersonStanding,
-  briefcase: Briefcase,
-  handshake: Handshake,
-};
-
-const GAME_ICON_MAP: Record<string, LucideIcon> = {
-  memory: Brain,
-  pairs: Grid3X3,
-  pulse: Target,
-  route: Map,
-  difference: Eye,
-  scan: Search,
-};
-
-function DomainIcon({ iconKey, size = 20, color, className }: { iconKey: string; size?: number; color?: string; className?: string }) {
-  const Icon = DOMAIN_ICON_MAP[iconKey] ?? Brain;
-  return <Icon size={size} className={className} style={color ? { color } : undefined} />;
-}
-
-
-/**
- * Ölçüm kartı.
- *
- * Önceki sürüm her kartı kendi renginde bir degradeyle boyuyor, dışına
- * 48px'lik renkli bir hâle koyuyor, sağ alta da bir kıvılcım grafiği
- * çiziyordu. Grafik `points="0,14 8,10 16,11 24,5 32,7 40,2"` sabitiydi —
- * dört kartın dördünde aynı, veriyle hiç ilgisi olmayan bir çizgi. Klinik
- * bir araçta uydurma grafik olmaz; ya gerçek veriyi çizer ya hiçbir şey.
- *
- * Yeni kart bir gösterge paneli hücresi gibi davranır: tek yüzey, kılcal
- * çerçeve, büyük mono rakam. Renk yalnızca ikon karesinde ve — varsa —
- * gerçek seri grafiğinde görünür.
- */
-interface StatCardProps {
-  v: number;
-  l: string;
-  sub: string;
-  tooltip: string;
-  accent: string;
-  Icon: typeof LayoutDashboard;
-  /** Gerçek veriden türetilmiş seri. Yoksa grafik çizilmez. */
-  series?: readonly number[];
-  /** Önceki döneme göre fark. null ise rozet gösterilmez. */
-  delta?: number | null;
-  deltaUnit?: string;
-}
-function StatCard({ v, l, sub, tooltip, accent, Icon, series, delta, deltaUnit }: StatCardProps) {
-  const animated = useCountUp(v, 900);
-
-  /* Seri en az iki nokta ve bir miktar değişim taşımıyorsa çizmiyoruz:
-     düz bir çizgi bilgi değil gürültüdür. */
-  const chart = (() => {
-    if (!series || series.length < 3) return null;
-    const max = Math.max(...series);
-    const min = Math.min(...series);
-    if (max === min) return null;
-    const w = 100;
-    const h = 26;
-    const step = w / (series.length - 1);
-    return series
-      .map((val, i) => `${i === 0 ? "M" : "L"}${(i * step).toFixed(1)} ${(h - ((val - min) / (max - min)) * h).toFixed(1)}`)
-      .join(" ");
-  })();
-
-  return (
-    <div
-      data-tooltip={tooltip}
-      data-tooltip-dir="bottom"
-      className="glass rounded-2xl p-4 lg:p-5 relative flex flex-col gap-3 transition-colors duration-200 cursor-default hover:border-(--color-line-strong)"
-      aria-label={`${l}: ${v} ${sub}`}>
-      <div className="flex items-start justify-between gap-2">
-        <span
-          className="w-8 h-8 lg:w-9 lg:h-9 rounded-lg flex items-center justify-center shrink-0"
-          style={{ background: `color-mix(in srgb, ${accent} 13%, transparent)` }}>
-          <Icon size={15} style={{ color: accent }} />
-        </span>
-        {typeof delta === "number" && delta !== 0 && (
-          <span
-            className="numeral text-[11px] font-bold flex items-center gap-0.5 shrink-0"
-            style={{ color: delta > 0 ? "var(--color-accent-green)" : "var(--color-accent-red)" }}>
-            {delta > 0 ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />}
-            {delta > 0 ? "+" : "−"}{Math.abs(delta)}
-            {deltaUnit ? <span className="font-medium text-(--color-text-muted)"> {deltaUnit}</span> : null}
-          </span>
-        )}
-      </div>
-
-      <div>
-        <strong className="figure text-3xl lg:text-[2.5rem] block leading-none text-(--color-text-strong)">
-          {animated}
-        </strong>
-        <span className="text-(--color-text-body) text-xs lg:text-sm font-semibold block leading-tight mt-2">{l}</span>
-        <span className="text-(--color-text-muted) text-[11px] block leading-tight mt-0.5">{sub}</span>
-      </div>
-
-      {chart && (
-        <svg
-          viewBox="0 0 100 26"
-          preserveAspectRatio="none"
-          className="w-full h-6 mt-auto"
-          aria-hidden="true">
-          <path
-            d={chart}
-            fill="none"
-            stroke={accent}
-            strokeWidth={1.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
-            opacity={0.65}
-          />
-        </svg>
-      )}
-    </div>
-  );
-}
 
 interface MimioAppProps {
   initialAppView?: "login" | "register";
@@ -293,15 +159,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const [showCsvImport, setShowCsvImport] = useState(false);
   const [csvImportText, setCsvImportText] = useState("");
   const [csvImportError, setCsvImportError] = useState("");
-  const [noteSearch, setNoteSearch] = useState("");
-  const [noteFilterFrom, setNoteFilterFrom] = useState("");
-  const [noteFilterTo, setNoteFilterTo] = useState("");
-  const [tagInput, setTagInput] = useState("");
-  const [showTagInput, setShowTagInput] = useState(false);
   const [showShortcutGuide, setShowShortcutGuide] = useState(false);
-  const [planEdits, setPlanEdits] = useState<Record<DayKey, WeeklyPlanEntry[]>>({ mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: [] });
   const [planWeekStart, setPlanWeekStart] = useState(getWeekStart());
-  const [addClientDraft, setAddClientDraft] = useState<ClientDraftState>({ displayName: "", ageGroup: "", primaryGoal: "", supportLevel: "" });
 
   // ── Therapy Program state ──
   const THERAPY_PROGRESS_KEY = "mimio-therapy-progress-v1";
@@ -337,11 +196,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const [activeClientId, setActiveClientId] = useState("");
   const [sessionNote, setSessionNote] = useState("");
   const [sessionStartedAt, setSessionStartedAt] = useState(() => Date.now());
-  const [therapistDraft, setTherapistDraft] = useState<TherapistDraftState>({ username: "", password: "", displayName: "", clinicName: "", specialty: "" });
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
-  const [clientDraft, setClientDraft] = useState<ClientDraftState>({ displayName: "", ageGroup: "", primaryGoal: "", supportLevel: "" });
   const [profileFeedback, setProfileFeedback] = useState("Profiller ve seans verileri bulut veritabanından yükleniyor.");
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [memoryCursor, setMemoryCursor] = useState(0);
@@ -381,7 +238,6 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const [supportCounts, setSupportCounts] = useState<Record<SupportKind, number>>({ verbal: 0, visual: 0, physical: 0 });
   /* Tur tur doğru/yanlış — sağ raydaki tepki izi bunu çiziyor. */
   const [sessionTrace, setSessionTrace] = useState<boolean[]>([]);
-  const [tpSelectedProtocol, setTpSelectedProtocol] = useState<TherapyProtocol | null>(null);
   const [memoryState, setMemoryState] = useState<MemoryState>({ sequence: [], input: [], flashIndex: null, score: 0, phase: "idle", message: "Oyunu başlat ve diziyi dikkatle izle." });
   const [pairsState, setPairsState] = useState<PairsState>({ tiles: [], moves: 0, pairsFound: 0, locked: false, phase: "idle", message: "Kartları aç ve eşleşen çiftleri bul." });
   const [pulseState, setPulseState] = useState<PulseState>({ activeIndex: null, round: 0, hits: 0, misses: 0, combo: 0, points: 0, phase: "idle", message: "Parmak, kalem veya ekran kalemiyle kontrollü hız denemesi yap." });
@@ -412,15 +268,16 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     try { return Number(localStorage.getItem("mimio-session-warn-min") ?? "45"); } catch { return 45; }
   });
   const [clientSearch, setClientSearch] = useState("");
-  const [clientFilterAge, setClientFilterAge] = useState("");
-  const [clientFilterSupport, setClientFilterSupport] = useState("");
-  const [clientFilterActivity, setClientFilterActivity] = useState<"all" | "inactive" | "new">("all");
   const [noteMode, setNoteMode] = useState<NoteMode>("free");
   const [soapDraft, setSoapDraft] = useState<SoapNoteContent>({ s: "", o: "", a: "", p: "" });
   const [clientGoals, setClientGoals] = useState<ClientGoal[]>([]);
   const [showGoalForm, setShowGoalForm] = useState(false);
   const [goalDraft, setGoalDraft] = useState({ title: "", description: "", targetValue: 100, deadline: "" });
   const [archiveTargetId, setArchiveTargetId] = useState<string | null>(null);
+  const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null);
+  const [showComparePicker, setShowComparePicker] = useState(false);
+  /* loadPlatformOverview'un bayat yanıt koruması — açıklama fonksiyonda. */
+  const overviewSeqRef = useRef(0);
   const [showEditTherapist, setShowEditTherapist] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [savingTherapist, setSavingTherapist] = useState(false);
@@ -642,51 +499,6 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     }
   }
 
-  function handleSelectClient(clientId: string) {
-    setSelectedClientId(clientId);
-    setClientDetailTab("notes");
-    setActiveAppView("client-detail");
-  }
-
-  function handleAddNote() {
-    if (!noteForm.content.trim() || !selectedClientId) return;
-    const note: SessionNote = {
-      id: `note-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
-      clientId: selectedClientId,
-      therapistId: activeTherapistId,
-      date: noteForm.date || getTodayString(),
-      content: noteForm.content.trim(),
-      createdAt: new Date().toISOString(),
-    };
-    setAllNotes((current) => [note, ...current]);
-    setNoteForm({ date: getTodayString(), content: "" });
-    setShowNoteForm(false);
-    showToast("Not eklendi", "success");
-  }
-
-  function handleDeleteNote(noteId: string) {
-    setAllNotes((current) => current.filter((n) => n.id !== noteId));
-  }
-
-  function handleSaveWeeklyPlan() {
-    if (!selectedClientId) return;
-    const existingIndex = allWeeklyPlans.findIndex((p) => p.clientId === selectedClientId && p.weekStartDate === planWeekStart);
-    const plan: WeeklyPlan = {
-      id: existingIndex >= 0 ? allWeeklyPlans[existingIndex].id : `plan-${Date.now()}`,
-      clientId: selectedClientId,
-      therapistId: activeTherapistId,
-      weekStartDate: planWeekStart,
-      days: planEdits,
-      updatedAt: new Date().toISOString(),
-    };
-    if (existingIndex >= 0) {
-      setAllWeeklyPlans((current) => current.map((p, i) => i === existingIndex ? plan : p));
-    } else {
-      setAllWeeklyPlans((current) => [...current, plan]);
-    }
-    showToast("Haftalık plan kaydedildi", "success");
-  }
-
   // ── DB-backed note handlers ──
   async function handleAddNoteDB() {
     if (!selectedClientId) return;
@@ -749,37 +561,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     try { await fetch(`/api/platform/notes?noteId=${noteId}`, { method: "DELETE" }); } catch { /* local already removed */ }
   }
 
-  async function handleSaveWeeklyPlanDB() {
-    if (!selectedClientId) return;
-    const existingIndex = allWeeklyPlans.findIndex((p) => p.clientId === selectedClientId && p.weekStartDate === planWeekStart);
-    const plan: WeeklyPlan = {
-      id: existingIndex >= 0 ? allWeeklyPlans[existingIndex].id : `plan-${Date.now()}`,
-      clientId: selectedClientId,
-      therapistId: activeTherapistId,
-      weekStartDate: planWeekStart,
-      days: planEdits,
-      updatedAt: new Date().toISOString(),
-    };
-    if (existingIndex >= 0) {
-      setAllWeeklyPlans((c) => c.map((p, i) => i === existingIndex ? plan : p));
-    } else {
-      setAllWeeklyPlans((c) => [...c, plan]);
-    }
-    showToast("Haftalık plan kaydedildi", "success");
-    try {
-      await fetch("/api/platform/plans", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientId: selectedClientId, therapistId: activeTherapistId || undefined, weekStartDate: planWeekStart, days: planEdits }),
-      });
-    } catch { /* already saved locally */ }
-  }
-
   /*
-   * Haftalık Plan ekranının tek yazma yolu. Mevcut `handleSaveWeeklyPlanDB`
-   * "seçili danışanın tüm haftasını kaydet" varsayımıyla çalışıyor; yeni ekran
-   * ise haftaya *herhangi* bir danışan için tek blok ekliyor. Bu yüzden ayrı
-   * bir mutasyon: hangi danışanın planı değişiyorsa yalnızca o yazılır.
+   * Haftalık Plan ekranının tek yazma yolu: haftaya *herhangi* bir danışan
+   * için tek blok ekler ya da çıkarır; hangi danışanın planı değişiyorsa
+   * yalnızca o yazılır.
    */
   async function mutateWeeklyPlan(
     clientId: string,
@@ -935,7 +720,6 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             if (idx >= 0) return c.map((p, i) => i === idx ? plan : p);
             return [...c, plan];
           });
-          setPlanEdits(plan.days);
         }
       }
     } catch { /* keep local */ }
@@ -1055,176 +839,6 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     }
   }
 
-  // ── Post-game note handler ──
-  async function handleSavePostGameNote(note: string, gameLabel: string) {
-    if (!note.trim() || !selectedClientId) return;
-    setNoteForm({ date: getTodayString(), content: `[${gameLabel}] ${note}` });
-    setNoteMode("free");
-    await handleAddNoteDB();
-  }
-
-  // ── PDF Export ──
-  function handlePrintReport(client: ClientProfile) {
-    const sessions = platformOverview.recentSessions.filter(s => s.clientId === client.id);
-    const notes = allNotes.filter(n => n.clientId === client.id).slice(0, 10);
-    const goals = clientGoals;
-    const therapistName = activeTherapist?.displayName ?? "Terapist";
-    const clinicName = activeTherapist?.clinicName ?? "";
-    const today = getTodayString();
-    const bestScore = sessions.length > 0 ? Math.max(...sessions.map(s => s.score)) : 0;
-    const avgScore = sessions.length > 0 ? Math.round(sessions.reduce((a, s) => a + s.score, 0) / sessions.length) : 0;
-    const gameMap: Record<string, { plays: number; best: number }> = {};
-    sessions.forEach(s => {
-      if (!gameMap[s.gameKey]) gameMap[s.gameKey] = { plays: 0, best: 0 };
-      gameMap[s.gameKey].plays++;
-      if (s.score > gameMap[s.gameKey].best) gameMap[s.gameKey].best = s.score;
-    });
-    const gameRows = Object.entries(gameMap).map(([key, v]) => {
-      const g = GAME_TABS.find(gt => gt.key === key);
-      return `<tr><td>${g?.title ?? key}</td><td>${v.plays}</td><td>${v.best}</td></tr>`;
-    }).join("");
-    const noteRows = notes.map(n => `<tr><td>${n.date}</td><td style="white-space:pre-wrap">${n.content}</td></tr>`).join("");
-    const goalRows = goals.map(g => {
-      const pct = Math.round((g.currentValue / Math.max(g.targetValue, 1)) * 100);
-      return `<tr><td>${g.title}</td><td>${g.currentValue}/${g.targetValue}</td><td>${pct}%</td><td>${g.deadline ?? "—"}</td></tr>`;
-    }).join("");
-
-    const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Mimio Rapor — ${client.displayName}</title><style>
-      body{font-family:'Segoe UI',Arial,sans-serif;color:#0f2033;margin:0;padding:24px;font-size:13px}
-      h1{font-size:22px;margin:0 0 4px}h2{font-size:14px;font-weight:700;margin:20px 0 8px;color:#2b62f5;text-transform:uppercase;letter-spacing:.05em}
-      .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #2b62f5;padding-bottom:12px;margin-bottom:20px}
-      .meta{font-size:11px;color:#666;line-height:1.6}.badge{display:inline-block;background:#dbe6fb;color:#2b62f5;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;margin-right:4px;margin-bottom:4px}
-      table{width:100%;border-collapse:collapse;margin-bottom:8px}td,th{padding:6px 10px;border:1px solid #cddcf0;text-align:left;font-size:12px}th{background:#eef3fa;font-weight:700;color:#1b4bc4}
-      .stat-row{display:flex;gap:16px;margin-bottom:16px}.stat{background:#eef3fa;border:1px solid #dbe6fb;border-radius:12px;padding:12px 18px;text-align:center;flex:1}.stat-val{font-size:28px;font-weight:900;color:#2b62f5}.stat-lbl{font-size:11px;color:#888;font-weight:600}
-      .no-data{color:#999;font-style:italic;font-size:12px}.footer{margin-top:24px;padding-top:12px;border-top:1px solid #cddcf0;font-size:10px;color:#aaa;text-align:center}
-      @media print{body{padding:0}button{display:none}}
-    </style></head><body>
-      <div class="header">
-        <div>
-          <h1>${client.displayName}</h1>
-          <div class="meta">
-            ${client.ageGroup ? `<span class="badge">${client.ageGroup}</span>` : ""}
-            ${client.primaryGoal ? `<span class="badge">${client.primaryGoal}</span>` : ""}
-            ${client.supportLevel ? `<span class="badge">${client.supportLevel}</span>` : ""}
-            ${client.difficultyLevel ? `<span class="badge">${client.difficultyLevel}</span>` : ""}
-          </div>
-        </div>
-        <div class="meta" style="text-align:right">
-          <strong>${therapistName}</strong>${clinicName ? `<br>${clinicName}` : ""}<br>Rapor tarihi: ${today}
-        </div>
-      </div>
-
-      <h2>Genel Performans</h2>
-      <div class="stat-row">
-        <div class="stat"><div class="stat-val">${sessions.length}</div><div class="stat-lbl">Toplam Seans</div></div>
-        <div class="stat"><div class="stat-val">${bestScore || "—"}</div><div class="stat-lbl">En Yüksek Skor</div></div>
-        <div class="stat"><div class="stat-val">${avgScore || "—"}</div><div class="stat-lbl">Ortalama Skor</div></div>
-      </div>
-
-      <h2>Oyun Bazlı Sonuçlar</h2>
-      ${gameRows ? `<table><thead><tr><th>Oyun</th><th>Oynama</th><th>En İyi Skor</th></tr></thead><tbody>${gameRows}</tbody></table>` : '<p class="no-data">Henüz oyun seansı yok.</p>'}
-
-      ${goalRows ? `<h2>SMART Hedefler</h2><table><thead><tr><th>Hedef</th><th>İlerleme</th><th>%</th><th>Son Tarih</th></tr></thead><tbody>${goalRows}</tbody></table>` : ""}
-
-      <h2>Seans Notları</h2>
-      ${noteRows ? `<table><thead><tr><th style="width:100px">Tarih</th><th>Not</th></tr></thead><tbody>${noteRows}</tbody></table>` : '<p class="no-data">Henüz seans notu yok.</p>'}
-
-      <div class="footer">Mimio Ergoterapi Platformu — ${today} tarihinde oluşturuldu</div>
-      <script>window.onload=function(){window.print();}</script>
-    </body></html>`;
-
-    const win = window.open("", "_blank", "width=800,height=900");
-    if (win) { win.document.write(html); win.document.close(); }
-  }
-
-  function handlePrintSummaryCard(client: ClientProfile) {
-    const sessions = platformOverview.recentSessions.filter(s => s.clientId === client.id);
-    const bestScore = sessions.length > 0 ? Math.max(...sessions.map(s => s.score)) : 0;
-    const avgScore = sessions.length > 0 ? Math.round(sessions.reduce((a, s) => a + s.score, 0) / sessions.length) : 0;
-    const favGame = (() => {
-      const counts: Record<string, number> = {};
-      sessions.forEach(s => { counts[s.gameKey] = (counts[s.gameKey] ?? 0) + 1; });
-      const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
-      return top ? (GAME_LABELS[top[0] as PlatformGameKey] ?? top[0]) : "—";
-    })();
-    const completedGoals = clientGoals.filter(g => g.currentValue >= g.targetValue).length;
-    const therapistName = activeTherapist?.displayName ?? "Terapist";
-    const today = getTodayString();
-    const tagBadges = (client.tags ?? []).map(t => `<span class="tag">${t}</span>`).join("");
-
-    const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Mimio Özet Kart — ${client.displayName}</title><style>
-      @page{size:105mm 148mm;margin:0}
-      *{box-sizing:border-box;margin:0;padding:0}
-      body{font-family:'Segoe UI',Arial,sans-serif;width:105mm;height:148mm;background:#fff;color:#0f2033;padding:6mm;display:flex;flex-direction:column;gap:3mm}
-      .top-bar{height:2mm;background:linear-gradient(90deg,#2b62f5,#17c2e0,#17c2e0);border-radius:1mm;flex-shrink:0}
-      .header{display:flex;align-items:flex-start;gap:3mm}
-      .avatar{width:11mm;height:11mm;border-radius:3mm;background:linear-gradient(135deg,#2b62f5,#17c2e0);color:#fff;font-weight:900;font-size:5mm;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-      .name{font-size:5.5mm;font-weight:900;color:#0f2033;line-height:1.1}
-      .sub{font-size:2.8mm;color:#666;margin-top:0.5mm}
-      .tags{display:flex;flex-wrap:wrap;gap:1mm;margin-top:1.5mm}
-      .tag{background:#dbe6fb;color:#2b62f5;font-size:2.5mm;font-weight:700;padding:0.5mm 2mm;border-radius:10mm}
-      .divider{height:0.3mm;background:#cddcf0;flex-shrink:0}
-      .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:2mm}
-      .stat{background:#eef3fa;border-radius:2mm;padding:2mm;text-align:center}
-      .stat-val{font-size:5mm;font-weight:900;color:#2b62f5;line-height:1}
-      .stat-lbl{font-size:2.3mm;color:#888;font-weight:600;margin-top:0.5mm}
-      .row{display:flex;gap:2mm}
-      .info-box{flex:1;background:#eaf2ff;border:0.3mm solid #cddcf0;border-radius:2mm;padding:2mm}
-      .info-label{font-size:2.3mm;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em}
-      .info-val{font-size:3mm;font-weight:700;color:#0f2033;margin-top:0.5mm}
-      .footer{margin-top:auto;padding-top:1.5mm;border-top:0.3mm solid #cddcf0;display:flex;justify-content:space-between;font-size:2.3mm;color:#aaa}
-      @media print{html,body{width:105mm;height:148mm}button{display:none}}
-    </style></head><body>
-      <div class="top-bar"></div>
-      <div class="header">
-        <div class="avatar">${client.displayName[0]?.toUpperCase() ?? "?"}</div>
-        <div>
-          <div class="name">${client.displayName}</div>
-          <div class="sub">${[client.ageGroup, client.primaryGoal].filter(Boolean).join(" · ") || "—"}</div>
-          ${tagBadges ? `<div class="tags">${tagBadges}</div>` : ""}
-        </div>
-      </div>
-      <div class="divider"></div>
-      <div class="stats">
-        <div class="stat"><div class="stat-val">${sessions.length}</div><div class="stat-lbl">Seans</div></div>
-        <div class="stat"><div class="stat-val">${bestScore || "—"}</div><div class="stat-lbl">En İyi</div></div>
-        <div class="stat"><div class="stat-val">${avgScore || "—"}</div><div class="stat-lbl">Ortalama</div></div>
-      </div>
-      <div class="row">
-        <div class="info-box"><div class="info-label">Favori Oyun</div><div class="info-val">${favGame}</div></div>
-        <div class="info-box"><div class="info-label">Tamamlanan Hedef</div><div class="info-val">${completedGoals}/${clientGoals.length || 0}</div></div>
-        <div class="info-box"><div class="info-label">Destek</div><div class="info-val">${client.supportLevel || "—"}</div></div>
-      </div>
-      ${client.difficultyLevel ? `<div class="info-box" style="background:#fde6bd;border-color:#fde6bd"><div class="info-label" style="color:#a96708">Zorluk Seviyesi</div><div class="info-val" style="color:#a96708">${client.difficultyLevel}</div></div>` : ""}
-      <div class="footer">
-        <span>Mimio Ergoterapi</span>
-        <span>${therapistName}</span>
-        <span>${today}</span>
-      </div>
-      <script>window.onload=function(){window.print();}</script>
-    </body></html>`;
-
-    const win = window.open("", "_blank", "width=420,height=600");
-    if (win) { win.document.write(html); win.document.close(); }
-  }
-
-  async function handleAddClient(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const displayName = addClientDraft.displayName.trim();
-    if (!displayName) return;
-    const created = await createProfileInBackend(
-      { kind: "client", displayName, ageGroup: addClientDraft.ageGroup.trim(), primaryGoal: addClientDraft.primaryGoal.trim(), supportLevel: addClientDraft.supportLevel.trim() },
-      "Danışan kaydedilemedi."
-    );
-    if (created) {
-      await loadPlatformOverview();
-      setProfileFeedback("Danışan başarıyla kaydedildi.");
-      showToast(`👤 ${addClientDraft.displayName.trim()} eklendi`, "success");
-    }
-    setAddClientDraft({ displayName: "", ageGroup: "", primaryGoal: "", supportLevel: "" });
-    setShowAddClient(false);
-  }
-
   /*
    * Üç adımlı sihirbazın çıktısı. Eski tek-form akışı yalnızca dört alan
    * topluyordu; sihirbaz doğum tarihi, uygulama alanı (etiket), sıklık ve
@@ -1271,18 +885,6 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     setShowAddClient(false);
   }
 
-  // ── Update client tags ──
-  async function handleUpdateClientTags(clientId: string, tags: string[]) {
-    try {
-      await fetch("/api/platform/profiles", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind: "update-client", clientId, tags }),
-      });
-      await loadPlatformOverview();
-    } catch { /* ignore */ }
-  }
-
   // ── Export all sessions as CSV ──
   function handleExportSessionsCSV() {
     const headers = ["Tarih", "Saat", "Terapist", "Danışan", "Oyun", "Skor", "Süre (sn)", "Not"];
@@ -1320,18 +922,6 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId: lastSessionId, satisfactionRating: rating }),
       });
-    } catch { /* ignore */ }
-  }
-
-  // ── Update client birth date ──
-  async function handleUpdateClientBirthDate(clientId: string, birthDate: string | null) {
-    try {
-      await fetch("/api/platform/profiles", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind: "update-client", clientId, birthDate }),
-      });
-      await loadPlatformOverview();
     } catch { /* ignore */ }
   }
 
@@ -1493,16 +1083,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClientId]);
 
-  // ── Load plan when client/week changes (DB first, then local fallback) ──
+  // ── Danışan/hafta değişince planı tazele (DB → allWeeklyPlans) ──
   useEffect(() => {
     if (!selectedClientId) return;
     void loadWeeklyPlanFromDB(selectedClientId, planWeekStart);
-    const existing = allWeeklyPlans.find((p) => p.clientId === selectedClientId && p.weekStartDate === planWeekStart);
-    if (existing) {
-      setPlanEdits(existing.days);
-    } else {
-      setPlanEdits({ mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: [] });
-    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClientId, planWeekStart]);
 
@@ -1556,10 +1140,19 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   }
 
   async function loadPlatformOverview() {
+    /*
+     * Bayat yanıt koruması. Mount'taki oturumsuz istek (Neon soğuksa) saniyeler
+     * sürebiliyor; kullanıcı bu arada giriş yaptıysa geç gelen "authenticated:
+     * false" yanıtı taze oturumu görüp login ekranına geri fırlatıyordu —
+     * giriş bazen tutuyor, bazen sessizce geri sekiyordu. Yalnızca en son
+     * başlatılan isteğin yanıtı state'e işlenir.
+     */
+    const seq = ++overviewSeqRef.current;
     try {
       const response = await fetch("/api/platform/overview", { cache: "no-store" });
       if (!response.ok) throw new Error("Platform overview alınamadı.");
       const payload = (await response.json()) as PlatformOverviewPayload;
+      if (seq !== overviewSeqRef.current) return payload;
       setPlatformOverview(payload);
       setPlatformStatus(payload.database.status);
       if (payload.authenticated !== false) {
@@ -1579,6 +1172,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       }
       return payload;
     } catch {
+      if (seq !== overviewSeqRef.current) return null;
       setPlatformStatus("error");
       setPlatformOverview({ ...EMPTY_PLATFORM_OVERVIEW, database: { configured: false, status: "error", provider: "PostgreSQL / Neon", message: "Sunucu durumu okunamadı. Lütfen sayfayı yenileyin." } });
       return null;
@@ -1614,33 +1208,6 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       return null;
     }
   }
-
-  async function handleTherapistSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const displayName = therapistDraft.displayName.trim();
-    if (!displayName) { setProfileFeedback("Terapist kartı eklemek için ad alanını doldur."); return; }
-    const created = await createProfileInBackend({ kind: "therapist", username: therapistDraft.username.trim(), password: therapistDraft.password, displayName, clinicName: therapistDraft.clinicName, specialty: therapistDraft.specialty }, "Terapist kaydedilemedi. Veritabanı bağlantısını kontrol edin.");
-    if (created && "clinicName" in created) {
-      setProfileFeedback("Terapist başarıyla kaydedildi.");
-      setActiveTherapistId(created.id);
-    }
-    setTherapistDraft({ username: "", password: "", displayName: "", clinicName: "", specialty: "" });
-  }
-
-  async function handleClientSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const displayName = clientDraft.displayName.trim();
-    if (!displayName) { setProfileFeedback("Danışan kartı eklemek için ad alanını doldur."); return; }
-    const created = await createProfileInBackend({ kind: "client", displayName, ageGroup: clientDraft.ageGroup, primaryGoal: clientDraft.primaryGoal, supportLevel: clientDraft.supportLevel }, "Danışan kaydedilemedi. Veritabanı bağlantısını kontrol edin.");
-    if (created && "ageGroup" in created) {
-      setProfileFeedback("Danışan başarıyla kaydedildi.");
-      setActiveClientId(created.id);
-      showToast(`👤 ${created.displayName} eklendi`, "success");
-    }
-    setClientDraft({ displayName: "", ageGroup: "", primaryGoal: "", supportLevel: "" });
-  }
-
-  function resetSessionClock() { setSessionStartedAt(Date.now()); setGameTimerKey(0); setGameElapsed(0); setSessionWarningDismissed(false); setProfileFeedback("Seans süresi sıfırlandı."); }
 
   /**
    * Danışan profilini plan motorunun girdisine çevirir.
@@ -1787,17 +1354,6 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       else if (nextGame === "scan") startScanGame();
       else if (nextGame === "logic") startLogicGame();
     }, 350);
-  }
-
-  function openGameView(game: GameKey) {
-    setActiveGame(game);
-    setActiveAppView("games");
-  }
-
-  function openCategory(category: GameCategoryKey) {
-    const nextGame = GAME_TABS.find((tab) => tab.category === category);
-    if (!nextGame) return;
-    openGameView(nextGame.key);
   }
 
   function playMemorySequence(nextSequence: number[], carriedScore = 0) {
@@ -2086,7 +1642,6 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const effectiveAverageScore = platformOverview.sessionInsight.averageScore;
   const effectiveLastPlayedAt = platformOverview.sessionInsight.lastPlayedAt;
   const selectedClient = clientOptions.find((c) => c.id === selectedClientId) ?? null;
-  const clientNotes = allNotes.filter((n) => n.clientId === selectedClientId).sort((a, b) => b.date.localeCompare(a.date));
   const routeCommandMeta = ROUTE_COMMANDS.find((item) => item.key === routeState.command) ?? null;
 
   const thisWeekCount = platformOverview.recentSessions.filter((s) => {
@@ -2133,6 +1688,36 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   useEffect(() => {
     if (!activeClient && clientOptions.length > 0) setActiveClientId(clientOptions[0].id);
   }, [activeClient, clientOptions]);
+
+  /*
+   * Ayarlar → "Seans Hatırlatması". Anahtar daha önce hiçbir yerde
+   * okunmuyordu — kapatınca da açınca da hiçbir şey değişmiyordu. Artık
+   * planlı seanstan 15 dk önce uygulama içi uyarı düşer; aynı blok için
+   * bir kez (ref) hatırlatılır.
+   */
+  const remindedSlotsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!prefs.sessionReminder) return;
+    const check = () => {
+      const nowDate = new Date();
+      const agenda = buildAgenda(nowDate, allWeeklyPlans, platformOverview.recentSessions, clientOptions);
+      for (const item of agenda) {
+        if (item.status === "done" || !item.time) continue;
+        const [h, m] = item.time.split(":").map(Number);
+        if (!Number.isFinite(h) || !Number.isFinite(m)) continue;
+        const slot = new Date(nowDate);
+        slot.setHours(h, m, 0, 0);
+        const minutesLeft = (slot.getTime() - nowDate.getTime()) / 60000;
+        if (minutesLeft > 0 && minutesLeft <= 15 && !remindedSlotsRef.current.has(item.key)) {
+          remindedSlotsRef.current.add(item.key);
+          showToast(`${item.time} — ${item.clientName} seansına ${Math.max(1, Math.round(minutesLeft))} dk kaldı`, "info");
+        }
+      }
+    };
+    check();
+    const id = window.setInterval(check, 60000);
+    return () => window.clearInterval(id);
+  }, [prefs.sessionReminder, allWeeklyPlans, platformOverview.recentSessions, clientOptions]);
 
   // ── Shared auth layout wrapper ──
   const authInp = "w-full px-4 py-3 border border-(--color-line) rounded-2xl bg-(--color-surface-strong) text-(--color-text-strong) text-sm placeholder:text-(--color-text-muted) focus:outline-none focus:ring-2 focus:ring-(--color-primary)/25 focus:border-(--color-primary) transition-colors";
@@ -2482,6 +2067,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               sessions={platformOverview.recentSessions}
               plans={allWeeklyPlans}
               averageScore={effectiveAverageScore}
+              plateauAlert={prefs.plateauAlert}
               onNavigate={setActiveAppView}
               onStartSession={handleStartSessionFor}
               onOpenClient={handleOpenClient}
@@ -2505,6 +2091,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               onStartSession={handleStartSessionFor}
               onAddClient={() => setShowAddClient(true)}
               onExport={handleExportClientsCsv}
+              onCompare={() => setShowComparePicker(true)}
             />
           </div>
         )}
@@ -2521,7 +2108,14 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               onNavigate={setActiveAppView}
               onStartSession={handleStartSessionFor}
               onCreateReport={() => setActiveAppView("reports")}
-              onAddNote={() => setShowNoteForm(true)}
+              /* SOAP varsayılan: ekranın kendi alt başlığı "SOAP formatı" diyor,
+                 seed ve seans sonu da bu formatta yazıyor. */
+              onAddNote={() => { setNoteMode("soap"); setShowNoteForm(true); }}
+              onDeleteNote={(id) => setDeleteNoteId(id)}
+              onAddGoal={() => setShowGoalForm(true)}
+              onUpdateGoal={(goalId, value) => void handleUpdateGoalProgress(goalId, value)}
+              onDeleteGoal={(goalId) => void handleDeleteGoal(goalId)}
+              onArchive={() => setArchiveTargetId(selectedClient.id)}
             />
           </div>
         )}
@@ -2567,8 +2161,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               notes={allNotes}
               clients={clientOptions}
               sessions={platformOverview.recentSessions}
-              onNewNote={() => { if (selectedClient) { setShowNoteForm(true); setActiveAppView("client-detail"); } else { setActiveAppView("clients"); } }}
+              onNewNote={() => { if (selectedClient) { setNoteMode("soap"); setShowNoteForm(true); setActiveAppView("client-detail"); } else { showToast("Önce bir danışan seç", "info"); setActiveAppView("clients"); } }}
               onExport={handleExportNotesCsv}
+              onDeleteNote={(id) => setDeleteNoteId(id)}
             />
           </div>
         )}
@@ -2598,6 +2193,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               onShowAchievements={() => setShowAchievements(true)}
               achievementCount={earnedAchievementCount}
               databaseStatus={platformOverview.database}
+              onImportCsv={() => setShowCsvImport(true)}
               onLogout={handleLogout}
             />
           </div>
@@ -2623,14 +2219,17 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 setGameStage("live");
               }}
               onStartSequence={(keys) => {
-                /* Sıra başlatmak da tek oyun başlatmakla aynı temizliği ister. */
+                /* Sıra başlatmak da tek oyun başlatmakla aynı temizliği ister.
+                   Sıra bir "oyun seti" olarak kurulur: önceki hâl yalnızca ilk
+                   oyunu açıyor, "sıra" hiçbir zaman ikinci oyuna geçmiyordu. */
                 setSessionTrace([]);
                 setSupportCounts({ verbal: 0, visual: 0, physical: 0 });
                 setClientDiffOverride(null);
                 setSessionPaused(false);
-                if (keys[0]) setActiveGame(keys[0] as GameKey);
+                startCustomSessionSet("Önerilen Sıra", keys as GameKey[]);
                 setGameStage("live");
               }}
+              onOpenSetPicker={() => setShowSessionSetPicker(true)}
             />
           </div>
         )}
@@ -2831,7 +2430,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                             { label: "En İyi", value: scoreboard.memory.best || "—" },
                           ]}
                           onReplay={startMemoryGame}
-                          onBack={() => setActiveAppView("dashboard")}
+                          onBack={() => { setGameStage("library"); setActiveAppView("dashboard"); }}
                           onSaveNote={async (note) => { setNoteForm({ date: getTodayString(), content: `[${GAME_LABELS[activeGame]}] ${note}` }); setNoteMode("free"); await handleAddNoteDB(); }}
                           onSatisfaction={handleSaveSatisfaction}
                           hasActiveClient={!!activeClient}
@@ -2921,7 +2520,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                             { label: "En İyi", value: scoreboard.pairs.best || "—" },
                           ]}
                           onReplay={startPairsGame}
-                          onBack={() => setActiveAppView("dashboard")}
+                          onBack={() => { setGameStage("library"); setActiveAppView("dashboard"); }}
                           onSaveNote={async (note) => { setNoteForm({ date: getTodayString(), content: `[${GAME_LABELS[activeGame]}] ${note}` }); setNoteMode("free"); await handleAddNoteDB(); }}
                           onSatisfaction={handleSaveSatisfaction}
                           hasActiveClient={!!activeClient}
@@ -3006,7 +2605,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                             { label: "Hata", value: pulseState.misses },
                           ]}
                           onReplay={startPulseGame}
-                          onBack={() => setActiveAppView("dashboard")}
+                          onBack={() => { setGameStage("library"); setActiveAppView("dashboard"); }}
                           onSaveNote={async (note) => { setNoteForm({ date: getTodayString(), content: `[${GAME_LABELS[activeGame]}] ${note}` }); setNoteMode("free"); await handleAddNoteDB(); }}
                           onSatisfaction={handleSaveSatisfaction}
                           hasActiveClient={!!activeClient}
@@ -3081,7 +2680,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                             { label: "En İyi", value: scoreboard.route.best || "—" },
                           ]}
                           onReplay={startRouteGame}
-                          onBack={() => setActiveAppView("dashboard")}
+                          onBack={() => { setGameStage("library"); setActiveAppView("dashboard"); }}
                           onSaveNote={async (note) => { setNoteForm({ date: getTodayString(), content: `[${GAME_LABELS[activeGame]}] ${note}` }); setNoteMode("free"); await handleAddNoteDB(); }}
                           onSatisfaction={handleSaveSatisfaction}
                           hasActiveClient={!!activeClient}
@@ -3170,7 +2769,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                             { label: "En İyi", value: scoreboard.difference.best || "—" },
                           ]}
                           onReplay={startDifferenceGame}
-                          onBack={() => setActiveAppView("dashboard")}
+                          onBack={() => { setGameStage("library"); setActiveAppView("dashboard"); }}
                           onSaveNote={async (note) => { setNoteForm({ date: getTodayString(), content: `[${GAME_LABELS[activeGame]}] ${note}` }); setNoteMode("free"); await handleAddNoteDB(); }}
                           onSatisfaction={handleSaveSatisfaction}
                           hasActiveClient={!!activeClient}
@@ -3246,7 +2845,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                             { label: "En İyi", value: scoreboard.scan.best || "—" },
                           ]}
                           onReplay={startScanGame}
-                          onBack={() => setActiveAppView("dashboard")}
+                          onBack={() => { setGameStage("library"); setActiveAppView("dashboard"); }}
                           onSaveNote={async (note) => { setNoteForm({ date: getTodayString(), content: `[${GAME_LABELS[activeGame]}] ${note}` }); setNoteMode("free"); await handleAddNoteDB(); }}
                           onSatisfaction={handleSaveSatisfaction}
                           hasActiveClient={!!activeClient}
@@ -3332,7 +2931,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                             { label: "En İyi", value: scoreboard.logic.best || "—" },
                           ]}
                           onReplay={startLogicGame}
-                          onBack={() => setActiveAppView("dashboard")}
+                          onBack={() => { setGameStage("library"); setActiveAppView("dashboard"); }}
                           onSaveNote={async (note) => { setNoteForm({ date: getTodayString(), content: `[${GAME_LABELS[activeGame]}] ${note}` }); setNoteMode("free"); await handleAddNoteDB(); }}
                           onSatisfaction={handleSaveSatisfaction}
                           hasActiveClient={!!activeClient}
@@ -3702,6 +3301,237 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           onClose={() => setShowAddClient(false)}
           onSubmit={(d) => { void handleCreateClientFromFlow(d); }}
         />
+      )}
+
+      {/* ── Arşiv onayı — yıkıcı eylem, ConfirmDialog'dan geçer ── */}
+      <ConfirmDialog
+        open={Boolean(archiveTargetId)}
+        title="Danışanı Arşivle"
+        description={`${clientOptions.find((c) => c.id === archiveTargetId)?.displayName ?? "Danışan"} listeden kaldırılacak; seans geçmişi ve notları silinmez, arşivden geri alınabilir.`}
+        confirmLabel="Arşivle"
+        cancelLabel="Vazgeç"
+        variant="danger"
+        onConfirm={() => {
+          const id = archiveTargetId;
+          if (id) {
+            void handleArchiveClient(id);
+            if (selectedClientId === id) { setSelectedClientId(null); setActiveAppView("clients"); }
+          }
+        }}
+        onCancel={() => setArchiveTargetId(null)}
+      />
+
+      {/* ── Not silme onayı ── */}
+      <ConfirmDialog
+        open={Boolean(deleteNoteId)}
+        title="Notu Sil"
+        description="Bu seans notu kalıcı olarak silinecek. Bu işlem geri alınamaz."
+        confirmLabel="Sil"
+        cancelLabel="Vazgeç"
+        variant="danger"
+        onConfirm={() => {
+          if (deleteNoteId) void handleDeleteNoteDB(deleteNoteId);
+          setDeleteNoteId(null);
+        }}
+        onCancel={() => setDeleteNoteId(null)}
+      />
+
+      {/* ── Hedef formu — Danışan Detayı'ndaki "Hedef Ekle" buraya açılır.
+          Hedefler daha önce yalnızca seed'den gelebiliyordu: form state'i ve
+          handler'lar vardı ama hiçbir düğme bu formu açmıyordu. ── */}
+      {showGoalForm && selectedClient && (
+        <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label="Hedef ekle">
+          <button type="button" aria-label="Kapat" onClick={() => setShowGoalForm(false)} className="absolute inset-0 cursor-default border-none" style={{ background: "rgba(5,11,22,0.5)", backdropFilter: "blur(4px)" }} />
+          <div className="relative w-full max-w-md rounded-[18px]" style={{ padding: 22, background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <Eyebrow>{selectedClient.displayName}</Eyebrow>
+                <CardTitle className="block mt-1">Yeni Hedef</CardTitle>
+              </div>
+              <button type="button" onClick={() => setShowGoalForm(false)} aria-label="Kapat" className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-soft) hover:text-(--color-text-strong)" style={{ width: 30, height: 30 }}>
+                <X size={16} />
+              </button>
+            </div>
+            <div className="flex flex-col gap-3">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Başlık</span>
+                <input value={goalDraft.title} onChange={(e) => setGoalDraft((d) => ({ ...d, title: e.target.value }))} placeholder="ör. Blok Açıklığı 6" className={inputCls} />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Açıklama</span>
+                <input value={goalDraft.description} onChange={(e) => setGoalDraft((d) => ({ ...d, description: e.target.value }))} placeholder="Neyi, hangi koşulda ölçüyorsun? (isteğe bağlı)" className={inputCls} />
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Hedef Değer</span>
+                  <input type="number" min={1} value={goalDraft.targetValue} onChange={(e) => setGoalDraft((d) => ({ ...d, targetValue: Math.max(1, Number(e.target.value) || 1) }))} className={`${inputCls} numeral`} />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Son Tarih</span>
+                  <input type="date" value={goalDraft.deadline} onChange={(e) => setGoalDraft((d) => ({ ...d, deadline: e.target.value }))} className={`${inputCls} numeral`} />
+                </label>
+              </div>
+            </div>
+            <div className="flex gap-2.5 mt-5">
+              <button type="button" onClick={() => setShowGoalForm(false)} className="flex-1 text-[12.5px] font-semibold text-(--color-text-body) cursor-pointer transition-colors hover:text-(--color-primary)" style={{ padding: 11, borderRadius: 11, background: "transparent", border: "1px solid var(--color-line)" }}>
+                Vazgeç
+              </button>
+              <button
+                type="button"
+                disabled={!goalDraft.title.trim()}
+                onClick={() => void handleAddGoal()}
+                className="btn-signature flex-1 text-[12.5px] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ padding: 11, borderRadius: 11 }}
+              >
+                Hedefi Ekle
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Oyun seti seçici — kitaplıktaki "Oyun Seti" ve set özetindeki
+          "Yeni Set" buraya açılır. Daha önce `showSessionSetPicker` true
+          oluyor ama karşılığında hiçbir şey render edilmiyordu. ── */}
+      {showSessionSetPicker && (
+        <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label="Oyun seti seç">
+          <button type="button" aria-label="Kapat" onClick={() => setShowSessionSetPicker(false)} className="absolute inset-0 cursor-default border-none" style={{ background: "rgba(5,11,22,0.5)", backdropFilter: "blur(4px)" }} />
+          <div className="relative w-full max-w-md rounded-[18px]" style={{ padding: 22, background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}>
+            <div className="flex items-center justify-between mb-1">
+              <CardTitle>Oyun Seti Seç</CardTitle>
+              <button type="button" onClick={() => setShowSessionSetPicker(false)} aria-label="Kapat" className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-soft) hover:text-(--color-text-strong)" style={{ width: 30, height: 30 }}>
+                <X size={16} />
+              </button>
+            </div>
+            <p className="m-0 mb-4 text-[11.5px] text-(--color-text-soft)">
+              Set, oyunları arka arkaya zincirler; her oyunun sonunda bir sonrakine geçilir.
+            </p>
+            <div className="flex flex-col gap-2">
+              {SESSION_SET_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => {
+                    setSessionTrace([]);
+                    setSupportCounts({ verbal: 0, visual: 0, physical: 0 });
+                    setSessionPaused(false);
+                    startSessionSet(preset);
+                    setGameStage("live");
+                    setActiveAppView("games");
+                  }}
+                  className="flex items-center gap-3 text-left cursor-pointer transition-colors hover:border-(--color-line-strong)"
+                  style={{ padding: "12px 14px", borderRadius: 13, background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}
+                >
+                  <span className="text-[20px] shrink-0" aria-hidden="true">{preset.emoji}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[13px] font-bold text-(--color-text-strong)">{preset.label}</span>
+                    <span className="block text-[10.5px] text-(--color-text-soft) mt-0.5">{preset.description}</span>
+                  </span>
+                  <ChevronRight size={15} className="shrink-0 text-(--color-text-muted)" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Karşılaştırma seçici — Danışanlar'daki "Karşılaştır" buraya açılır ── */}
+      {showComparePicker && (
+        <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label="Danışan karşılaştır">
+          <button type="button" aria-label="Kapat" onClick={() => setShowComparePicker(false)} className="absolute inset-0 cursor-default border-none" style={{ background: "rgba(5,11,22,0.5)", backdropFilter: "blur(4px)" }} />
+          <div className="relative w-full max-w-md rounded-[18px]" style={{ padding: 22, background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}>
+            <CardTitle className="block mb-1">Danışan Karşılaştır</CardTitle>
+            <p className="m-0 mb-4 text-[11.5px] text-(--color-text-soft)">
+              İki danışanın seans ölçümleri yan yana kıyaslanır.
+            </p>
+            {(() => {
+              const a = compareClientA || clientOptions[0]?.id || "";
+              const b = compareClientB || clientOptions.find((c) => c.id !== a)?.id || "";
+              const selectCls = "w-full text-[13px] text-(--color-text-strong) outline-none cursor-pointer";
+              const selectStyle = { padding: "11px 12px", borderRadius: 11, background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" } as const;
+              return (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="flex flex-col gap-1.5">
+                      <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Danışan A</span>
+                      <select value={a} onChange={(e) => setCompareClientA(e.target.value)} className={selectCls} style={selectStyle}>
+                        {clientOptions.map((c) => <option key={c.id} value={c.id}>{c.displayName}</option>)}
+                      </select>
+                    </label>
+                    <label className="flex flex-col gap-1.5">
+                      <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Danışan B</span>
+                      <select value={b} onChange={(e) => setCompareClientB(e.target.value)} className={selectCls} style={selectStyle}>
+                        {clientOptions.map((c) => <option key={c.id} value={c.id}>{c.displayName}</option>)}
+                      </select>
+                    </label>
+                  </div>
+                  <div className="flex gap-2.5 mt-5">
+                    <button type="button" onClick={() => setShowComparePicker(false)} className="flex-1 text-[12.5px] font-semibold text-(--color-text-body) cursor-pointer transition-colors hover:text-(--color-primary)" style={{ padding: 11, borderRadius: 11, background: "transparent", border: "1px solid var(--color-line)" }}>
+                      Vazgeç
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!a || !b || a === b}
+                      onClick={() => {
+                        setCompareClientA(a);
+                        setCompareClientB(b);
+                        setShowComparePicker(false);
+                        setShowComparison(true);
+                      }}
+                      className="btn-signature flex-1 text-[12.5px] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ padding: 11, borderRadius: 11 }}
+                    >
+                      Karşılaştır
+                    </button>
+                  </div>
+                  {a === b && <p className="m-0 mt-2 text-[11px] text-(--color-accent-amber)">İki farklı danışan seç.</p>}
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* ── CSV içe aktarma — Ayarlar'daki "CSV İçe Aktar" buraya açılır ── */}
+      {showCsvImport && (
+        <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label="CSV içe aktar">
+          <button type="button" aria-label="Kapat" onClick={() => { setShowCsvImport(false); setCsvImportError(""); }} className="absolute inset-0 cursor-default border-none" style={{ background: "rgba(5,11,22,0.5)", backdropFilter: "blur(4px)" }} />
+          <div className="relative w-full max-w-lg rounded-[18px]" style={{ padding: 22, background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}>
+            <div className="flex items-center justify-between mb-1">
+              <CardTitle>Danışanları CSV ile İçe Aktar</CardTitle>
+              <button type="button" onClick={() => { setShowCsvImport(false); setCsvImportError(""); }} aria-label="Kapat" className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-soft) hover:text-(--color-text-strong)" style={{ width: 30, height: 30 }}>
+                <X size={16} />
+              </button>
+            </div>
+            <p className="m-0 mb-3 text-[11.5px] leading-[1.55] text-(--color-text-soft)">
+              İlk satır başlık, sonraki her satır bir danışan:{" "}
+              <code className="numeral text-[10.5px]">Ad,Yaş Grubu,Birincil Hedef,Destek Düzeyi</code>
+            </p>
+            <textarea
+              value={csvImportText}
+              onChange={(e) => setCsvImportText(e.target.value)}
+              rows={7}
+              placeholder={"Ad,Yaş Grubu,Birincil Hedef,Destek Düzeyi\nAli Kaya,6-8,Çalışma belleği,Sözel ipucu"}
+              className="numeral w-full resize-none outline-none text-[12px] leading-[1.6] text-(--color-text-strong) placeholder:text-(--color-text-muted)"
+              style={{ padding: "12px 14px", borderRadius: 12, background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}
+            />
+            {csvImportError && <p className="m-0 mt-2 text-[11.5px] text-(--color-accent-red)">{csvImportError}</p>}
+            <div className="flex gap-2.5 mt-4">
+              <button type="button" onClick={() => { setShowCsvImport(false); setCsvImportError(""); }} className="flex-1 text-[12.5px] font-semibold text-(--color-text-body) cursor-pointer transition-colors hover:text-(--color-primary)" style={{ padding: 11, borderRadius: 11, background: "transparent", border: "1px solid var(--color-line)" }}>
+                Vazgeç
+              </button>
+              <button
+                type="button"
+                disabled={!csvImportText.trim()}
+                onClick={() => void handleImportCsv()}
+                className="btn-signature flex-1 text-[12.5px] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ padding: 11, borderRadius: 11 }}
+              >
+                İçe Aktar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/*

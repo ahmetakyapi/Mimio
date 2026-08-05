@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { TrendingUp, TrendingDown, Minus, Trophy, Target, Clock, Gamepad2 } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, X } from "lucide-react";
 import type { ClientProfile, RecentSessionEntry, PlatformGameKey } from "@/lib/platform-data";
 import { GAME_LABELS } from "@/lib/platform-data";
 import { formatDuration } from "@/lib/format-utils";
@@ -58,8 +58,13 @@ function computeMetrics(sessions: RecentSessionEntry[]): ClientMetrics {
   return { totalSessions, avgScore, bestScore, totalDuration, avgDuration, gamesPlayed, gameScores, trend };
 }
 
-function CompareBar({ labelA, valueA, valueB, labelB, unit, colorA, colorB }: {
-  labelA: string; valueA: number; valueB: number; labelB: string; unit?: string; colorA: string; colorB: string;
+/**
+ * Karşılıklı ölçüm çubuğu. Ortadaki etiket *ölçümün adı* olmalı — önceki
+ * sürüm oraya A danışanının adını basıyordu, dolayısıyla dört satırın
+ * dördünde aynı isim görünüyor, hangi sayının ne olduğu hiç yazmıyordu.
+ */
+function CompareBar({ metric, valueA, valueB, unit, colorA, colorB }: {
+  metric: string; valueA: number; valueB: number; unit?: string; colorA: string; colorB: string;
 }) {
   const max = Math.max(valueA, valueB, 1);
   const pctA = (valueA / max) * 100;
@@ -69,9 +74,9 @@ function CompareBar({ labelA, valueA, valueB, labelB, unit, colorA, colorB }: {
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-[10px] font-bold">
-        <span style={{ color: winner === "A" ? colorA : "var(--color-text-muted)" }}>{valueA}{unit}</span>
-        <span className="text-(--color-text-muted) uppercase tracking-widest">{labelA}</span>
-        <span style={{ color: winner === "B" ? colorB : "var(--color-text-muted)" }}>{valueB}{unit}</span>
+        <span className="numeral" style={{ color: winner === "A" ? colorA : "var(--color-text-muted)" }}>{valueA}{unit}</span>
+        <span className="text-(--color-text-muted) uppercase tracking-widest">{metric}</span>
+        <span className="numeral" style={{ color: winner === "B" ? colorB : "var(--color-text-muted)" }}>{valueB}{unit}</span>
       </div>
       <div className="flex gap-1 h-2">
         <div className="flex-1 flex justify-end">
@@ -89,8 +94,11 @@ export function ClientComparison({ clientA, clientB, sessions, onClose }: Client
   const metricsA = useMemo(() => computeMetrics(sessions.filter(s => s.clientId === clientA.id)), [sessions, clientA.id]);
   const metricsB = useMemo(() => computeMetrics(sessions.filter(s => s.clientId === clientB.id)), [sessions, clientB.id]);
 
-  const colorA = "#2b62f5";
-  const colorB = "#f0708a";
+  /* İki danışanı ayırt eden renkler paletten gelir. B kasten mercan değil
+     mor: mercan bu sistemde "kritik/hata" anlamı taşıyor, bir danışanı
+     kırmızıya boyamak yanlış bir yargı iması bırakıyordu. */
+  const colorA = "var(--color-primary)";
+  const colorB = "var(--color-accent-violet)";
 
   const allGames: PlatformGameKey[] = ["memory", "pairs", "pulse", "route", "difference", "scan", "logic"];
   const commonGames = allGames.filter(g => metricsA.gameScores[g] && metricsB.gameScores[g]);
@@ -107,8 +115,8 @@ export function ClientComparison({ clientA, clientB, sessions, onClose }: Client
           <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${colorA}, ${colorB})` }} />
           <div className="p-4 flex items-center justify-between">
             <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0">Danışan Karşılaştırması</h3>
-            <button type="button" onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center bg-(--color-surface) border-none cursor-pointer text-(--color-text-muted) hover:text-(--color-text-body)">
-              ✕
+            <button type="button" onClick={onClose} aria-label="Kapat" className="w-8 h-8 rounded-xl flex items-center justify-center bg-(--color-surface) border-none cursor-pointer text-(--color-text-muted) hover:text-(--color-text-body)">
+              <X size={15} />
             </button>
           </div>
 
@@ -144,10 +152,10 @@ export function ClientComparison({ clientA, clientB, sessions, onClose }: Client
         <div className="p-4 space-y-4">
           <p className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) m-0">Genel Karşılaştırma</p>
 
-          <CompareBar labelA={clientA.displayName.split(" ")[0]} valueA={metricsA.totalSessions} valueB={metricsB.totalSessions} labelB={clientB.displayName.split(" ")[0]} unit=" seans" colorA={colorA} colorB={colorB} />
-          <CompareBar labelA={clientA.displayName.split(" ")[0]} valueA={metricsA.avgScore} valueB={metricsB.avgScore} labelB={clientB.displayName.split(" ")[0]} unit="p ort." colorA={colorA} colorB={colorB} />
-          <CompareBar labelA={clientA.displayName.split(" ")[0]} valueA={metricsA.bestScore} valueB={metricsB.bestScore} labelB={clientB.displayName.split(" ")[0]} unit="p en iyi" colorA={colorA} colorB={colorB} />
-          <CompareBar labelA={clientA.displayName.split(" ")[0]} valueA={metricsA.gamesPlayed.size} valueB={metricsB.gamesPlayed.size} labelB={clientB.displayName.split(" ")[0]} unit=" oyun" colorA={colorA} colorB={colorB} />
+          <CompareBar metric="Seans" valueA={metricsA.totalSessions} valueB={metricsB.totalSessions} colorA={colorA} colorB={colorB} />
+          <CompareBar metric="Ort. Skor" valueA={metricsA.avgScore} valueB={metricsB.avgScore} colorA={colorA} colorB={colorB} />
+          <CompareBar metric="En İyi" valueA={metricsA.bestScore} valueB={metricsB.bestScore} colorA={colorA} colorB={colorB} />
+          <CompareBar metric="Oyun Çeşidi" valueA={metricsA.gamesPlayed.size} valueB={metricsB.gamesPlayed.size} colorA={colorA} colorB={colorB} />
 
           {/* Per-game comparison */}
           {commonGames.length > 0 && (
@@ -155,13 +163,10 @@ export function ClientComparison({ clientA, clientB, sessions, onClose }: Client
               <p className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) m-0 mt-5">Oyun Bazlı</p>
               {commonGames.map(game => (
                 <div key={game}>
-                  <p className="text-[10px] font-bold text-(--color-text-soft) m-0 mb-1">{GAME_LABELS[game]}</p>
                   <CompareBar
-                    labelA=""
+                    metric={GAME_LABELS[game]}
                     valueA={metricsA.gameScores[game]?.avg ?? 0}
                     valueB={metricsB.gameScores[game]?.avg ?? 0}
-                    labelB=""
-                    unit="p"
                     colorA={colorA}
                     colorB={colorB}
                   />

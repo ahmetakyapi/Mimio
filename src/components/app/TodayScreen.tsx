@@ -33,6 +33,8 @@ interface Props {
   readonly sessions: readonly RecentSessionEntry[];
   readonly plans: readonly WeeklyPlan[];
   readonly averageScore: number;
+  /** Ayarlar → "Plato Uyarısı" kapalıysa plato önerileri bastırılır. */
+  readonly plateauAlert: boolean;
   readonly onNavigate: (v: AppView) => void;
   readonly onStartSession: (clientId: string, gameKey: PlatformGameKey) => void;
   readonly onOpenClient: (clientId: string) => void;
@@ -45,6 +47,7 @@ export function TodayScreen({
   sessions,
   plans,
   averageScore,
+  plateauAlert,
   onNavigate,
   onStartSession,
   onOpenClient,
@@ -52,7 +55,9 @@ export function TodayScreen({
   const agenda = buildAgenda(now, plans, sessions, clients);
   const next = agenda.find((a) => a.status === "next");
   const doneCount = agenda.filter((a) => a.status === "done").length;
-  const insights = buildInsights(clients, sessions);
+  /* Ayarlardaki anahtar burada gerçekten bir şey yapmalı — daha önce yalnızca
+     görünüşte bir tercihdi, hiçbir yerde okunmuyordu. */
+  const insights = buildInsights(clients, sessions).filter((i) => plateauAlert || i.label !== "Plato");
 
   const dateLabel = now.toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 

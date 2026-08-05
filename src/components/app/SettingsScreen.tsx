@@ -15,7 +15,7 @@
  * bir anahtar, olmayan bir anahtardan kötüdür.
  */
 
-import { Sun, Moon, Monitor, Eye, Edit2, Award, LogOut, Database, Check, Download } from "lucide-react";
+import { Sun, Moon, Monitor, Eye, Edit2, Award, LogOut, Database, Check, Download, Upload } from "lucide-react";
 import type { TherapistProfile, DatabaseStatus } from "@/lib/platform-data";
 import { Card, CardTitle, Eyebrow, ScreenHeader } from "./primitives";
 
@@ -53,6 +53,7 @@ interface Props {
   readonly achievementCount: number;
   readonly databaseStatus: { configured: boolean; status: DatabaseStatus; provider: string; message: string };
   readonly onExportAll: () => void;
+  readonly onImportCsv: () => void;
   readonly onLogout: () => void;
 }
 
@@ -69,6 +70,7 @@ export function SettingsScreen({
   achievementCount,
   databaseStatus,
   onExportAll,
+  onImportCsv,
   onLogout,
 }: Props) {
   const set = <K extends keyof AppPrefs>(k: K, v: AppPrefs[K]) => onPrefsChange({ ...prefs, [k]: v });
@@ -116,9 +118,11 @@ export function SettingsScreen({
         {/* ── Bildirimler ── */}
         <Card pad="p-[20px_22px]">
           <Eyebrow className="mb-3.5">Bildirimler</Eyebrow>
+          {/* Açıklama mekanizmanın gerçeğini söylemeli: bildirim tarayıcı
+              push'u değil, uygulama içi uyarı. */}
           <Toggle
             label="Seans Hatırlatması"
-            desc="Seanstan 15 dk önce tarayıcı bildirimi"
+            desc="Planlı seanstan 15 dk önce uygulama içi uyarı"
             on={prefs.sessionReminder}
             onChange={(v) => set("sessionReminder", v)}
           />
@@ -241,6 +245,14 @@ export function SettingsScreen({
               style={{ padding: 10, borderRadius: 11, background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}
             >
               <Download size={13} /> Tüm Veriyi İndir
+            </button>
+            <button
+              type="button"
+              onClick={onImportCsv}
+              className="flex-1 flex items-center justify-center gap-2 text-[12px] font-semibold cursor-pointer transition-colors text-(--color-text-body) hover:text-(--color-primary)"
+              style={{ padding: 10, borderRadius: 11, background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}
+            >
+              <Upload size={13} /> CSV İçe Aktar
             </button>
             <button
               type="button"

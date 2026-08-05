@@ -14,7 +14,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { Sparkles, ChevronDown } from "lucide-react";
+import { Sparkles, ChevronDown, Layers } from "lucide-react";
 import type { ClientProfile, RecentSessionEntry, PlatformGameKey } from "@/lib/platform-data";
 import { GAME_TABS } from "@/lib/game-constants";
 import { DOMAIN_META, DOMAIN_ORDER, gameDomain, type DomainKey } from "@/lib/deniz-derive";
@@ -45,6 +45,7 @@ interface Props {
   readonly activityCount: number;
   readonly onStart: (gameKey: PlatformGameKey) => void;
   readonly onStartSequence: (keys: readonly PlatformGameKey[]) => void;
+  readonly onOpenSetPicker: () => void;
 }
 
 export function GameLibraryScreen({
@@ -55,6 +56,7 @@ export function GameLibraryScreen({
   activityCount,
   onStart,
   onStartSequence,
+  onOpenSetPicker,
 }: Props) {
   const [filter, setFilter] = useState<Filter>("all");
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -185,6 +187,16 @@ export function GameLibraryScreen({
               </div>
             )}
 
+            {/* Hazır setler (Günlük Rutin, Hafıza Seti…) koddaydı ama seçici
+                hiçbir düğmeden açılmıyordu. */}
+            <button
+              type="button"
+              onClick={onOpenSetPicker}
+              className="flex items-center gap-2 text-[12.5px] font-semibold cursor-pointer transition-colors text-(--color-text-body) hover:text-(--color-primary)"
+              style={{ padding: "9px 14px", borderRadius: 11, background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}
+            >
+              <Layers size={14} /> Oyun Seti
+            </button>
             {/* Dört alanın dördü de filtrelenebilir olmalı — önceki hâl yalnızca
                 Bilişsel ve Motor'u sunuyor, yedi oyunun dördünü (bellek ve
                 görsel alan) hiçbir filtreyle bulunamaz bırakıyordu. */}

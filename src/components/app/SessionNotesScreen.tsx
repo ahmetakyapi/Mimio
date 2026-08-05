@@ -13,7 +13,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { Plus, Download } from "lucide-react";
+import { Plus, Download, Trash2 } from "lucide-react";
 import type { ClientProfile, SessionNote, RecentSessionEntry } from "@/lib/platform-data";
 import { gameTitle } from "@/lib/deniz-derive";
 import { Avatar, ScreenHeader, btnGhost } from "./primitives";
@@ -40,9 +40,10 @@ interface Props {
   readonly sessions: readonly RecentSessionEntry[];
   readonly onNewNote: () => void;
   readonly onExport: () => void;
+  readonly onDeleteNote: (noteId: string) => void;
 }
 
-export function SessionNotesScreen({ notes, clients, sessions, onNewNote, onExport }: Props) {
+export function SessionNotesScreen({ notes, clients, sessions, onNewNote, onExport, onDeleteNote }: Props) {
   const [clientFilter, setClientFilter] = useState<string>("all");
   const [range, setRange] = useState<Range>("90");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -226,6 +227,16 @@ export function SessionNotesScreen({ notes, clients, sessions, onNewNote, onExpo
                     {selectedSession.score}
                   </span>
                 )}
+                <button
+                  type="button"
+                  aria-label="Notu sil"
+                  title="Notu Sil"
+                  onClick={() => onDeleteNote(selected.id)}
+                  className="grid place-items-center shrink-0 cursor-pointer border-none bg-transparent text-(--color-text-muted) hover:text-(--color-accent-red) transition-colors"
+                  style={{ width: 28, height: 28, borderRadius: 9 }}
+                >
+                  <Trash2 size={14} strokeWidth={2} />
+                </button>
               </div>
 
               {selected.soapContent ? (
