@@ -78,9 +78,10 @@ export function SessionNotesScreen({ notes, clients, sessions, onNewNote, onExpo
         sub="SOAP formatı · oyun skorları otomatik bağlanır."
         actions={
           <>
+            {/* Düğme ne yapıyorsa onu söylemeli: indirilen dosya CSV. */}
             <button type="button" className={btnGhost} onClick={onExport} disabled={rows.length === 0}>
               <span className="inline-flex items-center gap-2">
-                <Download size={14} /> PDF Olarak İndir
+                <Download size={14} /> CSV Dışa Aktar
               </span>
             </button>
             <button

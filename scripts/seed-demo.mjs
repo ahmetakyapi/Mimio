@@ -60,6 +60,17 @@ const THERAPIST = {
   specialty: "Ergoterapist",
 };
 
+/* Giriş ekranındaki "Demo Hesapla Keşfet" düğmesi demo/demo1234 ile giriş
+   yapıyor; hesap yoksa düğme her seferinde "kullanıcı adı veya şifre hatalı"
+   üretiyordu. Seed bu hesabı garanti eder. */
+const DEMO_THERAPIST = {
+  displayName: "Demo Terapist",
+  username: "demo",
+  password: "demo1234",
+  clinicName: "Mimio Demo",
+  specialty: "Ergoterapist",
+};
+
 const GAMES = {
   memory:     { label: "Sıra Hafızası", domain: "memory" },
   pairs:      { label: "Kart Eşle",     domain: "visual" },
@@ -82,52 +93,77 @@ const CLIENTS = [
     displayName: "Ela Selin", ageGroup: "6-8", primaryGoal: "Çalışma belleği",
     supportLevel: "Gözetim", difficultyLevel: "Orta", tags: ["Pediatrik"],
     birthDate: "2019-03-14",
-    games: ["memory", "pairs", "logic"], base: 62, trend: "plateau", sessions: 14, idleDays: 0,
+    games: ["memory", "pairs", "logic"], base: 62, trend: "plateau", sessions: 16, idleDays: 0,
     goals: [
-      { title: "Blok açıklığı 6", description: "Corsi blok testinde 6 birimlik sekans", target: 7, current: 6 },
-      { title: "Dikkat süresi", description: "Kesintisiz odaklanma", target: 6, current: 4 },
-      { title: "Yürütücü işlev", description: "3×3 matris örüntü tamamlama", target: 9, current: 4 },
+      { title: "Blok Açıklığı 6", description: "Corsi blok testinde 6 birimlik sekans", target: 7, current: 6 },
+      { title: "Dikkat Süresi", description: "Kesintisiz odaklanma (dakika)", target: 6, current: 4 },
+      { title: "Yürütücü İşlev", description: "3×3 matris örüntü tamamlama", target: 9, current: 4 },
+      { title: "İpucusuz Tekrar", description: "Sözel ipucu olmadan 5'li sekans", target: 5, current: 5 },
     ],
     notes: [
-      { s: 'Bugün istekliydi, "daha zor olsun" dedi.', o: "6 blok tam seri; 2 turda sözel ipucu gerekti.", a: "Görsel-uzamsal çalışma belleği hedefe ulaştı.", p: "7 blok + Dizi Mantık dönüşümlü; ev programına 1 aktivite." },
+      { s: 'Bugün istekliydi, "daha zor olsun" dedi.', o: "6 blok tam seri; 2 turda sözel ipucu gerekti.", a: "Görsel-uzamsal çalışma belleği hedefe ulaştı; skor üç seanstır aynı bantta.", p: "7 blok + Dizi Mantık dönüşümlü; ev programına 1 aktivite." },
       { s: "Seans başında dağınıktı, kısa uyum süreci gerekti.", o: "Sekans uzunluğu 5'te takıldı; görsel ipucuyla 6'ya çıktı.", a: "İpucuna bağımlılık sürüyor.", p: "İpucu silikleştirme denenecek." },
+      { s: "Annesi hafta içi ev programını iki kez uyguladıklarını aktardı.", o: "Kart Eşle'de hamle sayısı 18'den 14'e indi.", a: "Görsel yer belleği ev tekrarıyla pekişiyor.", p: "Ev programı aynı yoğunlukta devam." },
     ],
-
   },
   {
     displayName: "Tuna Akarsu", ageGroup: "9-11", primaryGoal: "El-göz koordinasyonu",
     supportLevel: "Sözel ipucu", difficultyLevel: "Orta", tags: ["Nörolojik"],
     birthDate: "2016-06-02",
-    games: ["pulse", "route", "scan"], base: 58, trend: "rise", sessions: 16, idleDays: 0,
+    games: ["pulse", "route", "scan"], base: 58, trend: "rise", sessions: 18, idleDays: 0,
     goals: [
-      { title: "Reaksiyon süresi", description: "Hedefe dokunma gecikmesi", target: 10, current: 9 },
-      { title: "Motor planlama", description: "Yön komutu takibi", target: 8, current: 6 },
+      { title: "Reaksiyon Süresi", description: "Hedefe dokunma gecikmesi (persentil)", target: 10, current: 9 },
+      { title: "Motor Planlama", description: "Yön komutu takibi", target: 8, current: 6 },
+      { title: "Bilateral Koordinasyon", description: "Çift el görevlerinde süre farkı", target: 6, current: 3 },
     ],
-    notes: [{ s: "Yorgunluk belirtisi yok, istekli.", o: "Sağ el dominant; sol el görevlerinde 2 kat süre farkı.", a: "Bilateral koordinasyon gelişime açık.", p: "Çift el aktiviteleri eklendi." }],
+    notes: [
+      { s: "Yorgunluk belirtisi yok, istekli.", o: "Sağ el dominant; sol el görevlerinde 2 kat süre farkı.", a: "Bilateral koordinasyon gelişime açık.", p: "Çift el aktiviteleri eklendi." },
+      { s: "Okulda beden eğitimi dersinin iyi geçtiğini anlattı.", o: "Mavi Nabız'da isabet %78'den %86'ya çıktı; seri 9'a ulaştı.", a: "Hız-doğruluk dengesi kuruluyor, yükseliş istikrarlı.", p: "Zorluk bir kademe artırılacak." },
+      { s: "Kalem tutuşu hakkında öğretmen geri bildirimi olumlu.", o: "Komut Rotası'nda ardışık 12 doğru yön.", a: "İnhibisyon kontrolü yaş normuna yaklaştı.", p: "Ev programına top yakalama eklendi." },
+    ],
   },
   {
     displayName: "Asya Demir", ageGroup: "6-8", primaryGoal: "Seçici dikkat",
     supportLevel: "Fiziksel yardım", difficultyLevel: "Kolay", tags: ["Otizm & DEHB"],
     birthDate: "2018-11-20",
-    games: ["scan", "difference", "memory"], base: 48, trend: "rise", sessions: 12, idleDays: 0,
-    goals: [{ title: "Tarama hızı", description: "Izgarada hedef bulma", target: 12, current: 7 }],
-    notes: [{ s: "Kalabalık ekranda huzursuzlandı.", o: "8×8 ızgarada tarama süresi iki katına çıktı.", a: "Görsel kalabalık toleransı düşük.", p: "4×4'ten başlanıp kademeli büyütülecek." }],
+    games: ["scan", "difference", "memory"], base: 48, trend: "rise", sessions: 13, idleDays: 0,
+    goals: [
+      { title: "Tarama Hızı", description: "Izgarada hedef bulma (sn)", target: 12, current: 7 },
+      { title: "Oturma Süresi", description: "Masa başında kesintisiz görev", target: 10, current: 6 },
+    ],
+    notes: [
+      { s: "Kalabalık ekranda huzursuzlandı.", o: "8×8 ızgarada tarama süresi iki katına çıktı.", a: "Görsel kalabalık toleransı düşük.", p: "4×4'ten başlanıp kademeli büyütülecek." },
+      { s: "Seansa gülümseyerek geldi, geçiş sorunsuzdu.", o: "4×4 ızgarada 10/10 hedef; süre ortalaması 4,2 sn.", a: "Küçük alanda seçici dikkat güçleniyor.", p: "5×5'e geçilecek, süre ölçümü sürecek." },
+      { s: "Babası ev rutininde ekran süresinin azaldığını aktardı.", o: "Fark Avcısı'nda ilk kez fiziksel yardım olmadan 6 tur.", a: "Destek düzeyi sözel ipucuya inmeye hazır.", p: "Gelecek seans destek kademesi denenecek." },
+    ],
   },
   {
     displayName: "Mina Yıldız", ageGroup: "4-5", primaryGoal: "Görsel ayrım",
     supportLevel: "Bağımsız", difficultyLevel: "Zor", tags: ["Pediatrik"],
     birthDate: "2021-01-09",
-    games: ["difference", "pairs"], base: 74, trend: "rise", sessions: 10, idleDays: 1,
-    goals: [{ title: "Figür-zemin ayrımı", description: "Benzer kartlar arasında fark bulma", target: 15, current: 13 }],
-    notes: [{ s: "Kendinden emin, ek zorluk istedi.", o: "Zor seviyede %91 doğruluk.", a: "Yaşına göre ileri seviyede.", p: "Zorluk Zor'da tutulacak." }],
+    games: ["difference", "pairs"], base: 74, trend: "rise", sessions: 11, idleDays: 1,
+    goals: [
+      { title: "Figür-Zemin Ayrımı", description: "Benzer kartlar arasında fark bulma", target: 15, current: 13 },
+      { title: "Görsel Eşleme", description: "12 kartlık destede hamle verimi", target: 12, current: 12 },
+    ],
+    notes: [
+      { s: "Kendinden emin, ek zorluk istedi.", o: "Zor seviyede %91 doğruluk.", a: "Yaşına göre ileri seviyede.", p: "Zorluk Zor'da tutulacak." },
+      { s: "Oyunu kardeşine öğretmek istediğini söyledi.", o: "Kart Eşle 12 hamlede tamamlandı — hedef verime ulaşıldı.", a: "Görsel eşleme hedefi kapandı.", p: "Yeni hedef: karmaşık zeminde figür ayrımı." },
+    ],
   },
   {
     displayName: "Kerem Arslan", ageGroup: "9-11", primaryGoal: "Örüntü tamamlama",
     supportLevel: "Gözetim", difficultyLevel: "Orta", tags: ["Nörolojik"],
     birthDate: "2016-02-11",
-    games: ["logic", "memory", "scan"], base: 55, trend: "dip", sessions: 13, idleDays: 2,
-    goals: [{ title: "Tümevarım", description: "Kural çıkarma", target: 10, current: 5 }],
-    notes: [{ s: "Yorgun geldi, okul haftası zor geçmiş.", o: "Son iki seansta skor 12 puan düştü.", a: "Performans düşüşü dönemsel görünüyor.", p: "Zorluk bir kademe indirildi." }],
+    games: ["logic", "memory", "scan"], base: 55, trend: "dip", sessions: 14, idleDays: 2,
+    goals: [
+      { title: "Tümevarım", description: "Kural çıkarma", target: 10, current: 5 },
+      { title: "Hata Toleransı", description: "Yanlış sonrası göreve dönüş", target: 8, current: 4 },
+    ],
+    notes: [
+      { s: "Yorgun geldi, okul haftası zor geçmiş.", o: "Son iki seansta skor 12 puan düştü.", a: "Performans düşüşü dönemsel görünüyor; uyku düzeni etkisi olası.", p: "Zorluk bir kademe indirildi, aile ile uyku rutini konuşulacak." },
+      { s: "Sınav haftasının bittiğini, rahatladığını söyledi.", o: "Dizi Mantık'ta 8/12 doğru — düşüş durdu.", a: "Toparlanma başladı, henüz eski banda dönmedi.", p: "İki seans daha mevcut zorlukta izlenecek." },
+    ],
   },
   {
     displayName: "Mert Yiğit", ageGroup: "12-14", primaryGoal: "Yürütücü işlev",
@@ -135,8 +171,40 @@ const CLIENTS = [
     birthDate: "2013-08-27",
     /* Uzun süredir gelmiyor — "ara verdi" önerisini ve plandaki boş slotu tetikler. */
     games: ["logic", "route"], base: 70, trend: "plateau", sessions: 8, idleDays: 11,
-    goals: [{ title: "Görev değiştirme", description: "Kural değişiminde uyum", target: 8, current: 6 }],
-    notes: [{ s: "—", o: "11 gündür seans kaydı yok.", a: "Devamsızlık ilerlemeyi riske atıyor.", p: "Aile ile iletişime geçilecek." }],
+    goals: [{ title: "Görev Değiştirme", description: "Kural değişiminde uyum", target: 8, current: 6 }],
+    notes: [
+      { s: "—", o: "11 gündür seans kaydı yok.", a: "Devamsızlık ilerlemeyi riske atıyor.", p: "Aile ile iletişime geçilecek." },
+      { s: "Son seansında okul projesinden bahsetti, motivasyonu yüksekti.", o: "Dizi Mantık'ta zor seviyede %75 doğruluk.", a: "Plato bandında ama üst sınırda seyrediyor.", p: "Dönüşte kural değiştirmeli setlerle başlanacak." },
+    ],
+  },
+  {
+    displayName: "Derin Kaya", ageGroup: "12-14", primaryGoal: "İnce motor kontrol",
+    supportLevel: "Sözel ipucu", difficultyLevel: "Orta", tags: ["Nörolojik"],
+    birthDate: "2013-04-18",
+    games: ["pulse", "route", "pairs"], base: 52, trend: "rise", sessions: 15, idleDays: 0,
+    goals: [
+      { title: "Hedefleme Hassasiyeti", description: "Küçük hedefe ilk temasla isabet", target: 10, current: 6 },
+      { title: "Yazı Hızı", description: "Dakikada okunaklı kelime", target: 14, current: 9 },
+    ],
+    notes: [
+      { s: "Fizyoterapi seansından sonra geldi, elleri yorgundu.", o: "Mavi Nabız'da isabet %64; ilk 5 turda ısınma etkisi belirgin.", a: "Yorgunluk performansı maskeliyor; ölçüm günü ayrılmalı.", p: "Seans günü fizyoterapiden ayrı güne alındı." },
+      { s: "Yeni programdan memnun, kendini daha az yorgun hissediyor.", o: "İsabet %79'a çıktı; seri 7.", a: "Program değişikliği doğru karardı, yükseliş gerçek.", p: "Mevcut düzen korunacak." },
+    ],
+  },
+  {
+    displayName: "Zeynep Ada", ageGroup: "4-5", primaryGoal: "Oyun katılımı",
+    supportLevel: "Fiziksel yardım", difficultyLevel: "Kolay", tags: ["Pediatrik", "Otizm & DEHB"],
+    birthDate: "2021-09-30",
+    /* 5 gün aradan sonra plan önerisi tetiklenir ama "ara verdi" uyarısına düşmez. */
+    games: ["pairs", "difference", "pulse"], base: 44, trend: "rise", sessions: 9, idleDays: 5,
+    goals: [
+      { title: "Ortak Dikkat", description: "Oyun sırasında göz teması ve sıra alma", target: 8, current: 3 },
+      { title: "Yönerge Takibi", description: "Tek adımlı yönergeyi ilk denemede uygulama", target: 10, current: 5 },
+    ],
+    notes: [
+      { s: "Seans odasına girerken tereddüt etti, geçiş kartıyla rahatladı.", o: "Kart Eşle'de 3 çift; fiziksel yönlendirme 4 kez gerekti.", a: "Görsel destekle katılım artıyor.", p: "Geçiş kartları rutine eklenecek." },
+      { s: "Annesi evde oyuncak paylaşımının arttığını aktardı.", o: "Sıra alma 5 turda 3 kez bağımsız gerçekleşti.", a: "Ortak dikkat hedefinde erken ilerleme işaretleri var.", p: "Sıra almalı oyunlar iki seans daha sürecek." },
+    ],
   },
 ];
 
@@ -230,6 +298,22 @@ if (!therapist) {
 
 const therapistId = therapist.id;
 
+/* 1b — Demo hesabı (giriş ekranındaki "Demo Hesapla Keşfet" bunu bekler). */
+const [existingDemo] = await sql.query(
+  "SELECT id::text FROM therapist_profiles WHERE username = $1 LIMIT 1",
+  [DEMO_THERAPIST.username],
+);
+if (!existingDemo) {
+  await sql.query(
+    `INSERT INTO therapist_profiles (display_name, clinic_name, specialty, username, password_hash)
+     VALUES ($1, $2, $3, $4, crypt($5, gen_salt('bf', 8)))`,
+    [DEMO_THERAPIST.displayName, DEMO_THERAPIST.clinicName, DEMO_THERAPIST.specialty, DEMO_THERAPIST.username, DEMO_THERAPIST.password],
+  );
+  console.log(`   • demo hesabı oluşturuldu: ${DEMO_THERAPIST.username} / ${DEMO_THERAPIST.password}`);
+} else {
+  console.log("   • demo hesabı zaten var");
+}
+
 /* 2 — Bu terapiste ait eski demo verisini temizle (yeniden çalıştırılabilirlik) */
 const existingClients = await sql.query(
   "SELECT id::text FROM client_profiles WHERE display_name = ANY($1)",
@@ -243,6 +327,23 @@ if (oldIds.length) {
   await sql.query("DELETE FROM weekly_plans  WHERE client_id = ANY($1)", [oldIds]);
   await sql.query("DELETE FROM client_profiles WHERE id = ANY($1)", [oldIds]);
   console.log(`   • önceki demo verisi temizlendi (${oldIds.length} danışan)`);
+}
+
+/* 2b — Seed listesinde olmayan aktif danışanları arşivle.
+   Geliştirme sırasında elle açılmış test kayıtları ("Deniz", "Kaan T." gibi)
+   demo listesinde dolaşıyor, öneri motorunu "140 gündür seans görmedi" gibi
+   çöp uyarılarla dolduruyordu. Silmiyoruz — arşiv geri alınabilir; gerçek
+   bir kayıt yanlışlıkla yakalanırsa arşivden çıkarmak yeterli. */
+const strays = await sql.query(
+  "SELECT id::text, display_name FROM client_profiles WHERE archived_at IS NULL AND NOT (display_name = ANY($1))",
+  [CLIENTS.map((c) => c.displayName)],
+);
+if (strays.length) {
+  await sql.query(
+    "UPDATE client_profiles SET archived_at = NOW() WHERE id = ANY($1)",
+    [strays.map((r) => r.id)],
+  );
+  console.log(`   • seed dışı ${strays.length} danışan arşivlendi: ${strays.map((r) => r.display_name).join(", ")}`);
 }
 
 /* 3 — Danışanlar, seanslar, hedefler, notlar */
@@ -261,7 +362,9 @@ for (let ci = 0; ci < CLIENTS.length; ci += 1) {
   );
   clientIds.set(c.displayName, row.id);
 
-  /* Seanslar — en eskiden yeniye, ~2,5 günde bir. */
+  /* Seanslar — en eskiden yeniye, ~2,5 günde bir. Tarihler saklanıyor ki
+     notlar gerçek seans günlerine bağlanabilsin. */
+  const sessionDates = [];
   for (let i = 0; i < c.sessions; i += 1) {
     const fromEnd = c.sessions - 1 - i;
     const playedAt = new Date(now.getTime() - (c.idleDays + fromEnd * 2.5) * DAY);
@@ -270,16 +373,24 @@ for (let ci = 0; ci < CLIENTS.length; ci += 1) {
     const gameKey = c.games[i % c.games.length];
     const score = scoreCurve(c, i, c.sessions, rand);
 
+    /* Seans sonu ekranındaki yıldız değerlendirmesi ara sıra doldurulmuş
+       olsun — her seansta olması gerçekçi değil, hiç olmaması da. */
+    const metadata = rand() < 0.4
+      ? { satisfactionRating: score >= 75 ? 5 : score >= 60 ? 4 : 3 }
+      : {};
+
     await sql.query(
       `INSERT INTO session_runs
-        (therapist_id, therapist_name, client_id, client_name, game_key, game_label, score, source, played_at, duration_seconds)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+        (therapist_id, therapist_name, client_id, client_name, game_key, game_label, score, source, played_at, duration_seconds, metadata)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb)`,
       [
         therapistId, THERAPIST.displayName, row.id, c.displayName,
         gameKey, GAMES[gameKey].label, score, "seed",
         playedAt.toISOString(), 240 + Math.round(rand() * 360),
+        JSON.stringify(metadata),
       ],
     );
+    sessionDates.push(playedAt);
     sessionCount += 1;
   }
 
@@ -291,10 +402,17 @@ for (let ci = 0; ci < CLIENTS.length; ci += 1) {
     );
   }
 
-  /* Notlar SOAP olarak yazılıyor: Seans Sonu ve Seans Notları ekranlarının
-     ikisi de bu formatın üstüne kurulu, demo veri onu göstermeli. */
+  /*
+   * Notlar SOAP olarak yazılıyor: Seans Sonu ve Seans Notları ekranlarının
+   * ikisi de bu formatın üstüne kurulu, demo veri onu göstermeli.
+   *
+   * Her not gerçek bir seans gününe bağlanır (son seanstan geriye ~3 seans
+   * arayla): Seans Notları ekranı notu aynı güne düşen seansın skoru ve
+   * oyunuyla eşleştiriyor — havada duran tarihlerle o bağ hiç kurulmuyordu.
+   */
   for (let ni = 0; ni < c.notes.length; ni += 1) {
-    const d = new Date(now.getTime() - (c.idleDays + ni * 6) * DAY);
+    const sessionIdx = Math.max(0, sessionDates.length - 1 - ni * 3);
+    const d = new Date(sessionDates[sessionIdx].getTime() + 30 * 60000);
     const n = c.notes[ni];
     const flat = [n.s, n.o, n.a, n.p].filter((x) => x && x !== "—").join(" ");
     await sql.query(
@@ -321,6 +439,8 @@ const SCHEDULE = {
   "Asya Demir":   [["tue", "14:00", "scan"], ["fri", "14:00", "difference"]],
   "Mina Yıldız":  [["wed", "13:00", "difference"], ["sat", "10:30", "pairs"]],
   "Kerem Arslan": [["tue", "15:30", "logic"], ["thu", "15:30", "memory"]],
+  "Derin Kaya":   [["mon", "14:00", "pulse"], ["wed", "15:30", "route"]],
+  "Zeynep Ada":   [["thu", "09:30", "pairs"], ["sat", "11:30", "difference"]],
 };
 
 let blockCount = 0;

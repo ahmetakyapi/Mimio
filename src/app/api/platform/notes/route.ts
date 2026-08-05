@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClientNote, deleteClientNote, getClientNotes } from "@/lib/server/platform-db";
+import { createClientNote, deleteClientNote, getAllNotes, getClientNotes } from "@/lib/server/platform-db";
 import { getSessionTherapistId } from "@/lib/server/session";
 import type { NoteMode, SoapNoteContent } from "@/lib/platform-data";
 
@@ -9,8 +9,9 @@ export async function GET(req: NextRequest) {
   if (!(await getSessionTherapistId())) return NextResponse.json(UNAUTHORIZED, { status: 401 });
   const { searchParams } = new URL(req.url);
   const clientId = searchParams.get("clientId");
-  if (!clientId) return NextResponse.json({ error: "clientId gerekli" }, { status: 400 });
-  const notes = await getClientNotes(clientId);
+  /* clientId verilmezse tüm danışanların son notları döner — Seans Notları
+     ekranı akışı buradan kuruyor. */
+  const notes = clientId ? await getClientNotes(clientId) : await getAllNotes();
   return NextResponse.json({ notes });
 }
 

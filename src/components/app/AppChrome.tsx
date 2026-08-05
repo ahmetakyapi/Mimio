@@ -44,7 +44,9 @@ const NAV: ReadonlyArray<{
   { view: "weekly-plan", label: "Haftalık Plan", icon: CalendarDays },
   { view: "games", label: "Oyunlar", icon: Gamepad2, badge: "games" },
   { view: "notes", label: "Seans Notları", icon: NotebookPen },
-  { view: "reports", label: "Raporlar", icon: BarChart3 },
+  /* Ekranın kendi başlığı, mobil "Daha" listesi ve buradaki satır aynı adı
+     taşımalı — üç yerde üç ad, aynı yere gittiklerini gizliyordu. */
+  { view: "reports", label: "İlerleme Raporu", icon: BarChart3 },
   { view: "therapy-program", label: "Aktivite Kitaplığı", icon: BookOpen },
   { view: "settings", label: "Ayarlar", icon: Settings },
 ];

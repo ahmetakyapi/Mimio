@@ -246,6 +246,13 @@ export async function getPlatformOverviewFromDatabase(): Promise<PlatformOvervie
       birth_date: string | null;
     }>;
 
+    /*
+     * `recentSessions` yalnızca bir "son aktiviteler" listesi değil — Bugün,
+     * Danışanlar, Danışan Detayı ve İlerleme Raporu ekranlarının tüm analitiği
+     * (eğilim çizgisi, radar, alan dengesi, gelişim eğrisi) bu diziden
+     * türetiliyor. Önceki LIMIT 8, altı danışanlı bir klinikte her danışana
+     * 1-2 seans bırakıyor, ekranların çoğunu "veri yok" durumuna düşürüyordu.
+     */
     const recentRows = (await sql.query(
       `SELECT
         id::text,
@@ -262,7 +269,7 @@ export async function getPlatformOverviewFromDatabase(): Promise<PlatformOvervie
         duration_seconds
       FROM session_runs
       ORDER BY played_at DESC
-      LIMIT 8`
+      LIMIT 400`
     )) as Array<{
       id: string;
       therapist_id: string | null;
@@ -598,6 +605,25 @@ export async function getClientNotes(clientId: string): Promise<SessionNote[]> {
   } catch { return []; }
 }
 
+/**
+ * Tüm danışanların son notları. Seans Notları ekranı akışı danışan bazında
+ * değil zaman bazında okuyor; danışan başına tek tek çekmek yalnızca
+ * "detayına girilmiş" danışanların notlarını gösteriyordu.
+ */
+export async function getAllNotes(limit = 200): Promise<SessionNote[]> {
+  const sql = getSqlClient();
+  if (!sql) return [];
+  try {
+    const rows = (await sql.query(
+      `SELECT id::text, client_id::text AS "clientId", COALESCE(therapist_id::text, '') AS "therapistId",
+        date::text, content, note_mode AS "noteMode", soap_content AS "soapContent", created_at::text AS "createdAt"
+      FROM client_notes ORDER BY created_at DESC LIMIT $1`,
+      [limit]
+    )) as Array<{ id: string; clientId: string; therapistId: string; date: string; content: string; noteMode: NoteMode; soapContent: SoapNoteContent | null; createdAt: string }>;
+    return rows.map((r) => ({ ...r, soapContent: r.soapContent ?? undefined }));
+  } catch { return []; }
+}
+
 export async function createClientNote(payload: {
   clientId: string;
   therapistId?: string;
@@ -648,6 +674,26 @@ export async function getWeeklyPlan(clientId: string, weekStartDate: string): Pr
     if (rows.length === 0) return null;
     return rows[0];
   } catch { return null; }
+}
+
+/**
+ * Bir haftanın TÜM danışan planları. Bugün, Danışanlar ve Haftalık Plan
+ * ekranları haftanın tamamını çiziyor; danışan başına tek tek istek atmak
+ * hem yavaş hem de yalnızca "detayına girilmiş" danışanların planını
+ * getiriyordu — hafta ızgarası çoğunlukla boş görünüyordu.
+ */
+export async function getWeeklyPlansForWeek(weekStartDate: string): Promise<WeeklyPlan[]> {
+  const sql = getSqlClient();
+  if (!sql) return [];
+  try {
+    const rows = (await sql.query(
+      `SELECT id::text, client_id::text AS "clientId", COALESCE(therapist_id::text,'') AS "therapistId",
+        week_start_date::text AS "weekStartDate", days, updated_at::text AS "updatedAt"
+      FROM weekly_plans WHERE week_start_date::text LIKE $1 || '%'`,
+      [weekStartDate]
+    )) as WeeklyPlan[];
+    return rows;
+  } catch { return []; }
 }
 
 export async function saveWeeklyPlan(payload: {

@@ -207,7 +207,9 @@ export function TodayScreen({
                     const m = metricsFor(c, sessions);
                     return !m.lastPlayedAt || Date.now() - m.lastPlayedAt.getTime() > 7 * 86400000;
                   }).length;
-                  return stale > 0 ? `${stale}'inin planı bu hafta güncellenmeli` : "Tüm planlar güncel";
+                  /* "3'inin" gibi ek uydurmak sayıya göre bozuluyor (3'ünün,
+                     5'inin, 6'sının…); adı anıp eki sabitlemek her sayıda doğru. */
+                  return stale > 0 ? `${stale} danışanın planı bu hafta güncellenmeli` : "Tüm planlar güncel";
                 })()}
               </div>
             </>

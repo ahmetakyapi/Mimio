@@ -36,7 +36,13 @@ export function showToast(message: string, type: ToastItem["type"] = "success") 
 export function ToastContainer() {
   const toasts = useToasts();
   if (toasts.length === 0) return null;
-  const colors = { success: "#12b886", info: "#2b62f5", warning: "#f59e0b" };
+  /* Renkler paletten gelir — hardcode hex tema değişince (özellikle
+     yüksek kontrastta) sistemin dışında kalıyordu. */
+  const colors = {
+    success: "var(--color-accent-green)",
+    info: "var(--color-primary)",
+    warning: "var(--color-accent-amber)",
+  };
   const icons = { success: "✓", info: "ℹ", warning: "⚠" };
   return (
     <div
@@ -47,10 +53,10 @@ export function ToastContainer() {
       {toasts.map((t) => (
         <div key={t.id} className="pointer-events-auto flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-semibold text-white"
           style={{
-            background: `linear-gradient(135deg, ${colors[t.type]}ee, ${colors[t.type]}bb)`,
-            boxShadow: `0 8px 32px ${colors[t.type]}55, 0 2px 8px rgba(0,0,0,0.3)`,
+            background: `linear-gradient(135deg, color-mix(in srgb, ${colors[t.type]} 93%, transparent), color-mix(in srgb, ${colors[t.type]} 73%, transparent))`,
+            boxShadow: `0 8px 32px color-mix(in srgb, ${colors[t.type]} 33%, transparent), 0 2px 8px rgba(0,0,0,0.3)`,
             backdropFilter: "blur(12px)",
-            border: `1px solid ${colors[t.type]}44`,
+            border: `1px solid color-mix(in srgb, ${colors[t.type]} 27%, transparent)`,
             animation: "page-fade-in 0.3s ease both",
             minWidth: "180px",
           }}>

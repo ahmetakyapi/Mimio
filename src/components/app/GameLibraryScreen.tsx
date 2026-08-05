@@ -17,7 +17,7 @@ import { useMemo, useState } from "react";
 import { Sparkles, ChevronDown } from "lucide-react";
 import type { ClientProfile, RecentSessionEntry, PlatformGameKey } from "@/lib/platform-data";
 import { GAME_TABS } from "@/lib/game-constants";
-import { DOMAIN_META, gameDomain, type DomainKey } from "@/lib/deniz-derive";
+import { DOMAIN_META, DOMAIN_ORDER, gameDomain, type DomainKey } from "@/lib/deniz-derive";
 import { Avatar, ScreenHeader, SegmentedControl } from "./primitives";
 
 /*
@@ -185,13 +185,15 @@ export function GameLibraryScreen({
               </div>
             )}
 
+            {/* Dört alanın dördü de filtrelenebilir olmalı — önceki hâl yalnızca
+                Bilişsel ve Motor'u sunuyor, yedi oyunun dördünü (bellek ve
+                görsel alan) hiçbir filtreyle bulunamaz bırakıyordu. */}
             <SegmentedControl
               value={filter}
               onChange={setFilter}
               options={[
                 { value: "all" as Filter, label: "Tümü" },
-                { value: "cognitiveSkills" as Filter, label: "Bilişsel" },
-                { value: "motorSkills" as Filter, label: "Motor" },
+                ...DOMAIN_ORDER.map((k) => ({ value: k as Filter, label: DOMAIN_META[k].label })),
               ]}
             />
           </>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getWeeklyPlan, saveWeeklyPlan } from "@/lib/server/platform-db";
+import { getWeeklyPlan, getWeeklyPlansForWeek, saveWeeklyPlan } from "@/lib/server/platform-db";
 import { getSessionTherapistId } from "@/lib/server/session";
 import type { WeeklyPlan } from "@/lib/platform-data";
 
@@ -10,8 +10,14 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const clientId = searchParams.get("clientId");
   const weekStartDate = searchParams.get("weekStartDate");
-  if (!clientId || !weekStartDate) {
-    return NextResponse.json({ error: "clientId ve weekStartDate gerekli" }, { status: 400 });
+  if (!weekStartDate) {
+    return NextResponse.json({ error: "weekStartDate gerekli" }, { status: 400 });
+  }
+  /* clientId verilmezse haftanın tüm planları döner — kabuk, hafta
+     ızgarasını ve "sıradaki seans" sütununu bununla dolduruyor. */
+  if (!clientId) {
+    const plans = await getWeeklyPlansForWeek(weekStartDate);
+    return NextResponse.json({ plans });
   }
   const plan = await getWeeklyPlan(clientId, weekStartDate);
   return NextResponse.json({ plan });

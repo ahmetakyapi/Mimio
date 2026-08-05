@@ -871,10 +871,29 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     showToast("Blok kaldırıldı", "info");
   }
 
-  /* Bir danışanı seçip doğrudan oyuna geçen tek yol — üç ekran da bunu kullanır. */
+  /*
+   * Bir danışanı seçip oyuna geçen tek yol — Bugün, Danışanlar, Danışan
+   * Detayı ve Haftalık Plan bunu kullanır.
+   *
+   * "Seansı Başlat" derken düğme kitaplığa değil doğrudan canlı seansa
+   * açılmalı — oyun belliyse ara ekran yalnızca bir tıklama vergisiydi.
+   * Oyun belirtilmemişse (profil kartındaki genel düğme) kitaplık açılır,
+   * seçim orada yapılır. Her iki durumda önceki seansın ölçüm izleri
+   * (tepki izi, ipucu sayaçları, duraklatma) temizlenir; taşınsalardı
+   * yeni seansın kaydı yanlış olurdu.
+   */
   function handleStartSessionFor(clientId: string, gameKey?: PlatformGameKey) {
     setActiveClientId(clientId);
-    if (gameKey) setActiveGame(gameKey as GameKey);
+    setSessionTrace([]);
+    setSupportCounts({ verbal: 0, visual: 0, physical: 0 });
+    setClientDiffOverride(null);
+    setSessionPaused(false);
+    if (gameKey) {
+      setActiveGame(gameKey as GameKey);
+      setGameStage("live");
+    } else {
+      setGameStage("library");
+    }
     setActiveAppView("games");
   }
 
@@ -1227,6 +1246,25 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     );
 
     if (created) {
+      /*
+       * Sihirbazın topladığı ama create uç noktasının almadığı alanlar:
+       * doğum tarihi, uygulama alanı (etiket) ve zorluk. Daha önce burada
+       * sessizce çöpe gidiyordu — üç adımlık formu dolduran terapist,
+       * profili açınca alanların yarısını boş buluyordu.
+       */
+      try {
+        await fetch("/api/platform/profiles", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            kind: "update-client",
+            clientId: created.id,
+            tags: draft.area ? [draft.area] : [],
+            birthDate: draft.birthDate || null,
+            difficultyLevel: draft.difficultyLevel,
+          }),
+        });
+      } catch { /* profil oluştu; kalan alanlar detaydan tamamlanabilir */ }
       await loadPlatformOverview();
       showToast(`${displayName} eklendi`, "success");
     }
@@ -1336,6 +1374,37 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     showToast("CSV dışa aktarıldı", "success");
   }
 
+  /*
+   * Seans Notları ekranının dışa aktarımı. Ekran daha önce "PDF Olarak İndir"
+   * deyip danışan listesinin CSV'sini indiriyordu — etiket de içerik de
+   * yanlıştı. Notların kendisi SOAP alanlarıyla birlikte iner.
+   */
+  function handleExportNotesCsv() {
+    const headers = ["Tarih", "Danışan", "Biçim", "Sübjektif", "Objektif", "Değerlendirme", "Plan", "Not"];
+    const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const rows = allNotes.map((n) => {
+      const clientName = clientOptions.find((c) => c.id === n.clientId)?.displayName ?? "";
+      return [
+        n.date.slice(0, 10),
+        clientName,
+        n.noteMode === "soap" ? "SOAP" : "Serbest",
+        n.soapContent?.s ?? "",
+        n.soapContent?.o ?? "",
+        n.soapContent?.a ?? "",
+        n.soapContent?.p ?? "",
+        n.soapContent ? "" : n.content,
+      ].map(esc).join(",");
+    });
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `mimio-notlar-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`${rows.length} not CSV olarak indirildi`, "success");
+  }
+
   // ── CSV import ──
   async function handleImportCsv() {
     setCsvImportError("");
@@ -1441,6 +1510,51 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   function clearMemoryTimers() { memoryTimersRef.current.forEach((timer) => window.clearTimeout(timer)); memoryTimersRef.current = []; }
   function clearPairTimers() { pairTimersRef.current.forEach((timer) => window.clearTimeout(timer)); pairTimersRef.current = []; }
 
+  /*
+   * Bu haftanın TÜM planları. Daha önce plan yalnızca bir danışanın
+   * detayına girildiğinde (`loadWeeklyPlanFromDB`) tek tek geliyordu;
+   * Bugün'ün çizelgesi, Danışanlar'daki "Sıradaki" sütunu ve Haftalık
+   * Plan ızgarası girişte boş kalıyordu.
+   */
+  async function loadWeekPlansFromDB() {
+    const weekStartDate = denizIso(denizWeekStart(new Date()));
+    try {
+      const res = await fetch(`/api/platform/plans?weekStartDate=${weekStartDate}`);
+      if (!res.ok) return;
+      const payload = (await res.json()) as { plans?: WeeklyPlan[] } | null;
+      const plans = Array.isArray(payload?.plans) ? payload.plans : [];
+      if (plans.length === 0) return;
+      setAllWeeklyPlans((current) => {
+        const merged = [...current];
+        for (const p of plans) {
+          const idx = merged.findIndex(
+            (x) => x.clientId === p.clientId && x.weekStartDate.slice(0, 10) === p.weekStartDate.slice(0, 10),
+          );
+          if (idx >= 0) merged[idx] = p;
+          else merged.push(p);
+        }
+        return merged;
+      });
+    } catch { /* çevrimdışı — yerel plan durumu geçerli kalır */ }
+  }
+
+  /* Tüm danışanların notları — Seans Notları akışı zaman bazlı okur; yalnızca
+     detayı açılmış danışanın notlarıyla akış eksik kalıyordu. */
+  async function loadAllNotesFromDB() {
+    try {
+      const res = await fetch("/api/platform/notes");
+      if (!res.ok) return;
+      const payload = (await res.json()) as { notes?: SessionNote[] } | null;
+      const notes = Array.isArray(payload?.notes) ? payload.notes : [];
+      if (notes.length === 0) return;
+      setAllNotes((current) => {
+        const ids = new Set(notes.map((n) => n.id));
+        const local = current.filter((n) => !ids.has(n.id));
+        return [...notes, ...local].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      });
+    } catch { /* çevrimdışı — yereldekiler geçerli */ }
+  }
+
   async function loadPlatformOverview() {
     try {
       const response = await fetch("/api/platform/overview", { cache: "no-store" });
@@ -1448,6 +1562,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       const payload = (await response.json()) as PlatformOverviewPayload;
       setPlatformOverview(payload);
       setPlatformStatus(payload.database.status);
+      if (payload.authenticated !== false) {
+        void loadWeekPlansFromDB();
+        void loadAllNotesFromDB();
+      }
       // Yerelde oturum görünüyor ama sunucu cookie'si geçersizse (süre dolmuş
       // veya eski sürümden kalma) kullanıcıyı girişe yönlendir.
       if (payload.authenticated === false) {
@@ -2450,7 +2568,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               clients={clientOptions}
               sessions={platformOverview.recentSessions}
               onNewNote={() => { if (selectedClient) { setShowNoteForm(true); setActiveAppView("client-detail"); } else { setActiveAppView("clients"); } }}
-              onExport={handleExportClientsCsv}
+              onExport={handleExportNotesCsv}
             />
           </div>
         )}
@@ -2504,7 +2622,15 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 setActiveGame(key as GameKey);
                 setGameStage("live");
               }}
-              onStartSequence={(keys) => { if (keys[0]) setActiveGame(keys[0] as GameKey); setGameStage("live"); }}
+              onStartSequence={(keys) => {
+                /* Sıra başlatmak da tek oyun başlatmakla aynı temizliği ister. */
+                setSessionTrace([]);
+                setSupportCounts({ verbal: 0, visual: 0, physical: 0 });
+                setClientDiffOverride(null);
+                setSessionPaused(false);
+                if (keys[0]) setActiveGame(keys[0] as GameKey);
+                setGameStage("live");
+              }}
             />
           </div>
         )}
@@ -3576,6 +3702,129 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           onClose={() => setShowAddClient(false)}
           onSubmit={(d) => { void handleCreateClientFromFlow(d); }}
         />
+      )}
+
+      {/*
+        Not formu — Danışan Detayı'ndaki "Not Ekle" ve Seans Notları'ndaki
+        "Yeni Not" buraya açılır. Bu modal daha önce hiç render edilmiyordu:
+        iki düğme de `showNoteForm`u true yapıyor ama karşılığında hiçbir şey
+        açılmıyordu. Form, seans sonu ekranıyla aynı SOAP dilini konuşur;
+        serbest metin de mümkün — kısa gözlemler için dört alan fazla tören.
+      */}
+      {showNoteForm && selectedClient && (
+        <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label="Seans notu ekle">
+          <button
+            type="button"
+            aria-label="Kapat"
+            onClick={() => setShowNoteForm(false)}
+            className="absolute inset-0 cursor-default border-none"
+            style={{ background: "rgba(5,11,22,0.5)", backdropFilter: "blur(4px)" }}
+          />
+          <div
+            className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-[18px]"
+            style={{ padding: 22, background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5">
+                <Avatar name={selectedClient.displayName} id={selectedClient.id} size={34} radius={11} />
+                <div>
+                  <Eyebrow>{selectedClient.displayName}</Eyebrow>
+                  <CardTitle className="block mt-0.5">Seans Notu</CardTitle>
+                </div>
+              </div>
+              <button type="button" onClick={() => setShowNoteForm(false)} aria-label="Kapat" className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-soft) hover:text-(--color-text-strong)" style={{ width: 30, height: 30 }}>
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3 mb-4">
+              {/* Not biçimi — SOAP klinik varsayılan, serbest metin hızlı gözlem için */}
+              <div className="flex p-[3px] rounded-[10px]" style={{ background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }} role="radiogroup" aria-label="Not biçimi">
+                {([{ key: "soap" as NoteMode, label: "SOAP" }, { key: "free" as NoteMode, label: "Serbest" }]).map(({ key, label }) => {
+                  const on = noteMode === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      onClick={() => setNoteMode(key)}
+                      className={`text-[11.5px] font-semibold cursor-pointer border-none transition-colors ${on ? "text-white" : "text-(--color-text-soft) bg-transparent hover:text-(--color-text-body)"}`}
+                      style={{ padding: "6px 13px", borderRadius: 7, background: on ? "var(--gradient-signature)" : undefined }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <input
+                type="date"
+                value={noteForm.date}
+                onChange={(e) => setNoteForm((f) => ({ ...f, date: e.target.value }))}
+                aria-label="Not tarihi"
+                className="numeral ml-auto text-[12px] text-(--color-text-strong) outline-none cursor-pointer"
+                style={{ padding: "7px 11px", borderRadius: 10, background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}
+              />
+            </div>
+
+            {noteMode === "soap" ? (
+              <div className="flex flex-col gap-3">
+                {([
+                  { key: "s" as const, letter: "S", label: "Sübjektif", ph: "Danışanın / ailenin ifadesi…" },
+                  { key: "o" as const, letter: "O", label: "Objektif", ph: "Gözlenen performans, ölçümler…" },
+                  { key: "a" as const, letter: "A", label: "Değerlendirme", ph: "Klinik yorum…" },
+                  { key: "p" as const, letter: "P", label: "Plan", ph: "Sonraki adım…" },
+                ]).map(({ key, letter, label, ph }) => (
+                  <div key={key}>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="numeral grid place-items-center text-[10px] font-bold shrink-0" style={{ width: 20, height: 20, borderRadius: 6, background: "var(--color-primary-light)", color: "var(--color-primary-ink)" }}>
+                        {letter}
+                      </span>
+                      <span className="text-[11px] font-semibold text-(--color-text-body)">{label}</span>
+                    </div>
+                    <textarea
+                      value={soapDraft[key]}
+                      onChange={(e) => setSoapDraft((d) => ({ ...d, [key]: e.target.value }))}
+                      rows={2}
+                      placeholder={ph}
+                      className="w-full resize-none outline-none text-[12px] leading-[1.55] text-(--color-text-strong) placeholder:text-(--color-text-muted)"
+                      style={{ padding: "10px 12px", borderRadius: 11, background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <textarea
+                value={noteForm.content}
+                onChange={(e) => setNoteForm((f) => ({ ...f, content: e.target.value }))}
+                rows={6}
+                placeholder="Gözlemini yaz…"
+                className="w-full resize-none outline-none text-[12.5px] leading-[1.6] text-(--color-text-strong) placeholder:text-(--color-text-muted)"
+                style={{ padding: "12px 14px", borderRadius: 12, background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}
+              />
+            )}
+
+            <div className="flex gap-2.5 mt-5">
+              <button
+                type="button"
+                onClick={() => setShowNoteForm(false)}
+                className="flex-1 text-[12.5px] font-semibold text-(--color-text-body) cursor-pointer transition-colors hover:text-(--color-primary)"
+                style={{ padding: 11, borderRadius: 11, background: "transparent", border: "1px solid var(--color-line)" }}
+              >
+                Vazgeç
+              </button>
+              <button
+                type="button"
+                disabled={isNotesLoading || (noteMode === "soap" ? ![soapDraft.s, soapDraft.o, soapDraft.a, soapDraft.p].some((x) => x.trim()) : !noteForm.content.trim())}
+                onClick={() => void handleAddNoteDB()}
+                className="btn-signature flex-1 text-[12.5px] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ padding: 11, borderRadius: 11 }}
+              >
+                {isNotesLoading ? "Kaydediliyor…" : "Notu Kaydet"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   );

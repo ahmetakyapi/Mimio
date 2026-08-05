@@ -354,16 +354,22 @@ export function ProgressReportScreen({
                 <Share2 size={15} strokeWidth={1.9} style={{ color: "var(--color-primary)" }} />
                 <span className="font-display text-[13.5px] font-bold tracking-[-0.02em] text-(--color-text-strong)">Aileyle Paylaş</span>
               </div>
+              {/* Paylaşım bağlantısı altyapısı yok; olmayan bir özelliği
+                  vadetmek yerine gerçek yolu sunuyoruz: yazdır ya da PDF
+                  olarak kaydet, aileye o dosyayı ilet. */}
               <p className="m-0 mb-3.5 text-[11px] leading-[1.5] text-(--color-text-soft)">
-                Rapor bağlantısı 14 gün geçerli olur, klinik verisi maskelenir.
+                Raporu PDF olarak kaydet, aileyle ya da kurumla dosya olarak paylaş.
+                İsim maskeleme Ayarlar&apos;dan açılır.
               </p>
+              {/* Birincil eylem başlıktaki "PDF İndir"; burada aynı eylemin
+                  ikincil tekrarı var — sayfada tek imza düğmesi kuralı bozulmasın. */}
               <button
                 type="button"
                 onClick={onExportPdf}
-                className="btn-signature w-full text-[12px] font-semibold cursor-pointer"
-                style={{ padding: 10, borderRadius: 11 }}
+                className="w-full text-[12px] font-semibold cursor-pointer transition-colors text-(--color-text-body) hover:text-(--color-primary)"
+                style={{ padding: 10, borderRadius: 11, background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}
               >
-                Bağlantı Oluştur
+                PDF Olarak Kaydet
               </button>
             </div>
 

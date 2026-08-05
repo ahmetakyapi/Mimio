@@ -49,12 +49,21 @@ const CATEGORY_BY_KEY = new Map(GAME_CATEGORIES.map((c) => [c.key, c]));
 
 export type DomainKey = (typeof GAME_CATEGORIES)[number]["key"];
 
-/** Tasarım sistemindeki dört alan etiketi ve rengi. */
+/**
+ * Tasarım sistemindeki dört alan etiketi ve rengi.
+ *
+ * Etiketler kategori adlarıyla aynı gerçeği söylemeli: `memorySkills`
+ * altında Sıra Hafızası ve Kart Eşle var — bu "Dikkat" değil "Bellek".
+ * `visualSkills` altında Fark Avcısı ve Hedef Tarama var — "Duyusal"
+ * değil "Görsel". Önceki etiketler plan lejantında oyun kartlarındaki
+ * gruplamayla çelişiyordu; aynı alan iki ekranda iki farklı ada bürününce
+ * renk eşlemesi de anlamını yitiriyordu.
+ */
 export const DOMAIN_META: Record<DomainKey, { label: string; color: string }> = {
   cognitiveSkills: { label: "Bilişsel", color: "var(--color-domain-cognitive)" },
   motorSkills: { label: "Motor", color: "var(--color-domain-motor)" },
-  visualSkills: { label: "Duyusal", color: "var(--color-domain-visual)" },
-  memorySkills: { label: "Dikkat", color: "var(--color-domain-memory)" },
+  visualSkills: { label: "Görsel", color: "var(--color-domain-visual)" },
+  memorySkills: { label: "Bellek", color: "var(--color-domain-memory)" },
 };
 
 export const DOMAIN_ORDER: readonly DomainKey[] = ["cognitiveSkills", "motorSkills", "visualSkills", "memorySkills"];
@@ -415,7 +424,7 @@ export function shortDate(d: Date): string {
 export function greeting(d: Date): string {
   const h = d.getHours();
   if (h < 6) return "İyi geceler";
-  if (h < 12) return "İyi sabahlar";
+  if (h < 12) return "Günaydın";
   if (h < 18) return "İyi günler";
   return "İyi akşamlar";
 }
