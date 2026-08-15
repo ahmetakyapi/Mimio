@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 interface ConfirmDialogProps {
   readonly open: boolean;
@@ -28,6 +29,9 @@ export function ConfirmDialog({
   onCancel,
 }: ConfirmDialogProps) {
   const confirmRef = useRef<HTMLButtonElement>(null);
+
+  /* Diyalog açıkken arkadaki kabuk kaymasın. */
+  useScrollLock(open);
 
   // Focus trap: auto-focus confirm button on open
   useEffect(() => {

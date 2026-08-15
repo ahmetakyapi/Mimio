@@ -1,6 +1,7 @@
 "use client";
 
 import type { SessionSetState } from "@/lib/game-types";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 interface SessionSetSummaryProps {
   readonly sessionSet: SessionSetState;
@@ -9,6 +10,8 @@ interface SessionSetSummaryProps {
 }
 
 export function SessionSetSummary({ sessionSet, onClose, onNewSet }: SessionSetSummaryProps) {
+  /* Modal açıkken arkadaki kabuk kaymasın. */
+  useScrollLock(true);
   const total = sessionSet.entries.reduce((sum, e) => sum + e.score, 0);
   const maxPossible = sessionSet.games.length * 100;
   const pct = Math.round((total / Math.max(maxPossible, 1)) * 100);

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { ArrowRight, X, Users, Gamepad2, Stethoscope, BarChart3, Sparkles, CheckCircle } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 const ONBOARDING_KEY = "mimio-onboarding-completed-v1";
 
@@ -61,6 +62,9 @@ const TOUR_STEPS: TourStep[] = [
 export function OnboardingTour({ onComplete }: { onComplete?: () => void }) {
   const [step, setStep] = useState(0);
   const [visible, setVisible] = useState(false);
+
+  /* Tur açıkken arkadaki kabuk kaymasın. */
+  useScrollLock(visible);
 
   useEffect(() => {
     try {

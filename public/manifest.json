@@ -4,10 +4,14 @@
   "description": "Ergoterapistler için motor beceri, hafıza ve görsel ayrım oyunlarını tek merkezde buluşturan platform.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f4efe4",
-  "theme_color": "#1d5a8c",
+  "background_color": "#eef3fa",
+  "theme_color": "#2b62f5",
   "orientation": "any",
-  "categories": ["medical", "health", "education"],
+  "categories": [
+    "medical",
+    "health",
+    "education"
+  ],
   "lang": "tr",
   "icons": [
     {

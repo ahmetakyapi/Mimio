@@ -125,7 +125,7 @@ export function AuthScreen({
         ve güvenli alan payı ekleniyor — yatay çevrilen çentikli telefonda
         form kenarın altına giriyordu.
       */}
-      <div className="flex-1 flex items-start lg:items-center justify-center min-w-0 pt-[max(26px,env(safe-area-inset-top))] pb-[max(30px,env(safe-area-inset-bottom))] pl-[max(20px,env(safe-area-inset-left))] pr-[max(20px,env(safe-area-inset-right))] lg:pt-10 lg:pb-10 lg:pl-6 lg:pr-6">
+      <div className="flex-1 flex items-start lg:items-center justify-center min-w-0 pt-[max(14px,env(safe-area-inset-top))] pb-[max(30px,env(safe-area-inset-bottom))] pl-[max(20px,env(safe-area-inset-left))] pr-[max(20px,env(safe-area-inset-right))] lg:pt-10 lg:pb-10 lg:pl-6 lg:pr-6">
         <div className="w-full" style={{ maxWidth: 380 }}>
           {/*
             Marka satırı yalnızca telefonda. Sol tanıtım sütunu `hidden
@@ -140,7 +140,7 @@ export function AuthScreen({
             /* Marka kilidi aynı zamanda "ana sayfaya dön" düğmesi; 30px'lik
                döşemeyle birlikte satır 31px kalıyor ve parmakla vurulamıyordu.
                Dikey pay hedefi 44px'e taşır, negatif yatay pay hizayı korur. */
-            className="lg:hidden flex items-center gap-2.5 self-start bg-transparent border-none cursor-pointer mb-5 -mx-2 px-2 py-1.5 rounded-xl"
+            className="lg:hidden flex items-center gap-2.5 self-start bg-transparent border-none cursor-pointer mb-3.5 -mx-2 px-2 py-1.5 rounded-xl"
           >
             <span className="tile-signature grid place-items-center shrink-0" style={{ width: 30, height: 30, borderRadius: 10 }}>
               <BlockMark size={16} color="#ffffff" />
@@ -153,7 +153,7 @@ export function AuthScreen({
 
           {/* Sekmeler */}
           <div
-            className="flex p-[3px] rounded-xl mb-5 lg:mb-7"
+            className="flex p-[3px] rounded-xl mb-4 lg:mb-7"
             style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}
             role="tablist"
             /* Sekmenin adı ("Giriş Yap") formun gönder düğmesiyle birebir
@@ -183,10 +183,10 @@ export function AuthScreen({
               tanıtım sütunu `hidden lg:flex` olduğu için telefonda hiç
               basılmıyor ve sayfa h1'siz kalıyordu — ekran okuyucu başlık
               listesinde ekranın ne olduğunu söyleyen bir satır yoktu. */}
-          <h1 className="font-display m-0 mb-1.5 text-[21px] font-bold tracking-[-0.03em] text-(--color-text-strong)">
+          <h1 className="font-display m-0 mb-1 lg:mb-1.5 text-[21px] font-bold tracking-[-0.03em] text-(--color-text-strong)">
             {mode === "login" ? greeting : "Hesabını oluştur."}
           </h1>
-          <p className="m-0 mb-6 text-[12.5px] text-(--color-text-soft)">
+          <p className="m-0 mb-4 lg:mb-6 text-[12.5px] text-(--color-text-soft)">
             {mode === "login" ? subline : "Bir dakikada başla; danışanları sonra ekleyebilirsin."}
           </p>
 

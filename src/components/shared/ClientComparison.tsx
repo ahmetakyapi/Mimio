@@ -5,6 +5,7 @@ import { TrendingUp, TrendingDown, Minus, X } from "lucide-react";
 import type { ClientProfile, RecentSessionEntry, PlatformGameKey } from "@/lib/platform-data";
 import { GAME_LABELS } from "@/lib/platform-data";
 import { formatDuration } from "@/lib/format-utils";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 interface ClientComparisonProps {
   clientA: ClientProfile;
@@ -91,6 +92,8 @@ function CompareBar({ metric, valueA, valueB, unit, colorA, colorB }: {
 }
 
 export function ClientComparison({ clientA, clientB, sessions, onClose }: ClientComparisonProps) {
+  /* Modal açıkken arkadaki kabuk kaymasın. */
+  useScrollLock(true);
   const metricsA = useMemo(() => computeMetrics(sessions.filter(s => s.clientId === clientA.id)), [sessions, clientA.id]);
   const metricsB = useMemo(() => computeMetrics(sessions.filter(s => s.clientId === clientB.id)), [sessions, clientB.id]);
 
@@ -131,9 +134,9 @@ export function ClientComparison({ clientA, clientB, sessions, onClose }: Client
             ].map(({ client, color, metrics }) => {
               const TrendIcon = trendIcons[metrics.trend];
               return (
-                <div key={client.id} className="flex-1 rounded-xl p-3" style={{ background: `${color}08`, border: `1px solid ${color}20` }}>
+                <div key={client.id} className="flex-1 rounded-xl p-3" style={{ background: `color-mix(in srgb, ${color} 3%, transparent)`, border: `1px solid color-mix(in srgb, ${color} 13%, transparent)` }}>
                   <div className="flex items-center gap-2 mb-1">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-extrabold text-white shrink-0" style={{ background: `linear-gradient(135deg, ${color}, ${color}99)` }}>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-extrabold text-white shrink-0" style={{ background: `linear-gradient(135deg, ${color}, color-mix(in srgb, ${color} 60%, transparent))` }}>
                       {client.displayName[0]?.toUpperCase() ?? "?"}
                     </div>
                     <div className="flex-1 min-w-0">

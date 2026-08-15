@@ -21,6 +21,7 @@ import { X, Check, UserPlus } from "lucide-react";
 import { GAME_TABS } from "@/lib/game-constants";
 import { INDEPENDENCE_STEPS } from "@/lib/deniz-derive";
 import { Avatar, Eyebrow } from "./primitives";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 const AREAS = ["Pediatrik", "Nörolojik", "Nöroçeşitlilik & Otizm", "Geriatrik", "İş & Okul"] as const;
 
@@ -66,6 +67,8 @@ interface Props {
 }
 
 export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
+  /* Modal açıkken arkadaki kabuk kaymasın. */
+  useScrollLock(true);
   const [step, setStep] = useState(1);
   const [d, setD] = useState<NewClientDraft>(EMPTY);
 

@@ -868,6 +868,17 @@ html[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
   }
 }
 
+/*
+ * Modal açıkken arkadaki kabuk kilitlenir.
+ *
+ * `body { overflow: hidden }` bu uygulamada işe yaramıyor: kaydırma gövdede
+ * değil `.app-scroll` kutusunda yaşıyor. İmza `<html>`e yazılır (bkz.
+ * `hooks/useScrollLock.ts`), kural burada.
+ */
+html[data-modal-open] .app-scroll {
+  overflow: hidden;
+}
+
 /* Uygulama kaydırma kabı — mobil kromun payını burada, bir kez verir. */
 .app-scroll {
   padding-top: var(--chrome-top);
