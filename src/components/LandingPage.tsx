@@ -105,42 +105,42 @@ const FEATURES = [
     icon: Users,
     title: "Danışan Yönetimi",
     body: "Tüm hastalarınızın bilgilerini, seans geçmişlerini ve kişisel notlarınızı güvenle saklayın.",
-    color: "#4d7dff",
+    color: "var(--color-primary)",
     size: "large" as const,
   },
   {
     icon: Gamepad2,
     title: "İnteraktif Oyunlar",
     body: `${PLATFORM_STATS.gameCount} bilişsel ve motor beceri oyunuyla çocukların seanslara katılımını artırın.`,
-    color: "#a8c2ff",
+    color: "var(--color-primary-ink)",
     size: "small" as const,
   },
   {
     icon: CalendarDays,
     title: "Haftalık Plan",
     body: "Her danışan için kişiselleştirilmiş terapi programları oluşturun.",
-    color: "#9a80ff",
+    color: "var(--color-accent-violet)",
     size: "small" as const,
   },
   {
     icon: TrendingUp,
     title: "İlerleme Analizi",
     body: "Oyun skorları ve seans verileriyle danışan gelişimini grafikler üzerinden takip edin.",
-    color: "#f5c26b",
+    color: "var(--color-accent-amber)",
     size: "large" as const,
   },
   {
     icon: FileText,
     title: "Seans Notları",
     body: "Her seansın detaylı gözlemlerini kolayca kaydedin ve geçmişe dönük inceleyin.",
-    color: "#7ee0b8",
+    color: "var(--color-accent-green)",
     size: "small" as const,
   },
   {
     icon: ShieldCheck,
     title: "Güvenli & Gizli",
     body: "Klinik standartlara uygun veri güvenliği ile danışan bilgileriniz koruma altında.",
-    color: "#f7a8b8",
+    color: "var(--color-accent-red)",
     size: "small" as const,
   },
 ];
@@ -151,21 +151,21 @@ const STEPS = [
     title: "Hesap Oluşturun",
     body: "Klinik veya bireysel profilinizi saniyeler içinde oluşturun.",
     icon: Sparkles,
-    color: "#4d7dff",
+    color: "var(--color-primary)",
   },
   {
     num: "02",
     title: "Danışan Ekleyin",
     body: "Hizmet verdiğiniz kişilerin bilgilerini ve terapi hedeflerini girin.",
     icon: Users,
-    color: "#9a80ff",
+    color: "var(--color-accent-violet)",
   },
   {
     num: "03",
     title: "Oynayın & Takip Edin",
     body: "Seanslarda oyunları açın, sonuçları otomatik kaydedin.",
     icon: Play,
-    color: "#12b886",
+    color: "var(--color-accent-green)",
   },
 ];
 
@@ -175,28 +175,28 @@ const PERSONAS = [
     text: "Seanslarda çocuğun ilgisini oyunla canlı tutun; skorlar ve seans süreleri kendiliğinden kaydedilsin.",
     module: "Oyun Alanı",
     icon: Stethoscope,
-    accent: "#2b62f5",
+    accent: "var(--color-primary)",
   },
   {
     role: "Nörolojik Rehabilitasyon Uzmanı",
     text: "El-göz koordinasyonu ve işlem hızı oyunlarıyla motor hedefleri çalışın, gelişimi grafiklerle izleyin.",
     module: "Raporlar",
     icon: Brain,
-    accent: "#17c2e0",
+    accent: "var(--color-accent-teal)",
   },
   {
     role: "Çocuk Gelişim Uzmanı",
     text: `Her danışan için haftalık program oluşturun; ${PLATFORM_STATS.activityCount} hazır aktiviteden ${PLATFORM_STATS.homeExerciseCount} tanesi ev programına uygun.`,
     module: "Haftalık Plan",
     icon: Heart,
-    accent: "#12b886",
+    accent: "var(--color-accent-green)",
   },
   {
     role: "Özel Eğitim Uzmanı",
     text: "Kanıta dayalı protokolleri takip edin, SOAP formatında not tutun ve hedef bazlı ilerleme kaydedin.",
     module: "Terapi Programı",
     icon: Users,
-    accent: "#f59e0b",
+    accent: "var(--color-accent-amber)",
   },
 ];
 
@@ -564,7 +564,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               >
                 <span
                   className="halo-dot w-1.5 h-1.5 rounded-full"
-                  style={{ color: "#2b62f5", background: "#2b62f5" }}
+                  style={{ color: "var(--color-primary)", background: "var(--color-primary)" }}
                 />
                 Ölçüm temelli ergoterapi platformu
               </motion.span>
@@ -768,14 +768,14 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                       <div
                         className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10"
                         style={{
-                          background: `radial-gradient(circle at 0% 0%, ${f.color}15, transparent 50%)`,
+                          background: `radial-gradient(circle at 0% 0%, color-mix(in srgb, ${f.color} 8%, transparent), transparent 50%)`,
                         }}
                       />
                       <div
                         className="tilt-layer-1 w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center mb-3 sm:mb-5 transition-transform duration-300"
                         style={{
-                          background: `${f.color}18`,
-                          border: `1px solid ${f.color}25`,
+                          background: `color-mix(in srgb, ${f.color} 9%, transparent)`,
+                          border: `1px solid color-mix(in srgb, ${f.color} 15%, transparent)`,
                         }}
                       >
                         <Icon size={22} style={{ color: f.color }} />
@@ -933,32 +933,39 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                       {[
+                        /* Renkler paletten ve TAM opaklıkta.
+                           Önce sabit rgba'lar %60 opaklıkla basılıyordu: 9px'lik
+                           versal etiketler açık zeminde 1.59–1.77:1 kalıyor, yani
+                           WCAG AA'nın (4.5:1) çok altında — etiket okunmuyor,
+                           yalnızca renkli bir leke olarak duruyordu. Anlam
+                           renklerinin açık temadaki `-ink` varyantları tam bu iş
+                           için var; tint zemin `color-mix` ile aynı renkten türer. */
                         {
                           label: "Toplam Seans",
                           value: "24",
-                          bg: "rgba(43, 98, 245,0.12)",
-                          color: "rgba(43, 98, 245,0.6)",
+                          bg: "var(--color-primary-light)",
+                          color: "var(--color-primary-ink)",
                           icon: CalendarDays,
                         },
                         {
                           label: "Danışanlar",
                           value: "8",
-                          bg: "rgba(18, 184, 134,0.12)",
-                          color: "rgba(18, 184, 134,0.6)",
+                          bg: "color-mix(in srgb, var(--color-accent-green) 12%, transparent)",
+                          color: "var(--color-accent-green)",
                           icon: Users,
                         },
                         {
                           label: "Ort. Skor",
                           value: "84",
-                          bg: "rgba(245, 158, 11,0.12)",
-                          color: "rgba(245, 158, 11,0.6)",
+                          bg: "color-mix(in srgb, var(--color-accent-amber) 14%, transparent)",
+                          color: "var(--color-accent-amber)",
                           icon: TrendingUp,
                         },
                         {
                           label: "Bu Hafta",
                           value: "6",
-                          bg: "rgba(23, 194, 224,0.12)",
-                          color: "rgba(23, 194, 224,0.6)",
+                          bg: "color-mix(in srgb, var(--color-accent-teal) 13%, transparent)",
+                          color: "var(--color-accent-teal)",
                           icon: Target,
                         },
                       ].map((s) => (
@@ -989,19 +996,19 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                           name: "Ela Selin",
                           game: "Sıra Hafızası",
                           score: 92,
-                          color: "#2b62f5",
+                          color: "var(--color-primary)",
                         },
                         {
                           name: "Tuna Akarsu",
                           game: "Mavi Nabız",
                           score: 78,
-                          color: "#4d7dff",
+                          color: "var(--color-primary)",
                         },
                         {
                           name: "Asya Demir",
                           game: "Hedef Tarama",
                           score: 85,
-                          color: "#17c2e0",
+                          color: "var(--color-accent-teal)",
                         },
                       ].map((s) => (
                         <div
@@ -1012,7 +1019,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                           <div
                             className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-white text-[10px] font-bold"
                             style={{
-                              background: `linear-gradient(135deg, ${s.color}, ${s.color}88)`,
+                              background: `linear-gradient(135deg, ${s.color}, color-mix(in srgb, ${s.color} 53%, transparent))`,
                             }}
                           >
                             {s.name[0]}
@@ -1090,7 +1097,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 >
                   <div
                     className="w-11 h-11 sm:w-12 sm:h-12 shrink-0 rounded-xl flex items-center justify-center"
-                    style={{ background: `${step.color}18`, border: `1px solid ${step.color}30` }}
+                    style={{ background: `color-mix(in srgb, ${step.color} 9%, transparent)`, border: `1px solid color-mix(in srgb, ${step.color} 19%, transparent)` }}
                   >
                     <StepIcon size={22} style={{ color: step.color }} />
                   </div>
@@ -1304,7 +1311,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               <span className="inline-flex w-fit items-center gap-2 text-xs font-semibold text-(--color-text-muted) px-3 py-1.5 rounded-full border border-(--color-line) bg-(--color-surface-elevated)">
                 <span
                   className="halo-dot w-1.5 h-1.5 rounded-full"
-                  style={{ color: "#12b886", background: "#12b886" }}
+                  style={{ color: "var(--color-accent-green)", background: "var(--color-accent-green)" }}
                 />
                 Tüm sistemler çalışıyor
               </span>

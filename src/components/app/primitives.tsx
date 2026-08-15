@@ -394,16 +394,25 @@ export const btnGhost =
   "bg-(--color-surface-strong) text-(--color-text-body) border border-(--color-line) " +
   "hover:border-(--color-line-strong) hover:text-(--color-primary)";
 
-/** Segment seçici (Hafta/Ay/Danışan, 10 seans/3 ay/Tümü). */
+/**
+ * Segment seçici (Hafta/Ay/Danışan, 10 seans/3 ay/Tümü).
+ *
+ * `label` zorunlu: sekme adları tek başına bağlamsız kalıyordu — haftalık
+ * planda "Danışan" segmenti ile alt gezinmedeki "Danışan" sekmesi ekran
+ * okuyucuya birebir aynı adla ulaşıyor, ses komutuyla ayrılamıyordu. Grubun
+ * adı sekmeleri kendi bağlamına yerleştirir.
+ */
 export function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
+  label,
   size = "md",
 }: {
   readonly options: ReadonlyArray<{ value: T; label: string }>;
   readonly value: T;
   readonly onChange: (v: T) => void;
+  readonly label: string;
   readonly size?: "sm" | "md";
 }) {
   const pad = size === "sm" ? "px-[11px] py-[5px] text-[11px]" : "px-[13px] py-[7px] text-[11.5px]";
@@ -412,6 +421,7 @@ export function SegmentedControl<T extends string>({
       className="flex p-[3px] rounded-xl shrink-0"
       style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}
       role="tablist"
+      aria-label={label}
     >
       {options.map((o) => {
         const on = o.value === value;

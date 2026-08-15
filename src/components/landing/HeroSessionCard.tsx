@@ -255,8 +255,11 @@ export function HeroSessionCard() {
               başlıktaki "14/16 doğru" okumasından anlaşılıyor; ayrı bir
               lejant satırı fazlalıktı. */}
           <div className="flex items-center justify-between mt-1.5">
-            <span className="numeral text-[10px] text-(--color-text-disabled)">0:00</span>
-            <span className="numeral text-[10px] text-(--color-text-disabled)">1:48</span>
+            {/* `-disabled` tonu 1.74:1 veriyordu: bunlar devre dışı bir
+                kontrolün etiketi değil, kartın okunması beklenen eksen
+                değerleri. En sessiz OKUNUR basamak `-muted`. */}
+            <span className="numeral text-[10px] text-(--color-text-muted)">0:00</span>
+            <span className="numeral text-[10px] text-(--color-text-muted)">1:48</span>
           </div>
         </div>
 

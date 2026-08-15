@@ -139,6 +139,7 @@ export function WeeklyPlanScreen({
         actions={
           <>
             <SegmentedControl
+              label="Plan görünümü"
               value={scope}
               onChange={setScope}
               options={[
@@ -468,7 +469,10 @@ function PlanBlock({
       <button
         type="button"
         onClick={onRemove}
-        aria-label="Bloğu kaldır"
+        /* Ad, hangi bloğu kaldıracağını söylemeliydi: haftada 18 blok varken
+           ekran okuyucu on sekiz kez "Bloğu kaldır" okuyor, ses komutuyla
+           gezinen kullanıcı hiçbirini seçemiyordu. */
+        aria-label={`${block.clientName} · ${gameTitle(block.entry.gameKey)} bloğunu plandan kaldır`}
         className={
           "grid place-items-center cursor-pointer border-none transition-opacity text-(--color-text-muted) " +
           "lg:absolute lg:top-1 lg:right-1 lg:w-4 lg:h-4 lg:rounded-[5px] lg:bg-(--color-surface-strong) lg:text-(--color-text-soft) " +

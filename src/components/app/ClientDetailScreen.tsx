@@ -304,6 +304,7 @@ export function ClientDetailScreen({
                   </div>
                   <div className="max-lg:[&>div]:w-full max-lg:[&_button]:flex-1">
                     <SegmentedControl
+                      label="Eğri dönemi"
                       size="sm"
                       value={range}
                       onChange={setRange}

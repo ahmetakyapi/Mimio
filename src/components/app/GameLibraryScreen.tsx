@@ -208,6 +208,7 @@ export function GameLibraryScreen({
                 Bilişsel ve Motor'u sunuyor, yedi oyunun dördünü (bellek ve
                 görsel alan) hiçbir filtreyle bulunamaz bırakıyordu. */}
             <SegmentedControl
+              label="Beceri alanı filtresi"
               value={filter}
               onChange={setFilter}
               options={[
@@ -313,9 +314,13 @@ export function GameLibraryScreen({
                   {meta.tag}
                 </span>
 
-                <h3 className="font-display m-0 mb-1 text-[15px] font-bold text-(--color-text-strong) tracking-[-0.02em]">
+                {/* h2, h3 değil: ekran başlığı ("Terapi Oyunları") h1 ve
+                    aradaki basamak boştu; ekran okuyucu başlık listesinde
+                    h1'den h3'e atlıyor, kart başlıkları bir alt kırılmanın
+                    çocuğuymuş gibi okunuyordu. */}
+                <h2 className="font-display m-0 mb-1 text-[15px] font-bold text-(--color-text-strong) tracking-[-0.02em]">
                   {g.title}
-                </h3>
+                </h2>
                 <p className="m-0 mb-[9px] text-[11px] leading-[1.45] text-(--color-text-soft)">{meta.source}</p>
 
                 {/* Ölçü satırı dar kapta sarar: `ml-auto` telefonda kalkıyor,
@@ -344,9 +349,13 @@ export function GameLibraryScreen({
               {/* Düğme kartın kendi çocuğu: telefonda satır düzenine geçince
                   önizleme sütununun altını da kaplayıp tam genişlikte kalır.
                   Masaüstünde metin sütununun altında, eskisiyle aynı yerde. */}
+              {/* Görünen etiket kısa kalır ("Seansı Başlat"), erişilebilir ad
+                  hangi oyunu başlattığını söyler: yedi kart yedi kez aynı adı
+                  okutuyordu ve ses komutuyla seçim imkânsızdı. */}
               <button
                 type="button"
                 onClick={() => onStart(key)}
+                aria-label={`${g.title} seansını başlat`}
                 className="btn-signature w-full text-[11.5px] font-semibold cursor-pointer mt-2 p-[9px] max-[560px]:col-span-2 max-[560px]:mt-[11px]"
                 style={{ borderRadius: 11 }}
               >

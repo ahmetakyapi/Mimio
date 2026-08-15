@@ -2100,10 +2100,14 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       <MobileTopBar
         title={MOBILE_TITLES[activeAppView] ?? "Mimio"}
         action={
+          /* Erişilebilir ad, "Daha" sayfasındaki "Ayarlar" satırıyla birebir
+             aynıydı: ekran okuyucu iki farklı kontrolü aynı adla okuyor, ses
+             komutuyla gezinen kullanıcı hangisinin seçileceğini bilemiyordu.
+             Ad artık kimi temsil ettiğini de söylüyor. */
           <button
             type="button"
             onClick={() => setActiveAppView("settings")}
-            aria-label="Ayarlar"
+            aria-label={`${activeTherapist?.displayName ?? "Hesap"} — hesap ve ayarlar`}
             className="grid place-items-center shrink-0 cursor-pointer border-none font-bold text-white text-[11px]"
             style={{ width: 30, height: 30, borderRadius: 10, background: "var(--gradient-avatar-3)" }}
           >

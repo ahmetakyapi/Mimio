@@ -255,7 +255,7 @@ export function TopBar({
           className="flex-1 min-w-0 bg-transparent border-none outline-none text-[12.5px] text-(--color-text-strong) placeholder:text-(--color-text-muted)"
         />
         <kbd
-          className="numeral shrink-0 text-[9.5px] font-medium text-(--color-text-muted)"
+          className="numeral shrink-0 text-[9.5px] font-medium text-(--color-text-soft)"
           style={{ padding: "2px 5px", borderRadius: 5, border: "1px solid var(--color-line)" }}
         >
           ⌘K

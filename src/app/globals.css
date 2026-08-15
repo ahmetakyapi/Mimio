@@ -376,11 +376,20 @@ html[data-theme='light'] {
   --color-surface-strong: #ffffff;
   --color-surface-elevated: #ffffff;
 
-  /* Text */
+  /*
+   * Text — dört basamak, hepsi WCAG AA (4.5:1) üstünde.
+   *
+   * Önceki `-soft` (#6b83a0) sayfa zemininde 3.50:1, `-muted` (#94a8bf)
+   * 2.19:1 veriyordu. İkisi de gövde metninde değil ama kart etiketi, ölçüm
+   * altyazısı ve sekme adı gibi *okunması gereken* yerlerde kullanılıyor;
+   * 2.19:1'lik bir sekme etiketi gün ışığında telefon ekranında kayboluyor.
+   * Tonlar aynı hue'da koyulaştırıldı, basamak farkı korundu:
+   *   body 6.82 · soft 5.61 · muted 4.60  (koyu tema zaten geçiyordu)
+   */
   --color-text-strong: #0f2033;
   --color-text-body: #3d5670;
-  --color-text-soft: #6b83a0;
-  --color-text-muted: #94a8bf;
+  --color-text-soft: #506278;
+  --color-text-muted: #626f7e;
   --color-text-disabled: #b7c6d8;
   --color-text-inverse: #ffffff;
 
@@ -1816,7 +1825,10 @@ html[data-theme='light'] .section-games {
   font-size: 0.875rem;
   font-weight: 700;
   color: #fff;
-  background: var(--color-primary);
+  /* Zemin `--color-primary`den bağımsız: koyu temada o token #4d7dff'e
+     dönüyor ve beyaz metinle 3.69:1 kalıyordu. Klavyeyle gezinen kullanıcının
+     gördüğü ilk kontrol, temaya göre okunaklılık değiştirmemeli. */
+  background: #1b4bc4;
   transition: top 0.2s ease;
 }
 .skip-link:focus {

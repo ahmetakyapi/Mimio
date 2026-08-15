@@ -255,28 +255,28 @@ const WALKTHROUGH = [
     title: "Danışanı Tanıyın",
     body: "Demografik, klinik not ve değerlendirme verilerini tek ekranda toplayın. Her danışan için bir hafıza merkezi.",
     icon: Users,
-    accent: "#4d7dff",
+    accent: "var(--color-primary)",
     preview: "clients",
   },
   {
     title: "Haftalık Planı Oluşturun",
     body: "Terapi hedeflerine göre domainleri (motor, bilişsel, duyusal) seçin. Akıllı öneri motoru günün programını hazırlar.",
     icon: LayoutDashboard,
-    accent: "#4d7dff",
+    accent: "var(--color-primary)",
     preview: "plan",
   },
   {
     title: "Seansı Oyunlaştırın",
     body: `${PLATFORM_STATS.gameCount} terapi oyunundan birini başlatın. Skorlar anlık kaydedilir, zorluk danışan profiline göre seçilir.`,
     icon: Gamepad2,
-    accent: "#9a80ff",
+    accent: "var(--color-accent-violet)",
     preview: "game",
   },
   {
     title: "Gelişimi Raporlayın",
     body: "Yazdırılabilir raporlar ve grafiklerle ilerlemeyi görselleştirin; seans verilerini CSV olarak dışa aktarın.",
     icon: BarChart3,
-    accent: "#19d19b",
+    accent: "var(--color-accent-green)",
     preview: "report",
   },
 ] as const;
@@ -374,9 +374,9 @@ export function StickyWalkthrough() {
                          satır içi opaklık/kaydırma değerleri iptal edilir. */
                       className="relative flex gap-3 sm:gap-4 rounded-2xl border p-4 sm:p-5 text-left w-full cursor-pointer max-lg:opacity-100! max-lg:transform-none!"
                       style={{
-                        borderColor: isActive ? `${w.accent}55` : "var(--color-line)",
+                        borderColor: isActive ? `color-mix(in srgb, ${w.accent} 33%, transparent)` : "var(--color-line)",
                         background: isActive
-                          ? `linear-gradient(135deg, ${w.accent}14, transparent)`
+                          ? `linear-gradient(135deg, color-mix(in srgb, ${w.accent} 8%, transparent), transparent)`
                           : "var(--color-surface)",
                       }}
                     >
@@ -391,8 +391,8 @@ export function StickyWalkthrough() {
                       <div
                         className="w-11 h-11 rounded-xl shrink-0 flex items-center justify-center"
                         style={{
-                          background: `${w.accent}18`,
-                          border: `1px solid ${w.accent}33`,
+                          background: `color-mix(in srgb, ${w.accent} 9%, transparent)`,
+                          border: `1px solid color-mix(in srgb, ${w.accent} 20%, transparent)`,
                         }}
                       >
                         <Icon size={18} style={{ color: w.accent }} />
@@ -476,7 +476,7 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
           </span>
           <span
             className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-            style={{ background: `${accent}20`, color: accent }}
+            style={{ background: `color-mix(in srgb, ${accent} 13%, transparent)`, color: accent }}
           >
             Aktif · 8
           </span>
@@ -494,7 +494,7 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
               >
                 <div
                   className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-xs"
-                  style={{ background: `linear-gradient(135deg, ${accent}, ${accent}99)` }}
+                  style={{ background: `linear-gradient(135deg, ${accent}, color-mix(in srgb, ${accent} 60%, transparent))` }}
                 >
                   {n[0]}
                 </div>
@@ -532,7 +532,7 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
           </span>
           <span
             className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-            style={{ background: `${accent}20`, color: accent }}
+            style={{ background: `color-mix(in srgb, ${accent} 13%, transparent)`, color: accent }}
           >
             14 Nisan · Pazartesi
           </span>
@@ -548,8 +548,8 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
                 transition={{ delay: i * 0.06 }}
                 className="flex flex-col gap-1.5 h-full rounded-xl p-2"
                 style={{
-                  background: filled ? `${accent}12` : "var(--color-surface)",
-                  border: `1px solid ${filled ? `${accent}44` : "var(--color-line)"}`,
+                  background: filled ? `color-mix(in srgb, ${accent} 7%, transparent)` : "var(--color-surface)",
+                  border: `1px solid ${filled ? `color-mix(in srgb, ${accent} 27%, transparent)` : "var(--color-line)"}`,
                 }}
               >
                 <span
@@ -601,8 +601,8 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
         <div
           className="flex-1 rounded-2xl p-4 grid grid-cols-4 gap-2 place-content-center relative overflow-hidden"
           style={{
-            background: `linear-gradient(135deg, ${accent}10, transparent 60%), var(--color-surface)`,
-            border: `1px solid ${accent}33`,
+            background: `linear-gradient(135deg, color-mix(in srgb, ${accent} 6%, transparent), transparent 60%), var(--color-surface)`,
+            border: `1px solid color-mix(in srgb, ${accent} 20%, transparent)`,
           }}
         >
           <span className="beam-sweep" />
@@ -616,9 +616,9 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
                     ? {
                         scale: [1, 1.12, 1],
                         boxShadow: [
-                          `0 0 0 0 ${accent}00`,
-                          `0 0 0 4px ${accent}55`,
-                          `0 0 0 0 ${accent}00`,
+                          `0 0 0 0 transparent`,
+                          `0 0 0 4px color-mix(in srgb, ${accent} 33%, transparent)`,
+                          `0 0 0 0 transparent`,
                         ],
                       }
                     : {}
@@ -626,8 +626,8 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
                 transition={{ duration: 1.6, repeat: Infinity, delay: i * 0.08 }}
                 className="aspect-square rounded-lg"
                 style={{
-                  background: lit ? `${accent}33` : `${accent}0a`,
-                  border: `1px solid ${lit ? `${accent}66` : `${accent}22`}`,
+                  background: lit ? `color-mix(in srgb, ${accent} 20%, transparent)` : `color-mix(in srgb, ${accent} 4%, transparent)`,
+                  border: `1px solid ${lit ? `color-mix(in srgb, ${accent} 40%, transparent)` : `color-mix(in srgb, ${accent} 13%, transparent)`}`,
                 }}
               />
             );
@@ -669,7 +669,7 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
         </span>
         <span
           className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-          style={{ background: `${accent}20`, color: accent }}
+          style={{ background: `color-mix(in srgb, ${accent} 13%, transparent)`, color: accent }}
         >
           + %28 gelişim
         </span>
@@ -686,7 +686,7 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
             transition={{ delay: i * 0.04, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             className="flex-1 rounded-md min-w-0"
             style={{
-              background: `linear-gradient(180deg, ${accent}, ${accent}66)`,
+              background: `linear-gradient(180deg, ${accent}, color-mix(in srgb, ${accent} 40%, transparent))`,
               opacity: 0.4 + (h / 100) * 0.6,
             }}
           />
@@ -699,8 +699,8 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
           </p>
           <div className="flex items-center gap-2">
             <span className="text-lg font-extrabold text-(--color-text-strong)">86</span>
-            <TrendingUp size={13} style={{ color: "#19d19b" }} />
-            <span className="text-[10px] font-bold" style={{ color: "#19d19b" }}>
+            <TrendingUp size={13} style={{ color: "var(--color-accent-green)" }} />
+            <span className="text-[10px] font-bold" style={{ color: "var(--color-accent-green)" }}>
               +12
             </span>
           </div>
@@ -711,8 +711,8 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
           </p>
           <div className="flex items-center gap-2">
             <span className="text-lg font-extrabold text-(--color-text-strong)">79</span>
-            <TrendingUp size={13} style={{ color: "#19d19b" }} />
-            <span className="text-[10px] font-bold" style={{ color: "#19d19b" }}>
+            <TrendingUp size={13} style={{ color: "var(--color-accent-green)" }} />
+            <span className="text-[10px] font-bold" style={{ color: "var(--color-accent-green)" }}>
               +8
             </span>
           </div>
@@ -1010,7 +1010,7 @@ export function FloatingCTA({ onRegister }: FloatingCTAProps) {
           <span className="hidden sm:flex items-center gap-2 text-xs font-bold text-(--color-text-body) pr-1">
             <span
               className="halo-dot w-2 h-2 rounded-full"
-              style={{ color: "#12b886", background: "#12b886" }}
+              style={{ color: "var(--color-accent-green)", background: "var(--color-accent-green)" }}
             />
             Ücretsiz
           </span>
@@ -1051,13 +1051,13 @@ interface GameEntry {
 }
 // Platformdaki gerçek 7 oyun (GAME_LABELS ile birebir aynı adlar)
 const EXTENDED_GAMES: readonly GameEntry[] = [
-  { key: "memory", label: "Sıra Hafızası", area: "Çalışma Belleği", desc: "Sırayla yanan kutuları hatırlayıp aynı sırayla tekrar et; çalışma belleğini güçlendir.", color: "#2b62f5", icon: Brain },
-  { key: "pairs", label: "Kart Eşle", area: "Görsel Hafıza", desc: "Kapalı kartları açarak eşleşen çiftleri bul; görsel hafızayı pekiştir.", color: "#f59e0b", icon: Sparkles },
-  { key: "pulse", label: "Mavi Nabız", area: "El-Göz Koordinasyonu", desc: "Beliren hedeflere hızla dokunarak el-göz koordinasyonunu geliştir.", color: "#4d7dff", icon: Target },
-  { key: "route", label: "Komut Rotası", area: "Yön & Planlama", desc: "Gösterilen yön komutlarını doğru sırayla uygula; işlem hızını artır.", color: "#12b886", icon: Activity },
+  { key: "memory", label: "Sıra Hafızası", area: "Çalışma Belleği", desc: "Sırayla yanan kutuları hatırlayıp aynı sırayla tekrar et; çalışma belleğini güçlendir.", color: "var(--color-primary)", icon: Brain },
+  { key: "pairs", label: "Kart Eşle", area: "Görsel Hafıza", desc: "Kapalı kartları açarak eşleşen çiftleri bul; görsel hafızayı pekiştir.", color: "var(--color-accent-amber)", icon: Sparkles },
+  { key: "pulse", label: "Mavi Nabız", area: "El-Göz Koordinasyonu", desc: "Beliren hedeflere hızla dokunarak el-göz koordinasyonunu geliştir.", color: "var(--color-primary)", icon: Target },
+  { key: "route", label: "Komut Rotası", area: "Yön & Planlama", desc: "Gösterilen yön komutlarını doğru sırayla uygula; işlem hızını artır.", color: "var(--color-accent-green)", icon: Activity },
   { key: "difference", label: "Fark Avcısı", area: "Görsel Ayrım", desc: "Benzer kartlar arasından farklı olanı bul; görsel ayrım becerisini destekle.", color: "#f0708a", icon: Eye },
-  { key: "scan", label: "Hedef Tarama", area: "Seçici Dikkat", desc: "Hedef simgeyi ızgara içinde tara ve bul; seçici dikkati çalıştır.", color: "#17c2e0", icon: Zap },
-  { key: "logic", label: "Dizi Mantık", area: "Yürütücü İşlevler", desc: "Matristeki örüntüyü çöz, eksik hücreyi tamamla; akıl yürütmeyi geliştir.", color: "#9a80ff", icon: Puzzle },
+  { key: "scan", label: "Hedef Tarama", area: "Seçici Dikkat", desc: "Hedef simgeyi ızgara içinde tara ve bul; seçici dikkati çalıştır.", color: "var(--color-accent-teal)", icon: Zap },
+  { key: "logic", label: "Dizi Mantık", area: "Yürütücü İşlevler", desc: "Matristeki örüntüyü çöz, eksik hücreyi tamamla; akıl yürütmeyi geliştir.", color: "var(--color-accent-violet)", icon: Puzzle },
 ];
 
 export function GamesCarousel({ onLogin }: { onLogin: () => void }) {
@@ -1150,7 +1150,7 @@ export function GamesCarousel({ onLogin }: { onLogin: () => void }) {
                 <div
                   className="aspect-[4/3] relative flex items-center justify-center overflow-hidden"
                   style={{
-                    background: `radial-gradient(circle at 30% 20%, ${g.color}33, transparent 60%), linear-gradient(to bottom right, var(--color-games-tile-from), var(--color-games-tile-to))`,
+                    background: `radial-gradient(circle at 30% 20%, color-mix(in srgb, ${g.color} 20%, transparent), transparent 60%), linear-gradient(to bottom right, var(--color-games-tile-from), var(--color-games-tile-to))`,
                   }}
                 >
                   <span className="beam-sweep" style={{ animationDelay: `${(gi * 0.7) % 2}s` }} />
@@ -1159,8 +1159,8 @@ export function GamesCarousel({ onLogin }: { onLogin: () => void }) {
                     transition={{ duration: 0.35 }}
                     className="relative w-24 h-24 rounded-[28px] flex items-center justify-center"
                     style={{
-                      background: `linear-gradient(135deg, ${g.color}, ${g.color}99)`,
-                      boxShadow: `0 20px 40px ${g.color}55`,
+                      background: `linear-gradient(135deg, ${g.color}, color-mix(in srgb, ${g.color} 60%, transparent))`,
+                      boxShadow: `0 20px 40px color-mix(in srgb, ${g.color} 33%, transparent)`,
                     }}
                   >
                     <Icon size={38} className="text-white drop-shadow-lg" />

@@ -81,10 +81,11 @@ export function AuthScreen({
           </span>
         </button>
 
-        <h1 className="m-0 mt-auto mb-4 text-[clamp(1.75rem,2.9vw,2.25rem)] leading-[1.08] text-(--color-text-strong)">
+        {/* Tanıtım manşeti destekleyici içerik; sayfanın h1'i formda. */}
+        <h2 className="m-0 mt-auto mb-4 text-[clamp(1.75rem,2.9vw,2.25rem)] leading-[1.08] text-(--color-text-strong)">
           Terapi seanslarını<br />
           <span style={{ color: "var(--color-primary)" }}>oyuna dönüştür.</span>
-        </h1>
+        </h2>
         <p className="m-0 mb-9 text-[13.5px] leading-[1.65] text-(--color-text-body)" style={{ maxWidth: 420 }}>
           Danışan takibi, haftalık plan, kanıta dayalı oyunlar ve yazdırılabilir raporlar — tek platformda.
         </p>
@@ -155,6 +156,10 @@ export function AuthScreen({
             className="flex p-[3px] rounded-xl mb-5 lg:mb-7"
             style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}
             role="tablist"
+            /* Sekmenin adı ("Giriş Yap") formun gönder düğmesiyle birebir
+               aynıydı; ekran okuyucu iki farklı kontrolü ayıramıyordu.
+               Grubun adı sekmeyi kendi bağlamına yerleştirir. */
+            aria-label="Giriş yap veya kayıt ol"
           >
             {(["login", "register"] as const).map((m) => {
               const on = mode === m;
@@ -174,9 +179,13 @@ export function AuthScreen({
             })}
           </div>
 
-          <h2 className="font-display m-0 mb-1.5 text-[21px] font-bold tracking-[-0.03em] text-(--color-text-strong)">
+          {/* Sayfanın h1'i bu: ekranın işi "giriş yap / kayıt ol". Soldaki
+              tanıtım sütunu `hidden lg:flex` olduğu için telefonda hiç
+              basılmıyor ve sayfa h1'siz kalıyordu — ekran okuyucu başlık
+              listesinde ekranın ne olduğunu söyleyen bir satır yoktu. */}
+          <h1 className="font-display m-0 mb-1.5 text-[21px] font-bold tracking-[-0.03em] text-(--color-text-strong)">
             {mode === "login" ? greeting : "Hesabını oluştur."}
-          </h2>
+          </h1>
           <p className="m-0 mb-6 text-[12.5px] text-(--color-text-soft)">
             {mode === "login" ? subline : "Bir dakikada başla; danışanları sonra ekleyebilirsin."}
           </p>
