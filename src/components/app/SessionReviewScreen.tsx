@@ -100,19 +100,22 @@ export function SessionReviewScreen({
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* ── Üst çubuk ── */}
+      {/* ── Üst çubuk ──
+          Değerlendirme de tam ekran açılır: üst güvenli alan payı buradan
+          gelir. Telefonda "Seans Tamamlandı" rozeti ve otomatik kayıt saati
+          adın yanına sığmıyor, üçü birden şeridi taşırıyordu — küçük ekranda
+          rozet alt satıra iner, saat düşer (bilgi aşağıdaki kartta zaten var). */}
       <header
-        className="flex items-center gap-3.5 shrink-0"
+        className="flex items-center gap-3.5 shrink-0 max-lg:flex-wrap max-lg:gap-y-2 max-lg:gap-x-2.5 max-lg:px-3 max-lg:py-2.5 lg:h-16 lg:px-[26px]"
         style={{
-          height: 64,
-          padding: "0 26px",
+          paddingTop: "max(env(safe-area-inset-top, 0px), 10px)",
           background: "var(--color-chrome-header)",
           borderBottom: "1px solid var(--color-line)",
           backdropFilter: "blur(18px)",
         }}
       >
         {client && <Avatar name={client.displayName} id={client.id} size={34} radius={11} />}
-        <span className="min-w-0">
+        <span className="min-w-0 flex-1">
           <span className="block text-[13.5px] font-bold text-(--color-text-strong) truncate leading-tight">
             {client?.displayName ?? "Danışan"} · {gameTitle}
           </span>
@@ -134,26 +137,32 @@ export function SessionReviewScreen({
           Seans Tamamlandı
         </span>
 
-        <span className="numeral ml-auto shrink-0 text-[11px] text-(--color-text-soft)">
+        <span className="numeral ml-auto shrink-0 text-[11px] text-(--color-text-soft) max-lg:hidden">
           Otomatik kaydedildi · {savedAt}
         </span>
       </header>
 
       <div className="grid flex-1 min-h-0 deniz-split" style={{ ["--split" as string]: "minmax(0,1fr) 380px" }}>
-        {/* ── Sol: sonuç ── */}
-        <div className="flex flex-col gap-[18px] overflow-y-auto" style={{ padding: "30px 32px" }}>
-          {/* Manşet — skor halkası + tek cümlelik yorum */}
+        {/* ── Sol: sonuç ──
+            Telefonda 30/32px'lik iç boşluk kartlara ~64px yiyordu; kaydırma
+            da bu kutuda kalıyordu (tam ekran seans `.app-shell` dışında
+            olduğu için ortak "iç kaydırıcıları serbest bırak" kuralı burada
+            geçerli değil). Boşluk daralır, kaydırma kendi kutusunda kalır. */}
+        <div className="flex flex-col gap-[18px] max-lg:gap-3 overflow-y-auto p-[30px_32px] max-lg:p-4">
+          {/* Manşet — skor halkası + tek cümlelik yorum.
+              132px'lik halka 320px'lik ekranda metne 120px bırakıyordu;
+              telefonda halka küçülür ve blok dikeye döner. */}
           <div
-            className="flex items-center gap-[30px] shrink-0"
+            className="flex items-center gap-[30px] shrink-0 max-lg:flex-col max-lg:items-start max-lg:gap-4 p-[24px_28px] max-lg:p-4"
             style={{
-              padding: "24px 28px",
               borderRadius: 22,
               background: "var(--color-surface)",
               border: "1px solid var(--color-line)",
               backdropFilter: "blur(14px)",
             }}
           >
-            <ScoreRing value={score} size={132} />
+            <span className="max-lg:hidden"><ScoreRing value={score} size={132} /></span>
+            <span className="lg:hidden"><ScoreRing value={score} size={92} /></span>
             <div className="min-w-0">
               <div className="numeral text-[10px] font-medium uppercase tracking-[0.16em] text-(--color-text-soft) mb-2">
                 Normalize Skor
@@ -211,7 +220,9 @@ export function SessionReviewScreen({
             ))}
           </div>
 
-          <div className="grid gap-3.5 flex-1 min-h-0" style={{ gridTemplateColumns: "1fr 1fr" }}>
+          {/* İki panel masaüstünde yan yana. Telefonda 1fr/1fr her birine
+              ~160px bırakıyor, çift çubuklu domain grafiği okunmuyordu. */}
+          <div className="grid gap-3.5 max-lg:gap-3 flex-1 min-h-0 max-lg:grid-cols-1 lg:grid-cols-2">
             {/* Domain kazanımı — çift çubuk: önce ve sonra üst üste */}
             <div
               className="flex flex-col min-h-0"
@@ -300,8 +311,12 @@ export function SessionReviewScreen({
           </div>
         </div>
 
-        {/* ── Sağ: kayıt ── */}
-        <div className="flex flex-col gap-3.5 overflow-y-auto" style={{ padding: "30px 30px 30px 0" }}>
+        {/* ── Sağ: kayıt ──
+            Masaüstünde sol boşluk yok (sonuç sütununa yaslanır). Telefonda
+            sütun alta indiği için o asimetri yamuk duruyordu; ayrıca alt
+            güvenli alan payı burada verilmeli — bu ekran tam ekran çalışıyor
+            ve "Notu Kaydet" düğmesi ana ekran çizgisinin üstünde kalıyordu. */}
+        <div className="flex flex-col gap-3.5 overflow-y-auto p-[30px_30px_30px_0] max-lg:p-4 max-lg:pt-0 max-lg:pb-[max(env(safe-area-inset-bottom),1rem)]">
           <div
             className="flex flex-col flex-1 min-h-0"
             style={{ padding: "22px 24px", borderRadius: 20, background: "var(--color-surface)", border: "1px solid var(--color-line)", backdropFilter: "blur(14px)" }}

@@ -56,13 +56,23 @@ export function AppLoadingSkeleton() {
 
       {/* Main content skeleton */}
       <div className="flex-1 p-4 sm:p-6 lg:p-8 space-y-4 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="space-y-1.5">
-            <Skeleton height={24} width={200} />
-            <Skeleton height={14} width={300} />
+        {/*
+          Mobil başlık çubuğu iskeleti — gerçek kabukta üstte 52px'lik sabit
+          bir çubuk var. İskelette olmayınca yükleme bitince içerik aşağı
+          zıplıyordu.
+        */}
+        <div className="lg:hidden flex items-center justify-between mb-4">
+          <Skeleton height={16} width="40%" />
+          <Skeleton width={30} height={30} rounded="lg" />
+        </div>
+
+        {/* Header — sabit piksel genişlikler 320px'lik ekranda taşıyordu. */}
+        <div className="flex items-center justify-between gap-3 mb-6 max-sm:mb-4">
+          <div className="space-y-1.5 flex-1 min-w-0">
+            <Skeleton height={24} width="55%" />
+            <Skeleton height={14} width="85%" />
           </div>
-          <Skeleton width={120} height={40} rounded="xl" />
+          <Skeleton width={104} height={40} rounded="xl" />
         </div>
 
         {/* Stats row */}
@@ -77,6 +87,22 @@ export function AppLoadingSkeleton() {
           <Skeleton height={200} rounded="2xl" />
           <Skeleton height={200} rounded="2xl" />
         </div>
+      </div>
+
+      {/* Mobil alt sekme çubuğu iskeleti — beş sekme, gerçek kabuktaki gibi. */}
+      <div
+        className="lg:hidden fixed bottom-0 left-0 right-0 flex gap-1 px-3 pt-2"
+        style={{
+          height: "var(--chrome-bottom)",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          background: "var(--color-chrome-nav)",
+          borderTop: "1px solid var(--color-line)",
+        }}
+        aria-hidden="true"
+      >
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} height={40} rounded="lg" style={{ flex: 1 }} />
+        ))}
       </div>
     </div>
   );

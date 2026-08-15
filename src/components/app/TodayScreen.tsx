@@ -80,8 +80,10 @@ export function TodayScreen({
     .map((c) => metricsFor(c, sessions))
     .sort((a, b) => b.sessionCount - a.sessionCount)[0];
 
+  /* Telefonda `h-full min-h-0` zinciri ekranı viewport'a hapsedip kartları
+     eziyordu; mobilde doğal yükseklik, masaüstünde eski davranış. */
   return (
-    <div className="flex flex-col gap-5 h-full min-h-0">
+    <div className="flex flex-col gap-4 lg:gap-5 lg:h-full lg:min-h-0">
       <ScreenHeader
         eyebrow={dateLabel}
         title={`${greeting(now)}, ${therapistFirstName}.`}
@@ -112,19 +114,26 @@ export function TodayScreen({
         }
       />
 
-      {/* ── Ölçüm satırı ── */}
-      <div className="grid gap-3.5" style={{ gridTemplateColumns: "var(--stat-cols, repeat(4, minmax(0, 1fr)))" }}>
-        <Card pad="p-[17px_18px]">
-          <div className="flex items-center justify-between mb-3">
+      {/* ── Ölçüm satırı ──
+          Telefonda ızgara iki sütun; "Sıradaki Seans" ve "Aktif Danışan" iki
+          sütunu birden kaplar. Böylece dört kart 2×2'ye sıkışıp yükseklikleri
+          tutmuyor olmaktan çıkar: günün eylemi en üstte tam genişlikte durur,
+          altında iki dar ölçüm, en altta danışan şeridi. */}
+      <div className="grid gap-3 lg:gap-3.5" style={{ gridTemplateColumns: "var(--stat-cols, repeat(4, minmax(0, 1fr)))" }}>
+        <Card pad="p-[15px_15px] lg:p-[17px_18px]">
+          {/* Dar kapta etiket + rozet tek satıra sığmayıp ikisi de kelime
+              ortasından sarıyordu; `flex-wrap` ile rozet bütün hâlde alt
+              satıra iner. */}
+          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 mb-2.5 lg:mb-3">
             <span className="text-[11px] font-semibold text-(--color-text-soft)">Bugünün Seansı</span>
             {doneCount > 0 && (
-              <span className="numeral text-[10px] font-semibold" style={{ color: "var(--color-accent-green)" }}>
+              <span className="numeral text-[10px] font-semibold shrink-0" style={{ color: "var(--color-accent-green)" }}>
                 {doneCount} tamam
               </span>
             )}
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="figure text-[30px] text-(--color-text-strong) leading-none">{agenda.length}</span>
+            <span className="figure text-[26px] lg:text-[30px] text-(--color-text-strong) leading-none">{agenda.length}</span>
             <span className="text-[13px] font-medium text-(--color-text-soft)">seans</span>
           </div>
           {agenda.length > 0 && (
@@ -148,12 +157,12 @@ export function TodayScreen({
           )}
         </Card>
 
-        <Card pad="p-[17px_18px]">
-          <div className="flex items-center justify-between mb-3">
+        <Card pad="p-[15px_15px] lg:p-[17px_18px]">
+          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 mb-2.5 lg:mb-3">
             <span className="text-[11px] font-semibold text-(--color-text-soft)">Ortalama Skor</span>
             {scoreDelta !== null && scoreDelta !== 0 && (
               <span
-                className="numeral text-[10px] font-semibold"
+                className="numeral text-[10px] font-semibold shrink-0"
                 style={{ color: scoreDelta > 0 ? "var(--color-accent-green)" : "var(--color-accent-red)" }}
               >
                 {scoreDelta > 0 ? "+" : "−"}{Math.abs(scoreDelta)}
@@ -161,18 +170,24 @@ export function TodayScreen({
             )}
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="figure text-[30px] text-(--color-text-strong) leading-none">{averageScore}</span>
+            <span className="figure text-[26px] lg:text-[30px] text-(--color-text-strong) leading-none">{averageScore}</span>
             <span className="text-[13px] font-medium text-(--color-text-soft)">/100</span>
           </div>
-          <div className="mt-2">
+          {/* Aynı seri iki tavanla: 220 birimlik viewBox telefonda ~100px'lik
+              kaba oturunca `preserveAspectRatio="none"` çizgiyi ve uç noktayı
+              yatayda eziyordu. Dar tavan bu bozulmayı kaldırır. */}
+          <div className="mt-2 lg:hidden">
+            <Sparkline series={scoreSeries} id="today-avg-sm" width={116} height={24} />
+          </div>
+          <div className="mt-2 max-lg:hidden">
             <Sparkline series={scoreSeries} id="today-avg" width={220} height={26} />
           </div>
         </Card>
 
-        <Card pad="p-[17px_18px]">
-          <div className="flex items-center justify-between mb-3">
+        <Card className="max-lg:col-span-2" pad="p-[15px_15px] lg:p-[17px_18px]">
+          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 mb-2.5 lg:mb-3">
             <span className="text-[11px] font-semibold text-(--color-text-soft)">Aktif Danışan</span>
-            <span className="numeral text-[10px] font-semibold text-(--color-text-soft)">{clients.length} kişi</span>
+            <span className="numeral text-[10px] font-semibold text-(--color-text-soft) shrink-0">{clients.length} kişi</span>
           </div>
           {clients.length === 0 ? (
             <button
@@ -183,8 +198,11 @@ export function TodayScreen({
               İlk Danışanı Ekle →
             </button>
           ) : (
-            <>
-              <div className="flex items-center mt-1">
+            /* Telefonda kart tam genişlikte olduğu için avatarlar ile not
+               yan yana durur — alt alta konsa kartın altında boş bant kalıyor.
+               Masaüstünde sarmalayıcı düz blok, düzen değişmez. */
+            <div className="max-lg:flex max-lg:items-center max-lg:gap-3">
+              <div className="flex items-center mt-1 max-lg:mt-0 max-lg:shrink-0">
                 {clients.slice(0, 4).map((c, i) => (
                   <span key={c.id} style={{ marginLeft: i === 0 ? 0 : -7 }}>
                     <Avatar name={c.displayName} id={c.id} size={32} radius={10} ring />
@@ -207,7 +225,7 @@ export function TodayScreen({
                   </span>
                 )}
               </div>
-              <div className="mt-[11px] text-[11px] text-(--color-text-soft)">
+              <div className="mt-[11px] max-lg:mt-0 max-lg:min-w-0 text-[11px] text-(--color-text-soft)">
                 {(() => {
                   const stale = clients.filter((c) => {
                     const m = metricsFor(c, sessions);
@@ -218,21 +236,25 @@ export function TodayScreen({
                   return stale > 0 ? `${stale} danışanın planı bu hafta güncellenmeli` : "Tüm planlar güncel";
                 })()}
               </div>
-            </>
+            </div>
           )}
         </Card>
 
-        {/* Sıradaki Seans — sayfadaki tek dolu degrade. Günün eylemi burada. */}
+        {/* Sıradaki Seans — sayfadaki tek dolu degrade. Günün eylemi burada.
+            Telefonda iki sütunu birden kaplar ve ölçüm kartlarının önüne
+            geçer: yarım sütunda başlık iki-üç satıra bölünüp kartı uzatıyordu,
+            üstelik ekranın cevapladığı soru ("şimdi ne yapıyorum?") en altta
+            kalıyordu. */}
         <div
-          className="tile-signature tile-signature-grain rounded-[16px]"
-          style={{ padding: "17px 18px", boxShadow: "var(--shadow-glow)" }}
+          className="tile-signature tile-signature-grain rounded-[16px] p-[15px_16px] lg:p-[17px_18px] max-lg:col-span-2 max-lg:order-first"
+          style={{ boxShadow: "var(--shadow-glow)" }}
         >
           <div className="relative">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between gap-2 mb-3">
               <span className="on-signature-soft text-[11px] font-semibold">Sıradaki Seans</span>
               {next?.time && (
                 <span
-                  className="numeral on-signature text-[10px] font-semibold"
+                  className="numeral on-signature text-[10px] font-semibold shrink-0"
                   style={{ padding: "2px 7px", borderRadius: 6, background: "rgba(255,255,255,0.2)" }}
                 >
                   {next.time}
@@ -241,7 +263,7 @@ export function TodayScreen({
             </div>
             {next ? (
               <>
-                <div className="font-display on-signature font-semibold text-[19px] tracking-[-0.025em] mb-[3px]">
+                <div className="font-display on-signature font-semibold text-[17px] lg:text-[19px] max-lg:leading-[1.2] tracking-[-0.025em] mb-[3px]">
                   {next.clientName}
                 </div>
                 <div className="on-signature-soft text-[11.5px] mb-3">
@@ -258,7 +280,7 @@ export function TodayScreen({
               </>
             ) : (
               <>
-                <div className="font-display on-signature font-semibold text-[19px] tracking-[-0.025em] mb-[3px]">
+                <div className="font-display on-signature font-semibold text-[17px] lg:text-[19px] max-lg:leading-[1.2] tracking-[-0.025em] mb-[3px]">
                   {doneCount > 0 ? "Gün Tamamlandı" : "Boş Gün"}
                 </div>
                 <div className="on-signature-soft text-[11.5px] mb-3">
@@ -279,19 +301,18 @@ export function TodayScreen({
       </div>
 
       {/* ── Çizelge + paneller ── */}
-      <div className="grid gap-4 flex-1 min-h-0 deniz-split" style={{ ["--split" as string]: "1.35fr 1fr" }}>
+      <div className="grid gap-3.5 lg:gap-4 lg:flex-1 lg:min-h-0 deniz-split" style={{ ["--split" as string]: "1.35fr 1fr" }}>
         <Agenda items={agenda} onStart={onStartSession} onOpenClient={onOpenClient} onPlan={() => onNavigate("weekly-plan")} />
 
-        <div className="flex flex-col gap-4 min-h-0">
+        <div className="flex flex-col gap-3.5 lg:gap-4 lg:min-h-0">
           <div
-            className="rounded-[18px] shrink-0"
+            className="rounded-[18px] shrink-0 p-[16px_16px] lg:p-[19px_21px]"
             style={{
-              padding: "19px 21px",
               background: "var(--gradient-signature-soft)",
               border: "1px solid var(--color-line-strong)",
             }}
           >
-            <div className="flex items-center gap-2 mb-3.5">
+            <div className="flex items-center gap-2 mb-3 lg:mb-3.5">
               <Sparkles size={15} strokeWidth={1.9} style={{ color: "var(--color-primary)" }} />
               <CardTitle className="!text-[13.5px]">Akıllı Öneriler</CardTitle>
               {insights.length > 0 && (
@@ -354,16 +375,23 @@ export function TodayScreen({
             )}
           </div>
 
-          <Card className="flex-1 flex flex-col min-h-0" pad="p-[19px_21px]">
-            <div className="flex items-center justify-between mb-1.5">
+          <Card className="lg:flex-1 flex flex-col lg:min-h-0" pad="p-[16px_16px] lg:p-[19px_21px]">
+            {/* Dar kapta başlık ve künye aynı satırda ikiye bölünüyordu;
+                telefonda alt alta, künye tek satırda kısalarak. */}
+            <div className="flex items-center justify-between gap-2 mb-1.5 max-lg:flex-col max-lg:items-start max-lg:gap-0.5">
               <CardTitle className="!text-[13.5px]">Hedef Radarı</CardTitle>
               {radarClient && radarClient.sessionCount > 0 && (
-                <span className="numeral text-[10px] font-medium text-(--color-text-soft)">
+                <span className="numeral text-[10px] font-medium text-(--color-text-soft) truncate max-w-full">
                   {radarClient.client.displayName} · {radarClient.sessionCount} seans
                 </span>
               )}
             </div>
-            <div className="flex-1 min-h-0 grid place-items-center">
+            {/* Radar kaba göre ölçeklenir. Telefonda kap kare olunca SVG'nin
+                viewBox'ı tüm genişliği kaplıyor, eksen etiketleri ("Yürütücü",
+                "Dikkat") kutunun dışına düşüp kırpılıyordu. Sabit yükseklik
+                veriyoruz: viewBox yüksekliğe göre oturur, yanlarda kalan boşluk
+                etiketlere yer açar — kart da yarı yarıya kısalır. */}
+            <div className="lg:flex-1 lg:min-h-0 grid place-items-center max-lg:h-[168px] max-lg:mt-1">
               {radarClient && radarClient.sessionCount > 0 ? (
                 <Radar id="today" size={200} axes={radarAxes(radarClient.sessions)} />
               ) : (
@@ -420,14 +448,14 @@ function Agenda({
     : "boş";
 
   return (
-    <Card className="flex flex-col min-h-0" pad="p-[20px_22px]">
-      <div className="flex items-start justify-between mb-4">
-        <div>
+    <Card className="flex flex-col lg:min-h-0" pad="p-[16px_16px] lg:p-[20px_22px]">
+      <div className="flex items-start justify-between gap-2 mb-3.5 lg:mb-4">
+        <div className="min-w-0">
           <CardTitle>Bugünün Akışı</CardTitle>
           <div className="text-[11px] text-(--color-text-soft) mt-0.5">Zaman Çizelgesi · {span}</div>
         </div>
         <span
-          className="numeral text-[10.5px] font-semibold text-(--color-primary-ink)"
+          className="numeral text-[10.5px] font-semibold text-(--color-primary-ink) shrink-0"
           style={{ padding: "5px 10px", borderRadius: 8, background: "var(--color-primary-light)" }}
         >
           {items.length}
@@ -435,7 +463,7 @@ function Agenda({
       </div>
 
       {items.length === 0 ? (
-        <div className="flex-1 grid place-items-center">
+        <div className="lg:flex-1 grid place-items-center max-lg:py-6">
           <div className="text-center">
             <p className="m-0 mb-3 text-[13px] text-(--color-text-soft)">Bugüne planlanmış seans yok.</p>
             <button type="button" className={btnGhost} onClick={onPlan}>
@@ -447,11 +475,14 @@ function Agenda({
         </div>
       ) : (
         /* Sol oluk saat sütunu; dikey çizgi degradeyle yukarıdan aşağı söner —
-           gün ilerledikçe "geçmiş" hafifliyor. */
-        <div className="flex-1 relative overflow-y-auto" style={{ paddingLeft: 60 }}>
+           gün ilerledikçe "geçmiş" hafifliyor. Telefonda oluk tamamen kalkar:
+           60px'lik pay 320px ekranda satıra ~180px bırakıyor, danışan adı ile
+           skor iç içe geçiyordu. Saat o zaman satırın künye satırına iner
+           (aşağıya bkz.), çizgi ve nokta gizlenir. */
+        <div className="lg:flex-1 relative overflow-y-auto pl-0 lg:pl-[60px]">
           <span
             aria-hidden="true"
-            className="absolute"
+            className="absolute max-lg:hidden"
             style={{
               left: 44,
               top: 6,
@@ -462,7 +493,7 @@ function Agenda({
                 "linear-gradient(180deg, color-mix(in srgb, var(--color-primary) 28%, transparent), color-mix(in srgb, var(--color-signature-to) 14%, transparent), transparent)",
             }}
           />
-          <div className="flex flex-col gap-[11px]">
+          <div className="flex flex-col gap-2.5 lg:gap-[11px]">
             {items.map((it) => (
               <AgendaRow key={it.key} item={it} onStart={onStart} onOpenClient={onOpenClient} />
             ))}
@@ -487,9 +518,10 @@ function AgendaRow({
 
   return (
     <div
-      className="relative flex items-center gap-3"
+      className={`relative flex items-center gap-2.5 lg:gap-3 ${
+        isNext ? "p-[11px] lg:p-[14px]" : "p-[10px_11px] lg:p-[12px_14px]"
+      }`}
       style={{
-        padding: isNext ? 14 : "12px 14px",
         borderRadius: 14,
         background: isNext
           ? "var(--gradient-signature-soft)"
@@ -499,9 +531,10 @@ function AgendaRow({
         border: `1px solid ${isNext ? "var(--color-line-strong)" : "var(--color-line)"}`,
       }}
     >
-      {/* Saat — çizelgenin dışına, sol oluğa taşar */}
+      {/* Saat — çizelgenin dışına, sol oluğa taşar. Telefonda oluk olmadığı
+          için gizlenir; aynı bilgi künye satırının başında durur. */}
       <span
-        className="numeral absolute text-[11px] font-medium"
+        className="numeral absolute text-[11px] font-medium max-lg:hidden"
         style={{ left: -60, width: 34, textAlign: "right", color: isNext ? "var(--color-primary)" : "var(--color-text-soft)" }}
       >
         {item.time ?? "—"}
@@ -509,7 +542,7 @@ function AgendaRow({
       {/* Çizgi üzerindeki nokta */}
       <span
         aria-hidden="true"
-        className="absolute"
+        className="absolute max-lg:hidden"
         style={{
           left: -21,
           width: 11,
@@ -521,10 +554,12 @@ function AgendaRow({
         }}
       />
 
+      {/* `p-0` kalkmadı ama dokunma payı açıkça verildi: küresel 44px kuralı
+          `p-0` taşıyan düğmeleri dışarıda bırakıyor, avatar 34×34'te kalıyordu. */}
       <button
         type="button"
         onClick={() => onOpenClient(item.clientId)}
-        className="bg-transparent border-none p-0 cursor-pointer shrink-0"
+        className="bg-transparent border-none p-0 cursor-pointer shrink-0 grid place-items-center max-lg:min-w-[44px] max-lg:min-h-[44px]"
         aria-label={`${item.clientName} profilini aç`}
       >
         <Avatar name={item.clientName} id={item.clientId} size={34} radius={11} />
@@ -543,6 +578,14 @@ function AgendaRow({
           )}
         </div>
         <div className="text-[11px] text-(--color-text-soft) truncate">
+          {/* Saat mobilde buraya iner — oluk kalktı, bilgi kalmalı. */}
+          <span
+            className="numeral font-medium lg:hidden"
+            style={{ color: isNext ? "var(--color-primary)" : undefined }}
+          >
+            {item.time ?? "—"}
+            {" · "}
+          </span>
           {gameTitle(item.gameKey)} · {item.goal || gameKicker(item.gameKey)}
         </div>
       </div>

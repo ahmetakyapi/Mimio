@@ -112,7 +112,7 @@ export function GameLibraryScreen({
   }, [activeClient, sessions]);
 
   return (
-    <div className="flex flex-col gap-5 h-full min-h-0">
+    <div className="flex flex-col gap-5 max-lg:gap-4 h-full min-h-0">
       <ScreenHeader
         eyebrow={`${GAME_TABS.length} oyun · ${activityCount} kanıt temelli aktivite`}
         title="Terapi Oyunları"
@@ -126,7 +126,11 @@ export function GameLibraryScreen({
                   onClick={() => setPickerOpen((o) => !o)}
                   aria-haspopup="listbox"
                   aria-expanded={pickerOpen}
-                  className="flex items-center gap-2 cursor-pointer transition-colors hover:border-(--color-line-strong)"
+                  /* Telefonda seçici kendi satırını tam doldurur: eylem satırı
+                     sardığında düğme içeriği kadar kalıp ortada asılı duruyor,
+                     yanındaki boşluk "bir şey eksik" gibi okunuyordu. Ad ile
+                     ok arasındaki mesafe de `justify-between` ile sabitlenir. */
+                  className="flex items-center gap-2 cursor-pointer transition-colors hover:border-(--color-line-strong) max-lg:w-full max-lg:justify-between"
                   style={{
                     padding: "5px 12px 5px 5px",
                     borderRadius: 12,
@@ -137,14 +141,17 @@ export function GameLibraryScreen({
                   {activeClient ? (
                     <>
                       <Avatar name={activeClient.displayName} id={activeClient.id} size={26} radius={9} />
-                      <span className="text-[12.5px] font-semibold text-(--color-text-strong)">
+                      {/* Uzun ad dar kapta düğmeyi ekranın dışına itiyordu. */}
+                      <span className="min-w-0 flex-1 truncate text-left text-[12.5px] font-semibold text-(--color-text-strong)">
                         {activeClient.displayName}
                       </span>
                     </>
                   ) : (
-                    <span className="text-[12.5px] font-semibold text-(--color-text-soft) pl-2">Danışan seç</span>
+                    <span className="min-w-0 flex-1 truncate text-left text-[12.5px] font-semibold text-(--color-text-soft) pl-2">
+                      Danışan seç
+                    </span>
                   )}
-                  <ChevronDown size={13} className="text-(--color-text-muted)" />
+                  <ChevronDown size={13} className="shrink-0 text-(--color-text-muted)" />
                 </button>
 
                 {pickerOpen && (
@@ -214,27 +221,41 @@ export function GameLibraryScreen({
 
       {/* Önerilen sıra — kitaplığın üstünde tek satırlık karar şeridi */}
       {suggestion && activeClient && (
+        /*
+         * Telefonda şerit iki kata iner: üstte öneri cümlesi, altında tam
+         * genişlikte düğme. Önceki hâlde ikisi aynı satırı paylaşıyordu ve
+         * 320px'te cümle beş satıra kırılıp "Sırayı Başlat"ı kendi metnine
+         * sıkıştırıyordu — düğme okunmuyor, cümle de okunmuyordu.
+         */
         <div
-          className="flex items-center gap-3 flex-wrap"
+          className="flex items-center gap-3 flex-wrap p-[14px_18px] max-lg:flex-col max-lg:items-stretch max-lg:gap-2.5 max-lg:p-[13px_14px]"
           style={{
-            padding: "14px 18px",
             borderRadius: 15,
             background: "var(--gradient-signature-soft)",
             border: "1px solid var(--color-line-strong)",
           }}
         >
-          <Sparkles size={15} strokeWidth={1.9} className="shrink-0" style={{ color: "var(--color-primary)" }} />
-          <span className="text-[12.5px] text-(--color-text-body) flex-1 min-w-0">
-            <strong className="font-bold text-(--color-text-strong)">{activeClient.displayName.split(" ")[0]}</strong> için
-            önerilen sıra:{" "}
-            <strong className="font-bold text-(--color-text-strong)">{suggestion.labels.join(" → ")}</strong>
-            {" "}· toplam ~{suggestion.minutes} dk
+          {/* Simge ve cümle tek blok: düğme alt satıra inince ikisi birlikte
+              iner, simge tek başına öksüz bir satırda kalmaz. */}
+          <span className="flex flex-1 min-w-0 items-start gap-2.5 lg:items-center lg:gap-3">
+            <Sparkles
+              size={15}
+              strokeWidth={1.9}
+              className="shrink-0 mt-[3px] lg:mt-0"
+              style={{ color: "var(--color-primary)" }}
+            />
+            <span className="min-w-0 text-[12.5px] leading-[1.5] text-(--color-text-body)">
+              <strong className="font-bold text-(--color-text-strong)">{activeClient.displayName.split(" ")[0]}</strong> için
+              önerilen sıra:{" "}
+              <strong className="font-bold text-(--color-text-strong)">{suggestion.labels.join(" → ")}</strong>
+              {" "}· toplam ~{suggestion.minutes} dk
+            </span>
           </span>
           <button
             type="button"
             onClick={() => onStartSequence(suggestion.keys)}
-            className="btn-signature shrink-0 text-[12px] font-semibold cursor-pointer"
-            style={{ padding: "9px 16px", borderRadius: 10 }}
+            className="btn-signature shrink-0 text-[12px] font-semibold cursor-pointer p-[9px_16px] max-lg:w-full"
+            style={{ borderRadius: 10 }}
           >
             Sırayı Başlat
           </button>
@@ -255,16 +276,22 @@ export function GameLibraryScreen({
           const avg = st && st.count ? Math.round(st.total / st.count) : null;
 
           return (
+            /*
+             * ≤560px'te ızgara tek sütuna iniyor (`--card-cols: 1fr`) ve kart
+             * ekran genişliğine yayılıyordu: 78px'lik önizleme kabı 358px
+             * genişliğinde boş bir bant oluyor, kartın yüksekliği iki katına
+             * çıkıyor, ekranda tek seferde bir buçuk oyun görünüyordu.
+             * Telefonda kart satır düzenine geçiyor: solda 68px'lik önizleme
+             * damgası, sağda metin, altta iki sütunu birden kaplayan düğme.
+             */
             <article
               key={g.key}
-              className="glass rounded-[18px] flex flex-col self-start"
-              style={{ padding: 14 }}
+              className="glass rounded-[18px] flex flex-col self-start p-[14px] max-[560px]:grid max-[560px]:grid-cols-[68px_minmax(0,1fr)] max-[560px]:items-start max-[560px]:gap-x-3 max-[560px]:p-3"
             >
               {/* Önizleme — oyunun görsel imzası, ekran görüntüsü değil şema */}
               <div
-                className="grid place-items-center shrink-0 mb-[11px]"
+                className="grid place-items-center shrink-0 mb-[11px] h-[78px] max-[560px]:h-[68px] max-[560px]:mb-0"
                 style={{
-                  height: 78,
                   borderRadius: 14,
                   background:
                     "linear-gradient(150deg, color-mix(in srgb, var(--color-primary) 7%, transparent), color-mix(in srgb, var(--color-signature-to) 5%, transparent))",
@@ -273,7 +300,7 @@ export function GameLibraryScreen({
                 <GamePreview gameKey={g.key} />
               </div>
 
-              <div className="flex flex-col flex-1 min-h-0">
+              <div className="flex flex-col flex-1 min-h-0 min-w-0">
                 <span
                   className="self-start text-[10px] font-semibold mb-[9px]"
                   style={{
@@ -291,7 +318,11 @@ export function GameLibraryScreen({
                 </h3>
                 <p className="m-0 mb-[9px] text-[11px] leading-[1.45] text-(--color-text-soft)">{meta.source}</p>
 
-                <div className="flex items-end gap-3 mt-auto" style={{ padding: "7px 0" }}>
+                {/* Ölçü satırı dar kapta sarar: `ml-auto` telefonda kalkıyor,
+                    zorluk aralığı sayıların hemen ardına geçiyor ve yalnızca
+                    sığmadığında alt satıra iniyor. Önceki hâlde sağa itilmiş
+                    aralık 320px'te "ort. skor" etiketinin üstüne biniyordu. */}
+                <div className="flex items-end gap-3 mt-auto py-[7px] max-[560px]:flex-wrap max-[560px]:gap-x-4 max-[560px]:gap-y-1 max-[560px]:pt-1.5 max-[560px]:pb-0">
                   <span>
                     <span className="numeral block text-[13px] font-semibold text-(--color-text-strong) leading-none">
                       {st?.count ?? 0}
@@ -304,20 +335,23 @@ export function GameLibraryScreen({
                     </span>
                     <span className="numeral block text-[9px] text-(--color-text-soft) mt-1">ort. skor</span>
                   </span>
-                  <span className="numeral ml-auto text-[10px] font-medium text-(--color-text-soft)">
+                  <span className="numeral ml-auto text-[10px] font-medium text-(--color-text-soft) max-[560px]:ml-0">
                     {difficultyRange(avg)}
                   </span>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => onStart(key)}
-                  className="btn-signature w-full text-[11.5px] font-semibold cursor-pointer mt-2"
-                  style={{ padding: 9, borderRadius: 11 }}
-                >
-                  Seansı Başlat
-                </button>
               </div>
+
+              {/* Düğme kartın kendi çocuğu: telefonda satır düzenine geçince
+                  önizleme sütununun altını da kaplayıp tam genişlikte kalır.
+                  Masaüstünde metin sütununun altında, eskisiyle aynı yerde. */}
+              <button
+                type="button"
+                onClick={() => onStart(key)}
+                className="btn-signature w-full text-[11.5px] font-semibold cursor-pointer mt-2 p-[9px] max-[560px]:col-span-2 max-[560px]:mt-[11px]"
+                style={{ borderRadius: 11 }}
+              >
+                Seansı Başlat
+              </button>
             </article>
           );
         })}
@@ -344,18 +378,18 @@ function difficultyRange(avg: number | null): string {
 function GamePreview({ gameKey }: { readonly gameKey: string }) {
   const shape = PREVIEW[gameKey] ?? PREVIEW.memory;
   const { cols, rows, on, round } = shape;
-  const size = 76;
 
   return (
     <div
       aria-hidden="true"
-      className="grid"
+      /* Ölçü sabit satır içi değerden sınıfa taşındı: telefonda kart satır
+         düzenine geçince önizleme kabı 68px'e daralıyor, 76px'lik ızgara
+         kabın dışına taşıyordu. Satır içi stil sınıfı ezdiği için ölçü
+         burada olmak zorunda. */
+      className="grid w-[76px] h-[76px] gap-[7px] max-[560px]:w-[52px] max-[560px]:h-[52px] max-[560px]:gap-[4px]"
       style={{
-        width: size,
-        height: size,
         gridTemplateColumns: `repeat(${cols}, 1fr)`,
         gridTemplateRows: `repeat(${rows}, 1fr)`,
-        gap: 7,
       }}
     >
       {Array.from({ length: cols * rows }, (_, i) => (

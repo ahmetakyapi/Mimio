@@ -170,22 +170,35 @@
    .section sınıfı bunu tek kaynağa bağlar.
    ─────────────────────────────────────────────── */
 :root {
-  /* Bölüm dikey boşluğu — viewport'la ölçeklenir, uçlarda sabitlenir */
-  --space-section: clamp(4rem, 7vw, 7rem);
-  --space-section-tight: clamp(2.5rem, 4.5vw, 4.5rem);
-  --space-block: clamp(1.75rem, 3vw, 3rem);
+  /* Bölüm dikey boşluğu — viewport'la ölçeklenir, uçlarda sabitlenir.
+     Tabanlar telefon için indirildi: 4rem'lik boşluk on bölümlük bir
+     tanıtım sayfasında 320px'lik ekranda tek başına iki ekran boyu yer
+     tutuyor, sayfa "boş" okunuyordu. Tavanlar aynı — masaüstü ritmi
+     değişmiyor. */
+  --space-section: clamp(3rem, 7vw, 7rem);
+  --space-section-tight: clamp(2rem, 4.5vw, 4.5rem);
+  --space-block: clamp(1.5rem, 3vw, 3rem);
 
   /* İçerik genişlikleri */
   --width-content: 76rem;
   --width-prose: 42rem;
   --gutter: clamp(1.25rem, 4vw, 2.5rem);
 
-  /* Tipografi ölçeği */
-  --text-display: clamp(2.75rem, 6.5vw, 5rem);
-  --text-h1: clamp(2.25rem, 4.6vw, 3.5rem);
-  --text-h2: clamp(1.75rem, 3.2vw, 2.5rem);
-  --text-h3: clamp(1.25rem, 1.9vw, 1.5rem);
-  --text-lead: clamp(1.0625rem, 1.35vw, 1.25rem);
+  /*
+   * Tipografi ölçeği.
+   *
+   * Tavanlar masaüstünde olduğu gibi kalıyor; değişen yalnızca tabanlar.
+   * Eski taban 2.75rem (44px) idi: 320px'lik bir ekranda "Terapi
+   * Seanslarını Oyuna Dönüştür" dört satıra bölünüp kahraman bölümünü tek
+   * başına dolduruyor, alt satır ve birincil eylem katlamanın altına
+   * düşüyordu. `vw` eğimi aynı — yalnızca dar ekranda ölçek serbest
+   * bırakılıyor.
+   */
+  --text-display: clamp(2rem, 6.5vw, 5rem);
+  --text-h1: clamp(1.75rem, 4.6vw, 3.5rem);
+  --text-h2: clamp(1.375rem, 3.2vw, 2.5rem);
+  --text-h3: clamp(1.125rem, 1.9vw, 1.5rem);
+  --text-lead: clamp(1rem, 1.35vw, 1.25rem);
 }
 
 .section {
@@ -254,11 +267,6 @@
   max-width: 100rem;
   margin-inline: 0 auto;
 }
-.app-shell-bleed > * {
-  width: 100%;
-  max-width: 100rem;
-  margin-inline: 0 auto;
-}
 
 /* Bölüm başlığı bloğu — eyebrow + başlık + açıklama tek ritimde */
 .section-head {
@@ -289,6 +297,15 @@
   border: 1px solid var(--color-line-strong);
 }
 .section-head-center .section-eyebrow { align-self: center; }
+/* Versal + 0.14em harf aralığı dar ekranda göz kapağını iki satıra bölüp
+   rozeti kutuya çeviriyordu; telefonda aralık gevşer, punto düşer. */
+@media (max-width: 640px) {
+  .section-eyebrow {
+    font-size: 0.625rem;
+    letter-spacing: 0.1em;
+    padding: 0.28rem 0.6rem 0.28rem 0.5rem;
+  }
+}
 .section-title {
   margin: 0;
   font-family: var(--font-display);
@@ -325,8 +342,9 @@ html {
   background: var(--color-page-bg);
   scroll-behavior: smooth;
   /* Sabit başlık yüksekliği + nefes payı. Bu olmadan bölüm bağlantıları
-     hedefi başlığın altına gizliyor, sayfa "yanlış yerden" başlıyordu. */
-  scroll-padding-top: 6.5rem;
+     hedefi başlığın altına gizliyor, sayfa "yanlış yerden" başlıyordu.
+     Telefonda tanıtım başlığı daha alçak; pay onunla ölçeklenir. */
+  scroll-padding-top: clamp(4.75rem, 9vw, 6.5rem);
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   color-scheme: dark;
@@ -336,7 +354,7 @@ html {
 /* Bölüm çapaları — programatik scrollIntoView için de aynı pay. */
 section[id],
 div[id="top"] {
-  scroll-margin-top: 6.5rem;
+  scroll-margin-top: clamp(4.75rem, 9vw, 6.5rem);
 }
 
 /* ── Light theme overrides ── */
@@ -643,16 +661,26 @@ html[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
   background: rgba(43, 98, 245, 0.55);
 }
 
-/* ── Safe area (mobile notch) ── */
-@supports (padding: env(safe-area-inset-bottom)) {
-  body {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-}
+/* ── Safe area (mobile notch) ──
+ * Gövdeye alt güvenli alan payı verilmiyor.
+ *
+ * Uygulama kabuğu `h-dvh`; gövdeye ek bir alt padding, kabuğu görünür
+ * alandan taşırıp iOS'ta sayfanın kendisini ~34px kaydırılabilir yapıyordu
+ * — alt sekme çubuğu kaydıkça yerinden oynuyor gibi görünüyordu. Güvenli
+ * alan payı artık onu gerçekten kullanan yerlerde: sabit sekme çubuğunda,
+ * `--chrome-bottom` payında ve seans eylem çubuğunda.
+ */
 
-/* ── Touch targets ── */
+/* ── Touch targets ──
+   `p-0` taşıyan düğmeler cümle içine gömülü metin bağlantıları ya da tüm
+   satırı saran saydam sarmalayıcılar; onlara 44px'lik bir taban vermek
+   satır yüksekliğini bozuyor ve paragrafın ortasında boşluk açıyordu.
+   Onlar hariç her kontrol parmakla vurulabilir boyutta. */
 @media (pointer: coarse) {
-  button, [role="button"], select, input[type="submit"] {
+  button:not([class~="p-0"]),
+  [role="button"]:not([class~="p-0"]),
+  select,
+  input[type="submit"] {
     min-height: 44px;
     min-width: 44px;
   }
@@ -785,25 +813,178 @@ html[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
 
 @media (max-width: 1023px) {
   .deniz-split {
-    grid-template-columns: 1fr;
+    /*
+     * `1fr` değil `minmax(0, 1fr)`.
+     *
+     * Izgara ögesinin varsayılan `min-width` değeri `auto`dur: sütun 1fr
+     * olsa bile öge, içeriğinin min-content genişliğinin altına inmez.
+     * Danışan detayındaki "Destek · Kademeli sözel ipucu" gibi tek satırlık
+     * anahtar/değer çiftleri bu tabanı 390px'in üstüne çıkarıyor, kart da
+     * ekranın sağından taşıyordu. `minmax(0, …)` + `min-width: 0` tabanı
+     * kaldırır; içerik artık sarar, taşmaz.
+     */
+    grid-template-columns: minmax(0, 1fr);
     /* Tek sütuna inince yükseklik içerikten gelmeli; sabit yükseklik
        panelleri üst üste eziyordu. */
     grid-auto-rows: min-content;
   }
   .deniz-split > * {
+    min-width: 0;
     min-height: 0;
     overflow: visible;
   }
 
   :root {
-    --stat-cols: repeat(3, minmax(0, 1fr));
+    --stat-cols: repeat(2, minmax(0, 1fr));
     --card-cols: repeat(2, minmax(0, 1fr));
   }
+}
 
-  /* Mobil kabuk payı: üstte 52px başlık, altta 68px sekme çubuğu. */
-  .app-shell {
-    padding-top: calc(52px + env(safe-area-inset-top, 0px) + 12px);
-    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+/* ── Mobil krom ölçüleri ──────────────────────────────────────────────
+   Üst çubuk ve alt sekme çubuğu sabit konumlu; içerik onların altında
+   kalmasın diye kaydırma kabı bu kadar pay bırakır. Ölçü tek yerde
+   duruyor: daha önce kabuk payı hem `.app-shell`de (52+12) hem kaydırma
+   kabında (56) veriliyordu ve telefonda başlığın altında ~120px'lik ölü
+   bir bant kalıyordu. Artık payı yalnızca kaydırma kabı verir. */
+:root {
+  --mobile-topbar: 52px;
+  --mobile-tabbar: 67px;
+  --chrome-top: calc(var(--mobile-topbar) + env(safe-area-inset-top, 0px));
+  --chrome-bottom: calc(var(--mobile-tabbar) + env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 1024px) {
+  :root {
+    --chrome-top: 0px;
+    --chrome-bottom: 0px;
+  }
+}
+
+/* Uygulama kaydırma kabı — mobil kromun payını burada, bir kez verir. */
+.app-scroll {
+  padding-top: var(--chrome-top);
+  padding-bottom: var(--chrome-bottom);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/*
+ * Telefonda her ekran sayfa gibi kayar.
+ *
+ * Masaüstünde çoğu görünüm "kendi kaydırıcısını yönetir": pencere sabit
+ * kalır, zaman çizelgesi ve hafta ızgarası görünür alanı doldurup kendi
+ * içinde kayar. Bu kurgu tek sütuna inince çöküyordu — bloklar alt alta
+ * dizildiği için toplam yükseklik ekranı aşıyor, dış kap `overflow: hidden`
+ * olduğu için aşan kısma hiçbir şekilde ulaşılamıyordu. Bugün ekranında
+ * "Akıllı Öneriler" ve "Hedef Radarı", raporda belgenin yarısı böyle
+ * kayboluyordu.
+ *
+ * Küçük ekranda kural tersine döner: iç kaydırıcılar serbest bırakılır,
+ * kaydırma dışarıdaki tek kaba toplanır.
+ */
+@media (max-width: 1023px) {
+  .app-scroll {
+    /*
+     * `display: block` — kasıtlı.
+     *
+     * Kendi kaydırıcısını yöneten görünümlerde bu kap sütun yönlü bir flex
+     * kabı (`flex flex-col`). Flex ögesi varsayılan olarak `flex-shrink: 1`
+     * taşır: içerik bir ekrandan uzun olduğunda kabuk, yüksekliği tam bir
+     * ekrana *sıkıştırılıyor* ve taşan kısım kutunun dışına akıyordu.
+     * Sonuç, kaydırma sonuna gelindiğinde bile son satırın eylem
+     * düğmelerinin sekme çubuğunun altında kalmasıydı: alt pay taşan
+     * içeriğin ardına değil, sıkışmış kutunun dibine düşüyor.
+     *
+     * Telefonda dikey akış zaten blok akışı; kabuk da öyle davranır.
+     */
+    display: block;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .app-scroll > .app-shell {
+    height: auto;
+    min-height: 100%;
+  }
+  /*
+   * Ekranın kendi kökü de doğal yüksekliğe döner.
+   *
+   * Kabuğu `height: auto` yapmak tek başına yetmiyordu: içerideki ekran
+   * kökü `h-full` taşıdığı için kabuğun 100%'üne (yani bir ekran boyuna)
+   * kilitleniyor, listeler de serbest bırakılmış iç kaydırıcılardan taşarak
+   * bu kutunun *dışına* akıyordu. Yükseklik içerikle büyümediği için
+   * kaydırma kabının alt payı taşan içeriğin ardına değil, kutunun kendi
+   * dibine düşüyordu: son danışan satırının eylem düğmeleri kaydırma sonuna
+   * gelindiğinde bile sekme çubuğunun altında kalıyordu.
+   */
+  .app-scroll > .app-shell > * {
+    height: auto;
+    min-height: 0;
+  }
+  /*
+   * Ekranın içindeki panel kaydırıcıları da serbest bırakılır. Masaüstünde
+   * her panel kendi içinde kayar (üç sütun aynı hizada başlar, aynı hizada
+   * biter); telefonda aynı panel iç içe ikinci bir kaydırma yüzeyi demek —
+   * parmak hangi katmanı kaydıracağını bilemiyor, listenin sonuna ulaşmak
+   * için önce sayfayı sonra kutuyu kaydırmak gerekiyordu.
+   *
+   * Kural `.app-shell` altına sınırlı: modal ve tam ekran seans kabuğu
+   * bunun dışında kalır, onların kendi kaydırma kutuları korunur.
+   */
+  .app-shell .overflow-y-auto {
+    overflow-y: visible;
+  }
+}
+
+/* ── Ekran başlığı ────────────────────────────────────────────────────
+   Masaüstünde başlık solda, eylemler sağda tek satır. Telefonda eylem
+   satırı başlığın yanına sığmıyor: `shrink-0` taşıdığı için ekranın
+   dışına taşıyor, "Yeni Danışan" ve "PDF İndir" gibi birincil eylemler
+   yarısı görünmez hâlde kalıyordu. Küçük ekranda eylemler alt satıra
+   iner, tam genişliği paylaşır ve hiçbiri kesilmez. */
+.screen-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.screen-head-main {
+  min-width: 0;
+  flex: 1 1 16rem;
+}
+.screen-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1023px) {
+  .screen-head {
+    gap: 0.875rem;
+  }
+  .screen-head-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  /* Saydam sarmalayıcı (ör. `print-hide` span'i) düğmeleri kendi
+     satırında hapsediyordu; `display: contents` onları doğrudan sarma
+     akışına verir. */
+  .screen-head-actions > span:not([class*="rounded"]):not([style*="background"]) {
+    display: contents;
+  }
+  .screen-head-actions > *,
+  .screen-head-actions > span > * {
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: center;
+  }
+  /* Segment seçici ve açılır liste kendi içeriğine göre kalsın. */
+  .screen-head-actions [role="tablist"] {
+    flex: 1 1 100%;
+  }
+  .screen-head-actions [role="tablist"] > * {
+    flex: 1 1 0;
   }
 }
 
@@ -834,8 +1015,60 @@ html[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
 
 @media (max-width: 560px) {
   :root {
-    --stat-cols: repeat(2, minmax(0, 1fr));
+    /* Ölçüm satırı zaten 1023px'te ikiye inmişti; burada yalnızca kart
+       ızgarası tek sütuna düşer — 560px'in altında iki oyun kartı yan yana
+       kapak görselini okunmaz hâle getiriyordu. */
     --card-cols: 1fr;
+  }
+}
+
+/* ─────────────────────────────────────────────
+   MOBİL TİPOGRAFİ TABANI
+
+   Masaüstü ölçeği bilinçli olarak sıkı: 9-10px'lik mono etiketler 27"
+   bir ekranda, kol mesafesinden okunabilir bir "veri fısıltısı". Aynı
+   değerler telefonda okunmuyor — ölçüm sırasında 9px'lik "bağımsızlık
+   3/5" etiketi bilgi değil leke.
+
+   Ölçek bileşen bileşen büyütülmüyor; taban burada bir kez yükseltiliyor.
+   Tailwind yardımcıları katmanlı (`@layer utilities`) üretildiği için
+   katmansız yazılan bu kurallar onları bastırır — `lg:` varyantları ayrı
+   sınıf adı taşıdığından masaüstü ölçeği olduğu gibi kalır.
+   ─────────────────────────────────────────── */
+@media (max-width: 1023px) {
+  .text-\[8px\]        { font-size: 10px; }
+  .text-\[8\.5px\]     { font-size: 10px; }
+  .text-\[9px\]        { font-size: 10.5px; }
+  .text-\[9\.5px\]     { font-size: 10.5px; }
+  .text-\[9\.6px\]     { font-size: 10.5px; }
+  .text-\[10px\]       { font-size: 11px; }
+  .text-\[10\.5px\]    { font-size: 11.5px; }
+  .text-\[11px\]       { font-size: 11.5px; }
+  .text-\[11\.5px\]    { font-size: 12px; }
+  .text-\[12px\]       { font-size: 12.5px; }
+  .text-\[12\.5px\]    { font-size: 13px; }
+
+  /* Versal mono etiketlerde harf aralığı da gevşetilmeli: 0.14em, 10px'in
+     altında sözcüğü harflere dağıtıyor. */
+  .numeral[class*="uppercase"] {
+    letter-spacing: 0.1em;
+  }
+}
+
+/* ── Dokunma hedefleri ──
+   Onay kutusu ve radyo, klavye/fare için 16px olarak çizilmişti; parmakla
+   16px'lik bir kareyi vurmak mümkün değil. Görsel boyut büyütülüyor ve
+   çevresine görünmez pay bırakılıyor. */
+@media (pointer: coarse) {
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-width: 22px;
+    min-height: 22px;
+  }
+  /* Etiketin tamamı vurulabilir olsun — satır yüksekliği 44px'e çıkar. */
+  label:has(> input[type="checkbox"]),
+  label:has(> input[type="radio"]) {
+    min-height: 44px;
   }
 }
 
@@ -910,7 +1143,9 @@ html[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    overflow-y: auto;
+    /* Kaydırma dışarıdaki tek kapta toplanıyor; burada ikinci bir kaydırma
+       yüzeyi açmak parmağın hangi katmanı sürükleyeceğini belirsizleştiriyordu. */
+    overflow-y: visible;
   }
   /* Bloklar yatay değil dikey akar; gün başlığı üstte kalır. */
   .plan-day-blocks {
@@ -971,32 +1206,7 @@ html[data-theme='light'] .section-games {
   animation: skeleton-wave 1.6s ease-in-out infinite;
 }
 
-/* ── Gradient border glow on hover ── */
-.glow-border {
-  position: relative;
-}
-.glow-border::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  background: linear-gradient(135deg, rgba(43, 98, 245,0.3), rgba(77, 125, 255,0.2), rgba(6,182,214,0.2));
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: -1;
-}
-.glow-border:hover::before {
-  opacity: 1;
-}
 
-/* ── Premium card hover lift ── */
-.card-hover {
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease, border-color 0.3s ease;
-}
-.card-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-elevated);
-}
 
 /* ── Surface primitive ──
    Uygulama ve landing'deki her kart bu temeli paylaşır; kenarlık,
@@ -1025,7 +1235,7 @@ html[data-theme='light'] .section-games {
   box-shadow: var(--shadow-lg);
 }
 @media (prefers-reduced-motion: reduce) {
-  .surface-interactive:hover, .card-hover:hover { transform: none; }
+  .surface-interactive:hover { transform: none; }
 }
 
 /* ── Page fade-in transition ── */
@@ -1037,19 +1247,6 @@ html[data-theme='light'] .section-games {
   animation: page-fade-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* ── Pulse dot for live indicators ── */
-@keyframes pulse-ring {
-  0% { transform: scale(1); opacity: 1; }
-  100% { transform: scale(2.2); opacity: 0; }
-}
-.pulse-dot::after {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: 50%;
-  background: currentColor;
-  animation: pulse-ring 1.8s ease-out infinite;
-}
 
 /* ── Game Result Screen Animations ── */
 @keyframes result-overlay-in {
@@ -1251,214 +1448,18 @@ html[data-theme='light'] .section-games {
   outline-offset: 2px;
 }
 
-/* ─────────────────────────────────────────────
-   MOBILE UTILITIES
-   ─────────────────────────────────────────────── */
-
-/* Horizontal scroll snap for mobile tab bars */
-.tab-scroll {
-  display: flex;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.tab-scroll::-webkit-scrollbar { display: none; }
-.tab-scroll > * { scroll-snap-align: start; }
-
-/* Mobile card — full-bleed with safe horizontal padding */
-.mobile-card {
-  border-radius: 1.25rem;
-  padding: 1rem;
-}
-@media (min-width: 640px) {
-  .mobile-card { padding: 1.5rem; }
-}
-
-/* Floating mobile action button */
-.mobile-fab {
-  position: fixed;
-  bottom: calc(4.5rem + env(safe-area-inset-bottom));
-  right: 1rem;
-  z-index: 40;
-  width: 3.25rem;
-  height: 3.25rem;
-  border-radius: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(43, 98, 245,0.45), 0 2px 8px rgba(0,0,0,0.3);
-  background: linear-gradient(135deg, #1b4bc4, #2b62f5);
-  color: #ffffff;
-  transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s ease;
-}
-.mobile-fab:active {
-  transform: scale(0.92);
-  box-shadow: 0 4px 12px rgba(43, 98, 245,0.4);
-}
-
-/* Bottom sheet swipe handle */
-.sheet-handle {
-  width: 2.5rem;
-  height: 0.25rem;
-  border-radius: 9999px;
-  background: rgba(255,255,255,0.15);
-  margin: 0.5rem auto 0;
-}
-
-/* Mobile section header (compact) */
-.section-header-mobile {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem 0.5rem;
-}
-
-/* Safe bottom padding for scrollable content (above bottom nav) */
-.safe-scroll-bottom {
-  padding-bottom: calc(5rem + env(safe-area-inset-bottom));
-}
-
-/* Pull-to-refresh shimmer on mobile */
+/* Dönen yükleme göstergesi (LoadingSkeleton).
+   Not: bu bloğun etrafındaki "mobil yardımcılar" ve "oyun tuvali" bölümleri
+   kaldırıldı — `.mobile-fab`, `.sheet-handle`, `.tab-scroll`, `.mobile-card`,
+   `.safe-scroll-bottom`, `.compact-card` ve `.game-canvas/.game-grid/.game-hud`
+   ailesi hiçbir bileşende kullanılmıyordu. Mobil düzen artık `.app-scroll`,
+   `.screen-head` ve `.arena*` üzerinden kuruluyor; ölü takım, sistemin
+   parçasıymış gibi okunup yanlış yönlendiriyordu. */
 @keyframes mobile-refresh {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
 .spin-refresh { animation: mobile-refresh 0.8s linear infinite; }
-
-/* ─────────────────────────────────────────────
-   GAME CANVAS — MOBILE RESPONSIVE
-   ─────────────────────────────────────────────── */
-
-/* Game container: fills available space, centers content */
-.game-canvas {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 0;
-  flex: 1;
-  padding: 0.75rem;
-  gap: 0.75rem;
-  overflow: hidden;
-  touch-action: manipulation;
-  -webkit-user-select: none;
-  user-select: none;
-}
-@media (min-width: 640px) {
-  .game-canvas { padding: 1.5rem; gap: 1rem; }
-}
-
-/* Game grid: responsive tile sizing */
-.game-grid {
-  display: grid;
-  gap: 0.5rem;
-  width: 100%;
-  max-width: min(100%, 400px);
-  aspect-ratio: 1;
-}
-@media (min-width: 640px) {
-  .game-grid { gap: 0.625rem; max-width: min(100%, 480px); }
-}
-@media (min-width: 1024px) {
-  .game-grid { gap: 0.75rem; max-width: 520px; }
-}
-
-/* Game tile: touch-friendly, responsive */
-.game-tile {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.75rem;
-  border: 1.5px solid rgba(255,255,255,0.08);
-  cursor: pointer;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-  min-height: 3rem;
-  position: relative;
-  overflow: hidden;
-}
-.game-tile:active {
-  transform: scale(0.94);
-}
-@media (min-width: 640px) {
-  .game-tile {
-    border-radius: 1rem;
-    min-height: 3.5rem;
-  }
-}
-
-/* Game HUD: compact overlay for score/timer/combo */
-.game-hud {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  max-width: min(100%, 480px);
-  padding: 0.5rem 0.75rem;
-  border-radius: 1rem;
-  background: var(--color-surface);
-  border: 1px solid var(--color-line);
-  font-size: 0.75rem;
-  gap: 0.5rem;
-}
-@media (min-width: 640px) {
-  .game-hud { padding: 0.625rem 1rem; font-size: 0.8125rem; }
-}
-
-/* Game HUD stat item */
-.game-hud-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.125rem;
-  min-width: 3rem;
-}
-.game-hud-stat-value {
-  font-size: 1.125rem;
-  font-weight: 800;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-.game-hud-stat-label {
-  font-size: 0.5625rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  opacity: 0.6;
-}
-
-/* Game result overlay: full-screen with backdrop blur */
-.game-result-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  background: rgba(8,13,12,0.88);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-/* Compact card for mobile views */
-.compact-card {
-  border-radius: 1rem;
-  padding: 0.75rem;
-  background: var(--color-surface);
-  border: 1px solid var(--color-line);
-}
-@media (min-width: 640px) {
-  .compact-card { padding: 1rem; border-radius: 1.25rem; }
-}
-@media (min-width: 1024px) {
-  .compact-card { padding: 1.25rem; border-radius: 1.5rem; }
-}
 
 /* ─────────────────────────────────────────────
    GAME ARENA
@@ -1566,6 +1567,14 @@ html[data-theme='light'] .section-games {
   text-transform: uppercase;
   color: rgba(248, 250, 252, 0.45);
 }
+/* 9px'lik versal etiket ("SERİ", "UZUNLUK") kol mesafesindeki bir masaüstü
+   ekranında okunuyor; telefonda seans sırasında okunmuyor. */
+@media (max-width: 1023px) {
+  .arena-stat-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+  }
+}
 .arena-stat-value {
   font-family: var(--font-numeric);
   font-variant-numeric: tabular-nums;
@@ -1658,7 +1667,10 @@ html[data-theme='light'] .section-games {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.75rem 1rem;
+  /* Seans tam ekranda oynanır: arena ekranın en altına dayanır ve eylem
+     çubuğu iPhone'un ana ekran çubuğunun altında kalıyordu. Güvenli alan
+     payı burada; çentiksiz cihazda env() sıfır döner. */
+  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid rgba(255, 255, 255, 0.07);
   background: rgba(7, 11, 22, 0.9);
   backdrop-filter: blur(12px);
@@ -1815,21 +1827,6 @@ html[data-theme='light'] .section-games {
    COMPACT LAYOUT UTILITIES
    ─────────────────────────────────────────────── */
 
-/* Responsive section padding */
-.section-padding {
-  padding: 1rem;
-}
-@media (min-width: 640px) {
-  .section-padding { padding: 1.5rem; }
-}
-@media (min-width: 1024px) {
-  .section-padding { padding: 2rem; }
-}
-
-/* Responsive gap system */
-.gap-responsive { gap: 0.5rem; }
-@media (min-width: 640px) { .gap-responsive { gap: 0.75rem; } }
-@media (min-width: 1024px) { .gap-responsive { gap: 1rem; } }
 
 /* Input fields: prevent zoom on iOS (16px minimum) */
 @media (pointer: coarse) {

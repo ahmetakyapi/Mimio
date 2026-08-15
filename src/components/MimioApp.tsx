@@ -2120,16 +2120,18 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         görünümlerde dış sarmalayıcı kaymaz, aksi hâlde iç içe iki kaydırma
         çubuğu oluşuyordu. Diğer görünümlerde kaydırma dış sarmalayıcıdadır.
 
-        Üstteki 56 px yalnızca mobil başlık çubuğu için: o çubuk `lg:hidden`
-        olduğundan masaüstünde padding de kaldırılır — daha önce sabit
-        veriliyordu ve masaüstünde üstte ölü bir bant bırakıp içeriğin son
-        56 px'ini görünür alanın dışına itiyordu.
+        Mobil krom payı (üst çubuk + alt sekme + güvenli alan) `.app-scroll`
+        sınıfından, `--chrome-top` / `--chrome-bottom` değişkenleriyle tek
+        yerden geliyor; masaüstünde ikisi de 0. Daha önce pay iki yerde
+        veriliyordu — hem burada (56px) hem `.app-shell`de (52+12) — ve
+        telefonda başlığın altında ~120px'lik ölü bir bant kalıyordu.
+
+        Tam ekran seansta krom hiç basılmaz, dolayısıyla pay da sıfırlanır.
       */}
       <div
-        className={`flex-1 min-h-0 pt-[calc(56px+env(safe-area-inset-top,0px))] lg:pt-0 ${
-          ownsScroll ? "overflow-hidden flex flex-col" : "overflow-y-auto pb-20 lg:pb-0 safe-scroll-bottom"
+        className={`flex-1 min-h-0 ${sessionFullscreen ? "" : "app-scroll"} ${
+          ownsScroll ? "overflow-hidden flex flex-col" : "overflow-y-auto"
         }`}
-        style={{ paddingLeft: "env(safe-area-inset-left, 0px)", paddingRight: "env(safe-area-inset-right, 0px)" }}
       >
 
         {/* ── Dashboard ── */}
@@ -3101,15 +3103,19 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 })()}
 
                 {/* ── Oyunun klinik künyesi — kapalıyken tek satır, açıkken kendi içinde kayar ── */}
-                <details ref={gameDetailsRef} className="mt-3 shrink-0 rounded-2xl border border-(--color-line) overflow-y-auto w-full max-h-[46%]" style={{ background: "var(--color-surface-strong)" }}>
-                  <summary className="flex items-center justify-between px-5 py-4 cursor-pointer list-none group select-none">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 15%, transparent), #4d7dff/10)", border: "1px solid color-mix(in srgb, var(--color-primary) 20%, transparent)" }}>
+                {/* Telefonda künye şeridi kapalıyken tek satıra iner: 40px'lik
+                    marka döşemesi, iki satırlık başlık ve kalın iç boşluk
+                    seans ekranından ~130px çalıyor, oyun tahtası eziliyordu.
+                    Bilgi kaybolmuyor — açıldığında hepsi yerinde. */}
+                <details ref={gameDetailsRef} className="mt-3 max-lg:mt-2 shrink-0 rounded-2xl max-lg:rounded-xl border border-(--color-line) overflow-y-auto w-full max-h-[46%]" style={{ background: "var(--color-surface-strong)" }}>
+                  <summary className="flex items-center justify-between px-5 py-4 max-lg:px-3 max-lg:py-2.5 cursor-pointer list-none group select-none">
+                    <div className="flex items-center gap-4 max-lg:gap-2.5 min-w-0">
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 max-lg:hidden" style={{ background: "linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 15%, transparent), #4d7dff/10)", border: "1px solid color-mix(in srgb, var(--color-primary) 20%, transparent)" }}>
                         <div className="w-2 h-7 rounded-full shrink-0" style={{ background: "linear-gradient(180deg, var(--color-primary), #4d7dff)" }} />
                       </div>
-                      <div>
-                        <span className="text-[10px] font-extrabold uppercase tracking-widest block mb-0.5" style={{ color: "var(--color-primary)" }}>{activeCategory.title}</span>
-                        <h3 className="text-(--color-text-strong) font-bold text-base m-0">{activeTab.title}</h3>
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-extrabold uppercase tracking-widest block mb-0.5 max-lg:hidden" style={{ color: "var(--color-primary)" }}>{activeCategory.title}</span>
+                        <h3 className="text-(--color-text-strong) font-bold text-base max-lg:text-[13px] m-0 truncate">{activeTab.title}</h3>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">

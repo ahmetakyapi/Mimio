@@ -95,7 +95,10 @@ export function OnboardingTour({ onComplete }: { onComplete?: () => void }) {
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 sm:p-6" style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}>
-      <div className="w-full max-w-[calc(100vw-32px)] sm:max-w-md rounded-3xl border overflow-hidden" style={{
+      {/* Kısa telefonlarda (568px) kart ekrandan uzun kalıyor ve "Sonraki"
+          düğmesi katlamanın altına düşüyordu; kart kendi içinde kayar.
+          `dvh` — iOS'ta `vh` adres çubuğu yüzünden fazla ölçüyor. */}
+      <div className="w-full max-w-[calc(100vw-32px)] sm:max-w-md max-h-[90dvh] overflow-y-auto overscroll-contain rounded-3xl border" style={{
         background: "var(--color-surface-strong)",
         borderColor: `${current.color}33`,
         boxShadow: `0 0 80px ${current.color}15`,

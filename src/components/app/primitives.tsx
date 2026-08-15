@@ -84,7 +84,10 @@ export function Avatar({
         height: size,
         borderRadius: radius,
         background: `var(--gradient-avatar-${variant})`,
-        fontSize: size * 0.37,
+        /* Oran tek başına küçük avatarlarda baş harfi 9-10px'e düşürüyordu;
+           degradenin üstünde o punto okunmuyor. 11px taban her boyutta
+           harfi okunur tutuyor, 30px'in üstünde oran yine devralıyor. */
+        fontSize: Math.max(11, size * 0.37),
         boxShadow: ring ? "0 0 0 2px var(--color-surface-strong)" : undefined,
       }}
     >
@@ -183,6 +186,15 @@ export function MeterBar({
 /**
  * Sparkline. `series` en az üç nokta ve bir miktar değişim taşımıyorsa
  * hiçbir şey çizmez — düz bir çizgi bilgi değil gürültüdür.
+ *
+ * `width` artık sabit ölçü değil, tavan: grafik kabına sığar, sığmadığında
+ * daralır. Sabit genişlik telefonda kartın dışına taşıyordu — 220px'lik bir
+ * eğri, 136px'lik "Ortalama Skor" kartının sağ kenarını aşıp ekrandan
+ * çıkıyordu. Ölçek `preserveAspectRatio="none"` ile yatayda serbest; çizgi
+ * kalınlığı `vector-effect` sayesinde her genişlikte 2px kalır.
+ *
+ * Uç nokta işaretçisi viewBox'ın tam kenarındaydı ve yarısı kırpılıyordu;
+ * yarıçap kadar içeri alındı.
  */
 export function Sparkline({
   series,
@@ -200,15 +212,23 @@ export function Sparkline({
   const min = Math.min(...series);
   if (max === min) return null;
 
-  const step = width / (series.length - 1);
+  const dotR = 3.2;
+  const inner = width - dotR;
+  const step = inner / (series.length - 1);
   const y = (v: number) => height - 3 - ((v - min) / (max - min)) * (height - 8);
   const pts = series.map((v, i) => `${(i * step).toFixed(1)} ${y(v).toFixed(1)}`);
   const line = `M${pts.join(" L")}`;
-  const area = `${line} L${width} ${height} L0 ${height} Z`;
+  const area = `${line} L${inner} ${height} L0 ${height} Z`;
   const gid = `spk-${id}`;
 
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="block shrink-0" aria-hidden="true">
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="none"
+      className="block w-full min-w-0"
+      style={{ maxWidth: width, height }}
+      aria-hidden="true"
+    >
       <defs>
         <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.28" />
@@ -216,8 +236,16 @@ export function Sparkline({
         </linearGradient>
       </defs>
       <path d={area} fill={`url(#${gid})`} />
-      <path d={line} fill="none" stroke="var(--color-primary)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx={width} cy={y(series[series.length - 1])} r={3.2} fill="var(--color-signature-to)" />
+      <path
+        d={line}
+        fill="none"
+        stroke="var(--color-primary)"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
+      <circle cx={inner} cy={y(series[series.length - 1])} r={dotR} fill="var(--color-signature-to)" />
     </svg>
   );
 }
@@ -271,7 +299,15 @@ export function Radar({
   const n = axes.length;
   const cx = size / 2;
   const cy = size / 2;
-  const R = size * 0.36;
+  /*
+   * Yarıçap 0.36'dan 0.30'a indi ve etiket halkası 1.24'ten 1.20'ye çekildi:
+   * eski değerlerde "Çalışma belleği" ve "İnce motor" etiketleri viewBox'ın
+   * dışına düşüyor, telefonda kartın sağından taşıyordu. Etiket punto'su da
+   * viewBox biriminde 9.5'ten 11'e çıktı — dar kapta 9.5 birim gerçek
+   * ekranda 9px'in altına iniyordu.
+   */
+  const R = size * 0.3;
+  const labelRatio = 1.2;
   const gid = `rad-${id}`;
 
   const point = (i: number, ratio: number) => {
@@ -299,15 +335,19 @@ export function Radar({
         return <circle key={ax.label} cx={px} cy={py} r={3.2} fill="var(--color-primary)" />;
       })}
       {axes.map((ax, i) => {
-        const [px, py] = point(i, 1.24);
+        const [rawX, py] = point(i, labelRatio);
+        const anchor = rawX > cx + 4 ? "start" : rawX < cx - 4 ? "end" : "middle";
+        /* Etiket hiçbir zaman viewBox'ın dışına çıkmasın: uçlarda hizaya
+           göre kenardan 2 birim içeride durur. */
+        const px = anchor === "start" ? Math.min(rawX, size - 2) : anchor === "end" ? Math.max(rawX, 2) : rawX;
         return (
           <text
             key={ax.label}
             x={px}
             y={py}
-            textAnchor={px > cx + 4 ? "start" : px < cx - 4 ? "end" : "middle"}
+            textAnchor={anchor}
             dominantBaseline="middle"
-            style={{ font: "600 9.5px var(--font-sans)", fill: "var(--color-text-soft)" }}
+            style={{ font: "600 11px var(--font-sans)", fill: "var(--color-text-soft)" }}
           >
             {ax.label}
           </text>
@@ -335,15 +375,15 @@ export function ScreenHeader({
   readonly actions?: ReactNode;
 }) {
   return (
-    <div className="flex items-end justify-between gap-6 flex-wrap">
-      <div className="min-w-0">
-        <div className="numeral text-[10px] font-medium uppercase tracking-[0.16em] text-(--color-text-soft) mb-2">
+    <div className="screen-head">
+      <div className="screen-head-main">
+        <div className="numeral text-[10px] font-medium uppercase tracking-[0.16em] text-(--color-text-soft) mb-1.5 lg:mb-2">
           {eyebrow}
         </div>
-        <h1 className="m-0 mb-[7px] text-[clamp(1.3125rem,1.9vw,1.75rem)] leading-[1.1] text-(--color-text-strong)">{title}</h1>
-        {sub && <p className="m-0 text-[12.5px] text-(--color-text-body)">{sub}</p>}
+        <h1 className="m-0 mb-[6px] text-[clamp(1.25rem,1.9vw,1.75rem)] leading-[1.15] text-(--color-text-strong)">{title}</h1>
+        {sub && <p className="m-0 text-[12.5px] leading-[1.45] text-(--color-text-body)">{sub}</p>}
       </div>
-      {actions && <div className="flex items-center gap-2.5 shrink-0">{actions}</div>}
+      {actions && <div className="screen-head-actions">{actions}</div>}
     </div>
   );
 }

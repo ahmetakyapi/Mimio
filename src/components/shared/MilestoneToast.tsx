@@ -101,7 +101,13 @@ export function MilestoneContainer() {
   if (items.length === 0) return null;
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[99998] flex flex-col items-center gap-3 pointer-events-none w-full max-w-md px-4 max-h-[80vh] overflow-y-auto" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
+    /* `80vh` iOS'ta görünür alandan büyük; `dvh` gerçek yüksekliği ölçer.
+       Üst pay mobil başlık çubuğunun (52px + güvenli alan) altına iner —
+       kutlama bildirimi ekranın adını kapatmasın. */
+    <div
+      className="fixed left-1/2 -translate-x-1/2 z-[99998] flex flex-col items-center gap-3 pointer-events-none w-full max-w-md px-4 max-h-[80dvh] overflow-y-auto"
+      style={{ top: "calc(var(--chrome-top, 0px) + 12px)" }}
+    >
       {items.map((item) => {
         const Icon = item.icon;
         return (

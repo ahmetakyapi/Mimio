@@ -109,7 +109,10 @@ export function ClientComparison({ clientA, clientB, sessions, onClose }: Client
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)" }} onClick={onClose}>
-      <div className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-3xl border" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)", boxShadow: "0 0 80px rgba(0,0,0,0.3)" }} onClick={e => e.stopPropagation()}>
+      {/* `85vh` iOS'ta adres çubuğu gizlenirken görünür alandan büyük çıkıyor
+          ve modalın alt ucu ekranın dışında kalıyordu; `dvh` gerçek yüksekliği
+          ölçer. Alt güvenli alan payı da modalın içine, kaydırmanın sonuna. */}
+      <div className="w-full max-w-lg max-h-[85dvh] overflow-y-auto overscroll-contain rounded-3xl border pb-[env(safe-area-inset-bottom)]" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)", boxShadow: "0 0 80px rgba(0,0,0,0.3)" }} onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="sticky top-0 z-10 rounded-t-3xl border-b" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}>
           <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${colorA}, ${colorB})` }} />
@@ -121,7 +124,7 @@ export function ClientComparison({ clientA, clientB, sessions, onClose }: Client
           </div>
 
           {/* Client headers */}
-          <div className="px-4 pb-3 flex gap-4">
+          <div className="px-4 pb-3 flex gap-4 max-sm:gap-2">
             {[
               { client: clientA, color: colorA, metrics: metricsA },
               { client: clientB, color: colorB, metrics: metricsB },

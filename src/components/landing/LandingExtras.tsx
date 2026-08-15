@@ -304,26 +304,38 @@ export function StickyWalkthrough() {
     });
   }, [smoothProgress, steps]);
 
+  /*
+    Adım başına ayrılan kaydırma payı. Dört adım × 110vh, ekranın üçte
+    birini neredeyse boş geçiyordu: adım listesi zaten tamamen görünür,
+    kaydırma yalnızca sağdaki önizlemeyi değiştiriyor. 58vh, her adıma
+    kendi anını veren en kısa mesafe.
+
+    Telefonda sabitleme (`sticky` + `h-screen` + `overflow-hidden`) tümüyle
+    kapalı: tek sütuna inen liste + önizleme bir ekrana sığmadığı için ilk
+    adım üst çubuğun altında, önizleme kartı da ortasından kesiliyordu.
+    Mobilde bölüm normal akışta dikey olarak uzuyor; `lg`ten itibaren
+    sabitlenen sahne aynen geri geliyor.
+  */
   return (
     <section id="walkthrough" className="relative">
-      {/*
-        Adım başına ayrılan kaydırma payı. Dört adım × 110vh, ekranın üçte
-        birini neredeyse boş geçiyordu: adım listesi zaten tamamen görünür,
-        kaydırma yalnızca sağdaki önizlemeyi değiştiriyor. 58vh, her adıma
-        kendi anını veren en kısa mesafe.
-      */}
-      <div ref={ref} style={{ height: `${steps * 58}vh` }}>
-        <div className="sticky top-0 h-screen max-h-[46rem] flex items-center overflow-hidden">
+      <div
+        ref={ref}
+        className="h-auto lg:h-[var(--wt-track)]"
+        style={{ "--wt-track": `${steps * 58}dvh` } as React.CSSProperties}
+      >
+        <div className="relative lg:sticky lg:top-0 lg:h-[100dvh] lg:max-h-[46rem] flex items-center overflow-visible lg:overflow-hidden max-lg:py-12">
           <div className="absolute inset-0 -z-10 dot-grid opacity-70" />
 
-          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+          {/* Yan boşluk sayfanın kendi oluğuyla aynı: telefonda adım kartları
+              üstteki/alttaki bölümlerle aynı hizadan başlar. */}
+          <div className="max-w-7xl mx-auto w-full px-[var(--gutter)] lg:px-6 grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
             {/* Left — step list */}
             <div className="flex flex-col gap-4">
               <div className="inline-flex w-fit items-center gap-2 text-xs font-bold tracking-widest text-(--color-primary) uppercase bg-(--color-primary-light) px-4 py-2 rounded-full">
                 <Sparkles size={12} />
                 Platform Turu
               </div>
-              <h2 className="text-3xl md:text-5xl font-extrabold text-(--color-text-strong) leading-[1.05] tracking-tight">
+              <h2 className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl font-extrabold text-(--color-text-strong) leading-[1.05] tracking-tight">
                 Dört Adımda
                 <br />
                 <span className="accent-line">Dijital Terapi Akışı</span>
@@ -355,7 +367,12 @@ export function StickyWalkthrough() {
                         x: isActive ? 0 : -6,
                       }}
                       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                      className="relative flex gap-4 rounded-2xl border p-4 sm:p-5 text-left w-full cursor-pointer"
+                      /* Sönümleme yalnızca sabitlenmiş sahnede anlamlı: orada
+                         tek bir adım "şu an" demek. Telefonda dört adım da
+                         akışta yan yana okunduğu için üçünü %50 opaklıkta
+                         bırakmak metni okunmaz yapıyordu — mobilde framer'ın
+                         satır içi opaklık/kaydırma değerleri iptal edilir. */
+                      className="relative flex gap-3 sm:gap-4 rounded-2xl border p-4 sm:p-5 text-left w-full cursor-pointer max-lg:opacity-100! max-lg:transform-none!"
                       style={{
                         borderColor: isActive ? `${w.accent}55` : "var(--color-line)",
                         background: isActive
@@ -381,14 +398,17 @@ export function StickyWalkthrough() {
                         <Icon size={18} style={{ color: w.accent }} />
                       </div>
                       <div className="min-w-0">
+                        {/* Başlık telefonda kesilmez: 320px'te "Haftalık Planı
+                            Oluşturun" tek satıra sığmıyor, `truncate` adımın
+                            yarısını yiyordu. Mobilde sarar, `lg`te kısalır. */}
                         <div className="flex items-center gap-2 mb-1">
                           <span
-                            className="text-[10px] font-extrabold tracking-[0.18em] uppercase"
+                            className="shrink-0 text-[10px] font-extrabold tracking-[0.18em] uppercase"
                             style={{ color: w.accent }}
                           >
                             0{i + 1}
                           </span>
-                          <h3 className="font-bold text-(--color-text-strong) text-base sm:text-lg truncate">
+                          <h3 className="font-bold text-(--color-text-strong) text-base sm:text-lg lg:truncate">
                             {w.title}
                           </h3>
                         </div>
@@ -715,18 +735,28 @@ const COMPARISON = [
   { label: "Raporlama süresi", mimio: "Dakikalar içinde", traditional: "Saatler" },
 ] as const;
 
+/**
+ * Karşılaştırma tablosu.
+ *
+ * Üç sütunlu ızgara (özellik | Mimio | geleneksel) 320px'lik ekranda her
+ * hücreye ~90px bırakıyordu: "El yazısı / kayıp riski" satır başına tek
+ * kelimeye düşüyor, "Geleneksel" başlığı kabın dışında kalıyordu (ölçüm:
+ * hücrelerde 10–55px taşma, kapta 76px kırpma).
+ *
+ * Telefonda tablo bırakılıp özellik başına bir karta dönülüyor: özellik adı
+ * üstte, iki değer altında kendi etiketiyle. `lg`ten itibaren ızgara aynen
+ * geri geliyor — masaüstü görünümü değişmiyor.
+ */
 export function ComparisonSection() {
   return (
-    <section id="comparison" className="section relative overflow-hidden">
-      <div className="absolute inset-0 -z-10">
-      </div>
+    <section id="comparison" className="section max-sm:py-10! relative overflow-hidden">
       <div className="shell" style={{ maxWidth: "68rem" }}>
-        <div className="text-center mb-12 md:mb-16">
+        <div className="text-center mb-10 md:mb-16">
           <span className="inline-flex items-center gap-2 text-xs font-bold tracking-widest text-(--color-primary) uppercase mb-4 bg-(--color-primary-light) px-4 py-2 rounded-full">
             <Microscope size={12} />
             Neden Mimio?
           </span>
-          <h2 className="text-3xl md:text-5xl font-extrabold text-(--color-text-strong) leading-tight mb-4">
+          <h2 className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl font-extrabold text-(--color-text-strong) leading-tight mb-4">
             Geleneksel vs.{" "}
             <span className="accent-line">
               Dijital Ergoterapi
@@ -738,13 +768,14 @@ export function ComparisonSection() {
         </div>
 
         <div className="relative glass-strong rounded-3xl overflow-hidden">
-          {/* Header row */}
-          <div className="grid grid-cols-[1.3fr_1fr_1fr] border-b border-(--color-line)">
-            <div className="p-4 sm:p-6 text-xs sm:text-sm font-bold uppercase tracking-widest text-(--color-text-muted)">
+          {/* Sütun başlıkları yalnızca tablo düzeninde anlam taşır; kart
+              düzeninde her satır kendi etiketini kendi taşıyor. */}
+          <div className="hidden lg:grid grid-cols-[1.3fr_1fr_1fr] border-b border-(--color-line)">
+            <div className="p-6 text-sm font-bold uppercase tracking-widest text-(--color-text-muted)">
               Özellik
             </div>
-            <div className="p-4 sm:p-6 relative">
-                            <div className="relative flex items-center gap-2">
+            <div className="p-6 relative">
+              <div className="relative flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs"
                   style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }}>
                   M
@@ -754,7 +785,7 @@ export function ComparisonSection() {
                 </span>
               </div>
             </div>
-            <div className="p-4 sm:p-6 flex items-center gap-2">
+            <div className="p-6 flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-(--color-surface) border border-(--color-line) flex items-center justify-center text-(--color-text-muted) text-xs">
                 <FileText size={13} />
               </div>
@@ -771,27 +802,37 @@ export function ComparisonSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-40px" }}
               transition={{ duration: 0.4, delay: i * 0.06 }}
-              className="grid grid-cols-[1.3fr_1fr_1fr] border-b border-(--color-line) last:border-0"
+              className="flex flex-col gap-2.5 p-4 sm:p-5 lg:grid lg:grid-cols-[1.3fr_1fr_1fr] lg:gap-0 lg:p-0 border-b border-(--color-line) last:border-0"
             >
-              <div className="p-4 sm:p-6 text-sm font-semibold text-(--color-text-body)">
+              <div className="text-sm font-semibold text-(--color-text-strong) lg:text-(--color-text-body) lg:p-6">
                 {row.label}
               </div>
-              <div className="p-4 sm:p-6 relative">
-                                <div className="relative flex items-start gap-2">
+              <div className="relative lg:p-6">
+                <div className="relative flex items-start gap-2">
                   <ShieldCheck
                     size={16}
                     className="shrink-0 mt-0.5 text-[#19d19b]"
                   />
-                  <span className="text-sm font-semibold text-(--color-text-strong)">
-                    {row.mimio}
-                  </span>
+                  <div className="min-w-0">
+                    <span className="block lg:hidden text-[10px] font-bold uppercase tracking-[0.14em] text-(--color-text-muted) mb-0.5">
+                      Mimio
+                    </span>
+                    <span className="text-sm font-semibold text-(--color-text-strong)">
+                      {row.mimio}
+                    </span>
+                  </div>
                 </div>
               </div>
-              <div className="p-4 sm:p-6 flex items-start gap-2">
+              <div className="flex items-start gap-2 lg:p-6">
                 <Minus size={16} className="shrink-0 mt-0.5 text-(--color-text-muted)" />
-                <span className="text-sm text-(--color-text-soft)">
-                  {row.traditional}
-                </span>
+                <div className="min-w-0">
+                  <span className="block lg:hidden text-[10px] font-bold uppercase tracking-[0.14em] text-(--color-text-muted) mb-0.5">
+                    Geleneksel
+                  </span>
+                  <span className="text-sm text-(--color-text-soft)">
+                    {row.traditional}
+                  </span>
+                </div>
               </div>
             </motion.div>
           ))}

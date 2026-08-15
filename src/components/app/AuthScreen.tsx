@@ -114,12 +114,45 @@ export function AuthScreen({
         </span>
       </div>
 
-      {/* ── Sağ: form ── */}
-      <div className="flex-1 flex items-center justify-center min-w-0" style={{ padding: "40px 24px" }}>
+      {/*
+        ── Sağ: form ──
+        Telefonda dikey ortalama yerine üstten hizalama: klavye açılınca
+        görünür alan yarıya iniyor, ortalanmış blok yukarı kayıp başlığı
+        ekranın dışına atıyordu. Üstten hizalı blokta klavye yalnızca alt
+        kısmı örtüyor, tarayıcı odaklı alanı kendi kaydırmasıyla getiriyor.
+        Kenar boşluğu 24px'ten 20px'e iniyor (320px'te form 272 → 280px)
+        ve güvenli alan payı ekleniyor — yatay çevrilen çentikli telefonda
+        form kenarın altına giriyordu.
+      */}
+      <div className="flex-1 flex items-start lg:items-center justify-center min-w-0 pt-[max(26px,env(safe-area-inset-top))] pb-[max(30px,env(safe-area-inset-bottom))] pl-[max(20px,env(safe-area-inset-left))] pr-[max(20px,env(safe-area-inset-right))] lg:pt-10 lg:pb-10 lg:pl-6 lg:pr-6">
         <div className="w-full" style={{ maxWidth: 380 }}>
+          {/*
+            Marka satırı yalnızca telefonda. Sol tanıtım sütunu `hidden
+            lg:flex` olduğu için mobilde ekranda ne marka ne de tanıtım
+            sayfasına dönüş kalıyordu; form kimliksiz bir kutu olarak
+            boşlukta duruyordu. `p-0` yok, böylece dokunmatikte ortak
+            44px kuralı satırı vurulabilir yapıyor.
+          */}
+          <button
+            type="button"
+            onClick={onHome}
+            /* Marka kilidi aynı zamanda "ana sayfaya dön" düğmesi; 30px'lik
+               döşemeyle birlikte satır 31px kalıyor ve parmakla vurulamıyordu.
+               Dikey pay hedefi 44px'e taşır, negatif yatay pay hizayı korur. */
+            className="lg:hidden flex items-center gap-2.5 self-start bg-transparent border-none cursor-pointer mb-5 -mx-2 px-2 py-1.5 rounded-xl"
+          >
+            <span className="tile-signature grid place-items-center shrink-0" style={{ width: 30, height: 30, borderRadius: 10 }}>
+              <BlockMark size={16} color="#ffffff" />
+            </span>
+            <span className="text-left">
+              <span className="font-display block text-[14px] font-bold tracking-[-0.02em] text-(--color-text-strong) leading-tight">Mimio</span>
+              <span className="numeral block text-[9.5px] text-(--color-text-soft) leading-tight">Ölçüm temelli ergoterapi</span>
+            </span>
+          </button>
+
           {/* Sekmeler */}
           <div
-            className="flex p-[3px] rounded-xl mb-7"
+            className="flex p-[3px] rounded-xl mb-5 lg:mb-7"
             style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}
             role="tablist"
           >
@@ -164,7 +197,10 @@ export function AuthScreen({
             </div>
           )}
 
-          <form className="flex flex-col gap-3" onSubmit={submit}>
+          {/* Kayıt formunda dört alan var; telefonda 12px'lik aralık alanları
+              tek bir gri bloğa dönüştürüyordu. Mobilde 16px, masaüstünde
+              eski ritim. */}
+          <form className="flex flex-col gap-4 lg:gap-3" onSubmit={submit}>
             {mode === "register" && (
               <>
                 <label className="flex flex-col gap-1.5">
@@ -202,11 +238,16 @@ export function AuthScreen({
                   required
                   autoComplete={mode === "login" ? "current-password" : "new-password"}
                 />
+                {/* Göz düğmesi masaüstünde ikon boyu kadardı (17px); parmakla
+                    vurulamıyordu. Telefonda 44×44 ve alanın sağ kenarına
+                    yaslı — kutu tam olarak inputun 44px'lik sağ boşluğunu
+                    kaplıyor, yazının üstüne binmiyor. Masaüstü ölçüsü `lg:`
+                    ile aynen geri alınıyor. */}
                 <button
                   type="button"
                   onClick={() => setReveal((r) => !r)}
                   aria-label={reveal ? "Şifreyi gizle" : "Şifreyi göster"}
-                  className="absolute right-3 grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-soft) hover:text-(--color-text-body)"
+                  className="absolute right-0 h-11 w-11 lg:right-3 lg:h-auto lg:w-auto grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-soft) hover:text-(--color-text-body)"
                 >
                   {reveal ? <EyeOff size={17} /> : <Eye size={17} />}
                 </button>
@@ -215,18 +256,20 @@ export function AuthScreen({
 
             {mode === "login" && (
               <div className="flex items-center justify-between mt-0.5">
+                {/* `p-0` ortak 44px kuralının dışında bıraktığı için bu onay
+                    kutusunun vurulabilir kutusu 88×18'di. Telefonda satır
+                    yüksekliğini elle 44'e çekiyor, kareyi de 17 → 20px
+                    büyütüyoruz; masaüstünde ikisi de eski ölçüsünde. */}
                 <button
                   type="button"
                   role="checkbox"
                   aria-checked={remember}
                   onClick={() => setRemember((r) => !r)}
-                  className="flex items-center gap-2 text-[11.5px] font-medium text-(--color-text-body) cursor-pointer bg-transparent border-none p-0"
+                  className="flex items-center gap-2 min-h-11 lg:min-h-0 text-[11.5px] font-medium text-(--color-text-body) cursor-pointer bg-transparent border-none p-0"
                 >
                   <span
-                    className="grid place-items-center shrink-0"
+                    className="grid place-items-center shrink-0 w-5 h-5 lg:w-[17px] lg:h-[17px]"
                     style={{
-                      width: 17,
-                      height: 17,
                       borderRadius: 5,
                       background: remember ? "var(--gradient-signature)" : "transparent",
                       border: remember ? "none" : "1px solid var(--color-line-strong)",
@@ -277,6 +320,23 @@ export function AuthScreen({
             Devam ederek <span className="text-(--color-text-soft)">Kullanım Koşulları</span> ve{" "}
             <span className="text-(--color-text-soft)">Gizlilik Politikası</span>'nı kabul etmiş olursun.
           </p>
+
+          {/* Sistem durumu yalnızca sol panelde duruyordu, o da mobilde
+              gizli — "verim nerede duruyor" sorusu telefonda da soruluyor.
+              Tek satırlık karşılığını forma ekliyoruz. */}
+          <span className="lg:hidden flex items-center justify-center gap-2 mt-4">
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                background: dbOnline ? "var(--color-accent-green)" : "var(--color-accent-amber)",
+              }}
+            />
+            <span className="numeral text-[10px] text-(--color-text-soft)">
+              {dbOnline ? "Tüm sistemler çalışıyor · TLS şifreli" : "Yerel mod · veriler bu tarayıcıda"}
+            </span>
+          </span>
         </div>
       </div>
     </div>

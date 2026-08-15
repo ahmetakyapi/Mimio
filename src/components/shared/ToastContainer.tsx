@@ -45,8 +45,16 @@ export function ToastContainer() {
   };
   const icons = { success: "✓", info: "ℹ", warning: "⚠" };
   return (
+    /*
+      Alt pay sabit değil, kromdan türer.
+      `bottom-20` (80px) alt sekme çubuğunun üstünde duruyordu ama güvenli
+      alanı saymıyordu: çentikli telefonlarda bildirim çubuğun içine giriyor,
+      ana ekran çizgisinin üstünde sıkışıyordu. `--chrome-bottom` sekme
+      çubuğu + güvenli alanı birlikte taşır ve masaüstünde sıfırdır.
+    */
     <div
-      className="fixed bottom-20 left-4 right-4 sm:left-auto sm:right-4 sm:bottom-24 lg:bottom-6 lg:right-6 z-[99999] flex flex-col gap-2 pointer-events-none"
+      className="fixed left-4 right-4 sm:left-auto sm:right-4 lg:right-6 z-[99999] flex flex-col gap-2 pointer-events-none"
+      style={{ bottom: "calc(var(--chrome-bottom, 0px) + 16px)" }}
       role="status"
       aria-live="polite"
       aria-atomic="true">

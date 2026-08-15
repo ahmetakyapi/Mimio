@@ -170,10 +170,13 @@ export function WeeklyPlanScreen({
         }
       />
 
-      {/* Alan açıklaması — ızgaradaki renklerin sözlüğü */}
+      {/* Alan açıklaması — ızgaradaki renklerin sözlüğü.
+          Telefonda satır aralığı daralır ve "güne tıklayarak seans ekle"
+          ipucu düşer: dokunmatikte her günün kendi "Seans Ekle" düğmesi
+          görünür durumda, ipucu ise tek başına bir satır yiyordu. */}
       <div
-        className="flex items-center gap-4 flex-wrap"
-        style={{ padding: "10px 16px", borderRadius: 13, background: "var(--color-surface)", border: "1px solid var(--color-line)" }}
+        className="flex items-center gap-x-3.5 gap-y-1.5 flex-wrap px-[13px] py-[9px] lg:gap-4 lg:px-4 lg:py-[10px]"
+        style={{ borderRadius: 13, background: "var(--color-surface)", border: "1px solid var(--color-line)" }}
       >
         {DOMAIN_ORDER.map((k) => (
           <span key={k} className="inline-flex items-center gap-1.5 text-[11px] font-medium text-(--color-text-body)">
@@ -181,7 +184,7 @@ export function WeeklyPlanScreen({
             {DOMAIN_META[k].label}
           </span>
         ))}
-        <span className="ml-auto inline-flex items-center gap-[7px] text-[11px] font-medium text-(--color-text-soft)">
+        <span className="ml-auto hidden lg:inline-flex items-center gap-[7px] text-[11px] font-medium text-(--color-text-soft)">
           <GripVertical size={13} />
           Güne Tıklayarak Seans Ekle
         </span>
@@ -201,27 +204,55 @@ export function WeeklyPlanScreen({
             {DAY_KEYS.map((day, i) => {
               const isToday = day === todayKey;
               const list = blocks[day];
+              /*
+               * Boş gün telefonda tek satıra iner: başlık solda, "Seans Ekle"
+               * sağda. Önceden boş gün de başlık + tam genişlikte kesikli
+               * kutu olarak ~95px yer kaplıyordu; beş boş günde ekranın
+               * yarısı boş kutuydu ve dolu günleri aşağı itiyordu.
+               * Masaüstünde sütun düzeni aynen korunur (`lg:` geri alma).
+               */
+              const empty = list.length === 0;
               return (
-                <div key={day} className="plan-day flex flex-col gap-[7px] min-h-0">
-                  <div style={{ padding: "0 2px 7px", borderBottom: `1px solid ${isToday ? "var(--color-primary)" : "var(--color-line-soft)"}` }}>
+                <div
+                  key={day}
+                  className={`plan-day flex min-h-0 ${
+                    empty
+                      ? "max-lg:flex-row max-lg:items-center max-lg:gap-2.5 lg:flex-col lg:gap-[7px]"
+                      : "flex-col gap-[7px]"
+                  }`}
+                >
+                  <div
+                    className={`px-[2px] ${
+                      isToday ? "border-(--color-primary)" : "border-(--color-line-soft)"
+                    } ${empty ? "max-lg:flex-1 max-lg:min-w-0 lg:border-b lg:pb-[7px]" : "border-b pb-[7px]"}`}
+                  >
                     <div className="flex items-baseline gap-[5px]">
-                      <span className={`text-[10.5px] font-semibold ${isToday ? "text-(--color-primary)" : "text-(--color-text-soft)"}`}>
+                      <span className={`text-[11px] lg:text-[10.5px] font-semibold ${isToday ? "text-(--color-primary)" : "text-(--color-text-soft)"}`}>
                         {DAY_LABELS[day]}
                       </span>
                       <span className="figure text-[15px] text-(--color-text-strong)">{dayDates[i].getDate()}</span>
                       {isToday && (
-                        <span className="numeral text-[8.5px] font-semibold text-(--color-primary) lg:hidden">bugün</span>
+                        <span className="numeral text-[9.5px] lg:text-[8.5px] font-semibold text-(--color-primary) lg:hidden">bugün</span>
                       )}
-                      <span className="numeral ml-auto text-[8px] font-medium text-(--color-text-muted) lg:hidden">
-                        {list.length} seans
-                      </span>
+                      {/* Sayaç telefonda 8px'te okunmuyordu; küçük bir sayı
+                          rozeti oldu. Boş günde hiç basılmaz — yanındaki
+                          "Seans Ekle" satırı zaten "burada seans yok" diyor. */}
+                      {!empty && (
+                        <span className="numeral ml-auto shrink-0 rounded-full px-[7px] py-[2px] text-[9.5px] font-semibold text-(--color-text-soft) lg:hidden" style={{ background: "var(--color-surface-strong)" }}>
+                          {list.length} seans
+                        </span>
+                      )}
                     </div>
                     <span className="numeral hidden lg:block mt-[3px] text-[8px] font-medium text-(--color-text-muted)">
                       {list.length} seans
                     </span>
                   </div>
 
-                  <div className="plan-day-blocks flex flex-col gap-[7px] flex-1 min-h-0 overflow-y-auto">
+                  <div
+                    className={`plan-day-blocks flex flex-col gap-[7px] min-h-0 overflow-y-auto ${
+                      empty ? "max-lg:flex-none lg:flex-1" : "flex-1"
+                    }`}
+                  >
                     {list.map((b) => (
                       <PlanBlock
                         key={`${b.clientId}-${b.index}-${b.entry.gameKey}`}
@@ -231,20 +262,24 @@ export function WeeklyPlanScreen({
                       />
                     ))}
 
+                    {/* Telefonda düğme etiketli: tek başına "+" ikonu ne
+                        yaptığını söylemiyordu, üstelik 12px'lik hedefti. */}
                     <button
                       type="button"
                       onClick={() => setComposer(day)}
                       disabled={clients.length === 0}
                       aria-label={`${DAY_LABELS[day]} gününe seans ekle`}
-                      className="grid place-items-center cursor-pointer transition-colors text-(--color-text-muted) hover:text-(--color-primary) disabled:opacity-40 disabled:cursor-not-allowed"
+                      className={`flex items-center justify-center gap-1.5 cursor-pointer transition-colors text-(--color-text-muted) hover:text-(--color-primary) disabled:opacity-40 disabled:cursor-not-allowed ${
+                        empty ? "max-lg:p-[7px_14px] lg:p-[7px]" : "p-[7px]"
+                      }`}
                       style={{
-                        padding: 7,
                         borderRadius: 9,
                         border: "1px dashed var(--color-line-strong)",
                         background: "transparent",
                       }}
                     >
                       <Plus size={12} />
+                      <span className="text-[11px] font-semibold whitespace-nowrap lg:hidden">Seans Ekle</span>
                     </button>
                   </div>
                 </div>
@@ -301,15 +336,15 @@ export function WeeklyPlanScreen({
             {balance.map((b) => (
               <div key={b.key} className="mb-[9px]">
                 <div className="flex justify-between mb-1">
-                  <span className="text-[11px] font-semibold text-(--color-text-body)">{b.label}</span>
-                  <span className="numeral text-[10.5px] text-(--color-text-soft)">%{b.pct}</span>
+                  <span className="text-[12px] lg:text-[11px] font-semibold text-(--color-text-body)">{b.label}</span>
+                  <span className="numeral text-[11px] lg:text-[10.5px] text-(--color-text-soft)">%{b.pct}</span>
                 </div>
                 <MeterBar pct={Math.min(100, b.pct * 2)} height={5} color={b.color} />
               </div>
             ))}
             {underserved && (
               <div
-                className="text-[10.5px] leading-[1.45]"
+                className="text-[11.5px] lg:text-[10.5px] leading-[1.45]"
                 style={{
                   padding: "9px 11px",
                   borderRadius: 10,
@@ -335,10 +370,10 @@ export function WeeklyPlanScreen({
                   style={{ padding: "8px 0", borderBottom: "1px solid var(--color-line-soft)", border: "none", borderBottomWidth: 1, borderBottomStyle: "solid" }}
                 >
                   <span className="flex-1 min-w-0">
-                    <span className="block text-[11.5px] font-bold text-(--color-text-strong) truncate group-hover:text-(--color-primary) transition-colors">
+                    <span className="block text-[12px] lg:text-[11.5px] font-bold text-(--color-text-strong) truncate group-hover:text-(--color-primary) transition-colors">
                       {p.name}
                     </span>
-                    <span className="block text-[10px] text-(--color-text-soft) mt-px truncate">
+                    <span className="block text-[10.5px] lg:text-[10px] text-(--color-text-soft) mt-px truncate">
                       {p.duration} hafta · {p.frequency}
                     </span>
                   </span>
@@ -380,11 +415,17 @@ function PlanBlock({
   const color = domainColor(block.entry.gameKey);
   const done = block.entry.completed;
 
+  /*
+   * Telefonda blok üç satırdan (saat / ad / oyun) iki satıra iner: saat
+   * solda sabit genişlikte bir sütun, ad ve oyun sağda. On sekiz seanslık
+   * bir haftada bu satır başına ~20px kazandırıyor, üstelik ajanda gibi
+   * okunuyor. Masaüstünde sütun 55px'e kadar daralabildiği için orada
+   * dikey yığın korunur.
+   */
   return (
     <div
-      className="relative group"
+      className="relative group max-lg:p-[5px_8px] lg:p-[8px_9px] max-lg:flex max-lg:items-center max-lg:gap-2"
       style={{
-        padding: "8px 9px",
         borderRadius: 10,
         background: `color-mix(in srgb, ${color} 12%, transparent)`,
         border: `1px solid color-mix(in srgb, ${color} 26%, transparent)`,
@@ -394,25 +435,48 @@ function PlanBlock({
       <button
         type="button"
         onClick={onStart}
-        className="w-full text-left bg-transparent border-none p-0 cursor-pointer"
+        /* `p-0` bu düğmeyi 44px dokunma hedefi kuralının dışında bırakıyor
+           (kural cümle içi metin bağlantıları için böyle); seansı başlatan
+           asıl hedef bu olduğu için yüksekliği telefonda elle veriyoruz. */
+        className="w-full text-left bg-transparent border-none p-0 cursor-pointer max-lg:flex max-lg:min-h-11 max-lg:min-w-0 max-lg:flex-1 max-lg:items-center max-lg:gap-2.5"
         aria-label={`${block.clientName} · ${gameTitle(block.entry.gameKey)} seansını başlat`}
       >
         {block.entry.time && (
-          <span className="numeral block text-[9px] font-semibold mb-[3px]" style={{ color }}>
+          <span
+            className="numeral block text-[10.5px] lg:text-[9px] font-semibold mb-[3px] lg:mb-[3px] max-lg:mb-0 max-lg:shrink-0"
+            style={{ color }}
+          >
             {block.entry.time}
           </span>
         )}
-        <span className="block text-[11px] font-bold text-(--color-text-strong) truncate">{block.clientName}</span>
-        <span className="block text-[9.5px] text-(--color-text-soft) mt-px truncate">
-          {gameTitle(block.entry.gameKey)}
+        <span className="block min-w-0 max-lg:flex-1">
+          {/* Masaüstünde sütun 55px: ad kesilmek zorunda. Telefonda kesmek
+              yerine iki satıra sarar — "Mehmet Ali Kayalıoğ…" 320px'te
+              kimin seansı olduğunu söylemiyordu. */}
+          <span className="block text-[12px] lg:text-[11px] font-bold text-(--color-text-strong) lg:truncate max-lg:line-clamp-2 max-lg:leading-[1.25]">{block.clientName}</span>
+          <span className="block text-[10.5px] lg:text-[9.5px] text-(--color-text-soft) mt-px truncate">
+            {gameTitle(block.entry.gameKey)}
+          </span>
         </span>
       </button>
+      {/*
+        Kaldırma düğmesi masaüstünde üzerine gelince beliriyor; dokunmatikte
+        "üzerine gelme" diye bir şey olmadığı için telefonda hiç ulaşılamıyor
+        ve 16px'lik hedef zaten dokunulamayacak kadar küçüktü. Küçük ekranda
+        akışa girer, hep görünür durur.
+      */}
       <button
         type="button"
         onClick={onRemove}
         aria-label="Bloğu kaldır"
-        className="absolute opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity grid place-items-center cursor-pointer border-none"
-        style={{ top: 4, right: 4, width: 16, height: 16, borderRadius: 5, background: "var(--color-surface-strong)", color: "var(--color-text-soft)" }}
+        className={
+          "grid place-items-center cursor-pointer border-none transition-opacity text-(--color-text-muted) " +
+          "lg:absolute lg:top-1 lg:right-1 lg:w-4 lg:h-4 lg:rounded-[5px] lg:bg-(--color-surface-strong) lg:text-(--color-text-soft) " +
+          "lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100 " +
+          /* Telefonda dolu bir yüzey değil sade bir glif: 44px'lik hedef
+             kalır ama blok içindeki ağırlık danışan adında kalır. */
+          "max-lg:static max-lg:shrink-0 max-lg:w-11 max-lg:h-11 max-lg:bg-transparent max-lg:[&>svg]:w-[15px] max-lg:[&>svg]:h-[15px]"
+        }
       >
         <X size={10} />
       </button>
@@ -451,9 +515,13 @@ function Composer({
   return (
     <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label={`${dayLabel} gününe seans ekle`}>
       <button type="button" aria-label="Kapat" onClick={onClose} className="absolute inset-0 cursor-default border-none" style={{ background: "rgba(5,11,22,0.5)", backdropFilter: "blur(4px)" }} />
+      {/* Telefonda pencere yüksekliği 568px'e kadar inebiliyor; klavye
+          açılınca form alta taşıyordu. Kutu ekranı aşarsa kendi içinde
+          kayar (`overflow-auto`; `overflow-y-auto` sınıfı mobilde kabuk
+          kuralıyla serbest bırakıldığı için burada işe yaramaz). */}
       <div
-        className="relative w-full max-w-md rounded-[18px]"
-        style={{ padding: 22, background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}
+        className="relative w-full max-w-md rounded-[18px] p-[17px] lg:p-[22px] max-h-[calc(100dvh-2rem)] overflow-auto"
+        style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}
       >
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -489,7 +557,9 @@ function Composer({
             </select>
           </label>
 
-          <div className="grid grid-cols-2 gap-3">
+          {/* Saat + hedef telefonda alt alta: 320px'te iki sütun saat
+              alanını 116px'e düşürüyor, yerleşik saat seçici kırpılıyordu. */}
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             <label className="flex flex-col gap-1.5">
               <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Saat</span>
               <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={field} style={fieldStyle} />

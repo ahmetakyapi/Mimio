@@ -108,12 +108,25 @@ export function LiveSessionScreen({
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* ── Üst çubuk ── */}
+      {/*
+        ── Üst çubuk ──
+
+        Masaüstünde tek satır: çıkış · danışan · [sayaç, zorluk, duraklat,
+        bitir]. Telefonda bu dizilim 390px'i 272px, 320px'i 342px aşıyordu —
+        sağdaki küme `shrink-0` taşıdığı için "Seansı Bitir" ve zorluk
+        seçici ekranın dışında kalıyor, seans yarıda kesilemiyordu.
+
+        Küçük ekranda çubuk sarar ve üç bölüme ayrılır:
+          1. çıkış + danışan (kalan genişliği paylaşır, ad kırpılır)
+          2. sayaç + duraklat + bitir
+          3. zorluk seçici, tam genişlikte
+        Yükseklik de sabit 68px olmaktan çıkar; seans tam ekran olduğu için
+        üst güvenli alan payı buradan verilir.
+      */}
       <header
-        className="flex items-center gap-4 shrink-0"
+        className="flex items-center gap-4 shrink-0 max-lg:flex-wrap max-lg:gap-y-2 max-lg:gap-x-2 max-lg:px-3 max-lg:py-2.5 lg:h-[68px] lg:px-[26px]"
         style={{
-          height: 68,
-          padding: "0 26px",
+          paddingTop: "max(env(safe-area-inset-top, 0px), 10px)",
           background: "var(--color-chrome-header)",
           borderBottom: "1px solid var(--color-line)",
           backdropFilter: "blur(18px)",
@@ -131,20 +144,23 @@ export function LiveSessionScreen({
         </button>
 
         {client && (
-          <span className="flex items-center gap-[11px] ml-1.5 min-w-0">
+          <span className="flex items-center gap-[11px] ml-1.5 min-w-0 flex-1 max-lg:ml-0 max-lg:gap-2">
             <Avatar name={client.displayName} id={client.id} size={38} radius={12} />
             <span className="min-w-0">
-              <span className="block text-[14px] font-bold text-(--color-text-strong) truncate leading-tight">
+              <span className="block text-[14px] max-lg:text-[13px] font-bold text-(--color-text-strong) truncate leading-tight">
                 {client.displayName}
               </span>
+              {/* Telefonda üç parça alt satıra sığmıyor; zorluk zaten aşağıdaki
+                  seçicide, alt başlık da rayda duruyor — burada oyun adı yeter. */}
               <span className="block text-[11px] text-(--color-text-soft) truncate leading-tight">
-                {gameTitle} · {gameSubtitle} · {difficulty}
+                <span className="max-lg:hidden">{gameTitle} · {gameSubtitle} · {difficulty}</span>
+                <span className="lg:hidden">{gameTitle}</span>
               </span>
             </span>
           </span>
         )}
 
-        <div className="ml-auto flex items-center gap-3 shrink-0">
+        <div className="ml-auto flex items-center gap-3 shrink-0 max-lg:ml-0 max-lg:w-full max-lg:flex-wrap max-lg:gap-2">
           {/* Canlı sayaç — seansın tek nabzı, bu yüzden tint zeminde */}
           <span
             className="flex items-center gap-2"
@@ -160,8 +176,10 @@ export function LiveSessionScreen({
             <span className="numeral text-[15px] font-semibold text-(--color-text-strong)">{elapsed}</span>
           </span>
 
+          {/* Zorluk seçici telefonda kendi satırını alır ve üç seçenek eşit
+              böler; sayaç/duraklat/bitir üçlüsüyle yan yana 320px'e sığmıyordu. */}
           <div
-            className="flex p-[3px] rounded-[10px]"
+            className="flex p-[3px] rounded-[10px] max-lg:order-last max-lg:w-full"
             style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}
             role="radiogroup"
             aria-label="Zorluk"
@@ -175,7 +193,7 @@ export function LiveSessionScreen({
                   role="radio"
                   aria-checked={on}
                   onClick={() => onDifficultyChange(d)}
-                  className={`text-[11px] font-semibold cursor-pointer border-none transition-colors ${on ? "text-white" : "text-(--color-text-soft) bg-transparent hover:text-(--color-text-body)"}`}
+                  className={`text-[11px] font-semibold cursor-pointer border-none transition-colors max-lg:flex-1 ${on ? "text-white" : "text-(--color-text-soft) bg-transparent hover:text-(--color-text-body)"}`}
                   style={{ padding: "6px 11px", borderRadius: 7, background: on ? "var(--gradient-signature)" : undefined }}
                 >
                   {d}
@@ -195,11 +213,13 @@ export function LiveSessionScreen({
             {paused ? <Play size={15} fill="currentColor" className="text-(--color-primary)" /> : <Pause size={15} className="text-(--color-text-body)" />}
           </button>
 
+          {/* Seansı bitirmek her zaman tek dokunuş uzakta kalmalı: telefonda
+              sayaç satırının kalan genişliğini alır, asla kırpılmaz. */}
           <button
             type="button"
             onClick={onFinish}
-            className="btn-signature text-[12.5px] font-semibold cursor-pointer"
-            style={{ padding: "11px 19px", borderRadius: 12 }}
+            className="btn-signature text-[12.5px] font-semibold cursor-pointer px-[19px] py-[11px] max-lg:flex-1 max-lg:min-w-0 max-lg:px-3 max-lg:whitespace-nowrap"
+            style={{ borderRadius: 12 }}
           >
             Seansı Bitir
           </button>

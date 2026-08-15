@@ -91,8 +91,23 @@ export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
 
   const stepTitle = step === 1 ? "Danışanı Tanımla" : step === 2 ? "Terapi Hedefini Belirle" : "Bağımsızlık Düzeyini İşaretle";
 
+  /*
+   * Kenar payı 16px + çentik/ana ekran çubuğu payı.
+   *
+   * Modal `.app-shell` dışında render edildiği için kabuğun `--chrome-*`
+   * payları buraya ulaşmıyor; güvenli alanı kendisi hesaplamak zorunda.
+   * Masaüstünde `env()` sıfır döner, dolayısıyla eski `p-4` ile birebir
+   * aynı sonuç çıkar.
+   */
+  const inset = {
+    paddingTop: "calc(16px + env(safe-area-inset-top, 0px))",
+    paddingRight: "calc(16px + env(safe-area-inset-right, 0px))",
+    paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
+    paddingLeft: "calc(16px + env(safe-area-inset-left, 0px))",
+  } as const;
+
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label="Yeni danışan">
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={inset} role="dialog" aria-modal="true" aria-label="Yeni danışan">
       <button
         type="button"
         aria-label="Kapat"
@@ -101,11 +116,22 @@ export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
         style={{ background: "rgba(5,11,22,0.5)", backdropFilter: "blur(4px)" }}
       />
 
+      {/*
+       * Genişlik artık sınıfla veriliyor.
+       *
+       * Önceki hâl `width: 700` + `maxWidth: "100%"` idi ve kap
+       * `grid place-items-center` olduğu için örtük sütun ögenin
+       * max-content ölçüsüne (700px) genişliyordu: `100%` de 700px'e
+       * çözülüyor, telefonda kutu ekranın 380px sağına taşıyordu. Alt
+       * eylem çubuğundaki "Devam" düğmesi tamamen görünmez oluyor,
+       * akış telefonda ilk adımda kilitleniyordu. Flex + `w-full`
+       * yüzdeyi gerçek kap genişliğine bağlar.
+       *
+       * `vh` yerine `dvh`: iOS'ta adres çubuğu açıkken 90vh ekrandan taşar.
+       */}
       <div
-        className="relative flex flex-col max-h-[90vh]"
+        className="relative flex flex-col w-full max-w-[700px] min-w-0 max-h-[90dvh]"
         style={{
-          width: 700,
-          maxWidth: "100%",
           borderRadius: 26,
           background: "var(--color-surface-strong)",
           border: "1px solid var(--color-line-strong)",
@@ -113,10 +139,12 @@ export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
         }}
       >
         {/* Başlık + adım göstergesi */}
-        <div className="flex items-start justify-between gap-4" style={{ padding: "24px 26px 0" }}>
-          <div>
+        <div className="flex items-start justify-between gap-4 max-lg:gap-2 px-[26px] pt-6 max-lg:px-4 max-lg:pt-4">
+          <div className="min-w-0">
             <Eyebrow>Adım {step} / 3</Eyebrow>
-            <h2 className="font-display m-0 mt-1.5 text-[18px] font-bold tracking-[-0.025em] text-(--color-text-strong)">
+            {/* 18px başlık dar ekranda iki satıra kırılıp kapatma düğmesini
+                aşağı itiyordu; telefonda 16px tek satırda kalıyor. */}
+            <h2 className="font-display m-0 mt-1.5 text-[18px] max-lg:text-[16px] font-bold tracking-[-0.025em] text-(--color-text-strong)">
               {stepTitle}
             </h2>
           </div>
@@ -131,7 +159,16 @@ export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
           </button>
         </div>
 
-        <div className="flex items-center gap-2" style={{ padding: "18px 26px" }}>
+        {/*
+         * Adım göstergesi.
+         *
+         * Üç rakam + üç etiket + iki bağlantı çizgisi 320px'de ~400px
+         * tutuyordu: "3 Bağımsızlık" ekranın dışında kalıyor, terapist
+         * kaçıncı adımda olduğunu göremiyordu. Telefonda yalnızca içinde
+         * bulunulan adımın etiketi yazılır (hangi adımda olunduğu zaten
+         * "Adım n / 3" satırında da var), bağlantı çizgileri kısalır.
+         */}
+        <div className="flex items-center gap-2 max-lg:gap-1.5 flex-wrap px-[26px] py-[18px] max-lg:px-4 max-lg:py-3.5">
           {[
             { n: 1, label: "Kimlik" },
             { n: 2, label: "Hedef" },
@@ -140,12 +177,10 @@ export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
             const done = step > s.n;
             const on = step === s.n;
             return (
-              <span key={s.n} className="flex items-center gap-2">
+              <span key={s.n} className="flex items-center gap-2 max-lg:gap-1.5">
                 <span
-                  className="numeral grid place-items-center text-[11px] font-bold shrink-0"
+                  className="numeral grid place-items-center text-[11px] font-bold shrink-0 w-7 h-7"
                   style={{
-                    width: 28,
-                    height: 28,
                     borderRadius: 10,
                     background: done || on ? "var(--gradient-signature)" : "var(--color-surface)",
                     color: done || on ? "#fff" : "var(--color-text-soft)",
@@ -154,16 +189,18 @@ export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
                 >
                   {done ? <Check size={13} strokeWidth={3} /> : s.n}
                 </span>
-                <span className={`text-[12px] ${on ? "font-semibold text-(--color-text-strong)" : "font-medium text-(--color-text-soft)"}`}>
+                <span
+                  className={`text-[12px] ${on ? "font-semibold text-(--color-text-strong)" : "font-medium text-(--color-text-soft) max-lg:hidden"}`}
+                >
                   {s.label}
                 </span>
-                {i < 2 && <span className="mx-1.5" style={{ width: 26, height: 1, background: "var(--color-line-strong)" }} />}
+                {i < 2 && <span className="mx-1.5 max-lg:mx-1 h-px w-[26px] max-lg:w-2 shrink-0" style={{ background: "var(--color-line-strong)" }} />}
               </span>
             );
           })}
         </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0" style={{ padding: "0 26px 4px" }}>
+        <div className="flex-1 overflow-y-auto min-h-0 px-[26px] pb-1 max-lg:px-4">
           {/* ── Adım 1: Kimlik ── */}
           {step === 1 && (
             <div className="flex flex-col gap-3.5">

@@ -59,6 +59,27 @@ import {
  */
 const SCROLL_SPRING = { stiffness: 90, damping: 26, mass: 0.35, restDelta: 0.0005 } as const;
 
+/*
+ * Dar ekran sorgusu.
+ *
+ * Giriş animasyonlarının yönü telefonda değişmek zorunda: yatay kayan
+ * (`slideRight`) kartlar masaüstünde sütun genişliğinin içinde kalıyor,
+ * telefonda ise kart tam genişlikte olduğu için 48px'lik başlangıç ötelemesi
+ * bölümün sağ kenarından taşıyor ve `overflow-hidden` tarafından kırpılıyordu
+ * — kart ekrana "yarım" giriyordu. Sorgu bir kez burada çözülür.
+ */
+function useNarrowViewport() {
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const sync = () => setNarrow(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  return narrow;
+}
+
 /* ── Scroll Progress Bar ── */
 function ScrollProgress() {
   const { scrollYProgress } = useScroll();
@@ -242,6 +263,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { theme, toggle: toggleTheme } = useTheme();
   const [scrolled, setScrolled] = useState(false);
+  const narrow = useNarrowViewport();
 
   /*
    * Kahraman paralaksı.
@@ -272,9 +294,18 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
   // Mobil menü açıkken: scroll kilidi, Esc ile kapatma, odak tuzağı
   const menuRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
+    /*
+     * Kilit yalnızca `body` üzerindeydi; telefonda kaydırma kabı çoğu zaman
+     * `documentElement` olduğu için menü açıkken arkadaki sayfa kayabiliyor,
+     * menü kapandığında kullanıcı bambaşka bir yerde uyanıyordu. İki öge de
+     * kilitleniyor; panelin kendi kaydırması `overscroll-contain` ile
+     * zincirlenmiyor.
+     */
+    document.documentElement.style.overflow = menuOpen ? "hidden" : "";
     document.body.style.overflow = menuOpen ? "hidden" : "";
     if (!menuOpen) {
       return () => {
+        document.documentElement.style.overflow = "";
         document.body.style.overflow = "";
       };
     }
@@ -306,14 +337,25 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => {
+      document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [menuOpen]);
 
+  /*
+   * Önce menü kapanır, sonra kaydırılır. Ters sırada kaydırma emri kilit
+   * hâlâ takılıyken veriliyordu; tarayıcı emri yutunca menüdeki bağlantı
+   * hiçbir yere gitmiyordu. İki kare bekleniyor: biri React'in kilidi
+   * kaldırması, diğeri düzenin oturması için.
+   */
   const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     setMenuOpen(false);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+      });
+    });
   };
 
   return (
@@ -336,11 +378,17 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
           background: scrolled ? "var(--color-chrome-nav)" : "transparent",
         }}
       >
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        {/* Telefonda yatay pay `--gutter` ile aynı: marka, altındaki kahraman
+            metniyle aynı çizgiden başlasın. 24px'lik sabit pay 4px'lik bir
+            kayma bırakıyor, üst çubuk içerikten kopuk duruyordu. */}
+        <div className="max-w-7xl mx-auto px-(--gutter) sm:px-6 h-16 flex items-center justify-between">
+          {/* Marka aynı zamanda "başa dön" düğmesi; 30px'lik kilit tek başına
+              parmak hedefi olarak kısa kalıyordu. Dikey pay negatif kenar
+              boşluğuyla dengelenir, çubuğun yüksekliği değişmez. */}
           <button
             type="button"
             onClick={() => scrollTo("top")}
-            className="flex items-center gap-2.5"
+            className="flex items-center gap-2.5 py-2 -my-2 pr-2 -mr-2"
           >
             <BrandLockup size={30} />
           </button>
@@ -403,7 +451,12 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
         </div>
       </motion.header>
 
-      {/* ── Mobile Menu ── */}
+      {/* ── Mobile Menu ──
+          Panel üç parçaya ayrıldı: sabit başlık, kayan bağlantı listesi, sabit
+          eylem şeridi. Önceden hepsi tek bir esnek sütundu; içerik ekrandan
+          uzun olduğunda satırlar büzülüp 24px'e iniyor (parmakla vurulamaz
+          hâle geliyor), en alttaki "Hemen Başla" ekranın dışında kalıyordu.
+          Artık yalnızca liste kayar; eylemler her boyda görünür kalır. */}
       <AnimatePresence>
         {menuOpen && (
           <motion.div
@@ -415,36 +468,38 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[60] backdrop-blur-2xl flex flex-col p-6 gap-2"
+            className="fixed inset-0 z-[60] backdrop-blur-2xl flex flex-col px-(--gutter) pt-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
             style={{ background: "var(--color-page-bg)" }}
           >
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between shrink-0 mb-4">
               <div className="flex items-center gap-2.5">
                 <BrandLockup size={30} />
               </div>
               <button
                 type="button"
                 onClick={() => setMenuOpen(false)}
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-(--color-text-soft) border border-(--color-line)"
+                className="w-11 h-11 rounded-xl flex items-center justify-center text-(--color-text-soft) border border-(--color-line)"
                 aria-label="Menüyü kapat"
               >
                 <X size={18} />
               </button>
             </div>
-            {NAV_LINKS.map((l, i) => (
-              <motion.button
-                type="button"
-                key={l.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-                onClick={() => scrollTo(l.id)}
-                className="text-left text-lg font-semibold text-(--color-text-body) py-4 px-4 rounded-xl hover:bg-(--color-surface) transition-colors"
-              >
-                {l.label}
-              </motion.button>
-            ))}
-            <div className="flex flex-col gap-3 mt-6">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain flex flex-col gap-1 -mx-2 px-2">
+              {NAV_LINKS.map((l, i) => (
+                <motion.button
+                  type="button"
+                  key={l.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  onClick={() => scrollTo(l.id)}
+                  className="shrink-0 text-left text-[17px] font-semibold text-(--color-text-body) py-3.5 px-4 rounded-xl hover:bg-(--color-surface) transition-colors"
+                >
+                  {l.label}
+                </motion.button>
+              ))}
+            </div>
+            <div className="flex flex-col gap-2.5 shrink-0 pt-4 mt-2 border-t border-(--color-line)">
               <button
                 type="button"
                 onClick={() => {
@@ -480,7 +535,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       */}
       <section
         ref={heroRef}
-        className="pt-24 md:pt-28 pb-12 md:pb-16 relative overflow-hidden"
+        className="pt-[5.25rem] sm:pt-24 md:pt-28 pb-10 sm:pb-12 md:pb-16 relative overflow-hidden"
       >
         <PaperBackdrop />
 
@@ -488,17 +543,20 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
           style={{ y: heroY, opacity: heroOpacity }}
           className="shell shell-wide relative"
         >
-          <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-y-12 lg:gap-x-14 xl:gap-x-20 items-center">
+          <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-y-8 sm:gap-y-12 lg:gap-x-14 xl:gap-x-20 items-center">
             {/* Sol — tez */}
             <motion.div
               initial="hidden"
               animate="visible"
               variants={stagger}
-              className="flex flex-col items-start gap-6"
+              className="flex flex-col items-start gap-4 sm:gap-6"
             >
+              {/* Rozet telefonda 11.5px + 0.14em ile 34 karakteri iki satıra
+                  bölüp kutuya dönüşüyordu; dar ekranda punto ve harf aralığı
+                  gevşetildi. */}
               <motion.span
                 variants={fadeUp}
-                className="inline-flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-(--color-primary) px-3.5 py-1.5 rounded-full"
+                className="inline-flex items-center gap-2 sm:gap-2.5 text-[10.5px] tracking-[0.06em] px-3 py-1 sm:text-[11px] sm:tracking-[0.14em] sm:px-3.5 sm:py-1.5 font-bold uppercase text-(--color-primary) rounded-full"
                 style={{
                   background: "var(--color-primary-light)",
                   border: "1px solid var(--color-line-strong)",
@@ -511,9 +569,13 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 Ölçüm temelli ergoterapi platformu
               </motion.span>
 
+              {/* Taban 44px'ti: 320px'lik ekranda başlık dört satıra bölünüp
+                  kahraman bölümünü tek başına dolduruyor, birincil eylem
+                  katlamanın altına düşüyordu. Dar ekranda ölçek viewport'la
+                  akar, 640px'ten itibaren eski ölçek aynen devam eder. */}
               <motion.h1
                 variants={fadeUp}
-                className="text-[2.75rem] sm:text-6xl lg:text-[4.25rem] xl:text-7xl font-extrabold text-(--color-text-strong) leading-[1.02] m-0"
+                className="text-[clamp(1.75rem,8vw,2.75rem)] sm:text-6xl lg:text-[4.25rem] xl:text-7xl font-extrabold text-(--color-text-strong) leading-[1.06] sm:leading-[1.02] m-0"
               >
                 {/* Vurgu tek kelimede: dokümanda yalnızca "oyuna" renkleniyor.
                     İki kelimeyi birden boyamak cümlenin ağırlık merkezini
@@ -525,18 +587,22 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
 
               <motion.p
                 variants={fadeUp}
-                className="text-lg md:text-xl text-(--color-text-soft) leading-relaxed max-w-[34rem] m-0"
+                className="text-[0.9375rem] sm:text-lg md:text-xl text-(--color-text-soft) leading-relaxed max-w-[34rem] m-0"
               >
                 Çocukların bilişsel ve motor becerilerini geliştirirken
                 eğlenmelerini sağlayın. İlerlemeyi dijital olarak takip edin,
                 seansları kişiselleştirin.
               </motion.p>
 
+              {/* `.magnetic` sarmalayıcısı `inline-flex`: içindeki `w-full`
+                  sarmalayıcının içerik genişliğini ölçü alıyordu, birincil
+                  eylem telefonda ikincil eylemden dar çıkıp zayıf görünüyordu.
+                  Genişlik sarmalayıcıya da veriliyor. */}
               <motion.div
                 variants={fadeUp}
-                className="flex items-center gap-3 flex-wrap w-full sm:w-auto"
+                className="flex items-center gap-2.5 sm:gap-3 flex-wrap w-full sm:w-auto"
               >
-                <Magnetic strength={14}>
+                <Magnetic strength={14} className="w-full sm:w-auto">
                   <button
                     type="button"
                     onClick={onRegister}
@@ -602,27 +668,28 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               elle yazılmış sayı yoktur (bkz. lib/platform-stats.ts).
               Kutulanmış ızgara yerine editoryal ölçek: üstte tek bir
               kılcal çizgi, sütunlar arasında dikey ayraç. */}
+          {/* Dikey ayraç ve sol pay sıraya (i > 0) bağlıydı. Telefonda ızgara
+              iki sütuna indiğinde üçüncü kutu satır başına düşüyor, ayracı
+              ekranın sol kenarına yapışıyor, metni içeri kaçıyordu. Ayraç
+              artık yalnızca dört sütunlu düzende (lg) çizilir; telefonda
+              sütunları boşluk ayırır. */}
           <motion.div
             initial="hidden"
             animate="visible"
             variants={stagger}
-            className="mt-14 md:mt-20 pt-7 grid grid-cols-2 lg:grid-cols-4"
+            className="mt-9 sm:mt-14 md:mt-20 pt-5 sm:pt-7 grid grid-cols-2 gap-x-4 gap-y-5 lg:grid-cols-4 lg:gap-0"
             style={{ borderTop: "1px solid var(--color-line-strong)" }}
           >
-            {HERO_STATS.map((stat, i) => (
+            {HERO_STATS.map((stat) => (
               <motion.div
                 key={stat.label}
                 variants={fadeUp}
-                className="flex flex-col gap-1.5 py-2 px-0 lg:px-6 first:lg:pl-0 last:lg:pr-0"
-                style={{
-                  borderLeft: i > 0 ? "1px solid var(--color-line)" : undefined,
-                  paddingLeft: i > 0 ? "1.5rem" : undefined,
-                }}
+                className="flex flex-col gap-1.5 py-2 min-w-0 lg:px-6 lg:border-l lg:border-(--color-line) lg:first:pl-0 lg:first:border-l-0 lg:last:pr-0"
               >
-                <p className="numeral text-4xl sm:text-[2.75rem] font-extrabold text-(--color-text-strong) leading-none m-0">
+                <p className="numeral text-[1.75rem] sm:text-[2.75rem] font-extrabold text-(--color-text-strong) leading-none m-0">
                   {stat.value}
                 </p>
-                <p className="text-sm font-semibold text-(--color-text-body) m-0">
+                <p className="text-[0.8125rem] sm:text-sm font-semibold text-(--color-text-body) m-0">
                   {stat.label}
                 </p>
                 <p className="text-xs text-(--color-text-muted) leading-snug m-0">
@@ -637,8 +704,12 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       {/* ══════════════════════ TRUST MARQUEE ══════════════════════ */}
       <TrustMarquee />
 
-      {/* ══════════════════════ FEATURES — BENTO GRID w/ TILT ══════════════════════ */}
-      <section id="features" className="section relative">
+      {/* ══════════════════════ FEATURES — BENTO GRID w/ TILT ══════════════════════
+          Telefonda bölüm payı 48px: on bir bölümlük bir tanıtım sayfasında
+          yalnızca bölüm araları bir ekran boyundan fazla yer tutuyordu. Dar
+          ekranda pay 40px'e iner (`!` şart: `.section` katmansız yazılmış,
+          katmanlı yardımcıyı bastırıyor). 640px'ten itibaren ritim aynı. */}
+      <section id="features" className="section max-sm:py-10! relative">
         <div className="shell shell-wide">
           <motion.div
             initial="hidden"
@@ -649,14 +720,17 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
           >
             <motion.div
               variants={fadeUp}
-              className="inline-flex items-center gap-2 text-xs font-bold tracking-widest text-(--color-primary) uppercase mb-4 bg-(--color-primary-light) px-4 py-2 rounded-full"
+              className="inline-flex items-center gap-2 text-[10.5px] sm:text-xs font-bold tracking-widest text-(--color-primary) uppercase mb-3 sm:mb-4 bg-(--color-primary-light) px-3 py-1.5 sm:px-4 sm:py-2 rounded-full"
             >
               <Sparkles size={12} />
               Özellikler
             </motion.div>
+            {/* Bölüm başlıkları telefonda 36px basıyordu: iki satırlık başlık
+                üç satıra taşıp ekranın yarısını yiyordu. Ölçek 640px'in
+                altında viewport'la akar, üstünde eski değerinde kalır. */}
             <motion.h2
               variants={fadeUp}
-              className="text-4xl md:text-5xl font-extrabold text-(--color-text-strong) mb-5"
+              className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl font-extrabold text-(--color-text-strong) mb-3 sm:mb-5"
             >
               İhtiyacınız Olan
               <br />
@@ -664,7 +738,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             </motion.h2>
             <motion.p
               variants={fadeUp}
-              className="text-(--color-text-soft) text-lg max-w-xl mx-auto"
+              className="text-(--color-text-soft) text-[0.9375rem] sm:text-lg max-w-xl mx-auto"
             >
               Mimio, ergoterapistlerin klinik süreçlerini kolaylaştırmak için
               tasarlandı.
@@ -690,7 +764,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                   }
                 >
                   <TiltCard max={7}>
-                    <div className="glass rounded-2xl sm:rounded-3xl p-5 sm:p-7 relative overflow-hidden group cursor-default transition-all duration-300 h-full">
+                    <div className="glass rounded-2xl sm:rounded-3xl p-[1.125rem] sm:p-7 relative overflow-hidden group cursor-default transition-all duration-300 h-full">
                       <div
                         className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10"
                         style={{
@@ -698,7 +772,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                         }}
                       />
                       <div
-                        className="tilt-layer-1 w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center mb-4 sm:mb-5 transition-transform duration-300"
+                        className="tilt-layer-1 w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center mb-3 sm:mb-5 transition-transform duration-300"
                         style={{
                           background: `${f.color}18`,
                           border: `1px solid ${f.color}25`,
@@ -706,10 +780,10 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                       >
                         <Icon size={22} style={{ color: f.color }} />
                       </div>
-                      <h3 className="tilt-layer-2 font-bold text-(--color-text-strong) mb-2 text-lg">
+                      <h3 className="tilt-layer-2 font-bold text-(--color-text-strong) mb-1.5 sm:mb-2 text-[1.0625rem] sm:text-lg">
                         {f.title}
                       </h3>
-                      <p className="text-sm text-(--color-text-soft) leading-relaxed">
+                      <p className="text-[0.8125rem] sm:text-sm text-(--color-text-soft) leading-relaxed">
                         {f.body}
                       </p>
                       <div
@@ -729,7 +803,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       <StickyWalkthrough />
 
       {/* ══════════════════════ PLATFORM PREVIEW ══════════════════════ */}
-      <section className="section relative overflow-hidden">
+      <section className="section max-sm:py-10! relative overflow-hidden">
         <div className="absolute inset-0 -z-10">
         </div>
         <div className="shell">
@@ -738,18 +812,18 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             whileInView="visible"
             viewport={REVEAL_VIEWPORT}
             variants={stagger}
-            className="text-center mb-14"
+            className="text-center mb-8 sm:mb-14"
           >
             <motion.div
               variants={fadeUp}
-              className="inline-flex items-center gap-2 text-xs font-bold tracking-widest text-(--color-primary) uppercase mb-4 bg-(--color-primary-light) px-4 py-2 rounded-full"
+              className="inline-flex items-center gap-2 text-[10.5px] sm:text-xs font-bold tracking-widest text-(--color-primary) uppercase mb-3 sm:mb-4 bg-(--color-primary-light) px-3 py-1.5 sm:px-4 sm:py-2 rounded-full"
             >
               <LayoutDashboard size={12} />
               Platform Arayüzü
             </motion.div>
             <motion.h2
               variants={fadeUp}
-              className="text-3xl md:text-4xl font-extrabold text-(--color-text-strong) mb-4"
+              className="text-[clamp(1.5rem,6.5vw,1.875rem)] md:text-4xl font-extrabold text-(--color-text-strong) mb-3 sm:mb-4"
             >
               Güçlü Araçlar,{" "}
               <span className="accent-line">
@@ -758,7 +832,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             </motion.h2>
             <motion.p
               variants={fadeUp}
-              className="text-(--color-text-soft) text-base md:text-lg max-w-xl mx-auto"
+              className="text-(--color-text-soft) text-[0.9375rem] sm:text-base md:text-lg max-w-xl mx-auto"
             >
               Danışan yönetimi, haftalık plan, seans kayıtları ve ilerleme
               takibi — hepsi tek ekranda.
@@ -782,15 +856,17 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               >
                 
                 <div
-                  className="flex items-center gap-2 px-5 py-3 border-b border-(--color-line)"
+                  className="flex items-center gap-2 px-3.5 py-2.5 sm:px-5 sm:py-3 border-b border-(--color-line)"
                   style={{ background: "var(--color-surface)" }}
                 >
-                  <div className="flex gap-2">
+                  <div className="flex gap-1.5 sm:gap-2 shrink-0">
                     <div className="w-3 h-3 rounded-full bg-[#f0708a]/60" />
                     <div className="w-3 h-3 rounded-full bg-[#f5c26b]/60" />
                     <div className="w-3 h-3 rounded-full bg-[#19d19b]/60" />
                   </div>
-                  <div className="flex-1 mx-4 max-w-sm">
+                  {/* Sahte adres çubuğu telefonda 16px'lik yatay payla üç
+                      noktayı sıkıştırıyordu; pay dar ekranda daraltıldı. */}
+                  <div className="flex-1 min-w-0 mx-2 sm:mx-4 max-w-sm">
                     <div className="h-6 rounded-lg bg-(--color-surface-elevated) border border-(--color-line) flex items-center justify-center">
                       <span className="text-[10px] text-(--color-text-muted) flex items-center gap-1.5">
                         <Shield
@@ -832,11 +908,11 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                     ))}
                   </div>
 
-                  <div className="flex-1 p-4 md:p-6 flex flex-col gap-4 overflow-hidden">
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-col gap-1.5">
+                  <div className="flex-1 min-w-0 p-3.5 sm:p-4 md:p-6 flex flex-col gap-3 sm:gap-4 overflow-hidden">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-col gap-1.5 min-w-0">
                         <div
-                          className="h-5 rounded-full w-40"
+                          className="h-5 rounded-full w-28 sm:w-40"
                           style={{
                             background:
                               "linear-gradient(90deg, var(--color-primary), rgba(77, 125, 255,0.6))",
@@ -845,8 +921,8 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                         />
                         <div className="h-2.5 rounded-full w-24 bg-(--color-skeleton-lo)" />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 h-8 rounded-lg bg-(--color-primary)/15 flex items-center justify-center">
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="w-14 sm:w-20 h-8 rounded-lg bg-(--color-primary)/15 flex items-center justify-center">
                           <Gamepad2
                             size={12}
                             className="text-(--color-primary)"
@@ -949,14 +1025,14 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                               {s.game}
                             </p>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 shrink-0">
                             <span
                               className="text-xs font-extrabold tabular-nums"
                               style={{ color: s.color }}
                             >
                               {s.score}
                             </span>
-                            <div className="w-14 h-1.5 bg-(--color-surface-elevated) rounded-full overflow-hidden">
+                            <div className="w-10 sm:w-14 h-1.5 bg-(--color-surface-elevated) rounded-full overflow-hidden">
                               <div
                                 className="h-full rounded-full"
                                 style={{
@@ -1010,10 +1086,10 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 <motion.li
                   key={step.num}
                   variants={fadeUp}
-                  className="surface surface-interactive relative flex items-start gap-4 p-5"
+                  className="surface surface-interactive relative flex items-start gap-3.5 sm:gap-4 p-[1.125rem] sm:p-5"
                 >
                   <div
-                    className="w-12 h-12 shrink-0 rounded-xl flex items-center justify-center"
+                    className="w-11 h-11 sm:w-12 sm:h-12 shrink-0 rounded-xl flex items-center justify-center"
                     style={{ background: `${step.color}18`, border: `1px solid ${step.color}30` }}
                   >
                     <StepIcon size={22} style={{ color: step.color }} />
@@ -1027,7 +1103,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                         {step.title}
                       </h3>
                     </div>
-                    <p className="text-sm text-(--color-text-soft) leading-relaxed m-0">
+                    <p className="text-[0.8125rem] sm:text-sm text-(--color-text-soft) leading-relaxed m-0">
                       {step.body}
                     </p>
                   </div>
@@ -1052,24 +1128,24 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       <ComparisonSection />
 
       {/* ══════════════════════ PERSONAS — KİMLER İÇİN ══════════════════════ */}
-      <section id="testimonials" className="section relative overflow-hidden">
+      <section id="testimonials" className="section max-sm:py-10! relative overflow-hidden">
         <div className="shell shell-wide">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={REVEAL_VIEWPORT}
             variants={stagger}
-            className="text-center mb-16"
+            className="text-center mb-8 sm:mb-16"
           >
             <motion.h2
               variants={fadeUp}
-              className="text-4xl md:text-5xl font-extrabold text-(--color-text-strong) mb-4"
+              className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl font-extrabold text-(--color-text-strong) mb-3 sm:mb-4"
             >
               Kimler İçin Tasarlandı?
             </motion.h2>
             <motion.p
               variants={fadeUp}
-              className="text-(--color-text-soft) text-lg"
+              className="text-(--color-text-soft) text-[0.9375rem] sm:text-lg"
             >
               Mimio, farklı uzmanlık alanlarının klinik iş akışına uyum sağlar.
             </motion.p>
@@ -1086,23 +1162,23 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               return (
                 <motion.div
                   key={p.role}
-                  variants={slideRight}
+                  variants={narrow ? fadeUp : slideRight}
                   whileHover={{ y: -6, transition: { duration: 0.3 } }}
-                  className="glass rounded-2xl sm:rounded-3xl p-5 sm:p-6 relative overflow-hidden group flex flex-col"
+                  className="glass rounded-2xl sm:rounded-3xl p-[1.125rem] sm:p-6 relative overflow-hidden group flex flex-col"
                 >
                   <div
-                    className="w-11 h-11 rounded-xl flex items-center justify-center mb-4"
+                    className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-3 sm:mb-4"
                     style={{ background: p.accent, color: "#fff" }}
                   >
                     <PersonaIcon size={19} />
                   </div>
-                  <h3 className="text-sm font-bold text-(--color-text-strong) mb-2">
+                  <h3 className="text-[0.9375rem] sm:text-sm font-bold text-(--color-text-strong) mb-1.5 sm:mb-2">
                     {p.role}
                   </h3>
-                  <p className="text-sm text-(--color-text-soft) leading-relaxed mb-5 flex-1">
+                  <p className="text-[0.8125rem] sm:text-sm text-(--color-text-soft) leading-relaxed mb-4 sm:mb-5 flex-1">
                     {p.text}
                   </p>
-                  <div className="pt-4 border-t border-(--color-line)">
+                  <div className="pt-3 sm:pt-4 border-t border-(--color-line)">
                     <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-(--color-primary) bg-(--color-primary-light) px-2.5 py-1 rounded-full">
                       <Sparkles size={10} />
                       {p.module}
@@ -1122,25 +1198,29 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       {/* Kapanış bölümünde milimetrik kâğıt bilinçli olarak yok: ızgara
           kahraman bölümünün imzası, sayfanın ortasında tekrar edince hem
           etkisini yitiriyor hem de bölüm sınırında sert bir kenar bırakıyor. */}
-      <section id="cta" className="section relative overflow-hidden">
-        <div className="relative max-w-3xl mx-auto text-center">
+      {/* Bu bölümün tek çocuğu `shell` taşımıyordu: telefonda düğmeler
+          ekranın kenarına yapışıyor, metin kenar boşluksuz okunuyordu.
+          Yatay pay yalnızca dar ekranda ekleniyor — masaüstünde blok zaten
+          ortalanmış ve genişliği sınırlı. */}
+      <section id="cta" className="section max-sm:py-10! relative overflow-hidden">
+        <div className="relative max-w-3xl mx-auto text-center px-(--gutter) sm:px-0">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={REVEAL_VIEWPORT}
             variants={stagger}
-            className="flex flex-col items-center gap-8"
+            className="flex flex-col items-center gap-5 sm:gap-8"
           >
             <motion.div
               variants={fadeUp}
-              className="inline-flex items-center gap-2 text-xs font-bold text-(--color-primary) bg-(--color-primary-light) px-4 py-2 rounded-full"
+              className="inline-flex items-center gap-2 text-[10.5px] sm:text-xs font-bold text-(--color-primary) bg-(--color-primary-light) px-3 py-1.5 sm:px-4 sm:py-2 rounded-full"
             >
               <Zap size={12} />
               Hemen Başla
             </motion.div>
             <motion.h2
               variants={fadeUp}
-              className="text-4xl md:text-6xl font-extrabold text-(--color-text-strong) leading-tight"
+              className="text-[clamp(1.75rem,7.5vw,2.25rem)] md:text-6xl font-extrabold text-(--color-text-strong) leading-tight"
             >
               Klinik Süreçlerinizi
               <br />
@@ -1148,20 +1228,20 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             </motion.h2>
             <motion.p
               variants={fadeUp}
-              className="text-lg md:text-xl text-(--color-text-soft) max-w-lg"
+              className="text-[0.9375rem] sm:text-lg md:text-xl text-(--color-text-soft) max-w-lg"
             >
               Mimio ile terapi seanslarınızı daha ölçülebilir, daha eğlenceli ve
               daha verimli hale getirin.
             </motion.p>
             <motion.div
               variants={fadeUp}
-              className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto"
+              className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto"
             >
-              <Magnetic strength={18}>
+              <Magnetic strength={18} className="w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={onRegister}
-                  className="group relative flex items-center gap-2.5 font-semibold px-10 py-4 rounded-xl text-base transition-all duration-300 hover:-translate-y-0.5 overflow-hidden w-full sm:w-auto justify-center"
+                  className="group relative flex items-center gap-2.5 font-semibold px-6 sm:px-10 py-4 rounded-xl text-[0.9375rem] sm:text-base transition-all duration-300 hover:-translate-y-0.5 overflow-hidden w-full sm:w-auto justify-center"
                   style={{
                     background: "var(--color-primary)",
                     color: "var(--color-text-inverse)",
@@ -1187,7 +1267,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             </motion.div>
             <motion.div
               variants={fadeUp}
-              className="flex flex-wrap items-center justify-center gap-8 mt-4 text-sm text-(--color-text-soft)"
+              className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2.5 sm:gap-8 mt-1 sm:mt-4 text-[0.8125rem] sm:text-sm text-(--color-text-soft)"
             >
               {[
                 { icon: CheckCircle2, text: "Ücretsiz başla" },
@@ -1206,11 +1286,11 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
 
       {/* ══════════════════════ FOOTER ══════════════════════ */}
       <footer
-        className="border-t border-(--color-line) px-4 sm:px-6 relative overflow-hidden"
+        className="border-t border-(--color-line) px-(--gutter) sm:px-6 relative overflow-hidden"
         style={{ background: "var(--color-surface)" }}
       >
-                <div className="max-w-7xl mx-auto pt-12 sm:pt-16 pb-8">
-          <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr] mb-10 sm:mb-14">
+        <div className="max-w-7xl mx-auto pt-10 sm:pt-16 pb-8">
+          <div className="grid gap-8 sm:gap-10 md:grid-cols-[1.4fr_1fr_1fr] mb-8 sm:mb-14">
             {/* Marka */}
             <div className="flex flex-col gap-4 max-w-sm">
               <div className="flex items-center gap-2.5">
@@ -1230,8 +1310,9 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               </span>
             </div>
 
-            {/* Keşfet */}
-            <div className="flex flex-col gap-3">
+            {/* Keşfet — dokunma hedefleri zaten 44px'e yükseltiliyor; araya
+                ayrıca 12px koyunca liste telefonda gereksiz uzuyordu. */}
+            <div className="flex flex-col gap-1 sm:gap-3">
               <p className="text-xs font-bold uppercase tracking-widest text-(--color-text-muted)">
                 Keşfet
               </p>
@@ -1240,7 +1321,11 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                   type="button"
                   key={l.id}
                   onClick={() => scrollTo(l.id)}
-                  className="w-fit text-sm text-(--color-text-soft) hover:text-(--color-text-strong) transition-colors text-left"
+                  /* Dokunma payı global kuraldan (`pointer: coarse` → 44px)
+                     değil, düğmenin kendisinden gelsin: dokunmatik dizüstü
+                     gibi kuralın eşleşmediği cihazlarda alt bilgi bağlantıları
+                     14px'lik bir metin şeridine iniyordu. */
+                  className="w-fit text-sm text-(--color-text-soft) hover:text-(--color-text-strong) transition-colors text-left py-2.5 -my-1"
                 >
                   {l.label}
                 </button>

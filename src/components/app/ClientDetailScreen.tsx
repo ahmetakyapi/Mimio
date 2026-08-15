@@ -10,9 +10,16 @@
  * Sıralama soldan sağa "ne biliyoruz → ne değişti → ne yapacağız" okunur.
  * Öneri Motoru kartı her iki temada da koyu: ekrandaki tek karar bloğu ve
  * çevresindeki açık yüzeylerden ayrılması isteniyor.
+ *
+ * Telefonda sütun sırası değişir (`order`): sekmelerin yönettiği orta sütun
+ * başa geçer. Doküman sırasıyla dizilince "Notlar" sekmesine basan kişi
+ * profil, bağımsızlık ölçeği ve son notu geçip üç ekran aşağı kaydırmadan
+ * notlara ulaşamıyordu — sekme bastığı yerde hiçbir şey değişmiyor gibi
+ * görünüyordu. Karar bloğu (hedefler + öneri) ikinci, değişmeyen künye
+ * bilgisi (profil) sona gider.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRight, Sparkles, FileText, Plus, Minus, Archive, Trash2 } from "lucide-react";
 import type { AppView, ClientProfile, RecentSessionEntry, SessionNote, ClientGoal, PlatformGameKey } from "@/lib/platform-data";
 import {
@@ -82,41 +89,64 @@ export function ClientDetailScreen({
     return m.sessions;
   }, [m.sessions, range]);
 
+  /* Etiket şeridi iki yerde basılıyor: masaüstünde ad sütununun altında,
+     telefonda kendi tam satırında. Telefonda ad sütunu ~150px'e düşüyor ve
+     "Görsel tarama ve dikkat sürdürme becerisi" gibi tek etiket üç satıra
+     sarıyordu. */
+  const tagRow = (
+    <>
+      {client.ageGroup && <Tag tone="primary">{client.ageGroup} yaş</Tag>}
+      {(client.tags ?? []).slice(0, 1).map((t) => (
+        <Tag key={t} tone="primary">{t}</Tag>
+      ))}
+      {client.primaryGoal && <Tag tone="green">{client.primaryGoal}</Tag>}
+      <Tag tone="amber">{m.independenceLabel} · {m.independence}/5</Tag>
+      <Tag tone="violet">{m.sessionCount} seans</Tag>
+    </>
+  );
+
   return (
-    <div className="flex flex-col gap-4 h-full min-h-0">
+    <div className="flex flex-col gap-4 max-lg:gap-3 h-full min-h-0">
       {/* Kırıntı yolu */}
       <nav className="flex items-center gap-2 text-[11px] font-medium text-(--color-text-soft)" aria-label="Konum">
-        <button type="button" onClick={onBack} className="bg-transparent border-none p-0 cursor-pointer hover:text-(--color-primary) transition-colors">
+        {/* Geri bağlantısı 17px yüksekliğindeydi; parmakla vurulamıyordu.
+            Telefonda satır 44px'e çıkar, görsel ağırlık aynı kalır. */}
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center bg-transparent border-none p-0 max-lg:min-h-11 cursor-pointer hover:text-(--color-primary) transition-colors"
+        >
           Danışanlar
         </button>
-        <ChevronRight size={12} />
-        <span className="font-semibold text-(--color-text-strong)">{client.displayName}</span>
+        <ChevronRight size={12} className="shrink-0" />
+        <span className="font-semibold text-(--color-text-strong) truncate">{client.displayName}</span>
       </nav>
 
       {/* Başlık */}
-      <div className="flex items-start gap-5 flex-wrap">
-        <Avatar name={client.displayName} id={client.id} size={74} radius={22} className="!text-[30px] font-display" />
+      <div className="flex items-start gap-5 flex-wrap max-lg:items-center max-lg:gap-x-3.5 max-lg:gap-y-3">
+        {/* Avatar telefonda 54px: 74px, 320px'lik ekranda ad sütununu üç
+            satıra düşürüyordu. İki ayrı örnek — boyut inline style'dan
+            geliyor, sınıfla ezilemiyor. */}
+        <Avatar name={client.displayName} id={client.id} size={74} radius={22} className="max-lg:hidden font-display" />
+        <Avatar name={client.displayName} id={client.id} size={54} radius={17} className="lg:hidden font-display" />
         <div className="flex-1 min-w-0">
-          <h1 className="m-0 mb-2 text-[clamp(1.3125rem,2.1vw,1.8125rem)] leading-none text-(--color-text-strong)">
+          <h1 className="m-0 mb-2 max-lg:mb-0 text-[clamp(1.3125rem,2.1vw,1.8125rem)] leading-none max-lg:leading-[1.2] text-(--color-text-strong)">
             {client.displayName}
           </h1>
-          <div className="flex flex-wrap gap-[7px]">
-            {client.ageGroup && <Tag tone="primary">{client.ageGroup} yaş</Tag>}
-            {(client.tags ?? []).slice(0, 1).map((t) => (
-              <Tag key={t} tone="primary">{t}</Tag>
-            ))}
-            {client.primaryGoal && <Tag tone="green">{client.primaryGoal}</Tag>}
-            <Tag tone="amber">{m.independenceLabel} · {m.independence}/5</Tag>
-            <Tag tone="violet">{m.sessionCount} seans</Tag>
-          </div>
+          <div className="flex flex-wrap gap-[7px] max-lg:hidden">{tagRow}</div>
         </div>
-        <div className="flex items-center gap-2.5 shrink-0">
-          <button type="button" className={btnGhost} onClick={onCreateReport}>
-            <span className="inline-flex items-center gap-2"><FileText size={14} /> Rapor Oluştur</span>
+        <div className="hidden max-lg:flex flex-wrap gap-[7px] w-full">{tagRow}</div>
+        {/* Telefonda iki eylem satırı paylaşır ve tam genişliğe yayılır;
+            `shrink-0` masaüstünde başlığı ezmemesi için duruyor. */}
+        <div className="flex items-center gap-2.5 shrink-0 max-lg:w-full max-lg:gap-2">
+          {/* Yan boşluk telefonda 17→10px: 320px'te iki düğme satırı paylaşınca
+              "Rapor Oluştur" iki satıra kırılıp düğmeyi 100px yükseltiyordu. */}
+          <button type="button" className={`${btnGhost} max-lg:flex-1 max-lg:px-2.5`} onClick={onCreateReport}>
+            <span className="inline-flex items-center justify-center gap-2 whitespace-nowrap"><FileText size={14} className="shrink-0" /> Rapor Oluştur</span>
           </button>
           <button
             type="button"
-            className="btn-signature px-[19px] py-[11px] rounded-xl text-[12.5px] font-semibold cursor-pointer"
+            className="btn-signature px-[19px] py-[11px] rounded-xl text-[12.5px] font-semibold cursor-pointer whitespace-nowrap max-lg:flex-1 max-lg:px-2.5"
             onClick={() => onStartSession(client.id)}
           >
             Seansı Başlat
@@ -124,8 +154,14 @@ export function ClientDetailScreen({
         </div>
       </div>
 
-      {/* Sekmeler — alt çizgi, kutu değil: içerik yüzeyiyle aynı düzlemde kalsın */}
-      <div className="flex items-center gap-[22px]" style={{ borderBottom: "1px solid var(--color-line)" }} role="tablist">
+      {/* Sekmeler — alt çizgi, kutu değil: içerik yüzeyiyle aynı düzlemde kalsın.
+          Telefonda dört etiket 320px'e sığmayıp iki satıra sarıyor, alt çizgi
+          hizası dağılıyordu. Şerit artık yatay kayar; etiketler kırılmaz. */}
+      <div
+        className="flex items-center gap-[22px] max-lg:gap-4 max-lg:overflow-x-auto max-lg:[scrollbar-width:none] max-lg:[&::-webkit-scrollbar]:hidden"
+        style={{ borderBottom: "1px solid var(--color-line)" }}
+        role="tablist"
+      >
         {([
           { key: "overview" as const, label: "Genel Bakış" },
           { key: "sessions" as const, label: "Seanslar" },
@@ -139,8 +175,7 @@ export function ClientDetailScreen({
               role="tab"
               aria-selected={on}
               onClick={() => setTab(t.key)}
-              className={`relative bg-transparent border-none cursor-pointer text-[13px] transition-colors ${on ? "font-semibold text-(--color-primary)" : "font-medium text-(--color-text-soft) hover:text-(--color-text-body)"}`}
-              style={{ padding: "9px 0" }}
+              className={`relative shrink-0 whitespace-nowrap bg-transparent border-none cursor-pointer text-[13px] py-[9px] px-0 transition-colors ${on ? "font-semibold text-(--color-primary)" : "font-medium text-(--color-text-soft) hover:text-(--color-text-body)"}`}
             >
               {t.label}
               {on && (
@@ -155,15 +190,20 @@ export function ClientDetailScreen({
         <button
           type="button"
           onClick={() => onNavigate("weekly-plan")}
-          className="ml-auto text-[12px] font-semibold text-(--color-text-soft) hover:text-(--color-primary) bg-transparent border-none cursor-pointer transition-colors"
+          /* `ml-auto` masaüstünde bağlantıyı şeridin sağ ucuna yaslar.
+             Telefonda şerit yatay kaydığı için aynı kural onu görünür alanın
+             60px dışına itiyordu: bağlantı hiç görünmüyor, kaydırılabilir
+             olduğuna dair bir ipucu da kalmıyordu. Küçük ekranda sekmelerin
+             hemen ardına gelir; yarısı görünüp şeridin kaydığını haber verir. */
+          className="lg:ml-auto max-lg:pl-1 shrink-0 whitespace-nowrap text-[12px] font-semibold text-(--color-text-soft) hover:text-(--color-primary) bg-transparent border-none cursor-pointer transition-colors"
         >
           Haftalık Plan →
         </button>
       </div>
 
-      <div className="grid gap-4 flex-1 min-h-0 deniz-split" style={{ ["--split" as string]: "262px minmax(0,1fr) 268px" }}>
-        {/* ── Sol: sabit bilgi ── */}
-        <div className="flex flex-col gap-3.5 min-h-0 overflow-y-auto">
+      <div className="grid gap-4 max-lg:gap-3 flex-1 min-h-0 deniz-split" style={{ ["--split" as string]: "262px minmax(0,1fr) 268px" }}>
+        {/* ── Sol: sabit bilgi (telefonda en sona iner) ── */}
+        <div className="flex flex-col gap-3.5 max-lg:gap-3 min-h-0 overflow-y-auto max-lg:order-3">
           <Card pad="p-[18px_20px]">
             <Eyebrow className="mb-2.5">Profil</Eyebrow>
             <Row label="Doğum" value={client.birthDate ? new Date(client.birthDate).toLocaleDateString("tr-TR") : "—"} />
@@ -177,9 +217,9 @@ export function ClientDetailScreen({
             <button
               type="button"
               onClick={onArchive}
-              className="mt-2 flex items-center gap-1.5 text-[11px] font-medium bg-transparent border-none p-0 cursor-pointer text-(--color-text-muted) hover:text-(--color-accent-red) transition-colors"
+              className="mt-2 max-lg:mt-1 flex items-center gap-1.5 text-[11px] font-medium bg-transparent border-none p-0 max-lg:min-h-11 cursor-pointer text-(--color-text-muted) hover:text-(--color-accent-red) transition-colors"
             >
-              <Archive size={12} /> Danışanı Arşivle
+              <Archive size={12} className="shrink-0" /> Danışanı Arşivle
             </button>
           </Card>
 
@@ -247,28 +287,33 @@ export function ClientDetailScreen({
           </div>
         </div>
 
-        {/* ── Orta: değişim ── */}
-        <div className="flex flex-col gap-3.5 min-h-0">
+        {/* ── Orta: değişim (telefonda başa geçer — sekmeler burayı yönetiyor) ── */}
+        <div className="flex flex-col gap-3.5 max-lg:gap-3 min-h-0 max-lg:order-1">
           {tab === "overview" && (
             <>
-              <Card pad="p-[18px_20px]" className="shrink-0">
-                <div className="flex items-start justify-between mb-3.5 gap-3">
-                  <div>
+              <Card pad="p-[18px_20px] max-lg:p-[16px_14px]" className="shrink-0">
+                {/* Başlık ve aralık seçici telefonda yan yana sığmıyor: seçici
+                    başlığı iki satıra kırıyordu. Dar ekranda alt alta, seçici
+                    tam genişlikte üç eşit segment. */}
+                <div className="flex items-start justify-between mb-3.5 gap-3 max-lg:flex-col max-lg:items-stretch max-lg:gap-2.5">
+                  <div className="min-w-0">
                     <CardTitle>Gelişim Eğrisi</CardTitle>
                     <div className="text-[11px] text-(--color-text-soft) mt-0.5">
                       {curve.length} seans · normalize skor
                     </div>
                   </div>
-                  <SegmentedControl
-                    size="sm"
-                    value={range}
-                    onChange={setRange}
-                    options={[
-                      { value: "10", label: "10 Seans" },
-                      { value: "90", label: "3 Ay" },
-                      { value: "all", label: "Tümü" },
-                    ]}
-                  />
+                  <div className="max-lg:[&>div]:w-full max-lg:[&_button]:flex-1">
+                    <SegmentedControl
+                      size="sm"
+                      value={range}
+                      onChange={setRange}
+                      options={[
+                        { value: "10", label: "10 Seans" },
+                        { value: "90", label: "3 Ay" },
+                        { value: "all", label: "Tümü" },
+                      ]}
+                    />
+                  </div>
                 </div>
                 <GrowthCurve sessions={curve} />
               </Card>
@@ -283,7 +328,7 @@ export function ClientDetailScreen({
                   hiçbir ekranda render edilmiyordu; yeri burası: "Seanslar"
                   sekmesi zaman içindeki dağılımı soruyor. */}
               {m.sessions.length >= 3 && (
-                <Card pad="p-[18px_20px]" className="shrink-0">
+                <Card pad="p-[18px_20px] max-lg:p-[16px_14px]" className="shrink-0">
                   <SessionTrendChart sessions={m.sessions} />
                 </Card>
               )}
@@ -292,16 +337,15 @@ export function ClientDetailScreen({
           )}
 
           {tab === "notes" && (
-            <Card className="flex-1 flex flex-col min-h-0" pad="p-[18px_20px]">
-              <div className="flex items-center justify-between mb-3">
+            <Card className="flex-1 flex flex-col min-h-0" pad="p-[18px_20px] max-lg:p-[16px_14px]">
+              <div className="flex items-center justify-between gap-3 mb-3">
                 <CardTitle>Notlar</CardTitle>
                 <button
                   type="button"
                   onClick={onAddNote}
-                  className="btn-signature flex items-center gap-1.5 text-[11.5px] font-semibold cursor-pointer"
-                  style={{ padding: "7px 12px", borderRadius: 9 }}
+                  className="btn-signature flex shrink-0 items-center justify-center gap-1.5 text-[11.5px] font-semibold cursor-pointer px-3 py-[7px] rounded-[9px]"
                 >
-                  <Plus size={13} /> Not Ekle
+                  <Plus size={13} className="shrink-0" /> Not Ekle
                 </button>
               </div>
               {clientNotes.length === 0 ? (
@@ -318,11 +362,13 @@ export function ClientDetailScreen({
                         </span>
                         <span className="flex items-center gap-2">
                           {n.noteMode && <Tag tone="teal">{n.noteMode.toUpperCase()}</Tag>}
+                          {/* Dokunmatikte "hover" diye bir durum yok: silme
+                              düğmesi telefonda hiç görünmüyordu. */}
                           <button
                             type="button"
                             aria-label="Notu sil"
                             onClick={() => onDeleteNote(n.id)}
-                            className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-muted) hover:text-(--color-accent-red) opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                            className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-muted) hover:text-(--color-accent-red) opacity-0 max-lg:opacity-100 group-hover:opacity-100 focus:opacity-100 transition-opacity"
                             style={{ width: 22, height: 22, borderRadius: 7 }}
                           >
                             <Trash2 size={12} strokeWidth={2} />
@@ -338,19 +384,19 @@ export function ClientDetailScreen({
           )}
         </div>
 
-        {/* ── Sağ: karar ── */}
-        <div className="flex flex-col gap-3.5 min-h-0 overflow-y-auto">
-          <Card pad="p-[18px_20px]">
-            <div className="flex items-center justify-between mb-3.5">
+        {/* ── Sağ: karar (telefonda orta sütunun hemen altında) ── */}
+        <div className="flex flex-col gap-3.5 max-lg:gap-3 min-h-0 overflow-y-auto max-lg:order-2">
+          <Card pad="p-[18px_20px] max-lg:p-[16px_14px]">
+            <div className="flex items-center justify-between gap-3 mb-3.5">
               <Eyebrow>Hedefler</Eyebrow>
               {/* Hedefler daha önce yalnızca seed'den gelebiliyordu: ekleme
                   formu ve ilerleme güncelleme hiçbir yerden açılmıyordu. */}
               <button
                 type="button"
                 onClick={onAddGoal}
-                className="flex items-center gap-1 text-[11px] font-semibold text-(--color-primary) bg-transparent border-none p-0 cursor-pointer hover:underline"
+                className="flex shrink-0 items-center gap-1 text-[11px] font-semibold text-(--color-primary) bg-transparent border-none p-0 max-lg:min-h-11 cursor-pointer hover:underline"
               >
-                <Plus size={12} strokeWidth={2.4} /> Hedef Ekle
+                <Plus size={12} strokeWidth={2.4} className="shrink-0" /> Hedef Ekle
               </button>
             </div>
             {clientGoals.length === 0 ? (
@@ -358,20 +404,28 @@ export function ClientDetailScreen({
                 Tanımlı hedef yok. Hedef eklendiğinde ilerleme halkası burada görünür.
               </p>
             ) : (
-              <div className="flex flex-col gap-3.5" style={{ maxHeight: 300, overflowY: "auto" }}>
+              /* Telefonda iç kaydırıcı yok: 300px'lik kutu, sayfa zaten
+                 kayarken ikinci bir kaydırma alanı açıyordu. */
+              <div className="flex flex-col gap-3.5 max-lg:gap-4 max-h-none lg:max-h-[300px] overflow-y-auto">
                 {clientGoals.map((g) => {
                   const pct = g.targetValue > 0 ? Math.round((g.currentValue / g.targetValue) * 100) : 0;
                   return (
-                    <div key={g.id} className="flex items-center gap-3 group">
+                    <div key={g.id} className="flex items-center gap-3 group max-lg:flex-wrap max-lg:gap-y-1.5">
                       <ScoreRing value={pct} size={58} />
                       <div className="min-w-0 flex-1">
-                        <div className="text-[12.5px] font-semibold text-(--color-text-strong) truncate">{g.title}</div>
+                        {/* Telefonda tek satır hedef adını "G…"ye indiriyordu; iki satır hakkı var. */}
+                        <div className="text-[12.5px] font-semibold text-(--color-text-strong) truncate max-lg:whitespace-normal max-lg:line-clamp-2">
+                          {g.title}
+                        </div>
                         <div className="text-[10.5px] text-(--color-text-soft) mt-0.5 truncate">
                           Hedef {g.targetValue} · şu an {g.currentValue}
                         </div>
                       </div>
-                      {/* İlerleme tek dokunuşla işlenir — seans arasında form açtırmak fazla tören */}
-                      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                      {/* İlerleme tek dokunuşla işlenir — seans arasında form açtırmak fazla tören.
+                          Telefonda üç düğme 44px'e büyüyor ve halka + başlıkla aynı satıra
+                          sığmıyor: hedef adı "G…"ye kadar kırpılıyordu. Kendi satırına iner.
+                          Görünürlük de hover'a bağlıydı; dokunmatikte hiç açılmıyordu. */}
+                      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity max-lg:opacity-100 max-lg:w-full max-lg:justify-end max-lg:gap-1.5">
                         <button
                           type="button"
                           aria-label={`${g.title} ilerlemesini azalt`}
@@ -414,8 +468,8 @@ export function ClientDetailScreen({
             veri kartlarından ayırsın.
           */}
           <div
-            className="rounded-[18px] relative overflow-hidden flex-1"
-            style={{ padding: "18px 20px", background: "#0a1524" }}
+            className="rounded-[18px] relative overflow-hidden flex-1 p-[18px_20px] max-lg:p-[16px_14px]"
+            style={{ background: "#0a1524" }}
           >
             <div
               aria-hidden="true"
@@ -465,26 +519,86 @@ export function ClientDetailScreen({
 
 /* ── Parçalar ──────────────────────────────────────────────────────────── */
 
+/**
+ * Anahtar/değer satırı. Masaüstünde etiket solda, değer sağa yaslı.
+ *
+ * Telefonda aynı satır çalışmıyordu: kart ~250px'e inince "Destek ·
+ * Kademeli sözel ipucu" gibi çiftlerde değer kabın sağ kenarına yapışıyor,
+ * `truncate` yüzünden de kesiliyordu. Dar ekranda etiket üste, değer altına
+ * geçer ve sararak tamamı okunur.
+ */
 function Row({ label, value, last = false }: { readonly label: string; readonly value: string; readonly last?: boolean }) {
   return (
     <div
-      className="flex items-center justify-between gap-3"
-      style={{ padding: "9px 0", borderBottom: last ? "none" : "1px solid var(--color-line-soft)" }}
+      className="flex items-center justify-between gap-3 py-[9px] max-lg:flex-col max-lg:items-start max-lg:gap-0.5 max-lg:py-2.5"
+      style={{ borderBottom: last ? "none" : "1px solid var(--color-line-soft)" }}
     >
       <span className="text-[11.5px] text-(--color-text-soft) shrink-0">{label}</span>
-      <span className="text-[11.5px] font-semibold text-(--color-text-strong) truncate text-right">{value}</span>
+      <span className="text-[11.5px] font-semibold text-(--color-text-strong) truncate text-right max-lg:text-left max-lg:whitespace-normal max-lg:overflow-visible max-lg:max-w-full">
+        {value}
+      </span>
     </div>
   );
 }
 
+/** Grafik kabının gerçek piksel genişliği. 0 = henüz ölçülmedi. */
+function useBoxWidth() {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const ro = new ResizeObserver((entries) => {
+      const rect = entries[0]?.contentRect;
+      if (rect) setWidth(Math.round(rect.width));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return [ref, width] as const;
+}
+
+/* Grafiğin geometrisi birim cinsinden yazılıyor; birimin kaç piksele
+   denk düştüğü viewBox'a bağlı. Dar kapta birim = piksel olduğu için
+   punto da doğrudan piksel: 11 birim ekranda 11px. */
+const CURVE_H = 158;
+const CURVE_W_DESKTOP = 560;
+/* Bu genişliğin altındaki kap "dar" sayılır ve birim piksele eşitlenir.
+   Eşik doğrudan masaüstü viewBox'ı: 420 olduğunda 420-560 birim arasındaki
+   kaplar sabit 560 birimlik çizimi *küçülterek* basıyordu (ölçek 0.75-0.99),
+   8.5 birimlik eksen etiketi 480px'lik bir katlanabilir telefonda 7px'e
+   iniyordu. Eşik 560'a çekilince küçülme bandı tamamen kalkar: kap ya
+   birebir ölçekte (dar) ya da büyütülerek (geniş) çizilir. */
+const CURVE_NARROW_MAX = CURVE_W_DESKTOP;
+
 /**
  * Gelişim Eğrisi. Hedef çizgisi kesikli — ölçülen değer değil, hedeflenen.
  * Bu ayrım olmadan grafik "ulaşıldı mı?" sorusunu cevaplamıyor.
+ *
+ * viewBox artık kabın darlığına göre seçiliyor. Sabit 560 birimlik viewBox
+ * %100 genişlikte çizilirken telefonda kap ~250px'e düşüyor, ölçek 0.45'e
+ * iniyordu: 8.5 birimlik eksen etiketleri ekranda 4px basıyor, S1…S10 ile
+ * "hedef 85" okunmuyordu. Kap 560'ın altındaysa viewBox ölçülen piksel
+ * genişliğine eşitlenir (ölçek tam 1) ve punto 11px'e çıkar. Kap geniş
+ * olduğunda eski çizim birebir korunur.
  */
 function GrowthCurve({ sessions }: { readonly sessions: readonly RecentSessionEntry[] }) {
-  const H = 158;
-  const W = 560;
-  const pad = { l: 26, r: 12, t: 12, b: 22 };
+  const [boxRef, boxW] = useBoxWidth();
+
+  /* Ölçüm gelmeden çizmiyoruz: ilk kare 560 birimle basılıp sonra küçülünce
+     grafik gözle görülür biçimde zıplıyor. */
+  const measured = boxW > 0;
+  const narrow = measured && boxW < CURVE_NARROW_MAX;
+  const W = narrow ? boxW : CURVE_W_DESKTOP;
+  const H = CURVE_H;
+  const pad = { l: narrow ? 30 : 26, r: 12, t: 12, b: narrow ? 26 : 22 };
+  /* Geniş kapta viewBox büyütülerek basılıyor, yani birim > piksel; yine de
+     taban 10 birimin altına inmiyor ki eşik hemen üstündeki (560-620px)
+     kaplarda etiket 10px'in altına düşmesin. */
+  const axisFs = narrow ? 11 : 10;
+  const targetFs = narrow ? 11 : 10.5;
 
   if (sessions.length < 2) {
     return (
@@ -503,52 +617,77 @@ function GrowthCurve({ sessions }: { readonly sessions: readonly RecentSessionEn
   const line = `M${pts.join(" L")}`;
   const area = `${line} L${xs[xs.length - 1]} ${H - pad.b} L${xs[0]} ${H - pad.b} Z`;
 
+  /* Etiketler punto büyüyünce birbirine giriyor: iki komşu etiket arası en
+     az ~2.6 kadem olacak biçimde seyreltilir. Sayım sondan yapılır ki son
+     seans (S10) her zaman yazılı kalsın. */
+  const gapPerPoint = (W - pad.l - pad.r) / (sessions.length - 1);
+  const labelEvery = narrow
+    ? Math.max(1, Math.ceil((axisFs * 2.6) / gapPerPoint))
+    : sessions.length <= 12
+      ? 1
+      : 2;
+  const labelPhase = narrow ? (sessions.length - 1) % labelEvery : 0;
+
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: H }} className="block" role="img" aria-label="Gelişim Eğrisi">
-      <defs>
-        <linearGradient id="growth-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.26" />
-          <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
-        </linearGradient>
-      </defs>
+    <div ref={boxRef} className="w-full">
+      {!measured ? (
+        <div style={{ height: H }} />
+      ) : (
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: H }} className="block" role="img" aria-label="Gelişim Eğrisi">
+          <defs>
+            <linearGradient id="growth-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.26" />
+              <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
+            </linearGradient>
+          </defs>
 
-      {[0, 25, 50, 75, 100].map((v) => (
-        <g key={v}>
-          <line x1={pad.l} x2={W - pad.r} y1={y(v)} y2={y(v)} stroke="var(--color-line-soft)" strokeWidth={1} />
-          <text x={pad.l - 6} y={y(v)} textAnchor="end" dominantBaseline="middle" className="numeral" style={{ fontSize: 8.5, fill: "var(--color-text-muted)" }}>
-            {v}
+          {[0, 25, 50, 75, 100].map((v) => (
+            <g key={v}>
+              <line x1={pad.l} x2={W - pad.r} y1={y(v)} y2={y(v)} stroke="var(--color-line-soft)" strokeWidth={1} />
+              <text x={pad.l - 6} y={y(v)} textAnchor="end" dominantBaseline="middle" className="numeral" style={{ fontSize: axisFs, fill: "var(--color-text-muted)" }}>
+                {v}
+              </text>
+            </g>
+          ))}
+
+          {/* Hedef */}
+          <line
+            x1={pad.l}
+            x2={W - pad.r}
+            y1={y(TARGET_SCORE)}
+            y2={y(TARGET_SCORE)}
+            stroke="var(--color-accent-green)"
+            strokeWidth={1.5}
+            strokeDasharray="5 4"
+            opacity={0.75}
+          />
+          {/* Etiket dar ekranda sola geçer: sağ uçta son seansın noktası ve
+              eğrinin tepesi 11px'lik yazının üstüne biniyordu. */}
+          <text
+            x={narrow ? pad.l + 3 : W - pad.r}
+            y={y(TARGET_SCORE) - 5}
+            textAnchor={narrow ? "start" : "end"}
+            className="numeral"
+            style={{ fontSize: targetFs, fontWeight: 600, fill: "var(--color-accent-green)" }}
+          >
+            hedef {TARGET_SCORE}
           </text>
-        </g>
-      ))}
 
-      {/* Hedef */}
-      <line
-        x1={pad.l}
-        x2={W - pad.r}
-        y1={y(TARGET_SCORE)}
-        y2={y(TARGET_SCORE)}
-        stroke="var(--color-accent-green)"
-        strokeWidth={1.5}
-        strokeDasharray="5 4"
-        opacity={0.75}
-      />
-      <text x={W - pad.r} y={y(TARGET_SCORE) - 5} textAnchor="end" className="numeral" style={{ fontSize: 9, fontWeight: 600, fill: "var(--color-accent-green)" }}>
-        hedef {TARGET_SCORE}
-      </text>
-
-      <path d={area} fill="url(#growth-fill)" />
-      <path d={line} fill="none" stroke="var(--color-primary)" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
-      {sessions.map((s, i) => (
-        <circle key={s.id} cx={xs[i]} cy={y(norm(s))} r={3.4} fill="var(--color-signature-to)" stroke="var(--color-surface-strong)" strokeWidth={2} />
-      ))}
-      {sessions.map((s, i) =>
-        sessions.length <= 12 || i % 2 === 0 ? (
-          <text key={`l-${s.id}`} x={xs[i]} y={H - 6} textAnchor="middle" className="numeral" style={{ fontSize: 8.5, fill: "var(--color-text-muted)" }}>
-            S{i + 1}
-          </text>
-        ) : null,
+          <path d={area} fill="url(#growth-fill)" />
+          <path d={line} fill="none" stroke="var(--color-primary)" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
+          {sessions.map((s, i) => (
+            <circle key={s.id} cx={xs[i]} cy={y(norm(s))} r={3.4} fill="var(--color-signature-to)" stroke="var(--color-surface-strong)" strokeWidth={2} />
+          ))}
+          {sessions.map((s, i) =>
+            i % labelEvery === labelPhase ? (
+              <text key={`l-${s.id}`} x={xs[i]} y={H - (narrow ? 8 : 6)} textAnchor="middle" className="numeral" style={{ fontSize: axisFs, fill: "var(--color-text-muted)" }}>
+                S{i + 1}
+              </text>
+            ) : null,
+          )}
+        </svg>
       )}
-    </svg>
+    </div>
   );
 }
 
@@ -564,19 +703,19 @@ function SessionHistory({
   readonly fill?: boolean;
 }) {
   return (
-    <Card className={`flex flex-col min-h-0 ${fill ? "flex-1" : "flex-1"}`} pad="p-[18px_20px]">
-      <div className="flex items-center justify-between mb-3">
+    <Card className={`flex flex-col min-h-0 ${fill ? "flex-1" : "flex-1"}`} pad="p-[18px_20px] max-lg:p-[16px_14px]">
+      <div className="flex items-center justify-between gap-3 mb-3">
         <CardTitle>Seans Geçmişi</CardTitle>
         {onAll ? (
           <button
             type="button"
             onClick={onAll}
-            className="numeral text-[10.5px] font-semibold text-(--color-primary) bg-transparent border-none p-0 cursor-pointer hover:underline"
+            className="numeral shrink-0 inline-flex items-center text-[10.5px] font-semibold text-(--color-primary) bg-transparent border-none p-0 max-lg:min-h-11 cursor-pointer hover:underline"
           >
             Tümü · {total}
           </button>
         ) : (
-          <span className="numeral text-[10.5px] font-semibold text-(--color-text-soft)">{total} seans</span>
+          <span className="numeral shrink-0 text-[10.5px] font-semibold text-(--color-text-soft)">{total} seans</span>
         )}
       </div>
       {sessions.length === 0 ? (
@@ -588,17 +727,23 @@ function SessionHistory({
           {sessions.map((s) => (
             <div
               key={s.id}
-              className="flex items-center gap-3"
-              style={{ padding: "10px 13px", borderRadius: 13, background: "var(--color-surface-strong)", border: "1px solid var(--color-line-soft)" }}
+              className="flex items-center gap-3 max-lg:gap-2.5 px-[13px] py-2.5 max-lg:px-2.5"
+              style={{ borderRadius: 13, background: "var(--color-surface-strong)", border: "1px solid var(--color-line-soft)" }}
             >
-              <span className="numeral shrink-0 text-[11px] font-medium text-(--color-text-soft)" style={{ width: 62 }}>
+              {/* Tarih masaüstünde kendi sütununda; telefonda 62px'lik bu sütun
+                  oyun adına 100px bırakıyor, başlık "H…"ye kadar kırpılıyordu.
+                  Dar ekranda tarih alt satıra, açıklamanın önüne geçer. */}
+              <span className="numeral shrink-0 w-[62px] max-lg:hidden text-[11px] font-medium text-(--color-text-soft)">
                 {shortDate(new Date(s.playedAt))}
               </span>
               {/* Alan rengi — hangi beceriye çalışıldığı listede renkten okunur */}
               <span className="shrink-0" style={{ width: 3, height: 26, borderRadius: 2, background: domainColor(s.gameKey) }} />
               <div className="flex-1 min-w-0">
                 <div className="text-[12.5px] font-bold text-(--color-text-strong) truncate">{gameTitle(s.gameKey)}</div>
-                <div className="text-[10.5px] text-(--color-text-soft) truncate">{gameKicker(s.gameKey)}</div>
+                <div className="text-[10.5px] text-(--color-text-soft) truncate">
+                  <span className="numeral lg:hidden">{shortDate(new Date(s.playedAt))} · </span>
+                  {gameKicker(s.gameKey)}
+                </div>
               </div>
               {/* Listede ham puan kendi biriminde, altında normalize karşılığı:
                   "184 puan" tek başına oyunlar arası kıyaslanamıyor, "%66"
@@ -613,8 +758,15 @@ function SessionHistory({
                     >
                       {s.score}
                     </span>
-                    <span className="numeral block text-[9px] text-(--color-text-muted) mt-1">
-                      {GAME_SCORE_SCALE[s.gameKey as keyof typeof GAME_SCORE_SCALE]?.unit ?? "puan"} · %{pct}
+                    {/* Birim adı ("dizi uzunluğu", "doğru tur") telefonda skor
+                        sütununu 130px'e çıkarıp oyun adını kırpıyordu. Dar
+                        ekranda yalnızca normalize yüzde kalır — hedefe uzaklığı
+                        söyleyen kısım o. */}
+                    <span className="numeral block text-[9px] text-(--color-text-muted) mt-1 whitespace-nowrap">
+                      <span className="max-md:hidden">
+                        {GAME_SCORE_SCALE[s.gameKey as keyof typeof GAME_SCORE_SCALE]?.unit ?? "puan"} ·{" "}
+                      </span>
+                      %{pct}
                     </span>
                   </span>
                 );

@@ -1,7 +1,7 @@
 "use client";
 
 /*
- * Danışanlar — liste değil tablo.
+ * Danışanlar — masaüstünde liste değil tablo, telefonda tablo değil kart.
  *
  * Tasarım dokümanı (1d/1e) bilinçli olarak kart ızgarası yerine satır düzeni
  * kullanıyor: terapist burada tek bir danışanı okumuyor, sekizini yan yana
@@ -10,6 +10,13 @@
  * görünür.
  *
  * Sütunlar: Danışan · Hedef · Bağımsızlık · Son seans · Eğilim/skor · Sıradaki
+ *
+ * Telefonda karşılaştırma zaten mümkün değil — 320px'e yedi sütun sığmaz.
+ * Satır burada bilinçli bir kart olur: kimlik üstte, hedef altında, ölçüler
+ * iki sütunlu etiketli bir blokta, eylemler en altta sağda. Daha önce düzen
+ * `globals.css`teki `flex-wrap` kuralına bırakılmıştı; hücreler kendi
+ * genişliklerince aktığı için "bugün" bağımsızlık çubuğunun yanına, skor
+ * "planlanmadı"nın soluna düşüyor, her kart farklı bir yerde kırılıyordu.
  */
 
 import { useMemo, useState } from "react";
@@ -131,8 +138,13 @@ export function ClientsScreen({
     return map;
   }, [plans, now]);
 
+  /* `h-full` masaüstünde şart: liste kalan yüksekliği doldurup kendi içinde
+     kayar. Telefonda aynı kural ekranı kabuğun 100%'üne çiviliyor, liste
+     kabına sığmayınca taşan kısım alt sekme çubuğunun altına kayıyordu —
+     son danışanın "Seansı Başlat" düğmesine erişilemiyordu. Küçük ekranda
+     yükseklik içeriğe bırakılır; kaydırma zaten dış kapta. */
   return (
-    <div className="flex flex-col gap-5 h-full min-h-0">
+    <div className="flex flex-col gap-5 max-lg:gap-4 h-full max-lg:h-auto min-h-0">
       <ScreenHeader
         eyebrow={`${clients.length - archived} aktif${archived ? ` · ${archived} arşivde` : ""}`}
         title="Danışanlar"
@@ -161,22 +173,30 @@ export function ClientsScreen({
         }
       />
 
-      {/* Filtre çipleri + sıralama */}
-      <div className="flex items-center gap-2 flex-wrap">
+      {/*
+        Filtre çipleri + sıralama.
+
+        Sıralama kutusu masaüstünde `ml-auto` ile satırın sağ ucuna yaslanıyor.
+        Telefonda aynı kural onu çiplerin arasına sokuyordu: çipler sarınca
+        kutu son çipin yanına düşüyor, arada dengesiz bir boşluk kalıyordu.
+        Küçük ekranda kendi tam genişlikli satırına iner.
+      */}
+      <div className="flex items-center gap-2 max-lg:gap-[7px] flex-wrap">
         <Chip active={tag === "all"} onClick={() => setTag("all")} label={`Tümü · ${clients.length}`} />
         {tagCounts.map(([t, n]) => (
           <Chip key={t} active={tag === t} onClick={() => setTag(t)} label={`${t} · ${n}`} />
         ))}
         <label
-          className="ml-auto flex items-center gap-[7px] text-[12px] font-semibold text-(--color-text-body) cursor-pointer"
-          style={{ padding: "8px 13px", borderRadius: 10, background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}
+          className="flex items-center gap-[7px] text-[12px] font-semibold text-(--color-text-body) cursor-pointer
+            px-[13px] py-2 rounded-[10px] bg-(--color-surface-strong) border border-(--color-line)
+            max-lg:w-full max-lg:py-0 lg:ml-auto"
         >
-          <ArrowUpDown size={13} />
+          <ArrowUpDown size={13} className="shrink-0" />
           Sırala:
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value as SortKey)}
-            className="bg-transparent border-none outline-none cursor-pointer text-(--color-text-body) font-semibold"
+            className="bg-transparent border-none outline-none cursor-pointer text-(--color-text-body) font-semibold max-lg:ml-auto"
           >
             {SORTS.map((s) => (
               <option key={s.key} value={s.key}>{s.label}</option>
@@ -203,14 +223,19 @@ export function ClientsScreen({
         </Card>
       ) : (
         <>
-          {/* Sütun başlıkları — kart değil, çıplak. Tablo hissi için. */}
-          <div className="grid gap-3.5 px-[18px] client-cols client-head" style={{ ["--cols" as string]: COLS }}>
+          {/* Sütun başlıkları — kart değil, çıplak. Tablo hissi için.
+              Telefonda satır kart olduğu için başlık şeridi anlamsız: her
+              ölçü kendi etiketini yanında taşıyor. */}
+          <div
+            className="hidden lg:grid lg:gap-3.5 lg:px-[18px] lg:grid-cols-[var(--cols)]"
+            style={{ ["--cols" as string]: COLS }}
+          >
             {["Danışan", "Hedef", "Bağımsızlık", "Son Seans", "Eğilim / Skor", "Sıradaki", ""].map((h, i) => (
               <Eyebrow key={i} className="!tracking-[0.1em]">{h}</Eyebrow>
             ))}
           </div>
 
-          <div className="flex-1 flex flex-col gap-[9px] overflow-y-auto min-h-0">
+          <div className="flex-1 flex flex-col gap-[9px] max-lg:gap-[11px] overflow-y-auto min-h-0">
             {rows.length === 0 ? (
               <Card className="grid place-items-center py-10">
                 <p className="m-0 text-[12.5px] text-(--color-text-soft)">
@@ -250,10 +275,10 @@ function Chip({ active, onClick, label }: { readonly active: boolean; readonly o
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`text-[12px] font-semibold cursor-pointer border transition-colors ${active ? "text-white border-transparent" : "text-(--color-text-body) hover:border-(--color-line-strong)"}`}
+      /* Telefonda yatay pay daralır — dört çip 320px'te üç satıra
+         dağılıyordu; dikey ölçü dokunma kuralından zaten 44px. */
+      className={`text-[12px] font-semibold cursor-pointer border transition-colors rounded-[10px] px-[15px] py-2 max-lg:px-[12px] ${active ? "text-white border-transparent" : "text-(--color-text-body) hover:border-(--color-line-strong)"}`}
       style={{
-        padding: "8px 15px",
-        borderRadius: 10,
         background: active ? "var(--gradient-signature)" : "var(--color-surface-strong)",
         borderColor: active ? "transparent" : "var(--color-line)",
       }}
@@ -283,14 +308,25 @@ function ClientRow({
 
   return (
     <div
-      className="glass grid gap-3.5 items-center transition-colors hover:border-(--color-line-strong) client-cols client-row"
-      style={{ gridTemplateColumns: COLS, padding: "13px 18px", borderRadius: 14 }}
+      /*
+       * Tek DOM, iki düzen. Masaüstü: yedi sütunlu tablo satırı.
+       * Telefon: iki sütunlu kart — kimlik ve hedef tam genişlikte, dört
+       * ölçü ikişerli iki satırda, eylem şeridi en altta. Hücreler alta
+       * hizalanır (`items-end`) çünkü her ölçü değerini üstte, fısıltı
+       * etiketini altta taşıyor; etiketler böylece aynı çizgide durur.
+       */
+      className={
+        "glass transition-colors hover:border-(--color-line-strong) grid " +
+        "max-lg:grid-cols-2 max-lg:items-end max-lg:gap-x-[10px] max-lg:gap-y-[11px] max-lg:p-[14px] max-lg:rounded-2xl " +
+        "lg:grid-cols-[var(--cols)] lg:gap-3.5 lg:items-center lg:px-[18px] lg:py-[13px] lg:rounded-[14px]"
+      }
+      style={{ ["--cols" as string]: COLS }}
     >
       {/* Danışan */}
       <button
         type="button"
         onClick={onOpen}
-        className="flex items-center gap-3 min-w-0 text-left bg-transparent border-none p-0 cursor-pointer group"
+        className="flex items-center gap-3 min-w-0 text-left bg-transparent border-none p-0 cursor-pointer group max-lg:col-span-2"
       >
         <Avatar name={m.client.displayName} id={m.client.id} size={38} radius={12} />
         <span className="min-w-0">
@@ -303,60 +339,80 @@ function ClientRow({
         </span>
       </button>
 
-      {/* Hedef */}
-      <div className="min-w-0">
-        <div className="text-[12px] font-semibold text-(--color-text-body) truncate">{m.client.primaryGoal || "—"}</div>
+      {/* Hedef — telefonda tek satıra sığmıyor ("…dikkat sürdürme becer…"),
+          kart genişliğinde iki satıra yayılır; alt hattı kimlik bloğunu
+          ölçülerden ayırır. */}
+      <div className="min-w-0 max-lg:col-span-2 max-lg:border-b max-lg:border-(--color-line) max-lg:pb-[11px]">
+        <div className="text-[12px] font-semibold text-(--color-text-body) max-lg:line-clamp-2 lg:truncate">
+          {m.client.primaryGoal || "—"}
+        </div>
         <div className="numeral text-[10px] text-(--color-text-soft) mt-0.5">birincil hedef</div>
       </div>
 
       {/* Bağımsızlık */}
-      <div>
+      <div className="min-w-0">
         <StepBar value={m.independence} />
         <div className="numeral text-[10px] text-(--color-text-soft) mt-[5px]">bağımsızlık {m.independence}/5</div>
       </div>
 
-      {/* Son seans */}
-      <div className="text-[11.5px] text-(--color-text-body)">{relativeDay(m.lastPlayedAt)}</div>
+      {/* Son seans — masaüstünde etiketini sütun başlığından alıyor; telefonda
+          başlık şeridi yok, etiket hücrenin içine iner. Sağ sütun sağa yaslı:
+          değerler kartın kenarına oturunca iki sütun tablo gibi okunuyor,
+          ortada asılı kalmıyor. */}
+      <div className="min-w-0 max-lg:text-right">
+        <div className="text-[11.5px] text-(--color-text-body) truncate">{relativeDay(m.lastPlayedAt)}</div>
+        <div className="numeral text-[10px] text-(--color-text-soft) mt-[5px] lg:hidden">son seans</div>
+      </div>
 
       {/* Eğilim / skor */}
-      <div className="flex items-center gap-2.5">
-        <Sparkline series={m.series} id={m.client.id} width={104} height={30} />
-        <span className="numeral text-[15px] font-semibold" style={{ color: scoreColor }}>
-          {m.lastScore ?? "—"}
-        </span>
+      <div className="min-w-0">
+        <div className="flex items-center gap-2.5 max-lg:gap-2">
+          <Sparkline series={m.series} id={m.client.id} width={104} height={30} />
+          <span className="numeral text-[15px] font-semibold" style={{ color: scoreColor }}>
+            {m.lastScore ?? "—"}
+          </span>
+        </div>
+        <div className="numeral text-[10px] text-(--color-text-soft) mt-[5px] lg:hidden">eğilim / skor</div>
       </div>
 
       {/* Sıradaki */}
-      <div className="text-[11px] font-medium text-(--color-text-body) min-w-0">
-        {next ? (
-          <>
-            <span className="block truncate">{next.day}{next.time ? ` ${next.time}` : ""}</span>
-            <span className="block text-[10px] text-(--color-text-soft) truncate">{gameTitle(next.game)}</span>
-          </>
-        ) : (
-          <span className="text-(--color-text-muted)">planlanmadı</span>
-        )}
+      <div className="text-[11px] font-medium text-(--color-text-body) min-w-0 max-lg:text-right">
+        <div className="min-w-0">
+          {next ? (
+            <>
+              <span className="block truncate">{next.day}{next.time ? ` ${next.time}` : ""}</span>
+              <span className="block text-[10px] text-(--color-text-soft) truncate">{gameTitle(next.game)}</span>
+            </>
+          ) : (
+            <span className="block truncate text-(--color-text-muted)">planlanmadı</span>
+          )}
+        </div>
+        <div className="numeral text-[10px] text-(--color-text-soft) mt-[5px] lg:hidden">sıradaki</div>
       </div>
 
-      {/* Eylemler */}
-      <div className="flex items-center gap-1.5">
+      {/* Eylemler — telefonda kartın en altında kendi şeridinde, sağa yaslı.
+          Önceden ölçülerin arasında kalıyor, 30px'lik hedefler parmakla
+          ıskalanıyordu; küçük ekranda 44px yüksekliğe çıkar ve birincil
+          eylem ikon değil etiketli düğme olur (ekranın asıl işi bu). */}
+      <div className="flex items-center gap-1.5 max-lg:col-span-2 max-lg:justify-end max-lg:gap-2 max-lg:border-t max-lg:border-(--color-line) max-lg:pt-[11px]">
         <button
           type="button"
           onClick={onStart}
           title="Seansı Başlat"
           aria-label={`${m.client.displayName} ile seansı başlat`}
-          className="grid place-items-center cursor-pointer border-none transition-colors"
-          style={{ width: 30, height: 30, borderRadius: 9, background: "var(--color-primary-light)", color: "var(--color-primary)" }}
+          className="grid place-items-center cursor-pointer border-none transition-colors w-[30px] h-[30px] rounded-[9px]
+            max-lg:flex max-lg:w-auto max-lg:h-11 max-lg:gap-2 max-lg:px-[17px] max-lg:rounded-xl max-lg:text-[12px] max-lg:font-semibold"
+          style={{ background: "var(--color-primary-light)", color: "var(--color-primary)" }}
         >
           <Play size={13} fill="currentColor" />
+          <span className="lg:hidden">Seansı Başlat</span>
         </button>
         <button
           type="button"
           onClick={onOpen}
           title="Profili Aç"
           aria-label={`${m.client.displayName} profilini aç`}
-          className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-soft) hover:text-(--color-primary) transition-colors"
-          style={{ width: 30, height: 30, borderRadius: 9 }}
+          className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-soft) hover:text-(--color-primary) transition-colors w-[30px] h-[30px] rounded-[9px] max-lg:w-11 max-lg:h-11 max-lg:rounded-xl max-lg:border max-lg:border-(--color-line)"
         >
           <ChevronRight size={15} />
         </button>

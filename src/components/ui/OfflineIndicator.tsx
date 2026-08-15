@@ -37,8 +37,12 @@ export function OfflineIndicator() {
 
   return (
     <div
-      className="fixed top-0 left-0 right-0 z-[9999] flex items-center justify-center gap-2 py-2 px-4 text-xs font-bold transition-all"
+      /* Şerit ekranın en üstüne yapışıyor; çentikli telefonda metin durum
+         çubuğunun altında kalıyordu. Güvenli alan payı üstte, metin altında. */
+      className="fixed top-0 left-0 right-0 z-[9999] flex items-center justify-center gap-2 px-4 text-xs font-bold transition-all text-center"
       style={{
+        paddingTop: "calc(env(safe-area-inset-top, 0px) + 8px)",
+        paddingBottom: 8,
         background: isOnline
           ? "linear-gradient(90deg, rgba(18, 184, 134,0.95), rgba(10, 122, 88,0.95))"
           : "linear-gradient(90deg, rgba(214, 61, 99,0.95), rgba(220,38,38,0.95))",
