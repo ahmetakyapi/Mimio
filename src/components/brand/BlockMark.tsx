@@ -1,6 +1,7 @@
 "use client";
 
 import { useId } from "react";
+import { MARK_PATH, MARK_VIEWBOX } from "@/lib/brand-mark";
 
 /**
  * Mimio monogramı.
@@ -29,34 +30,14 @@ export function BlockMark({
   tile = false,
   className,
 }: MarkProps) {
-  const V = 32; // viewBox birimi
+  const V = MARK_VIEWBOX;
 
   /* Degrade tanımı SVG içinde yaşadığı için id benzersiz olmalı: aynı sayfada
      birden çok işaret varsa (sidebar + giriş ekranı) ikisi de ilk tanımı
      kullanır ve tema değişiminde biri donar. */
   const gradientId = useId();
 
-  /*
-   * M tek dolu yol. Gövde ağır (kol kalınlığı 32 birimin ~4,8'i) ki 24 px'te
-   * bile dolu okunsun. Sağ ayak sol ayaktan yukarıda biter: harf bir ilerleme
-   * eğrisi gibi yukarı bırakır.
-   */
-  const m = [
-    "M3.4 26.4",
-    "L3.4 5.6",
-    "L9.6 5.6",
-    "L16 17.2",
-    "L22.4 5.6",
-    "L28.6 5.6",
-    "L28.6 20.4",
-    "L23.4 20.4",
-    "L23.4 14.6",
-    "L18 24.2",
-    "L14 24.2",
-    "L8.6 14.6",
-    "L8.6 26.4",
-    "Z",
-  ].join(" ");
+  /* Yol `lib/brand-mark.ts`te: ikon rotaları da aynı geometriyi basıyor. */
 
   return (
     <svg
@@ -80,7 +61,7 @@ export function BlockMark({
           <rect width={V} height={V} rx={8} fill={`url(#${gradientId})`} />
         </>
       )}
-      <path d={m} fill={tile ? "#ffffff" : color} />
+      <path d={MARK_PATH} fill={tile ? "#ffffff" : color} />
     </svg>
   );
 }

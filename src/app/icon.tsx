@@ -1,8 +1,23 @@
-import { ImageResponse } from 'next/og'
+import { ImageResponse } from "next/og";
+import { BRAND_GRADIENT, MARK_PATH, MARK_VIEWBOX } from "@/lib/brand-mark";
 
-export const size = { width: 32, height: 32 }
-export const contentType = 'image/png'
+export const size = { width: 32, height: 32 };
+export const contentType = "image/png";
 
+/**
+ * Sekme ikonu.
+ *
+ * 32px'te çizilir ama tarayıcı çoğu zaman 16px'e indirir; tasarım o boyuta
+ * göre yapılır. İki karar buradan çıkıyor:
+ *
+ *   · Kenar payı dar (2px). Daha geniş bir pay 16px'e inince harfi dört
+ *     piksellik bir lekeye çeviriyor.
+ *   · Köşe yarıçapı 7 — sekmede kare bir blok fazla sert, tam yuvarlak ise
+ *     diğer sekmelerdeki favicon'ların arasında kimliksiz duruyor.
+ *
+ * Harf, uygulamanın içindekiyle aynı monogram: daha önce burada sistem
+ * fontuyla yazılmış bir "M" vardı ve markanın işaretiyle ilgisi yoktu.
+ */
 export default function Icon() {
   return new ImageResponse(
     (
@@ -10,20 +25,18 @@ export default function Icon() {
         style={{
           width: 32,
           height: 32,
-          borderRadius: 8,
-          background: 'linear-gradient(135deg, #2b62f5 0%, #17c2e0 100%)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          fontSize: 18,
-          fontWeight: 800,
-          letterSpacing: '-0.5px',
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 7,
+          backgroundImage: BRAND_GRADIENT,
         }}
       >
-        M
+        <svg width={26} height={26} viewBox={`0 0 ${MARK_VIEWBOX} ${MARK_VIEWBOX}`}>
+          <path d={MARK_PATH} fill="#ffffff" />
+        </svg>
       </div>
     ),
     { ...size },
-  )
+  );
 }
