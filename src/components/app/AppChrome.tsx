@@ -289,7 +289,7 @@ export function TopBar({
                 title={label}
                 onClick={() => onThemeChange(key)}
                 className={`grid place-items-center cursor-pointer border-none transition-colors ${on ? "text-white" : "text-(--color-text-soft) bg-transparent hover:text-(--color-text-body)"}`}
-                style={{ width: 30, height: 26, borderRadius: 7, background: on ? "var(--gradient-signature)" : undefined }}
+                style={{ width: 30, height: 26, borderRadius: 7, background: on ? "var(--gradient-signature-ink)" : undefined }}
               >
                 <Icon size={14} strokeWidth={2} />
               </button>
@@ -341,7 +341,12 @@ export function TopBar({
               border: "1px solid var(--color-line)",
             }}
           >
+            {/* Baş harfler dekoratif: yanındaki satır zaten adı ve rolü tam
+                yazıyor. `Avatar` primitifi de aynı gerekçeyle gizli — degrade
+                üstündeki beyaz harfin kontrastı bu yüzden bir kusur değil,
+                ama ekran okuyucunun adı iki kez okumaması için işaretlenmeli. */}
             <span
+              aria-hidden="true"
               className="grid place-items-center shrink-0 font-bold text-white text-[11.5px]"
               style={{ width: 27, height: 27, borderRadius: 9, background: "var(--gradient-avatar-3)" }}
             >

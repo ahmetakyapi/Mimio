@@ -36,6 +36,22 @@
   --color-signature-from: #4d7dff;
   --color-signature-to: #2ad6ef;
   --gradient-signature: linear-gradient(135deg, #4d7dff, #2ad6ef);
+  /*
+   * Metin taşıyan yüzeylerin degradesi — "mürekkep" hâli.
+   *
+   * İmza degradesinin üstündeki beyaz metin WCAG AA'yı tutmuyor: koyu temada
+   * en kötü nokta (cyan ucu) 1.76:1, açık temada 2.14:1. Gereken 4.5:1.
+   * Bu ayrı token yalnızca ÜSTÜNDE YAZI OLAN yüzeylerde kullanılır —
+   * birincil düğme, seçili segment, sıradaki seans kartı. Marka döşemesi,
+   * ölçüm çubuğu ve avatar parlak `--gradient-signature`i korur; onların
+   * üstünde okunması gereken metin yok (avatar baş harfi `aria-hidden`,
+   * yanındaki adı tekrar eder).
+   *
+   * Uçlar tek tek değil, degradenin HER noktası ölçülerek seçildi: iki ucun
+   * geçmesi yetmiyor, sRGB'de karışan ara tonlar iki ucun da altına
+   * inebiliyor. Bu değerlerde en kötü nokta 4.61:1.
+   */
+  --gradient-signature-ink: linear-gradient(135deg, #446ee0, #19808f);
   --gradient-signature-soft: linear-gradient(135deg, rgba(77, 125, 255, 0.18), rgba(42, 214, 239, 0.10));
   /* Ölçüm çubuğu: soldan sağa dolduğu için degrade de yatay. */
   --gradient-bar: linear-gradient(90deg, #4d7dff, #2ad6ef);
@@ -409,6 +425,8 @@ html[data-theme='light'] {
   --color-signature-from: #2b62f5;
   --color-signature-to: #17c2e0;
   --gradient-signature: linear-gradient(135deg, #2b62f5, #17c2e0);
+  /* En kötü nokta 4.51:1. Mavi uç zaten geçiyordu (5.04); koyulaşan cyan. */
+  --gradient-signature-ink: linear-gradient(135deg, #2b62f5, #0f8296);
   --gradient-signature-soft: linear-gradient(135deg, rgba(43, 98, 245, 0.13), rgba(23, 194, 224, 0.10));
   --gradient-bar: linear-gradient(90deg, #2b62f5, #17c2e0);
 
@@ -423,10 +441,12 @@ html[data-theme='light'] {
   --color-signal-light: rgba(23, 194, 224, 0.11);
 
   /* Anlam renkleri — açık zeminde metin olarak da okunan koyu varyantlar */
+  /* Kum ve cyan sayfa zemininde 4.07 ve 4.20 kalıyordu — rozet metni olarak
+     kullanıldıkları için (Tag, alan etiketi) AA'yı tutmaları gerek. */
   --color-accent-green: #0a7a58;
-  --color-accent-amber: #a96708;
+  --color-accent-amber: #9b5f07;
   --color-accent-red: #b8304c;
-  --color-accent-teal: #0b7f95;
+  --color-accent-teal: #0a778c;
   --color-accent-violet: #5636d6;
 
   /* Sidebar — cam, aurora arkadan sızar */
@@ -454,11 +474,11 @@ html[data-theme='light'] {
   --color-games-badge-border: rgba(43, 98, 245, 0.2);
 
   /* Domain accents — açık zeminde okunur tonlar */
-  --color-domain-memory: #a96708;
+  --color-domain-memory: #9b5f07;
   --color-domain-motor: #0a7a58;
   --color-domain-visual: #5636d6;
   --color-domain-cognitive: #1b4bc4;
-  --color-domain-social: #0b7f95;
+  --color-domain-social: #0a778c;
 
   /* Texture — light'ta grain daha belirgin, aurora daha soluk */
   --grain-opacity: 0.5;
@@ -503,6 +523,7 @@ html[data-theme='high-contrast'] {
   --color-signature-from: #ffff00;
   --color-signature-to: #ffff00;
   --gradient-signature: none;
+  --gradient-signature-ink: none;
   --gradient-signature-soft: none;
   --gradient-bar: #ffff00;
   --gradient-avatar-1: #ffff00;
@@ -741,7 +762,7 @@ html[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
    tonuna kayıyor ve seans sırasında okunurluk düşüyor.
    ───────────────────────────────────────────── */
 .btn-signature {
-  background: var(--gradient-signature);
+  background: var(--gradient-signature-ink);
   color: #ffffff;
   border: none;
   box-shadow: var(--shadow-primary);
@@ -778,6 +799,15 @@ html[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
   color: #ffffff;
 }
 
+/* Üstünde gerçek metin olan döşeme (ör. "Sıradaki Seans" kartı).
+   `.tile-signature` marka işareti ve avatar gibi yazısız yüzeyler için;
+   ikisi ayrı olmasa metnin kontrastı ya da markanın parlaklığı feda
+   edilecekti. */
+.tile-signature-ink {
+  background: var(--gradient-signature-ink);
+  color: #ffffff;
+}
+
 /* İmza degradesi üzerindeki grain — düz degrade dijital ve "ucuz"
    görünüyor; %30 opaklıkta doku yüzeye malzeme hissi veriyor. */
 .tile-signature-grain {
@@ -796,7 +826,15 @@ html[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
 
 /* Degradenin üstündeki metin — her zaman beyaz ailesi, asla token değil. */
 .on-signature { color: #ffffff; }
-.on-signature-soft { color: rgba(255, 255, 255, 0.82); }
+/*
+ * İmza yüzeyindeki ikincil metin.
+ *
+ * Eskiden %82 opaklıkla soluklaştırılıyordu; degrade koyulaşınca bile o
+ * opaklık 3.57:1'de kalıyor (gereken 4.5). Hiyerarşi artık opaklıkla değil
+ * PUNTO VE AĞIRLIKLA kuruluyor — zaten öyleydi: başlık 19px bold, bu satır
+ * 11-12px semibold. Rengin kendisi tam beyaz.
+ */
+.on-signature-soft { color: #ffffff; }
 
 /* Canlı seans nabzı — seansın sürdüğünü gösteren tek hareket. */
 @keyframes live-pulse-kf {

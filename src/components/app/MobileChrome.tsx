@@ -16,6 +16,7 @@
 import { useEffect, useId, type ReactNode } from "react";
 import { Home, Users, CalendarDays, Gamepad2, MoreHorizontal, X } from "lucide-react";
 import type { AppView } from "@/lib/platform-data";
+import { Portal } from "@/components/ui/Portal";
 
 const TABS: ReadonlyArray<{ view: AppView; label: string; icon: typeof Home; match?: readonly AppView[] }> = [
   { view: "dashboard", label: "Bugün", icon: Home },
@@ -195,86 +196,88 @@ export function MobileMoreSheet({
   }, [onClose]);
 
   return (
-    <div
-      className="fixed inset-0 z-40 lg:hidden flex flex-col justify-end"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={titleId}
-      style={{ overscrollBehavior: "contain" }}
-    >
-      {/* Zemin artık erişilebilirlik ağacında görünmüyor: görünür "Kapat"
-          düğmesi eklenince aynı adı taşıyan iki hedef oluşuyordu. */}
-      <button
-        type="button"
-        tabIndex={-1}
-        aria-hidden="true"
-        onClick={onClose}
-        className="absolute inset-0 cursor-default border-none"
-        style={{ background: "rgba(5,11,22,0.45)", backdropFilter: "blur(3px)" }}
-      />
-      {/*
-        Kart, ekranın uzun kenarına göre sınırlanıyor: 568px yüksekliğindeki
-        küçük telefonlarda ya da yatay çevrildiğinde dört satır + başlık alt
-        sekme çubuğunun arkasına giriyordu. Yan boşluklar güvenli alanı,
-        alt boşluk ise sekme çubuğunu (67px) + payı hesaba katıyor.
-      */}
+    <Portal>
       <div
-        className="relative"
-        style={{
-          marginTop: 12,
-          marginLeft: "max(12px, env(safe-area-inset-left))",
-          marginRight: "max(12px, env(safe-area-inset-right))",
-          marginBottom: "calc(84px + env(safe-area-inset-bottom, 0px))",
-          padding: 8,
-          borderRadius: 22,
-          maxHeight: "calc(100dvh - 108px - env(safe-area-inset-bottom, 0px))",
-          overflowY: "auto",
-          overscrollBehavior: "contain",
-          background: "var(--color-surface-strong)",
-          border: "1px solid var(--color-line-strong)",
-          boxShadow: "var(--shadow-lg)",
-        }}
+        className="fixed inset-0 z-40 lg:hidden flex flex-col justify-end"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        style={{ overscrollBehavior: "contain" }}
       >
-        {/* Sayfanın başlığı yoktu: dört satır havada duran isimsiz bir kutu
-            gibi açılıyordu, ekran okuyucuda da yalnızca liste vardı. */}
-        <div className="flex items-center justify-between gap-3" style={{ padding: "6px 6px 8px 10px" }}>
-          <h2
-            id={titleId}
-            className="font-display m-0 text-[15px] font-bold tracking-[-0.02em] text-(--color-text-strong)"
-          >
-            Daha
-          </h2>
-          <button
-            type="button"
-            aria-label="Kapat"
-            onClick={onClose}
-            className="grid place-items-center shrink-0 cursor-pointer border-none bg-transparent text-(--color-text-soft)"
-            style={{ width: 32, height: 32, borderRadius: 10 }}
-          >
-            <X size={17} strokeWidth={2.2} />
-          </button>
-        </div>
-
-        {MORE_VIEWS.map((m) => {
-          const on = activeView === m.view;
-          return (
-            <button
-              key={m.view}
-              type="button"
-              onClick={() => { onNavigate(m.view); onClose(); }}
-              className="w-full text-left cursor-pointer border-none text-[14px] font-semibold transition-colors"
-              style={{
-                padding: "14px 16px",
-                borderRadius: 15,
-                background: on ? "var(--gradient-signature-soft)" : "transparent",
-                color: on ? "var(--color-primary-ink)" : "var(--color-text-body)",
-              }}
+        {/* Zemin artık erişilebilirlik ağacında görünmüyor: görünür "Kapat"
+            düğmesi eklenince aynı adı taşıyan iki hedef oluşuyordu. */}
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-hidden="true"
+          onClick={onClose}
+          className="absolute inset-0 cursor-default border-none"
+          style={{ background: "rgba(5,11,22,0.45)", backdropFilter: "blur(3px)" }}
+        />
+        {/*
+          Kart, ekranın uzun kenarına göre sınırlanıyor: 568px yüksekliğindeki
+          küçük telefonlarda ya da yatay çevrildiğinde dört satır + başlık alt
+          sekme çubuğunun arkasına giriyordu. Yan boşluklar güvenli alanı,
+          alt boşluk ise sekme çubuğunu (67px) + payı hesaba katıyor.
+        */}
+        <div
+          className="relative"
+          style={{
+            marginTop: 12,
+            marginLeft: "max(12px, env(safe-area-inset-left))",
+            marginRight: "max(12px, env(safe-area-inset-right))",
+            marginBottom: "calc(84px + env(safe-area-inset-bottom, 0px))",
+            padding: 8,
+            borderRadius: 22,
+            maxHeight: "calc(100dvh - 108px - env(safe-area-inset-bottom, 0px))",
+            overflowY: "auto",
+            overscrollBehavior: "contain",
+            background: "var(--color-surface-strong)",
+            border: "1px solid var(--color-line-strong)",
+            boxShadow: "var(--shadow-lg)",
+          }}
+        >
+          {/* Sayfanın başlığı yoktu: dört satır havada duran isimsiz bir kutu
+              gibi açılıyordu, ekran okuyucuda da yalnızca liste vardı. */}
+          <div className="flex items-center justify-between gap-3" style={{ padding: "6px 6px 8px 10px" }}>
+            <h2
+              id={titleId}
+              className="font-display m-0 text-[15px] font-bold tracking-[-0.02em] text-(--color-text-strong)"
             >
-              {m.label}
+              Daha
+            </h2>
+            <button
+              type="button"
+              aria-label="Kapat"
+              onClick={onClose}
+              className="grid place-items-center shrink-0 cursor-pointer border-none bg-transparent text-(--color-text-soft)"
+              style={{ width: 32, height: 32, borderRadius: 10 }}
+            >
+              <X size={17} strokeWidth={2.2} />
             </button>
-          );
-        })}
+          </div>
+  
+          {MORE_VIEWS.map((m) => {
+            const on = activeView === m.view;
+            return (
+              <button
+                key={m.view}
+                type="button"
+                onClick={() => { onNavigate(m.view); onClose(); }}
+                className="w-full text-left cursor-pointer border-none text-[14px] font-semibold transition-colors"
+                style={{
+                  padding: "14px 16px",
+                  borderRadius: 15,
+                  background: on ? "var(--gradient-signature-soft)" : "transparent",
+                  color: on ? "var(--color-primary-ink)" : "var(--color-text-body)",
+                }}
+              >
+                {m.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </Portal>
   );
 }

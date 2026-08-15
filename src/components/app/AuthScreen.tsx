@@ -171,7 +171,7 @@ export function AuthScreen({
                   aria-selected={on}
                   onClick={() => onModeChange(m)}
                   className={`flex-1 text-[12.5px] font-semibold cursor-pointer border-none transition-colors ${on ? "text-white" : "text-(--color-text-soft) bg-transparent hover:text-(--color-text-body)"}`}
-                  style={{ padding: "9px 0", borderRadius: 9, background: on ? "var(--gradient-signature)" : undefined }}
+                  style={{ padding: "9px 0", borderRadius: 9, background: on ? "var(--gradient-signature-ink)" : undefined }}
                 >
                   {m === "login" ? "Giriş Yap" : "Kayıt Ol"}
                 </button>
@@ -280,7 +280,7 @@ export function AuthScreen({
                     className="grid place-items-center shrink-0 w-5 h-5 lg:w-[17px] lg:h-[17px]"
                     style={{
                       borderRadius: 5,
-                      background: remember ? "var(--gradient-signature)" : "transparent",
+                      background: remember ? "var(--gradient-signature-ink)" : "transparent",
                       border: remember ? "none" : "1px solid var(--color-line-strong)",
                     }}
                   >

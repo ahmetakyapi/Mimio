@@ -197,7 +197,7 @@ export function ActivityLibraryScreen({ onAddToPlan }: Props) {
                         width: 16,
                         height: 16,
                         borderRadius: 5,
-                        background: on ? "var(--gradient-signature)" : "transparent",
+                        background: on ? "var(--gradient-signature-ink)" : "transparent",
                         border: on ? "none" : "1px solid var(--color-line-strong)",
                       }}
                     >

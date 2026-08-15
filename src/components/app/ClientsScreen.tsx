@@ -279,7 +279,7 @@ function Chip({ active, onClick, label }: { readonly active: boolean; readonly o
          dağılıyordu; dikey ölçü dokunma kuralından zaten 44px. */
       className={`text-[12px] font-semibold cursor-pointer border transition-colors rounded-[10px] px-[15px] py-2 max-lg:px-[12px] ${active ? "text-white border-transparent" : "text-(--color-text-body) hover:border-(--color-line-strong)"}`}
       style={{
-        background: active ? "var(--gradient-signature)" : "var(--color-surface-strong)",
+        background: active ? "var(--gradient-signature-ink)" : "var(--color-surface-strong)",
         borderColor: active ? "transparent" : "var(--color-line)",
       }}
     >

@@ -506,7 +506,9 @@ export function ClientDetailScreen({
                 type="button"
                 onClick={() => onNavigate("weekly-plan")}
                 className="w-full mt-3 text-[12px] font-semibold cursor-pointer border-none text-white transition-transform hover:-translate-y-px"
-                style={{ padding: 10, borderRadius: 11, background: "linear-gradient(135deg,#4d7dff,#2ad6ef)" }}
+                /* Sabit parlak degrade beyaz metinle 1.76:1 veriyordu; üstünde
+                   yazı olan her imza yüzeyi gibi bu da mürekkep hâlini kullanır. */
+                style={{ padding: 10, borderRadius: 11, background: "var(--gradient-signature-ink)" }}
               >
                 Planı Güncelle
               </button>

@@ -22,6 +22,7 @@ import { GAME_TABS } from "@/lib/game-constants";
 import { INDEPENDENCE_STEPS } from "@/lib/deniz-derive";
 import { Avatar, Eyebrow } from "./primitives";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { Portal } from "@/components/ui/Portal";
 
 const AREAS = ["Pediatrik", "Nörolojik", "Nöroçeşitlilik & Otizm", "Geriatrik", "İş & Okul"] as const;
 
@@ -110,326 +111,328 @@ export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
   } as const;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" style={inset} role="dialog" aria-modal="true" aria-label="Yeni danışan">
-      <button
-        type="button"
-        aria-label="Kapat"
-        onClick={onClose}
-        className="absolute inset-0 cursor-default border-none"
-        style={{ background: "rgba(5,11,22,0.5)", backdropFilter: "blur(4px)" }}
-      />
-
-      {/*
-       * Genişlik artık sınıfla veriliyor.
-       *
-       * Önceki hâl `width: 700` + `maxWidth: "100%"` idi ve kap
-       * `grid place-items-center` olduğu için örtük sütun ögenin
-       * max-content ölçüsüne (700px) genişliyordu: `100%` de 700px'e
-       * çözülüyor, telefonda kutu ekranın 380px sağına taşıyordu. Alt
-       * eylem çubuğundaki "Devam" düğmesi tamamen görünmez oluyor,
-       * akış telefonda ilk adımda kilitleniyordu. Flex + `w-full`
-       * yüzdeyi gerçek kap genişliğine bağlar.
-       *
-       * `vh` yerine `dvh`: iOS'ta adres çubuğu açıkken 90vh ekrandan taşar.
-       */}
-      <div
-        className="relative flex flex-col w-full max-w-[700px] min-w-0 max-h-[90dvh]"
-        style={{
-          borderRadius: 26,
-          background: "var(--color-surface-strong)",
-          border: "1px solid var(--color-line-strong)",
-          boxShadow: "var(--shadow-lg)",
-        }}
-      >
-        {/* Başlık + adım göstergesi */}
-        <div className="flex items-start justify-between gap-4 max-lg:gap-2 px-[26px] pt-6 max-lg:px-4 max-lg:pt-4">
-          <div className="min-w-0">
-            <Eyebrow>Adım {step} / 3</Eyebrow>
-            {/* 18px başlık dar ekranda iki satıra kırılıp kapatma düğmesini
-                aşağı itiyordu; telefonda 16px tek satırda kalıyor. */}
-            <h2 className="font-display m-0 mt-1.5 text-[18px] max-lg:text-[16px] font-bold tracking-[-0.025em] text-(--color-text-strong)">
-              {stepTitle}
-            </h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Kapat"
-            className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-soft) hover:text-(--color-text-strong) shrink-0"
-            style={{ width: 34, height: 34, borderRadius: 11 }}
-          >
-            <X size={16} />
-          </button>
-        </div>
-
+    <Portal>
+      <div className="fixed inset-0 z-50 flex items-center justify-center" style={inset} role="dialog" aria-modal="true" aria-label="Yeni danışan">
+        <button
+          type="button"
+          aria-label="Kapat"
+          onClick={onClose}
+          className="absolute inset-0 cursor-default border-none"
+          style={{ background: "rgba(5,11,22,0.5)", backdropFilter: "blur(4px)" }}
+        />
+  
         {/*
-         * Adım göstergesi.
+         * Genişlik artık sınıfla veriliyor.
          *
-         * Üç rakam + üç etiket + iki bağlantı çizgisi 320px'de ~400px
-         * tutuyordu: "3 Bağımsızlık" ekranın dışında kalıyor, terapist
-         * kaçıncı adımda olduğunu göremiyordu. Telefonda yalnızca içinde
-         * bulunulan adımın etiketi yazılır (hangi adımda olunduğu zaten
-         * "Adım n / 3" satırında da var), bağlantı çizgileri kısalır.
+         * Önceki hâl `width: 700` + `maxWidth: "100%"` idi ve kap
+         * `grid place-items-center` olduğu için örtük sütun ögenin
+         * max-content ölçüsüne (700px) genişliyordu: `100%` de 700px'e
+         * çözülüyor, telefonda kutu ekranın 380px sağına taşıyordu. Alt
+         * eylem çubuğundaki "Devam" düğmesi tamamen görünmez oluyor,
+         * akış telefonda ilk adımda kilitleniyordu. Flex + `w-full`
+         * yüzdeyi gerçek kap genişliğine bağlar.
+         *
+         * `vh` yerine `dvh`: iOS'ta adres çubuğu açıkken 90vh ekrandan taşar.
          */}
-        <div className="flex items-center gap-2 max-lg:gap-1.5 flex-wrap px-[26px] py-[18px] max-lg:px-4 max-lg:py-3.5">
-          {[
-            { n: 1, label: "Kimlik" },
-            { n: 2, label: "Hedef" },
-            { n: 3, label: "Bağımsızlık" },
-          ].map((s, i) => {
-            const done = step > s.n;
-            const on = step === s.n;
-            return (
-              <span key={s.n} className="flex items-center gap-2 max-lg:gap-1.5">
-                <span
-                  className="numeral grid place-items-center text-[11px] font-bold shrink-0 w-7 h-7"
-                  style={{
-                    borderRadius: 10,
-                    background: done || on ? "var(--gradient-signature)" : "var(--color-surface)",
-                    color: done || on ? "#fff" : "var(--color-text-soft)",
-                    border: done || on ? "none" : "1px solid var(--color-line)",
-                  }}
-                >
-                  {done ? <Check size={13} strokeWidth={3} /> : s.n}
-                </span>
-                <span
-                  className={`text-[12px] ${on ? "font-semibold text-(--color-text-strong)" : "font-medium text-(--color-text-soft) max-lg:hidden"}`}
-                >
-                  {s.label}
-                </span>
-                {i < 2 && <span className="mx-1.5 max-lg:mx-1 h-px w-[26px] max-lg:w-2 shrink-0" style={{ background: "var(--color-line-strong)" }} />}
-              </span>
-            );
-          })}
-        </div>
-
-        <div className="flex-1 overflow-y-auto min-h-0 px-[26px] pb-1 max-lg:px-4">
-          {/* ── Adım 1: Kimlik ── */}
-          {step === 1 && (
-            <div className="flex flex-col gap-3.5">
-              <label className="flex flex-col gap-1.5">
-                <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Ad Soyad</span>
-                <input
-                  autoFocus
-                  value={d.displayName}
-                  onChange={(e) => set("displayName", e.target.value)}
-                  placeholder="ör. Poyraz Aydın"
-                  className={field}
-                  style={fieldStyle}
-                />
-              </label>
-
-              <div className="grid grid-cols-2 gap-3">
-                <label className="flex flex-col gap-1.5">
-                  <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Doğum Tarihi</span>
-                  <input type="date" value={d.birthDate} onChange={(e) => set("birthDate", e.target.value)} className={field} style={fieldStyle} />
-                </label>
-                <label className="flex flex-col gap-1.5">
-                  <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Yaş Grubu</span>
-                  <select value={d.ageGroup} onChange={(e) => set("ageGroup", e.target.value)} className={field} style={fieldStyle}>
-                    {AGE_BANDS.map((a) => <option key={a} value={a}>{a}</option>)}
-                  </select>
-                </label>
-              </div>
-
-              <div>
-                <span className="block text-[11.5px] font-semibold text-(--color-text-soft) mb-2">Uygulama Alanı</span>
-                <div className="flex flex-wrap gap-2">
-                  {AREAS.map((a) => {
-                    const on = d.area === a;
-                    return (
-                      <button
-                        key={a}
-                        type="button"
-                        onClick={() => set("area", a)}
-                        aria-pressed={on}
-                        className={`text-[12px] font-semibold cursor-pointer border transition-colors ${on ? "text-white border-transparent" : "text-(--color-text-body) hover:border-(--color-line-strong)"}`}
-                        style={{
-                          padding: "8px 14px",
-                          borderRadius: 10,
-                          background: on ? "var(--gradient-signature)" : "var(--color-surface)",
-                          borderColor: on ? "transparent" : "var(--color-line)",
-                        }}
-                      >
-                        {a}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+        <div
+          className="relative flex flex-col w-full max-w-[700px] min-w-0 max-h-[90dvh]"
+          style={{
+            borderRadius: 26,
+            background: "var(--color-surface-strong)",
+            border: "1px solid var(--color-line-strong)",
+            boxShadow: "var(--shadow-lg)",
+          }}
+        >
+          {/* Başlık + adım göstergesi */}
+          <div className="flex items-start justify-between gap-4 max-lg:gap-2 px-[26px] pt-6 max-lg:px-4 max-lg:pt-4">
+            <div className="min-w-0">
+              <Eyebrow>Adım {step} / 3</Eyebrow>
+              {/* 18px başlık dar ekranda iki satıra kırılıp kapatma düğmesini
+                  aşağı itiyordu; telefonda 16px tek satırda kalıyor. */}
+              <h2 className="font-display m-0 mt-1.5 text-[18px] max-lg:text-[16px] font-bold tracking-[-0.025em] text-(--color-text-strong)">
+                {stepTitle}
+              </h2>
             </div>
-          )}
-
-          {/* ── Adım 2: Hedef ── */}
-          {step === 2 && (
-            <div className="flex flex-col gap-4">
-              {/* Özet satırı — az önce girilen kimlik, düzeltmek için geri dönülebilsin */}
-              <div
-                className="flex items-center gap-3"
-                style={{ padding: "12px 14px", borderRadius: 14, background: "var(--color-surface)", border: "1px solid var(--color-line)" }}
-              >
-                <Avatar name={d.displayName || "?"} id={d.displayName} size={36} radius={12} />
-                <span className="flex-1 min-w-0">
-                  <span className="block text-[13px] font-bold text-(--color-text-strong) truncate">{d.displayName || "—"}</span>
-                  <span className="block text-[11px] text-(--color-text-soft) truncate">
-                    {[d.ageGroup + " yaş", d.birthDate ? new Date(d.birthDate).toLocaleDateString("tr-TR") : null, clinicName]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="text-[11.5px] font-semibold text-(--color-primary) bg-transparent border-none cursor-pointer hover:underline shrink-0"
-                >
-                  Düzenle
-                </button>
-              </div>
-
-              <div>
-                <span className="block text-[11.5px] font-semibold text-(--color-text-soft) mb-2">Birincil Hedef Alanı</span>
-                <div className="grid gap-2.5" style={{ gridTemplateColumns: "repeat(2, minmax(0,1fr))" }}>
-                  {GOALS.map((g) => {
-                    const on = d.primaryGoal === g.title;
-                    return (
-                      <button
-                        key={g.title}
-                        type="button"
-                        onClick={() => set("primaryGoal", g.title)}
-                        aria-pressed={on}
-                        className="flex items-start gap-2.5 text-left cursor-pointer transition-colors"
-                        style={{
-                          padding: "13px 14px",
-                          borderRadius: 14,
-                          background: on ? "var(--gradient-signature-soft)" : "var(--color-surface)",
-                          border: `1px solid ${on ? "var(--color-line-strong)" : "var(--color-line)"}`,
-                        }}
-                      >
-                        <span
-                          className="grid place-items-center shrink-0 mt-0.5"
-                          style={{
-                            width: 17,
-                            height: 17,
-                            borderRadius: "50%",
-                            background: on ? "var(--gradient-signature)" : "transparent",
-                            border: on ? "none" : "1.5px solid var(--color-line-strong)",
-                          }}
-                        >
-                          {on && <Check size={10} strokeWidth={3.5} color="#fff" />}
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block text-[12.5px] font-bold text-(--color-text-strong)">{g.title}</span>
-                          <span className="block text-[10.5px] text-(--color-text-soft) mt-0.5">{g.sub}</span>
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <label className="flex flex-col gap-1.5">
-                  <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Seans Sıklığı</span>
-                  <select value={d.frequency} onChange={(e) => set("frequency", e.target.value)} className={field} style={fieldStyle}>
-                    {FREQUENCIES.map((f) => <option key={f} value={f}>{f}</option>)}
-                  </select>
-                </label>
-                <label className="flex flex-col gap-1.5">
-                  <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Hedef Tarihi</span>
-                  <input type="date" value={d.targetDate} onChange={(e) => set("targetDate", e.target.value)} className={field} style={fieldStyle} />
-                </label>
-              </div>
-
-              {match && (
-                <div
-                  className="text-[12px] text-(--color-text-body)"
-                  style={{ padding: "12px 14px", borderRadius: 13, background: "var(--gradient-signature-soft)", border: "1px solid var(--color-line-strong)" }}
-                >
-                  Öneri motoru bu profile <strong className="font-bold text-(--color-text-strong)">{match.games} oyun</strong> ve{" "}
-                  <strong className="font-bold text-(--color-text-strong)">{match.activities} aktivite</strong> eşleştirdi.
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ── Adım 3: Bağımsızlık ── */}
-          {step === 3 && (
-            <div className="flex flex-col gap-4">
-              <div>
-                <span className="block text-[11.5px] font-semibold text-(--color-text-soft) mb-2.5">Bağımsızlık Düzeyi</span>
-                <div className="flex flex-col gap-2">
-                  {INDEPENDENCE_STEPS.map((label, i) => {
-                    const n = i + 1;
-                    const on = d.independence === n;
-                    return (
-                      <button
-                        key={label}
-                        type="button"
-                        onClick={() => set("independence", n)}
-                        aria-pressed={on}
-                        className="flex items-center gap-3 text-left cursor-pointer transition-colors"
-                        style={{
-                          padding: "11px 14px",
-                          borderRadius: 12,
-                          background: on ? "var(--gradient-signature-soft)" : "var(--color-surface)",
-                          border: `1px solid ${on ? "var(--color-line-strong)" : "var(--color-line)"}`,
-                        }}
-                      >
-                        <span
-                          className="numeral grid place-items-center shrink-0 text-[11px] font-bold"
-                          style={{
-                            width: 24,
-                            height: 24,
-                            borderRadius: 8,
-                            background: on ? "var(--gradient-signature)" : "var(--color-surface-strong)",
-                            color: on ? "#fff" : "var(--color-text-soft)",
-                          }}
-                        >
-                          {n}
-                        </span>
-                        <span className={`text-[12.5px] ${on ? "font-bold text-(--color-text-strong)" : "font-medium text-(--color-text-body)"}`}>
-                          {label}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <label className="flex flex-col gap-1.5">
-                <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Başlangıç Zorluğu</span>
-                <select value={d.difficultyLevel} onChange={(e) => set("difficultyLevel", e.target.value)} className={field} style={fieldStyle}>
-                  {["Kolay", "Orta", "Zor"].map((x) => <option key={x} value={x}>{x}</option>)}
-                </select>
-              </label>
-            </div>
-          )}
-        </div>
-
-        {/* Alt eylem çubuğu */}
-        <div className="flex items-center gap-2.5" style={{ padding: "18px 26px 24px" }}>
-          {step > 1 && (
             <button
               type="button"
-              onClick={() => setStep((x) => x - 1)}
-              className="text-[12.5px] font-semibold cursor-pointer transition-colors text-(--color-text-body) hover:text-(--color-primary)"
-              style={{ padding: "12px 18px", borderRadius: 12, background: "var(--color-surface)", border: "1px solid var(--color-line)" }}
+              onClick={onClose}
+              aria-label="Kapat"
+              className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-soft) hover:text-(--color-text-strong) shrink-0"
+              style={{ width: 34, height: 34, borderRadius: 11 }}
             >
-              Geri
+              <X size={16} />
             </button>
-          )}
-          <button
-            type="button"
-            disabled={!canNext}
-            onClick={() => (step < 3 ? setStep((x) => x + 1) : onSubmit(d))}
-            className="btn-signature ml-auto flex items-center gap-2 text-[12.5px] font-semibold cursor-pointer"
-            style={{ padding: "12px 22px", borderRadius: 12 }}
-          >
-            {step === 3 ? <UserPlus size={15} /> : null}
-            {step === 3 ? "Danışanı Oluştur" : "Devam"}
-          </button>
+          </div>
+  
+          {/*
+           * Adım göstergesi.
+           *
+           * Üç rakam + üç etiket + iki bağlantı çizgisi 320px'de ~400px
+           * tutuyordu: "3 Bağımsızlık" ekranın dışında kalıyor, terapist
+           * kaçıncı adımda olduğunu göremiyordu. Telefonda yalnızca içinde
+           * bulunulan adımın etiketi yazılır (hangi adımda olunduğu zaten
+           * "Adım n / 3" satırında da var), bağlantı çizgileri kısalır.
+           */}
+          <div className="flex items-center gap-2 max-lg:gap-1.5 flex-wrap px-[26px] py-[18px] max-lg:px-4 max-lg:py-3.5">
+            {[
+              { n: 1, label: "Kimlik" },
+              { n: 2, label: "Hedef" },
+              { n: 3, label: "Bağımsızlık" },
+            ].map((s, i) => {
+              const done = step > s.n;
+              const on = step === s.n;
+              return (
+                <span key={s.n} className="flex items-center gap-2 max-lg:gap-1.5">
+                  <span
+                    className="numeral grid place-items-center text-[11px] font-bold shrink-0 w-7 h-7"
+                    style={{
+                      borderRadius: 10,
+                      background: done || on ? "var(--gradient-signature-ink)" : "var(--color-surface)",
+                      color: done || on ? "#fff" : "var(--color-text-soft)",
+                      border: done || on ? "none" : "1px solid var(--color-line)",
+                    }}
+                  >
+                    {done ? <Check size={13} strokeWidth={3} /> : s.n}
+                  </span>
+                  <span
+                    className={`text-[12px] ${on ? "font-semibold text-(--color-text-strong)" : "font-medium text-(--color-text-soft) max-lg:hidden"}`}
+                  >
+                    {s.label}
+                  </span>
+                  {i < 2 && <span className="mx-1.5 max-lg:mx-1 h-px w-[26px] max-lg:w-2 shrink-0" style={{ background: "var(--color-line-strong)" }} />}
+                </span>
+              );
+            })}
+          </div>
+  
+          <div className="flex-1 overflow-y-auto min-h-0 px-[26px] pb-1 max-lg:px-4">
+            {/* ── Adım 1: Kimlik ── */}
+            {step === 1 && (
+              <div className="flex flex-col gap-3.5">
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Ad Soyad</span>
+                  <input
+                    autoFocus
+                    value={d.displayName}
+                    onChange={(e) => set("displayName", e.target.value)}
+                    placeholder="ör. Poyraz Aydın"
+                    className={field}
+                    style={fieldStyle}
+                  />
+                </label>
+  
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Doğum Tarihi</span>
+                    <input type="date" value={d.birthDate} onChange={(e) => set("birthDate", e.target.value)} className={field} style={fieldStyle} />
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Yaş Grubu</span>
+                    <select value={d.ageGroup} onChange={(e) => set("ageGroup", e.target.value)} className={field} style={fieldStyle}>
+                      {AGE_BANDS.map((a) => <option key={a} value={a}>{a}</option>)}
+                    </select>
+                  </label>
+                </div>
+  
+                <div>
+                  <span className="block text-[11.5px] font-semibold text-(--color-text-soft) mb-2">Uygulama Alanı</span>
+                  <div className="flex flex-wrap gap-2">
+                    {AREAS.map((a) => {
+                      const on = d.area === a;
+                      return (
+                        <button
+                          key={a}
+                          type="button"
+                          onClick={() => set("area", a)}
+                          aria-pressed={on}
+                          className={`text-[12px] font-semibold cursor-pointer border transition-colors ${on ? "text-white border-transparent" : "text-(--color-text-body) hover:border-(--color-line-strong)"}`}
+                          style={{
+                            padding: "8px 14px",
+                            borderRadius: 10,
+                            background: on ? "var(--gradient-signature-ink)" : "var(--color-surface)",
+                            borderColor: on ? "transparent" : "var(--color-line)",
+                          }}
+                        >
+                          {a}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+  
+            {/* ── Adım 2: Hedef ── */}
+            {step === 2 && (
+              <div className="flex flex-col gap-4">
+                {/* Özet satırı — az önce girilen kimlik, düzeltmek için geri dönülebilsin */}
+                <div
+                  className="flex items-center gap-3"
+                  style={{ padding: "12px 14px", borderRadius: 14, background: "var(--color-surface)", border: "1px solid var(--color-line)" }}
+                >
+                  <Avatar name={d.displayName || "?"} id={d.displayName} size={36} radius={12} />
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[13px] font-bold text-(--color-text-strong) truncate">{d.displayName || "—"}</span>
+                    <span className="block text-[11px] text-(--color-text-soft) truncate">
+                      {[d.ageGroup + " yaş", d.birthDate ? new Date(d.birthDate).toLocaleDateString("tr-TR") : null, clinicName]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="text-[11.5px] font-semibold text-(--color-primary) bg-transparent border-none cursor-pointer hover:underline shrink-0"
+                  >
+                    Düzenle
+                  </button>
+                </div>
+  
+                <div>
+                  <span className="block text-[11.5px] font-semibold text-(--color-text-soft) mb-2">Birincil Hedef Alanı</span>
+                  <div className="grid gap-2.5" style={{ gridTemplateColumns: "repeat(2, minmax(0,1fr))" }}>
+                    {GOALS.map((g) => {
+                      const on = d.primaryGoal === g.title;
+                      return (
+                        <button
+                          key={g.title}
+                          type="button"
+                          onClick={() => set("primaryGoal", g.title)}
+                          aria-pressed={on}
+                          className="flex items-start gap-2.5 text-left cursor-pointer transition-colors"
+                          style={{
+                            padding: "13px 14px",
+                            borderRadius: 14,
+                            background: on ? "var(--gradient-signature-soft)" : "var(--color-surface)",
+                            border: `1px solid ${on ? "var(--color-line-strong)" : "var(--color-line)"}`,
+                          }}
+                        >
+                          <span
+                            className="grid place-items-center shrink-0 mt-0.5"
+                            style={{
+                              width: 17,
+                              height: 17,
+                              borderRadius: "50%",
+                              background: on ? "var(--gradient-signature-ink)" : "transparent",
+                              border: on ? "none" : "1.5px solid var(--color-line-strong)",
+                            }}
+                          >
+                            {on && <Check size={10} strokeWidth={3.5} color="#fff" />}
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block text-[12.5px] font-bold text-(--color-text-strong)">{g.title}</span>
+                            <span className="block text-[10.5px] text-(--color-text-soft) mt-0.5">{g.sub}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+  
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Seans Sıklığı</span>
+                    <select value={d.frequency} onChange={(e) => set("frequency", e.target.value)} className={field} style={fieldStyle}>
+                      {FREQUENCIES.map((f) => <option key={f} value={f}>{f}</option>)}
+                    </select>
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Hedef Tarihi</span>
+                    <input type="date" value={d.targetDate} onChange={(e) => set("targetDate", e.target.value)} className={field} style={fieldStyle} />
+                  </label>
+                </div>
+  
+                {match && (
+                  <div
+                    className="text-[12px] text-(--color-text-body)"
+                    style={{ padding: "12px 14px", borderRadius: 13, background: "var(--gradient-signature-soft)", border: "1px solid var(--color-line-strong)" }}
+                  >
+                    Öneri motoru bu profile <strong className="font-bold text-(--color-text-strong)">{match.games} oyun</strong> ve{" "}
+                    <strong className="font-bold text-(--color-text-strong)">{match.activities} aktivite</strong> eşleştirdi.
+                  </div>
+                )}
+              </div>
+            )}
+  
+            {/* ── Adım 3: Bağımsızlık ── */}
+            {step === 3 && (
+              <div className="flex flex-col gap-4">
+                <div>
+                  <span className="block text-[11.5px] font-semibold text-(--color-text-soft) mb-2.5">Bağımsızlık Düzeyi</span>
+                  <div className="flex flex-col gap-2">
+                    {INDEPENDENCE_STEPS.map((label, i) => {
+                      const n = i + 1;
+                      const on = d.independence === n;
+                      return (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() => set("independence", n)}
+                          aria-pressed={on}
+                          className="flex items-center gap-3 text-left cursor-pointer transition-colors"
+                          style={{
+                            padding: "11px 14px",
+                            borderRadius: 12,
+                            background: on ? "var(--gradient-signature-soft)" : "var(--color-surface)",
+                            border: `1px solid ${on ? "var(--color-line-strong)" : "var(--color-line)"}`,
+                          }}
+                        >
+                          <span
+                            className="numeral grid place-items-center shrink-0 text-[11px] font-bold"
+                            style={{
+                              width: 24,
+                              height: 24,
+                              borderRadius: 8,
+                              background: on ? "var(--gradient-signature-ink)" : "var(--color-surface-strong)",
+                              color: on ? "#fff" : "var(--color-text-soft)",
+                            }}
+                          >
+                            {n}
+                          </span>
+                          <span className={`text-[12.5px] ${on ? "font-bold text-(--color-text-strong)" : "font-medium text-(--color-text-body)"}`}>
+                            {label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+  
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Başlangıç Zorluğu</span>
+                  <select value={d.difficultyLevel} onChange={(e) => set("difficultyLevel", e.target.value)} className={field} style={fieldStyle}>
+                    {["Kolay", "Orta", "Zor"].map((x) => <option key={x} value={x}>{x}</option>)}
+                  </select>
+                </label>
+              </div>
+            )}
+          </div>
+  
+          {/* Alt eylem çubuğu */}
+          <div className="flex items-center gap-2.5" style={{ padding: "18px 26px 24px" }}>
+            {step > 1 && (
+              <button
+                type="button"
+                onClick={() => setStep((x) => x - 1)}
+                className="text-[12.5px] font-semibold cursor-pointer transition-colors text-(--color-text-body) hover:text-(--color-primary)"
+                style={{ padding: "12px 18px", borderRadius: 12, background: "var(--color-surface)", border: "1px solid var(--color-line)" }}
+              >
+                Geri
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={!canNext}
+              onClick={() => (step < 3 ? setStep((x) => x + 1) : onSubmit(d))}
+              className="btn-signature ml-auto flex items-center gap-2 text-[12.5px] font-semibold cursor-pointer"
+              style={{ padding: "12px 22px", borderRadius: 12 }}
+            >
+              {step === 3 ? <UserPlus size={15} /> : null}
+              {step === 3 ? "Danışanı Oluştur" : "Devam"}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Portal>
   );
 }

@@ -194,7 +194,7 @@ export function LiveSessionScreen({
                   aria-checked={on}
                   onClick={() => onDifficultyChange(d)}
                   className={`text-[11px] font-semibold cursor-pointer border-none transition-colors max-lg:flex-1 ${on ? "text-white" : "text-(--color-text-soft) bg-transparent hover:text-(--color-text-body)"}`}
-                  style={{ padding: "6px 11px", borderRadius: 7, background: on ? "var(--gradient-signature)" : undefined }}
+                  style={{ padding: "6px 11px", borderRadius: 7, background: on ? "var(--gradient-signature-ink)" : undefined }}
                 >
                   {d}
                 </button>

@@ -608,7 +608,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                     onClick={onRegister}
                     className="group relative flex items-center justify-center gap-2.5 font-semibold px-7 py-3.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 text-sm w-full sm:w-auto overflow-hidden"
                     style={{
-                      background: "var(--gradient-signature)",
+                      background: "var(--gradient-signature-ink)",
                       color: "#ffffff",
                       boxShadow: "var(--shadow-primary)",
                     }}

@@ -371,7 +371,7 @@ export function SessionReviewScreen({
                       style={{
                         padding: "9px 0",
                         borderRadius: 10,
-                        background: on ? "var(--gradient-signature)" : "var(--color-surface-strong)",
+                        background: on ? "var(--gradient-signature-ink)" : "var(--color-surface-strong)",
                         border: `1px solid ${on ? "transparent" : "var(--color-line)"}`,
                       }}
                     >

@@ -6,6 +6,7 @@ import type { ClientProfile, RecentSessionEntry, PlatformGameKey } from "@/lib/p
 import { GAME_LABELS } from "@/lib/platform-data";
 import { formatDuration } from "@/lib/format-utils";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { Portal } from "@/components/ui/Portal";
 
 interface ClientComparisonProps {
   clientA: ClientProfile;
@@ -111,100 +112,102 @@ export function ClientComparison({ clientA, clientB, sessions, onClose }: Client
   const trendLabels = { improving: "Gelişiyor", stable: "Stabil", declining: "Düşüş" };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)" }} onClick={onClose}>
-      {/* `85vh` iOS'ta adres çubuğu gizlenirken görünür alandan büyük çıkıyor
-          ve modalın alt ucu ekranın dışında kalıyordu; `dvh` gerçek yüksekliği
-          ölçer. Alt güvenli alan payı da modalın içine, kaydırmanın sonuna. */}
-      <div className="w-full max-w-lg max-h-[85dvh] overflow-y-auto overscroll-contain rounded-3xl border pb-[env(safe-area-inset-bottom)]" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)", boxShadow: "0 0 80px rgba(0,0,0,0.3)" }} onClick={e => e.stopPropagation()}>
-        {/* Header */}
-        <div className="sticky top-0 z-10 rounded-t-3xl border-b" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}>
-          <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${colorA}, ${colorB})` }} />
-          <div className="p-4 flex items-center justify-between">
-            <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0">Danışan Karşılaştırması</h3>
-            <button type="button" onClick={onClose} aria-label="Kapat" className="w-8 h-8 rounded-xl flex items-center justify-center bg-(--color-surface) border-none cursor-pointer text-(--color-text-muted) hover:text-(--color-text-body)">
-              <X size={15} />
-            </button>
-          </div>
-
-          {/* Client headers */}
-          <div className="px-4 pb-3 flex gap-4 max-sm:gap-2">
-            {[
-              { client: clientA, color: colorA, metrics: metricsA },
-              { client: clientB, color: colorB, metrics: metricsB },
-            ].map(({ client, color, metrics }) => {
-              const TrendIcon = trendIcons[metrics.trend];
-              return (
-                <div key={client.id} className="flex-1 rounded-xl p-3" style={{ background: `color-mix(in srgb, ${color} 3%, transparent)`, border: `1px solid color-mix(in srgb, ${color} 13%, transparent)` }}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-extrabold text-white shrink-0" style={{ background: `linear-gradient(135deg, ${color}, color-mix(in srgb, ${color} 60%, transparent))` }}>
-                      {client.displayName[0]?.toUpperCase() ?? "?"}
+    <Portal>
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)" }} onClick={onClose}>
+        {/* `85vh` iOS'ta adres çubuğu gizlenirken görünür alandan büyük çıkıyor
+            ve modalın alt ucu ekranın dışında kalıyordu; `dvh` gerçek yüksekliği
+            ölçer. Alt güvenli alan payı da modalın içine, kaydırmanın sonuna. */}
+        <div className="w-full max-w-lg max-h-[85dvh] overflow-y-auto overscroll-contain rounded-3xl border pb-[env(safe-area-inset-bottom)]" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)", boxShadow: "0 0 80px rgba(0,0,0,0.3)" }} onClick={e => e.stopPropagation()}>
+          {/* Header */}
+          <div className="sticky top-0 z-10 rounded-t-3xl border-b" style={{ background: "var(--color-surface-strong)", borderColor: "var(--color-line)" }}>
+            <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${colorA}, ${colorB})` }} />
+            <div className="p-4 flex items-center justify-between">
+              <h3 className="text-sm font-extrabold text-(--color-text-strong) m-0">Danışan Karşılaştırması</h3>
+              <button type="button" onClick={onClose} aria-label="Kapat" className="w-8 h-8 rounded-xl flex items-center justify-center bg-(--color-surface) border-none cursor-pointer text-(--color-text-muted) hover:text-(--color-text-body)">
+                <X size={15} />
+              </button>
+            </div>
+  
+            {/* Client headers */}
+            <div className="px-4 pb-3 flex gap-4 max-sm:gap-2">
+              {[
+                { client: clientA, color: colorA, metrics: metricsA },
+                { client: clientB, color: colorB, metrics: metricsB },
+              ].map(({ client, color, metrics }) => {
+                const TrendIcon = trendIcons[metrics.trend];
+                return (
+                  <div key={client.id} className="flex-1 rounded-xl p-3" style={{ background: `color-mix(in srgb, ${color} 3%, transparent)`, border: `1px solid color-mix(in srgb, ${color} 13%, transparent)` }}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-extrabold text-white shrink-0" style={{ background: `linear-gradient(135deg, ${color}, color-mix(in srgb, ${color} 60%, transparent))` }}>
+                        {client.displayName[0]?.toUpperCase() ?? "?"}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-(--color-text-strong) m-0 truncate">{client.displayName}</p>
+                        <p className="text-[10px] text-(--color-text-muted) m-0">{client.ageGroup ?? "—"}</p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-(--color-text-strong) m-0 truncate">{client.displayName}</p>
-                      <p className="text-[10px] text-(--color-text-muted) m-0">{client.ageGroup ?? "—"}</p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <TrendIcon size={10} style={{ color: trendColors[metrics.trend] }} />
+                      <span className="text-[10px] font-bold" style={{ color: trendColors[metrics.trend] }}>{trendLabels[metrics.trend]}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 mt-1">
-                    <TrendIcon size={10} style={{ color: trendColors[metrics.trend] }} />
-                    <span className="text-[10px] font-bold" style={{ color: trendColors[metrics.trend] }}>{trendLabels[metrics.trend]}</span>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-
-        {/* Comparison bars */}
-        <div className="p-4 space-y-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) m-0">Genel Karşılaştırma</p>
-
-          <CompareBar metric="Seans" valueA={metricsA.totalSessions} valueB={metricsB.totalSessions} colorA={colorA} colorB={colorB} />
-          <CompareBar metric="Ort. Skor" valueA={metricsA.avgScore} valueB={metricsB.avgScore} colorA={colorA} colorB={colorB} />
-          <CompareBar metric="En İyi" valueA={metricsA.bestScore} valueB={metricsB.bestScore} colorA={colorA} colorB={colorB} />
-          <CompareBar metric="Oyun Çeşidi" valueA={metricsA.gamesPlayed.size} valueB={metricsB.gamesPlayed.size} colorA={colorA} colorB={colorB} />
-
-          {/* Per-game comparison */}
-          {commonGames.length > 0 && (
-            <>
-              <p className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) m-0 mt-5">Oyun Bazlı</p>
-              {commonGames.map(game => (
-                <div key={game}>
-                  <CompareBar
-                    metric={GAME_LABELS[game]}
-                    valueA={metricsA.gameScores[game]?.avg ?? 0}
-                    valueB={metricsB.gameScores[game]?.avg ?? 0}
-                    colorA={colorA}
-                    colorB={colorB}
-                  />
-                </div>
-              ))}
-            </>
-          )}
-
-          {/* Summary */}
-          <div className="rounded-xl p-3 mt-4" style={{ background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}>
-            <p className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) m-0 mb-2">Özet</p>
-            <div className="space-y-1.5">
-              {metricsA.avgScore > metricsB.avgScore ? (
-                <p className="text-xs text-(--color-text-soft) m-0">
-                  <strong style={{ color: colorA }}>{clientA.displayName}</strong> ortalama skorda %{Math.round(((metricsA.avgScore - metricsB.avgScore) / Math.max(metricsB.avgScore, 1)) * 100)} daha yüksek.
-                </p>
-              ) : metricsB.avgScore > metricsA.avgScore ? (
-                <p className="text-xs text-(--color-text-soft) m-0">
-                  <strong style={{ color: colorB }}>{clientB.displayName}</strong> ortalama skorda %{Math.round(((metricsB.avgScore - metricsA.avgScore) / Math.max(metricsA.avgScore, 1)) * 100)} daha yüksek.
-                </p>
-              ) : (
-                <p className="text-xs text-(--color-text-soft) m-0">Her iki danışanın ortalama skoru eşit.</p>
-              )}
-              {metricsA.totalSessions > metricsB.totalSessions * 1.5 && (
-                <p className="text-xs text-(--color-text-soft) m-0">
-                  <strong style={{ color: colorA }}>{clientA.displayName}</strong> çok daha fazla seans deneyimine sahip ({metricsA.totalSessions} vs {metricsB.totalSessions}).
-                </p>
-              )}
+  
+          {/* Comparison bars */}
+          <div className="p-4 space-y-4">
+            <p className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) m-0">Genel Karşılaştırma</p>
+  
+            <CompareBar metric="Seans" valueA={metricsA.totalSessions} valueB={metricsB.totalSessions} colorA={colorA} colorB={colorB} />
+            <CompareBar metric="Ort. Skor" valueA={metricsA.avgScore} valueB={metricsB.avgScore} colorA={colorA} colorB={colorB} />
+            <CompareBar metric="En İyi" valueA={metricsA.bestScore} valueB={metricsB.bestScore} colorA={colorA} colorB={colorB} />
+            <CompareBar metric="Oyun Çeşidi" valueA={metricsA.gamesPlayed.size} valueB={metricsB.gamesPlayed.size} colorA={colorA} colorB={colorB} />
+  
+            {/* Per-game comparison */}
+            {commonGames.length > 0 && (
+              <>
+                <p className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) m-0 mt-5">Oyun Bazlı</p>
+                {commonGames.map(game => (
+                  <div key={game}>
+                    <CompareBar
+                      metric={GAME_LABELS[game]}
+                      valueA={metricsA.gameScores[game]?.avg ?? 0}
+                      valueB={metricsB.gameScores[game]?.avg ?? 0}
+                      colorA={colorA}
+                      colorB={colorB}
+                    />
+                  </div>
+                ))}
+              </>
+            )}
+  
+            {/* Summary */}
+            <div className="rounded-xl p-3 mt-4" style={{ background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}>
+              <p className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) m-0 mb-2">Özet</p>
+              <div className="space-y-1.5">
+                {metricsA.avgScore > metricsB.avgScore ? (
+                  <p className="text-xs text-(--color-text-soft) m-0">
+                    <strong style={{ color: colorA }}>{clientA.displayName}</strong> ortalama skorda %{Math.round(((metricsA.avgScore - metricsB.avgScore) / Math.max(metricsB.avgScore, 1)) * 100)} daha yüksek.
+                  </p>
+                ) : metricsB.avgScore > metricsA.avgScore ? (
+                  <p className="text-xs text-(--color-text-soft) m-0">
+                    <strong style={{ color: colorB }}>{clientB.displayName}</strong> ortalama skorda %{Math.round(((metricsB.avgScore - metricsA.avgScore) / Math.max(metricsA.avgScore, 1)) * 100)} daha yüksek.
+                  </p>
+                ) : (
+                  <p className="text-xs text-(--color-text-soft) m-0">Her iki danışanın ortalama skoru eşit.</p>
+                )}
+                {metricsA.totalSessions > metricsB.totalSessions * 1.5 && (
+                  <p className="text-xs text-(--color-text-soft) m-0">
+                    <strong style={{ color: colorA }}>{clientA.displayName}</strong> çok daha fazla seans deneyimine sahip ({metricsA.totalSessions} vs {metricsB.totalSessions}).
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </Portal>
   );
 }

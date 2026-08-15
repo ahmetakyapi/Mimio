@@ -167,7 +167,7 @@ export function SessionNotesScreen({ notes, clients, sessions, onNewNote, onExpo
                 className={`text-[12px] font-semibold cursor-pointer border transition-colors p-[8px_14px] max-lg:p-[8px_4px] ${on ? "text-white border-transparent" : "text-(--color-text-body) hover:border-(--color-line-strong)"}`}
                 style={{
                   borderRadius: 10,
-                  background: on ? "var(--gradient-signature)" : "var(--color-surface-strong)",
+                  background: on ? "var(--gradient-signature-ink)" : "var(--color-surface-strong)",
                   borderColor: on ? "transparent" : "var(--color-line)",
                 }}
               >

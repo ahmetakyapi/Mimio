@@ -433,7 +433,7 @@ export function SegmentedControl<T extends string>({
             aria-selected={on}
             onClick={() => onChange(o.value)}
             className={`${pad} rounded-lg font-semibold cursor-pointer border-none transition-colors ${on ? "text-white" : "text-(--color-text-soft) bg-transparent hover:text-(--color-text-body)"}`}
-            style={on ? { background: "var(--gradient-signature)" } : undefined}
+            style={on ? { background: "var(--gradient-signature-ink)" } : undefined}
           >
             {o.label}
           </button>

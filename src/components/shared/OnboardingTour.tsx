@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { ArrowRight, X, Users, Gamepad2, Stethoscope, BarChart3, Sparkles, CheckCircle } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { Portal } from "@/components/ui/Portal";
 
 const ONBOARDING_KEY = "mimio-onboarding-completed-v1";
 
@@ -98,84 +99,86 @@ export function OnboardingTour({ onComplete }: { onComplete?: () => void }) {
   const isLast = step === TOUR_STEPS.length - 1;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 sm:p-6" style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}>
-      {/* Kısa telefonlarda (568px) kart ekrandan uzun kalıyor ve "Sonraki"
-          düğmesi katlamanın altına düşüyordu; kart kendi içinde kayar.
-          `dvh` — iOS'ta `vh` adres çubuğu yüzünden fazla ölçüyor. */}
-      <div className="w-full max-w-[calc(100vw-32px)] sm:max-w-md max-h-[90dvh] overflow-y-auto overscroll-contain rounded-3xl border" style={{
-        background: "var(--color-surface-strong)",
-        borderColor: `${current.color}33`,
-        boxShadow: `0 0 80px ${current.color}15`,
-        animation: "page-fade-in 0.3s ease",
-      }}>
-        {/* Gradient top bar */}
-        <div className="h-1.5 w-full" style={{ background: current.gradient }} />
-
-        <div className="p-6">
-          {/* Step indicator */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex gap-1.5">
-              {TOUR_STEPS.map((_, i) => (
-                <div key={i} className="h-1 rounded-full transition-all duration-300" style={{
-                  width: i === step ? 24 : 8,
-                  background: i <= step ? current.gradient : "rgba(255,255,255,0.08)",
-                }} />
-              ))}
+    <Portal>
+      <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 sm:p-6" style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}>
+        {/* Kısa telefonlarda (568px) kart ekrandan uzun kalıyor ve "Sonraki"
+            düğmesi katlamanın altına düşüyordu; kart kendi içinde kayar.
+            `dvh` — iOS'ta `vh` adres çubuğu yüzünden fazla ölçüyor. */}
+        <div className="w-full max-w-[calc(100vw-32px)] sm:max-w-md max-h-[90dvh] overflow-y-auto overscroll-contain rounded-3xl border" style={{
+          background: "var(--color-surface-strong)",
+          borderColor: `${current.color}33`,
+          boxShadow: `0 0 80px ${current.color}15`,
+          animation: "page-fade-in 0.3s ease",
+        }}>
+          {/* Gradient top bar */}
+          <div className="h-1.5 w-full" style={{ background: current.gradient }} />
+  
+          <div className="p-6">
+            {/* Step indicator */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex gap-1.5">
+                {TOUR_STEPS.map((_, i) => (
+                  <div key={i} className="h-1 rounded-full transition-all duration-300" style={{
+                    width: i === step ? 24 : 8,
+                    background: i <= step ? current.gradient : "rgba(255,255,255,0.08)",
+                  }} />
+                ))}
+              </div>
+              <button type="button" onClick={handleSkip} className="text-xs font-semibold bg-transparent border-none cursor-pointer text-(--color-text-muted) hover:text-(--color-text-body) transition-colors">
+                <X size={16} />
+              </button>
             </div>
-            <button type="button" onClick={handleSkip} className="text-xs font-semibold bg-transparent border-none cursor-pointer text-(--color-text-muted) hover:text-(--color-text-body) transition-colors">
-              <X size={16} />
-            </button>
-          </div>
-
-          {/* Icon */}
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 mx-auto" style={{
-            background: current.gradient,
-            boxShadow: `0 8px 32px ${current.color}40`,
-          }}>
-            <Icon size={28} className="text-white" />
-          </div>
-
-          {/* Content */}
-          <h2 className="text-xl font-extrabold text-(--color-text-strong) text-center m-0 mb-2">{current.title}</h2>
-          <p className="text-sm text-(--color-text-soft) text-center m-0 mb-4 leading-relaxed">{current.description}</p>
-
-          {/* Tip box */}
-          <div className="rounded-xl px-4 py-3 mb-5" style={{ background: `${current.color}08`, border: `1px solid ${current.color}18` }}>
-            <p className="text-xs m-0" style={{ color: current.color }}>
-              <strong>İpucu:</strong> {current.tip}
-            </p>
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-3">
-            {step > 0 && (
-              <button type="button" onClick={() => setStep(s => s - 1)}
-                className="px-4 py-3 rounded-xl text-sm font-semibold border cursor-pointer hover:opacity-80 transition-opacity"
-                style={{ background: "transparent", borderColor: "var(--color-line)", color: "var(--color-text-soft)" }}>
-                Geri
+  
+            {/* Icon */}
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 mx-auto" style={{
+              background: current.gradient,
+              boxShadow: `0 8px 32px ${current.color}40`,
+            }}>
+              <Icon size={28} className="text-white" />
+            </div>
+  
+            {/* Content */}
+            <h2 className="text-xl font-extrabold text-(--color-text-strong) text-center m-0 mb-2">{current.title}</h2>
+            <p className="text-sm text-(--color-text-soft) text-center m-0 mb-4 leading-relaxed">{current.description}</p>
+  
+            {/* Tip box */}
+            <div className="rounded-xl px-4 py-3 mb-5" style={{ background: `${current.color}08`, border: `1px solid ${current.color}18` }}>
+              <p className="text-xs m-0" style={{ color: current.color }}>
+                <strong>İpucu:</strong> {current.tip}
+              </p>
+            </div>
+  
+            {/* Actions */}
+            <div className="flex gap-3">
+              {step > 0 && (
+                <button type="button" onClick={() => setStep(s => s - 1)}
+                  className="px-4 py-3 rounded-xl text-sm font-semibold border cursor-pointer hover:opacity-80 transition-opacity"
+                  style={{ background: "transparent", borderColor: "var(--color-line)", color: "var(--color-text-soft)" }}>
+                  Geri
+                </button>
+              )}
+              <button type="button" onClick={handleNext}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm text-white border-none cursor-pointer transition-all hover:opacity-90 active:scale-[0.98]"
+                style={{ background: current.gradient, boxShadow: `0 4px 20px ${current.color}40` }}>
+                {isLast ? (
+                  <><CheckCircle size={16} /> Başlayalım!</>
+                ) : (
+                  <>Sonraki <ArrowRight size={14} /></>
+                )}
+              </button>
+            </div>
+  
+            {/* Skip link */}
+            {!isLast && (
+              <button type="button" onClick={handleSkip}
+                className="w-full text-center text-xs text-(--color-text-muted) mt-3 bg-transparent border-none cursor-pointer hover:text-(--color-text-body) transition-colors">
+                Turu atla
               </button>
             )}
-            <button type="button" onClick={handleNext}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm text-white border-none cursor-pointer transition-all hover:opacity-90 active:scale-[0.98]"
-              style={{ background: current.gradient, boxShadow: `0 4px 20px ${current.color}40` }}>
-              {isLast ? (
-                <><CheckCircle size={16} /> Başlayalım!</>
-              ) : (
-                <>Sonraki <ArrowRight size={14} /></>
-              )}
-            </button>
           </div>
-
-          {/* Skip link */}
-          {!isLast && (
-            <button type="button" onClick={handleSkip}
-              className="w-full text-center text-xs text-(--color-text-muted) mt-3 bg-transparent border-none cursor-pointer hover:text-(--color-text-body) transition-colors">
-              Turu atla
-            </button>
-          )}
         </div>
       </div>
-    </div>
+    </Portal>
   );
 }
 

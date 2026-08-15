@@ -123,6 +123,7 @@ import { MilestoneContainer, checkAndShowMilestones } from "@/components/shared/
 import { AchievementPanel, ACHIEVEMENTS, type AchievementStats, type EarnedAchievement } from "@/components/shared/AchievementBadge";
 import { ClientComparison } from "@/components/shared/ClientComparison";
 import { OnboardingTour } from "@/components/shared/OnboardingTour";
+import { Portal } from "@/components/ui/Portal";
 
 
 
@@ -3208,36 +3209,38 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
       {/* ── Achievement Panel Modal ── */}
       {showAchievements && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6" style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)" }} onClick={() => setShowAchievements(false)}>
-          {/*
-            Geniş, iki sütunlu panel. Önceki hâli max-w-md idi; on iki rozet
-            dar bir sütuna sıkışıyor, etiketler satır atlıyor ve hepsi kilitli
-            gri ikonlar olarak görünüyordu.
-          */}
-          <div
-            className="w-full max-w-3xl max-h-[86vh] flex flex-col rounded-2xl overflow-hidden"
-            style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}
-            onClick={e => e.stopPropagation()}
-            role="dialog"
-            aria-label="Başarımlar"
-          >
-            <header className="flex items-center gap-3 px-5 sm:px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--color-line)" }}>
-              <Award size={17} className="shrink-0" style={{ color: "var(--color-signal)" }} />
-              <h3 className="font-display text-base font-extrabold text-(--color-text-strong) m-0 tracking-tight flex-1">Başarımlar</h3>
-              <button
-                type="button"
-                onClick={() => setShowAchievements(false)}
-                aria-label="Kapat"
-                className="w-8 h-8 rounded-lg flex items-center justify-center border-none cursor-pointer bg-transparent text-(--color-text-muted) hover:text-(--color-text-strong) hover:bg-(--color-surface-elevated) transition-colors"
-              >
-                <X size={16} />
-              </button>
-            </header>
-            <div className="flex-1 min-h-0 overflow-y-auto px-5 sm:px-6 py-5">
-              <AchievementPanel stats={achievementStats} earned={earnedAchievements} onEarn={handleEarnAchievement} />
+        <Portal>
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6" style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)" }} onClick={() => setShowAchievements(false)}>
+            {/*
+              Geniş, iki sütunlu panel. Önceki hâli max-w-md idi; on iki rozet
+              dar bir sütuna sıkışıyor, etiketler satır atlıyor ve hepsi kilitli
+              gri ikonlar olarak görünüyordu.
+            */}
+            <div
+              className="w-full max-w-3xl max-h-[86vh] flex flex-col rounded-2xl overflow-hidden"
+              style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}
+              onClick={e => e.stopPropagation()}
+              role="dialog"
+              aria-label="Başarımlar"
+            >
+              <header className="flex items-center gap-3 px-5 sm:px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--color-line)" }}>
+                <Award size={17} className="shrink-0" style={{ color: "var(--color-signal)" }} />
+                <h3 className="font-display text-base font-extrabold text-(--color-text-strong) m-0 tracking-tight flex-1">Başarımlar</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowAchievements(false)}
+                  aria-label="Kapat"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center border-none cursor-pointer bg-transparent text-(--color-text-muted) hover:text-(--color-text-strong) hover:bg-(--color-surface-elevated) transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </header>
+              <div className="flex-1 min-h-0 overflow-y-auto px-5 sm:px-6 py-5">
+                <AchievementPanel stats={achievementStats} earned={earnedAchievements} onEarn={handleEarnAchievement} />
+              </div>
             </div>
           </div>
-        </div>
+        </Portal>
       )}
 
       {/* ── Client Comparison Modal ── */}
@@ -3250,160 +3253,166 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
       {/* ── Difficulty upgrade prompt ── */}
       {difficultyPrompt && (
-        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4 sm:p-6" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
-          <div className="w-full max-w-sm rounded-3xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "rgba(43, 98, 245,0.35)", boxShadow: "0 0 60px rgba(43, 98, 245,0.2)" }}>
-            <div className="h-1 w-full" style={{ background: "linear-gradient(90deg,#2b62f5,#17c2e0,#17c2e0)" }} />
-            <div className="p-5 space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "rgba(43, 98, 245,0.15)" }}>
-                  <TrendingUp size={20} style={{ color: "#4d7dff" }} />
+        <Portal>
+          <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4 sm:p-6" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
+            <div className="w-full max-w-sm rounded-3xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "rgba(43, 98, 245,0.35)", boxShadow: "0 0 60px rgba(43, 98, 245,0.2)" }}>
+              <div className="h-1 w-full" style={{ background: "linear-gradient(90deg,#2b62f5,#17c2e0,#17c2e0)" }} />
+              <div className="p-5 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "rgba(43, 98, 245,0.15)" }}>
+                    <TrendingUp size={20} style={{ color: "#4d7dff" }} />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-(--color-text-strong) m-0 mb-1">Zorluk Artışı Önerisi</h3>
+                    <p className="text-(--color-text-muted) text-sm m-0">
+                      <strong className="text-(--color-text-body)">{difficultyPrompt.clientName}</strong> son 3 seansta tutarlı yüksek performans gösterdi.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-extrabold text-(--color-text-strong) m-0 mb-1">Zorluk Artışı Önerisi</h3>
-                  <p className="text-(--color-text-muted) text-sm m-0">
-                    <strong className="text-(--color-text-body)">{difficultyPrompt.clientName}</strong> son 3 seansta tutarlı yüksek performans gösterdi.
-                  </p>
+                <div className="rounded-2xl p-3.5 flex items-center gap-3" style={{ background: "rgba(43, 98, 245,0.08)", border: "1px solid rgba(43, 98, 245,0.2)" }}>
+                  <span className="text-2xl">📈</span>
+                  <div>
+                    <p className="m-0 text-sm font-bold text-(--color-text-strong)">
+                      Seviyeyi <span style={{ color: "#4d7dff" }}>{difficultyPrompt.suggestedLevel}</span>'a yükselt
+                    </p>
+                    <p className="m-0 text-xs text-(--color-text-muted)">Danışan profili güncellenecek, oyunlar buna göre ayarlanacak.</p>
+                  </div>
                 </div>
-              </div>
-              <div className="rounded-2xl p-3.5 flex items-center gap-3" style={{ background: "rgba(43, 98, 245,0.08)", border: "1px solid rgba(43, 98, 245,0.2)" }}>
-                <span className="text-2xl">📈</span>
-                <div>
-                  <p className="m-0 text-sm font-bold text-(--color-text-strong)">
-                    Seviyeyi <span style={{ color: "#4d7dff" }}>{difficultyPrompt.suggestedLevel}</span>'a yükselt
-                  </p>
-                  <p className="m-0 text-xs text-(--color-text-muted)">Danışan profili güncellenecek, oyunlar buna göre ayarlanacak.</p>
+                <div className="flex gap-2">
+                  <button type="button"
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white border-none cursor-pointer hover:opacity-90 transition-opacity"
+                    style={{ background: "linear-gradient(135deg,#2b62f5,#17c2e0)" }}
+                    onClick={() => void handleUpdateClientDifficulty(difficultyPrompt.clientId, difficultyPrompt.suggestedLevel)}>
+                    Evet, güncelle
+                  </button>
+                  <button type="button"
+                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold border cursor-pointer hover:opacity-80 transition-opacity"
+                    style={{ background: "transparent", borderColor: "var(--color-line)", color: "var(--color-text-soft)" }}
+                    onClick={() => setDifficultyPrompt(null)}>
+                    Şimdi değil
+                  </button>
                 </div>
-              </div>
-              <div className="flex gap-2">
-                <button type="button"
-                  className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white border-none cursor-pointer hover:opacity-90 transition-opacity"
-                  style={{ background: "linear-gradient(135deg,#2b62f5,#17c2e0)" }}
-                  onClick={() => void handleUpdateClientDifficulty(difficultyPrompt.clientId, difficultyPrompt.suggestedLevel)}>
-                  Evet, güncelle
-                </button>
-                <button type="button"
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold border cursor-pointer hover:opacity-80 transition-opacity"
-                  style={{ background: "transparent", borderColor: "var(--color-line)", color: "var(--color-text-soft)" }}
-                  onClick={() => setDifficultyPrompt(null)}>
-                  Şimdi değil
-                </button>
               </div>
             </div>
           </div>
-        </div>
+        </Portal>
       )}
 
       {/* ── Keyboard Shortcut Guide ── */}
       {showShortcutGuide && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)" }}
-          onClick={() => setShowShortcutGuide(false)}>
-          <div className="w-full max-w-lg rounded-3xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "rgba(43, 98, 245,0.3)", boxShadow: "0 0 80px rgba(43, 98, 245,0.2)" }}
-            onClick={e => e.stopPropagation()}>
-            <div className="h-1 w-full" style={{ background: "linear-gradient(90deg,#2b62f5,#17c2e0,#17c2e0)" }} />
-            <div className="p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-extrabold text-(--color-text-strong) m-0 flex items-center gap-2">
-                  <span className="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black" style={{ background: "rgba(43, 98, 245,0.15)", color: "#4d7dff" }}>?</span>
-                  Klavye Kısayolları
-                </h3>
-                <button type="button" className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer border-none text-(--color-text-muted) hover:text-(--color-text-body) transition-colors" style={{ background: "var(--color-surface)" }} onClick={() => setShowShortcutGuide(false)}>✕</button>
-              </div>
-              {([
-                { section: "Genel", rows: [
-                  { keys: ["?"], desc: "Kısayol rehberini aç / kapat" },
-                  { keys: ["Esc"], desc: "Açık pencereyi kapat" },
-                ] },
-                { section: "Oyun Ekranı", rows: [
-                  { keys: ["A"], desc: "Önceki oyuna geç" },
-                  { keys: ["B"], desc: "Sonraki oyuna geç" },
-                  { keys: ["↑", "↓", "←", "→"], desc: "Seçimi hareket ettir" },
-                  { keys: ["Enter", "Boşluk"], desc: "Seçimi onayla / oyunu başlat" },
-                ] },
-              ] as { section: string; rows: { keys: string[]; desc: string }[] }[]).map(({ section, rows }) => (
-                <div key={section} className="mb-4 last:mb-0">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) m-0 mb-2">{section}</p>
-                  <div className="rounded-2xl overflow-hidden border" style={{ borderColor: "var(--color-line)" }}>
-                    {rows.map(({ keys, desc }, i) => (
-                      <div key={desc} className="flex items-center justify-between px-4 py-2.5 gap-4" style={{ borderTop: i === 0 ? "none" : "1px solid var(--color-line)", background: i % 2 === 0 ? "transparent" : "rgba(0,0,0,0.08)" }}>
-                        <span className="text-sm text-(--color-text-body)">{desc}</span>
-                        <div className="flex items-center gap-1 shrink-0">
-                          {keys.map(k => (
-                            <kbd key={k} className="text-[11px] font-bold px-2 py-0.5 rounded-lg" style={{ background: "rgba(43, 98, 245,0.12)", color: "#4d7dff", border: "1px solid rgba(43, 98, 245,0.25)", fontFamily: "monospace" }}>{k}</kbd>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+        <Portal>
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)" }}
+            onClick={() => setShowShortcutGuide(false)}>
+            <div className="w-full max-w-lg rounded-3xl border overflow-hidden" style={{ background: "var(--color-surface-strong)", borderColor: "rgba(43, 98, 245,0.3)", boxShadow: "0 0 80px rgba(43, 98, 245,0.2)" }}
+              onClick={e => e.stopPropagation()}>
+              <div className="h-1 w-full" style={{ background: "linear-gradient(90deg,#2b62f5,#17c2e0,#17c2e0)" }} />
+              <div className="p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-extrabold text-(--color-text-strong) m-0 flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black" style={{ background: "rgba(43, 98, 245,0.15)", color: "#4d7dff" }}>?</span>
+                    Klavye Kısayolları
+                  </h3>
+                  <button type="button" className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer border-none text-(--color-text-muted) hover:text-(--color-text-body) transition-colors" style={{ background: "var(--color-surface)" }} onClick={() => setShowShortcutGuide(false)}>✕</button>
                 </div>
-              ))}
-              <p className="text-[11px] text-(--color-text-muted) text-center m-0 mt-3">Herhangi bir yere tıklayarak kapat</p>
+                {([
+                  { section: "Genel", rows: [
+                    { keys: ["?"], desc: "Kısayol rehberini aç / kapat" },
+                    { keys: ["Esc"], desc: "Açık pencereyi kapat" },
+                  ] },
+                  { section: "Oyun Ekranı", rows: [
+                    { keys: ["A"], desc: "Önceki oyuna geç" },
+                    { keys: ["B"], desc: "Sonraki oyuna geç" },
+                    { keys: ["↑", "↓", "←", "→"], desc: "Seçimi hareket ettir" },
+                    { keys: ["Enter", "Boşluk"], desc: "Seçimi onayla / oyunu başlat" },
+                  ] },
+                ] as { section: string; rows: { keys: string[]; desc: string }[] }[]).map(({ section, rows }) => (
+                  <div key={section} className="mb-4 last:mb-0">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) m-0 mb-2">{section}</p>
+                    <div className="rounded-2xl overflow-hidden border" style={{ borderColor: "var(--color-line)" }}>
+                      {rows.map(({ keys, desc }, i) => (
+                        <div key={desc} className="flex items-center justify-between px-4 py-2.5 gap-4" style={{ borderTop: i === 0 ? "none" : "1px solid var(--color-line)", background: i % 2 === 0 ? "transparent" : "rgba(0,0,0,0.08)" }}>
+                          <span className="text-sm text-(--color-text-body)">{desc}</span>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {keys.map(k => (
+                              <kbd key={k} className="text-[11px] font-bold px-2 py-0.5 rounded-lg" style={{ background: "rgba(43, 98, 245,0.12)", color: "#4d7dff", border: "1px solid rgba(43, 98, 245,0.25)", fontFamily: "monospace" }}>{k}</kbd>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                <p className="text-[11px] text-(--color-text-muted) text-center m-0 mt-3">Herhangi bir yere tıklayarak kapat</p>
+              </div>
             </div>
           </div>
-        </div>
+        </Portal>
       )}
 
       {/* Profil düzenleme — görünümden bağımsız, üst seviyede.
           Önceden `activeAppView === "clients"` bloğunun içindeydi; sidebar'daki
           "Profili düzenle" düğmesi diğer sekmelerde sessizce hiçbir şey yapmıyordu. */}
       {showEditTherapist && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={() => setShowEditTherapist(false)}>
-          <div className="rounded-2xl sm:rounded-3xl border p-5 sm:p-6 max-w-sm w-full space-y-4" style={{ background: "var(--color-surface-strong)", borderColor: "rgba(43, 98, 245,0.25)" }} onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(43, 98, 245,0.15)" }}>
-                  <Edit2 size={18} style={{ color: "#4d7dff" }} />
+        <Portal>
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={() => setShowEditTherapist(false)}>
+            <div className="rounded-2xl sm:rounded-3xl border p-5 sm:p-6 max-w-sm w-full space-y-4" style={{ background: "var(--color-surface-strong)", borderColor: "rgba(43, 98, 245,0.25)" }} onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(43, 98, 245,0.15)" }}>
+                    <Edit2 size={18} style={{ color: "#4d7dff" }} />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-(--color-text-strong) m-0">Profili Düzenle</h3>
+                    <p className="text-(--color-text-muted) text-xs m-0">Terapist bilgilerini güncelle</p>
+                  </div>
+                </div>
+                <button type="button" onClick={() => setShowEditTherapist(false)}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center text-(--color-text-muted) hover:text-(--color-text-body) bg-transparent border-none cursor-pointer hover:bg-(--color-surface-elevated) transition-all">
+                  <X size={16} />
+                </button>
+              </div>
+              {!activeTherapistId && (
+                <div className="rounded-xl px-3 py-2.5 text-xs leading-relaxed"
+                  style={{ background: "color-mix(in srgb, var(--color-accent-amber) 10%, transparent)", color: "var(--color-text-body)", border: "1px solid color-mix(in srgb, var(--color-accent-amber) 30%, transparent)" }}>
+                  Oturum bilgisi okunamadı, bu yüzden kayıt yapılamaz. Çıkış yapıp
+                  yeniden giriş yaptıktan sonra tekrar deneyin.
+                </div>
+              )}
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[10px] text-(--color-text-muted) font-bold uppercase tracking-wider mb-1 block">Ad Soyad</label>
+                  <input value={therapistEditDraft.displayName} onChange={e => setTherapistEditDraft(d => ({ ...d, displayName: e.target.value }))}
+                    placeholder="Ad Soyad" className={inputCls} />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-(--color-text-strong) m-0">Profili Düzenle</h3>
-                  <p className="text-(--color-text-muted) text-xs m-0">Terapist bilgilerini güncelle</p>
+                  <label className="text-[10px] text-(--color-text-muted) font-bold uppercase tracking-wider mb-1 block">Klinik / Kurum</label>
+                  <input value={therapistEditDraft.clinicName} onChange={e => setTherapistEditDraft(d => ({ ...d, clinicName: e.target.value }))}
+                    placeholder="Klinik adı (isteğe bağlı)" className={inputCls} />
+                </div>
+                <div>
+                  <label className="text-[10px] text-(--color-text-muted) font-bold uppercase tracking-wider mb-1 block">Uzmanlık Alanı</label>
+                  <input value={therapistEditDraft.specialty} onChange={e => setTherapistEditDraft(d => ({ ...d, specialty: e.target.value }))}
+                    placeholder="Uzmanlık alanı (isteğe bağlı)" className={inputCls} />
                 </div>
               </div>
-              <button type="button" onClick={() => setShowEditTherapist(false)}
-                className="w-8 h-8 rounded-xl flex items-center justify-center text-(--color-text-muted) hover:text-(--color-text-body) bg-transparent border-none cursor-pointer hover:bg-(--color-surface-elevated) transition-all">
-                <X size={16} />
-              </button>
-            </div>
-            {!activeTherapistId && (
-              <div className="rounded-xl px-3 py-2.5 text-xs leading-relaxed"
-                style={{ background: "color-mix(in srgb, var(--color-accent-amber) 10%, transparent)", color: "var(--color-text-body)", border: "1px solid color-mix(in srgb, var(--color-accent-amber) 30%, transparent)" }}>
-                Oturum bilgisi okunamadı, bu yüzden kayıt yapılamaz. Çıkış yapıp
-                yeniden giriş yaptıktan sonra tekrar deneyin.
+              <div className="flex gap-2 pt-1">
+                <button type="button"
+                  disabled={!activeTherapistId || !therapistEditDraft.displayName.trim() || savingTherapist}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold border-none cursor-pointer transition-all hover:opacity-90 disabled:opacity-45 disabled:cursor-not-allowed"
+                  style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }}
+                  onClick={() => void handleUpdateTherapist()}>
+                  {savingTherapist ? "Kaydediliyor…" : "Kaydet"}
+                </button>
+                <button type="button"
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold border cursor-pointer"
+                  style={{ background: "var(--color-surface)", borderColor: "var(--color-line)", color: "var(--color-text-soft)" }}
+                  onClick={() => setShowEditTherapist(false)}>
+                  İptal
+                </button>
               </div>
-            )}
-            <div className="space-y-3">
-              <div>
-                <label className="text-[10px] text-(--color-text-muted) font-bold uppercase tracking-wider mb-1 block">Ad Soyad</label>
-                <input value={therapistEditDraft.displayName} onChange={e => setTherapistEditDraft(d => ({ ...d, displayName: e.target.value }))}
-                  placeholder="Ad Soyad" className={inputCls} />
-              </div>
-              <div>
-                <label className="text-[10px] text-(--color-text-muted) font-bold uppercase tracking-wider mb-1 block">Klinik / Kurum</label>
-                <input value={therapistEditDraft.clinicName} onChange={e => setTherapistEditDraft(d => ({ ...d, clinicName: e.target.value }))}
-                  placeholder="Klinik adı (isteğe bağlı)" className={inputCls} />
-              </div>
-              <div>
-                <label className="text-[10px] text-(--color-text-muted) font-bold uppercase tracking-wider mb-1 block">Uzmanlık Alanı</label>
-                <input value={therapistEditDraft.specialty} onChange={e => setTherapistEditDraft(d => ({ ...d, specialty: e.target.value }))}
-                  placeholder="Uzmanlık alanı (isteğe bağlı)" className={inputCls} />
-              </div>
-            </div>
-            <div className="flex gap-2 pt-1">
-              <button type="button"
-                disabled={!activeTherapistId || !therapistEditDraft.displayName.trim() || savingTherapist}
-                className="flex-1 py-2.5 rounded-xl text-sm font-bold border-none cursor-pointer transition-all hover:opacity-90 disabled:opacity-45 disabled:cursor-not-allowed"
-                style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }}
-                onClick={() => void handleUpdateTherapist()}>
-                {savingTherapist ? "Kaydediliyor…" : "Kaydet"}
-              </button>
-              <button type="button"
-                className="flex-1 py-2.5 rounded-xl text-sm font-bold border cursor-pointer"
-                style={{ background: "var(--color-surface)", borderColor: "var(--color-line)", color: "var(--color-text-soft)" }}
-                onClick={() => setShowEditTherapist(false)}>
-                İptal
-              </button>
             </div>
           </div>
-        </div>
+        </Portal>
       )}
 
       {showAddClient && (
@@ -3451,198 +3460,206 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
           Hedefler daha önce yalnızca seed'den gelebiliyordu: form state'i ve
           handler'lar vardı ama hiçbir düğme bu formu açmıyordu. ── */}
       {showGoalForm && selectedClient && (
-        <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label="Hedef ekle">
-          <button type="button" aria-label="Kapat" onClick={() => setShowGoalForm(false)} className="absolute inset-0 cursor-default border-none" style={{ background: "rgba(5,11,22,0.5)", backdropFilter: "blur(4px)" }} />
-          <div className="relative w-full max-w-md rounded-[18px]" style={{ padding: 22, background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <Eyebrow>{selectedClient.displayName}</Eyebrow>
-                <CardTitle className="block mt-1">Yeni Hedef</CardTitle>
+        <Portal>
+          <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label="Hedef ekle">
+            <button type="button" aria-label="Kapat" onClick={() => setShowGoalForm(false)} className="absolute inset-0 cursor-default border-none" style={{ background: "rgba(5,11,22,0.5)", backdropFilter: "blur(4px)" }} />
+            <div className="relative w-full max-w-md rounded-[18px]" style={{ padding: 22, background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <Eyebrow>{selectedClient.displayName}</Eyebrow>
+                  <CardTitle className="block mt-1">Yeni Hedef</CardTitle>
+                </div>
+                <button type="button" onClick={() => setShowGoalForm(false)} aria-label="Kapat" className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-soft) hover:text-(--color-text-strong)" style={{ width: 30, height: 30 }}>
+                  <X size={16} />
+                </button>
               </div>
-              <button type="button" onClick={() => setShowGoalForm(false)} aria-label="Kapat" className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-soft) hover:text-(--color-text-strong)" style={{ width: 30, height: 30 }}>
-                <X size={16} />
-              </button>
-            </div>
-            <div className="flex flex-col gap-3">
-              <label className="flex flex-col gap-1.5">
-                <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Başlık</span>
-                <input value={goalDraft.title} onChange={(e) => setGoalDraft((d) => ({ ...d, title: e.target.value }))} placeholder="ör. Blok Açıklığı 6" className={inputCls} />
-              </label>
-              <label className="flex flex-col gap-1.5">
-                <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Açıklama</span>
-                <input value={goalDraft.description} onChange={(e) => setGoalDraft((d) => ({ ...d, description: e.target.value }))} placeholder="Neyi, hangi koşulda ölçüyorsun? (isteğe bağlı)" className={inputCls} />
-              </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-3">
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Hedef Değer</span>
-                  <input type="number" min={1} value={goalDraft.targetValue} onChange={(e) => setGoalDraft((d) => ({ ...d, targetValue: Math.max(1, Number(e.target.value) || 1) }))} className={`${inputCls} numeral`} />
+                  <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Başlık</span>
+                  <input value={goalDraft.title} onChange={(e) => setGoalDraft((d) => ({ ...d, title: e.target.value }))} placeholder="ör. Blok Açıklığı 6" className={inputCls} />
                 </label>
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Son Tarih</span>
-                  <input type="date" value={goalDraft.deadline} onChange={(e) => setGoalDraft((d) => ({ ...d, deadline: e.target.value }))} className={`${inputCls} numeral`} />
+                  <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Açıklama</span>
+                  <input value={goalDraft.description} onChange={(e) => setGoalDraft((d) => ({ ...d, description: e.target.value }))} placeholder="Neyi, hangi koşulda ölçüyorsun? (isteğe bağlı)" className={inputCls} />
                 </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Hedef Değer</span>
+                    <input type="number" min={1} value={goalDraft.targetValue} onChange={(e) => setGoalDraft((d) => ({ ...d, targetValue: Math.max(1, Number(e.target.value) || 1) }))} className={`${inputCls} numeral`} />
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Son Tarih</span>
+                    <input type="date" value={goalDraft.deadline} onChange={(e) => setGoalDraft((d) => ({ ...d, deadline: e.target.value }))} className={`${inputCls} numeral`} />
+                  </label>
+                </div>
               </div>
-            </div>
-            <div className="flex gap-2.5 mt-5">
-              <button type="button" onClick={() => setShowGoalForm(false)} className="flex-1 text-[12.5px] font-semibold text-(--color-text-body) cursor-pointer transition-colors hover:text-(--color-primary)" style={{ padding: 11, borderRadius: 11, background: "transparent", border: "1px solid var(--color-line)" }}>
-                Vazgeç
-              </button>
-              <button
-                type="button"
-                disabled={!goalDraft.title.trim()}
-                onClick={() => void handleAddGoal()}
-                className="btn-signature flex-1 text-[12.5px] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ padding: 11, borderRadius: 11 }}
-              >
-                Hedefi Ekle
-              </button>
+              <div className="flex gap-2.5 mt-5">
+                <button type="button" onClick={() => setShowGoalForm(false)} className="flex-1 text-[12.5px] font-semibold text-(--color-text-body) cursor-pointer transition-colors hover:text-(--color-primary)" style={{ padding: 11, borderRadius: 11, background: "transparent", border: "1px solid var(--color-line)" }}>
+                  Vazgeç
+                </button>
+                <button
+                  type="button"
+                  disabled={!goalDraft.title.trim()}
+                  onClick={() => void handleAddGoal()}
+                  className="btn-signature flex-1 text-[12.5px] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ padding: 11, borderRadius: 11 }}
+                >
+                  Hedefi Ekle
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </Portal>
       )}
 
       {/* ── Oyun seti seçici — kitaplıktaki "Oyun Seti" ve set özetindeki
           "Yeni Set" buraya açılır. Daha önce `showSessionSetPicker` true
           oluyor ama karşılığında hiçbir şey render edilmiyordu. ── */}
       {showSessionSetPicker && (
-        <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label="Oyun seti seç">
-          <button type="button" aria-label="Kapat" onClick={() => setShowSessionSetPicker(false)} className="absolute inset-0 cursor-default border-none" style={{ background: "rgba(5,11,22,0.5)", backdropFilter: "blur(4px)" }} />
-          <div className="relative w-full max-w-md rounded-[18px]" style={{ padding: 22, background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}>
-            <div className="flex items-center justify-between mb-1">
-              <CardTitle>Oyun Seti Seç</CardTitle>
-              <button type="button" onClick={() => setShowSessionSetPicker(false)} aria-label="Kapat" className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-soft) hover:text-(--color-text-strong)" style={{ width: 30, height: 30 }}>
-                <X size={16} />
-              </button>
-            </div>
-            <p className="m-0 mb-4 text-[11.5px] text-(--color-text-soft)">
-              Set, oyunları arka arkaya zincirler; her oyunun sonunda bir sonrakine geçilir.
-            </p>
-            <div className="flex flex-col gap-2">
-              {SESSION_SET_PRESETS.map((preset) => (
-                <button
-                  key={preset.id}
-                  type="button"
-                  onClick={() => {
-                    setSessionTrace([]); setResponseTimes([]); lastRoundAtRef.current = null; setSessionWarningDismissed(false);
-                    setSupportCounts({ verbal: 0, visual: 0, physical: 0 });
-                    setSessionPaused(false);
-                    startSessionSet(preset);
-                    setGameStage("live");
-                    setActiveAppView("games");
-                  }}
-                  className="flex items-center gap-3 text-left cursor-pointer transition-colors hover:border-(--color-line-strong)"
-                  style={{ padding: "12px 14px", borderRadius: 13, background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}
-                >
-                  <span className="text-[20px] shrink-0" aria-hidden="true">{preset.emoji}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[13px] font-bold text-(--color-text-strong)">{preset.label}</span>
-                    <span className="block text-[10.5px] text-(--color-text-soft) mt-0.5">{preset.description}</span>
-                  </span>
-                  <ChevronRight size={15} className="shrink-0 text-(--color-text-muted)" />
+        <Portal>
+          <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label="Oyun seti seç">
+            <button type="button" aria-label="Kapat" onClick={() => setShowSessionSetPicker(false)} className="absolute inset-0 cursor-default border-none" style={{ background: "rgba(5,11,22,0.5)", backdropFilter: "blur(4px)" }} />
+            <div className="relative w-full max-w-md rounded-[18px]" style={{ padding: 22, background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}>
+              <div className="flex items-center justify-between mb-1">
+                <CardTitle>Oyun Seti Seç</CardTitle>
+                <button type="button" onClick={() => setShowSessionSetPicker(false)} aria-label="Kapat" className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-soft) hover:text-(--color-text-strong)" style={{ width: 30, height: 30 }}>
+                  <X size={16} />
                 </button>
-              ))}
+              </div>
+              <p className="m-0 mb-4 text-[11.5px] text-(--color-text-soft)">
+                Set, oyunları arka arkaya zincirler; her oyunun sonunda bir sonrakine geçilir.
+              </p>
+              <div className="flex flex-col gap-2">
+                {SESSION_SET_PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => {
+                      setSessionTrace([]); setResponseTimes([]); lastRoundAtRef.current = null; setSessionWarningDismissed(false);
+                      setSupportCounts({ verbal: 0, visual: 0, physical: 0 });
+                      setSessionPaused(false);
+                      startSessionSet(preset);
+                      setGameStage("live");
+                      setActiveAppView("games");
+                    }}
+                    className="flex items-center gap-3 text-left cursor-pointer transition-colors hover:border-(--color-line-strong)"
+                    style={{ padding: "12px 14px", borderRadius: 13, background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}
+                  >
+                    <span className="text-[20px] shrink-0" aria-hidden="true">{preset.emoji}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[13px] font-bold text-(--color-text-strong)">{preset.label}</span>
+                      <span className="block text-[10.5px] text-(--color-text-soft) mt-0.5">{preset.description}</span>
+                    </span>
+                    <ChevronRight size={15} className="shrink-0 text-(--color-text-muted)" />
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        </Portal>
       )}
 
       {/* ── Karşılaştırma seçici — Danışanlar'daki "Karşılaştır" buraya açılır ── */}
       {showComparePicker && (
-        <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label="Danışan karşılaştır">
-          <button type="button" aria-label="Kapat" onClick={() => setShowComparePicker(false)} className="absolute inset-0 cursor-default border-none" style={{ background: "rgba(5,11,22,0.5)", backdropFilter: "blur(4px)" }} />
-          <div className="relative w-full max-w-md rounded-[18px]" style={{ padding: 22, background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}>
-            <CardTitle className="block mb-1">Danışan Karşılaştır</CardTitle>
-            <p className="m-0 mb-4 text-[11.5px] text-(--color-text-soft)">
-              İki danışanın seans ölçümleri yan yana kıyaslanır.
-            </p>
-            {(() => {
-              const a = compareClientA || clientOptions[0]?.id || "";
-              const b = compareClientB || clientOptions.find((c) => c.id !== a)?.id || "";
-              const selectCls = "w-full text-[13px] text-(--color-text-strong) outline-none cursor-pointer";
-              const selectStyle = { padding: "11px 12px", borderRadius: 11, background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" } as const;
-              return (
-                <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <label className="flex flex-col gap-1.5">
-                      <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Danışan A</span>
-                      <select value={a} onChange={(e) => setCompareClientA(e.target.value)} className={selectCls} style={selectStyle}>
-                        {clientOptions.map((c) => <option key={c.id} value={c.id}>{c.displayName}</option>)}
-                      </select>
-                    </label>
-                    <label className="flex flex-col gap-1.5">
-                      <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Danışan B</span>
-                      <select value={b} onChange={(e) => setCompareClientB(e.target.value)} className={selectCls} style={selectStyle}>
-                        {clientOptions.map((c) => <option key={c.id} value={c.id}>{c.displayName}</option>)}
-                      </select>
-                    </label>
-                  </div>
-                  <div className="flex gap-2.5 mt-5">
-                    <button type="button" onClick={() => setShowComparePicker(false)} className="flex-1 text-[12.5px] font-semibold text-(--color-text-body) cursor-pointer transition-colors hover:text-(--color-primary)" style={{ padding: 11, borderRadius: 11, background: "transparent", border: "1px solid var(--color-line)" }}>
-                      Vazgeç
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!a || !b || a === b}
-                      onClick={() => {
-                        setCompareClientA(a);
-                        setCompareClientB(b);
-                        setShowComparePicker(false);
-                        setShowComparison(true);
-                      }}
-                      className="btn-signature flex-1 text-[12.5px] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{ padding: 11, borderRadius: 11 }}
-                    >
-                      Karşılaştır
-                    </button>
-                  </div>
-                  {a === b && <p className="m-0 mt-2 text-[11px] text-(--color-accent-amber)">İki farklı danışan seç.</p>}
-                </>
-              );
-            })()}
+        <Portal>
+          <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label="Danışan karşılaştır">
+            <button type="button" aria-label="Kapat" onClick={() => setShowComparePicker(false)} className="absolute inset-0 cursor-default border-none" style={{ background: "rgba(5,11,22,0.5)", backdropFilter: "blur(4px)" }} />
+            <div className="relative w-full max-w-md rounded-[18px]" style={{ padding: 22, background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}>
+              <CardTitle className="block mb-1">Danışan Karşılaştır</CardTitle>
+              <p className="m-0 mb-4 text-[11.5px] text-(--color-text-soft)">
+                İki danışanın seans ölçümleri yan yana kıyaslanır.
+              </p>
+              {(() => {
+                const a = compareClientA || clientOptions[0]?.id || "";
+                const b = compareClientB || clientOptions.find((c) => c.id !== a)?.id || "";
+                const selectCls = "w-full text-[13px] text-(--color-text-strong) outline-none cursor-pointer";
+                const selectStyle = { padding: "11px 12px", borderRadius: 11, background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" } as const;
+                return (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="flex flex-col gap-1.5">
+                        <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Danışan A</span>
+                        <select value={a} onChange={(e) => setCompareClientA(e.target.value)} className={selectCls} style={selectStyle}>
+                          {clientOptions.map((c) => <option key={c.id} value={c.id}>{c.displayName}</option>)}
+                        </select>
+                      </label>
+                      <label className="flex flex-col gap-1.5">
+                        <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Danışan B</span>
+                        <select value={b} onChange={(e) => setCompareClientB(e.target.value)} className={selectCls} style={selectStyle}>
+                          {clientOptions.map((c) => <option key={c.id} value={c.id}>{c.displayName}</option>)}
+                        </select>
+                      </label>
+                    </div>
+                    <div className="flex gap-2.5 mt-5">
+                      <button type="button" onClick={() => setShowComparePicker(false)} className="flex-1 text-[12.5px] font-semibold text-(--color-text-body) cursor-pointer transition-colors hover:text-(--color-primary)" style={{ padding: 11, borderRadius: 11, background: "transparent", border: "1px solid var(--color-line)" }}>
+                        Vazgeç
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!a || !b || a === b}
+                        onClick={() => {
+                          setCompareClientA(a);
+                          setCompareClientB(b);
+                          setShowComparePicker(false);
+                          setShowComparison(true);
+                        }}
+                        className="btn-signature flex-1 text-[12.5px] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{ padding: 11, borderRadius: 11 }}
+                      >
+                        Karşılaştır
+                      </button>
+                    </div>
+                    {a === b && <p className="m-0 mt-2 text-[11px] text-(--color-accent-amber)">İki farklı danışan seç.</p>}
+                  </>
+                );
+              })()}
+            </div>
           </div>
-        </div>
+        </Portal>
       )}
 
       {/* ── CSV içe aktarma — Ayarlar'daki "CSV İçe Aktar" buraya açılır ── */}
       {showCsvImport && (
-        <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label="CSV içe aktar">
-          <button type="button" aria-label="Kapat" onClick={() => { setShowCsvImport(false); setCsvImportError(""); }} className="absolute inset-0 cursor-default border-none" style={{ background: "rgba(5,11,22,0.5)", backdropFilter: "blur(4px)" }} />
-          <div className="relative w-full max-w-lg rounded-[18px]" style={{ padding: 22, background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}>
-            <div className="flex items-center justify-between mb-1">
-              <CardTitle>Danışanları CSV ile İçe Aktar</CardTitle>
-              <button type="button" onClick={() => { setShowCsvImport(false); setCsvImportError(""); }} aria-label="Kapat" className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-soft) hover:text-(--color-text-strong)" style={{ width: 30, height: 30 }}>
-                <X size={16} />
-              </button>
-            </div>
-            <p className="m-0 mb-3 text-[11.5px] leading-[1.55] text-(--color-text-soft)">
-              İlk satır başlık, sonraki her satır bir danışan:{" "}
-              <code className="numeral text-[10.5px]">Ad,Yaş Grubu,Birincil Hedef,Destek Düzeyi</code>
-            </p>
-            <textarea
-              value={csvImportText}
-              onChange={(e) => setCsvImportText(e.target.value)}
-              rows={7}
-              placeholder={"Ad,Yaş Grubu,Birincil Hedef,Destek Düzeyi\nAli Kaya,6-8,Çalışma belleği,Sözel ipucu"}
-              className="numeral w-full resize-none outline-none text-[12px] leading-[1.6] text-(--color-text-strong) placeholder:text-(--color-text-muted)"
-              style={{ padding: "12px 14px", borderRadius: 12, background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}
-            />
-            {csvImportError && <p className="m-0 mt-2 text-[11.5px] text-(--color-accent-red)">{csvImportError}</p>}
-            <div className="flex gap-2.5 mt-4">
-              <button type="button" onClick={() => { setShowCsvImport(false); setCsvImportError(""); }} className="flex-1 text-[12.5px] font-semibold text-(--color-text-body) cursor-pointer transition-colors hover:text-(--color-primary)" style={{ padding: 11, borderRadius: 11, background: "transparent", border: "1px solid var(--color-line)" }}>
-                Vazgeç
-              </button>
-              <button
-                type="button"
-                disabled={!csvImportText.trim()}
-                onClick={() => void handleImportCsv()}
-                className="btn-signature flex-1 text-[12.5px] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ padding: 11, borderRadius: 11 }}
-              >
-                İçe Aktar
-              </button>
+        <Portal>
+          <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label="CSV içe aktar">
+            <button type="button" aria-label="Kapat" onClick={() => { setShowCsvImport(false); setCsvImportError(""); }} className="absolute inset-0 cursor-default border-none" style={{ background: "rgba(5,11,22,0.5)", backdropFilter: "blur(4px)" }} />
+            <div className="relative w-full max-w-lg rounded-[18px]" style={{ padding: 22, background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}>
+              <div className="flex items-center justify-between mb-1">
+                <CardTitle>Danışanları CSV ile İçe Aktar</CardTitle>
+                <button type="button" onClick={() => { setShowCsvImport(false); setCsvImportError(""); }} aria-label="Kapat" className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-soft) hover:text-(--color-text-strong)" style={{ width: 30, height: 30 }}>
+                  <X size={16} />
+                </button>
+              </div>
+              <p className="m-0 mb-3 text-[11.5px] leading-[1.55] text-(--color-text-soft)">
+                İlk satır başlık, sonraki her satır bir danışan:{" "}
+                <code className="numeral text-[10.5px]">Ad,Yaş Grubu,Birincil Hedef,Destek Düzeyi</code>
+              </p>
+              <textarea
+                value={csvImportText}
+                onChange={(e) => setCsvImportText(e.target.value)}
+                rows={7}
+                placeholder={"Ad,Yaş Grubu,Birincil Hedef,Destek Düzeyi\nAli Kaya,6-8,Çalışma belleği,Sözel ipucu"}
+                className="numeral w-full resize-none outline-none text-[12px] leading-[1.6] text-(--color-text-strong) placeholder:text-(--color-text-muted)"
+                style={{ padding: "12px 14px", borderRadius: 12, background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}
+              />
+              {csvImportError && <p className="m-0 mt-2 text-[11.5px] text-(--color-accent-red)">{csvImportError}</p>}
+              <div className="flex gap-2.5 mt-4">
+                <button type="button" onClick={() => { setShowCsvImport(false); setCsvImportError(""); }} className="flex-1 text-[12.5px] font-semibold text-(--color-text-body) cursor-pointer transition-colors hover:text-(--color-primary)" style={{ padding: 11, borderRadius: 11, background: "transparent", border: "1px solid var(--color-line)" }}>
+                  Vazgeç
+                </button>
+                <button
+                  type="button"
+                  disabled={!csvImportText.trim()}
+                  onClick={() => void handleImportCsv()}
+                  className="btn-signature flex-1 text-[12.5px] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ padding: 11, borderRadius: 11 }}
+                >
+                  İçe Aktar
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </Portal>
       )}
 
       {/*
@@ -3653,119 +3670,121 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         serbest metin de mümkün — kısa gözlemler için dört alan fazla tören.
       */}
       {showNoteForm && selectedClient && (
-        <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label="Seans notu ekle">
-          <button
-            type="button"
-            aria-label="Kapat"
-            onClick={() => setShowNoteForm(false)}
-            className="absolute inset-0 cursor-default border-none"
-            style={{ background: "rgba(5,11,22,0.5)", backdropFilter: "blur(4px)" }}
-          />
-          <div
-            className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-[18px]"
-            style={{ padding: 22, background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2.5">
-                <Avatar name={selectedClient.displayName} id={selectedClient.id} size={34} radius={11} />
-                <div>
-                  <Eyebrow>{selectedClient.displayName}</Eyebrow>
-                  <CardTitle className="block mt-0.5">Seans Notu</CardTitle>
-                </div>
-              </div>
-              <button type="button" onClick={() => setShowNoteForm(false)} aria-label="Kapat" className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-soft) hover:text-(--color-text-strong)" style={{ width: 30, height: 30 }}>
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="flex items-center gap-3 mb-4">
-              {/* Not biçimi — SOAP klinik varsayılan, serbest metin hızlı gözlem için */}
-              <div className="flex p-[3px] rounded-[10px]" style={{ background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }} role="radiogroup" aria-label="Not biçimi">
-                {([{ key: "soap" as NoteMode, label: "SOAP" }, { key: "free" as NoteMode, label: "Serbest" }]).map(({ key, label }) => {
-                  const on = noteMode === key;
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      role="radio"
-                      aria-checked={on}
-                      onClick={() => setNoteMode(key)}
-                      className={`text-[11.5px] font-semibold cursor-pointer border-none transition-colors ${on ? "text-white" : "text-(--color-text-soft) bg-transparent hover:text-(--color-text-body)"}`}
-                      style={{ padding: "6px 13px", borderRadius: 7, background: on ? "var(--gradient-signature)" : undefined }}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-              <input
-                type="date"
-                value={noteForm.date}
-                onChange={(e) => setNoteForm((f) => ({ ...f, date: e.target.value }))}
-                aria-label="Not tarihi"
-                className="numeral ml-auto text-[12px] text-(--color-text-strong) outline-none cursor-pointer"
-                style={{ padding: "7px 11px", borderRadius: 10, background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}
-              />
-            </div>
-
-            {noteMode === "soap" ? (
-              <div className="flex flex-col gap-3">
-                {([
-                  { key: "s" as const, letter: "S", label: "Sübjektif", ph: "Danışanın / ailenin ifadesi…" },
-                  { key: "o" as const, letter: "O", label: "Objektif", ph: "Gözlenen performans, ölçümler…" },
-                  { key: "a" as const, letter: "A", label: "Değerlendirme", ph: "Klinik yorum…" },
-                  { key: "p" as const, letter: "P", label: "Plan", ph: "Sonraki adım…" },
-                ]).map(({ key, letter, label, ph }) => (
-                  <div key={key}>
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="numeral grid place-items-center text-[10px] font-bold shrink-0" style={{ width: 20, height: 20, borderRadius: 6, background: "var(--color-primary-light)", color: "var(--color-primary-ink)" }}>
-                        {letter}
-                      </span>
-                      <span className="text-[11px] font-semibold text-(--color-text-body)">{label}</span>
-                    </div>
-                    <textarea
-                      value={soapDraft[key]}
-                      onChange={(e) => setSoapDraft((d) => ({ ...d, [key]: e.target.value }))}
-                      rows={2}
-                      placeholder={ph}
-                      className="w-full resize-none outline-none text-[12px] leading-[1.55] text-(--color-text-strong) placeholder:text-(--color-text-muted)"
-                      style={{ padding: "10px 12px", borderRadius: 11, background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}
-                    />
+        <Portal>
+          <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label="Seans notu ekle">
+            <button
+              type="button"
+              aria-label="Kapat"
+              onClick={() => setShowNoteForm(false)}
+              className="absolute inset-0 cursor-default border-none"
+              style={{ background: "rgba(5,11,22,0.5)", backdropFilter: "blur(4px)" }}
+            />
+            <div
+              className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-[18px]"
+              style={{ padding: 22, background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <Avatar name={selectedClient.displayName} id={selectedClient.id} size={34} radius={11} />
+                  <div>
+                    <Eyebrow>{selectedClient.displayName}</Eyebrow>
+                    <CardTitle className="block mt-0.5">Seans Notu</CardTitle>
                   </div>
-                ))}
+                </div>
+                <button type="button" onClick={() => setShowNoteForm(false)} aria-label="Kapat" className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-soft) hover:text-(--color-text-strong)" style={{ width: 30, height: 30 }}>
+                  <X size={16} />
+                </button>
               </div>
-            ) : (
-              <textarea
-                value={noteForm.content}
-                onChange={(e) => setNoteForm((f) => ({ ...f, content: e.target.value }))}
-                rows={6}
-                placeholder="Gözlemini yaz…"
-                className="w-full resize-none outline-none text-[12.5px] leading-[1.6] text-(--color-text-strong) placeholder:text-(--color-text-muted)"
-                style={{ padding: "12px 14px", borderRadius: 12, background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}
-              />
-            )}
-
-            <div className="flex gap-2.5 mt-5">
-              <button
-                type="button"
-                onClick={() => setShowNoteForm(false)}
-                className="flex-1 text-[12.5px] font-semibold text-(--color-text-body) cursor-pointer transition-colors hover:text-(--color-primary)"
-                style={{ padding: 11, borderRadius: 11, background: "transparent", border: "1px solid var(--color-line)" }}
-              >
-                Vazgeç
-              </button>
-              <button
-                type="button"
-                disabled={isNotesLoading || (noteMode === "soap" ? ![soapDraft.s, soapDraft.o, soapDraft.a, soapDraft.p].some((x) => x.trim()) : !noteForm.content.trim())}
-                onClick={() => void handleAddNoteDB()}
-                className="btn-signature flex-1 text-[12.5px] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ padding: 11, borderRadius: 11 }}
-              >
-                {isNotesLoading ? "Kaydediliyor…" : "Notu Kaydet"}
-              </button>
+  
+              <div className="flex items-center gap-3 mb-4">
+                {/* Not biçimi — SOAP klinik varsayılan, serbest metin hızlı gözlem için */}
+                <div className="flex p-[3px] rounded-[10px]" style={{ background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }} role="radiogroup" aria-label="Not biçimi">
+                  {([{ key: "soap" as NoteMode, label: "SOAP" }, { key: "free" as NoteMode, label: "Serbest" }]).map(({ key, label }) => {
+                    const on = noteMode === key;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        onClick={() => setNoteMode(key)}
+                        className={`text-[11.5px] font-semibold cursor-pointer border-none transition-colors ${on ? "text-white" : "text-(--color-text-soft) bg-transparent hover:text-(--color-text-body)"}`}
+                        style={{ padding: "6px 13px", borderRadius: 7, background: on ? "var(--gradient-signature-ink)" : undefined }}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <input
+                  type="date"
+                  value={noteForm.date}
+                  onChange={(e) => setNoteForm((f) => ({ ...f, date: e.target.value }))}
+                  aria-label="Not tarihi"
+                  className="numeral ml-auto text-[12px] text-(--color-text-strong) outline-none cursor-pointer"
+                  style={{ padding: "7px 11px", borderRadius: 10, background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}
+                />
+              </div>
+  
+              {noteMode === "soap" ? (
+                <div className="flex flex-col gap-3">
+                  {([
+                    { key: "s" as const, letter: "S", label: "Sübjektif", ph: "Danışanın / ailenin ifadesi…" },
+                    { key: "o" as const, letter: "O", label: "Objektif", ph: "Gözlenen performans, ölçümler…" },
+                    { key: "a" as const, letter: "A", label: "Değerlendirme", ph: "Klinik yorum…" },
+                    { key: "p" as const, letter: "P", label: "Plan", ph: "Sonraki adım…" },
+                  ]).map(({ key, letter, label, ph }) => (
+                    <div key={key}>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="numeral grid place-items-center text-[10px] font-bold shrink-0" style={{ width: 20, height: 20, borderRadius: 6, background: "var(--color-primary-light)", color: "var(--color-primary-ink)" }}>
+                          {letter}
+                        </span>
+                        <span className="text-[11px] font-semibold text-(--color-text-body)">{label}</span>
+                      </div>
+                      <textarea
+                        value={soapDraft[key]}
+                        onChange={(e) => setSoapDraft((d) => ({ ...d, [key]: e.target.value }))}
+                        rows={2}
+                        placeholder={ph}
+                        className="w-full resize-none outline-none text-[12px] leading-[1.55] text-(--color-text-strong) placeholder:text-(--color-text-muted)"
+                        style={{ padding: "10px 12px", borderRadius: 11, background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <textarea
+                  value={noteForm.content}
+                  onChange={(e) => setNoteForm((f) => ({ ...f, content: e.target.value }))}
+                  rows={6}
+                  placeholder="Gözlemini yaz…"
+                  className="w-full resize-none outline-none text-[12.5px] leading-[1.6] text-(--color-text-strong) placeholder:text-(--color-text-muted)"
+                  style={{ padding: "12px 14px", borderRadius: 12, background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}
+                />
+              )}
+  
+              <div className="flex gap-2.5 mt-5">
+                <button
+                  type="button"
+                  onClick={() => setShowNoteForm(false)}
+                  className="flex-1 text-[12.5px] font-semibold text-(--color-text-body) cursor-pointer transition-colors hover:text-(--color-primary)"
+                  style={{ padding: 11, borderRadius: 11, background: "transparent", border: "1px solid var(--color-line)" }}
+                >
+                  Vazgeç
+                </button>
+                <button
+                  type="button"
+                  disabled={isNotesLoading || (noteMode === "soap" ? ![soapDraft.s, soapDraft.o, soapDraft.a, soapDraft.p].some((x) => x.trim()) : !noteForm.content.trim())}
+                  onClick={() => void handleAddNoteDB()}
+                  className="btn-signature flex-1 text-[12.5px] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ padding: 11, borderRadius: 11 }}
+                >
+                  {isNotesLoading ? "Kaydediliyor…" : "Notu Kaydet"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </Portal>
       )}
     </main>
   );

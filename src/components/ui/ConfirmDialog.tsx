@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { Portal } from "@/components/ui/Portal";
 
 interface ConfirmDialogProps {
   readonly open: boolean;
@@ -55,69 +56,71 @@ export function ConfirmDialog({
   const isDanger = variant === "danger";
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="confirm-dialog-title"
-      aria-describedby="confirm-dialog-desc">
-      {/* Backdrop */}
+    <Portal>
       <div
-        className="absolute inset-0"
-        style={{ background: "rgba(8,13,12,0.8)", backdropFilter: "blur(4px)" }}
-        onClick={onCancel}
-      />
-
-      {/* Dialog */}
-      <div
-        className="relative w-full max-w-sm rounded-2xl overflow-hidden result-overlay-in"
-        style={{
-          background: "var(--color-surface-strong)",
-          border: "1px solid var(--color-line-strong)",
-          boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
-        }}>
-        <div className="p-6">
-          <h3
-            id="confirm-dialog-title"
-            className="text-(--color-text-strong) font-bold text-lg m-0 mb-2">
-            {title}
-          </h3>
-          <p
-            id="confirm-dialog-desc"
-            className="text-(--color-text-soft) text-sm m-0 mb-6 leading-relaxed">
-            {description}
-          </p>
-          <div className="flex gap-3">
-            <button
-              ref={confirmRef}
-              type="button"
-              onClick={onConfirm}
-              className="flex-1 py-2.5 rounded-xl text-sm font-bold border-none cursor-pointer transition-all active:scale-95"
-              style={{
-                background: isDanger
-                  ? "linear-gradient(135deg, #d63d63, #b8304c)"
-                  : "linear-gradient(135deg, #2b62f5, #17c2e0)",
-                color: "#fff",
-                boxShadow: isDanger
-                  ? "0 4px 14px rgba(214, 61, 99,0.3)"
-                  : "0 4px 14px rgba(43, 98, 245,0.3)",
-              }}>
-              {confirmLabel}
-            </button>
-            <button
-              type="button"
-              onClick={onCancel}
-              className="flex-1 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all active:scale-95"
-              style={{
-                background: "var(--color-surface-elevated)",
-                color: "var(--color-text-body)",
-                border: "1px solid var(--color-line)",
-              }}>
-              {cancelLabel}
-            </button>
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-dialog-title"
+        aria-describedby="confirm-dialog-desc">
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0"
+          style={{ background: "rgba(8,13,12,0.8)", backdropFilter: "blur(4px)" }}
+          onClick={onCancel}
+        />
+  
+        {/* Dialog */}
+        <div
+          className="relative w-full max-w-sm rounded-2xl overflow-hidden result-overlay-in"
+          style={{
+            background: "var(--color-surface-strong)",
+            border: "1px solid var(--color-line-strong)",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
+          }}>
+          <div className="p-6">
+            <h3
+              id="confirm-dialog-title"
+              className="text-(--color-text-strong) font-bold text-lg m-0 mb-2">
+              {title}
+            </h3>
+            <p
+              id="confirm-dialog-desc"
+              className="text-(--color-text-soft) text-sm m-0 mb-6 leading-relaxed">
+              {description}
+            </p>
+            <div className="flex gap-3">
+              <button
+                ref={confirmRef}
+                type="button"
+                onClick={onConfirm}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold border-none cursor-pointer transition-all active:scale-95"
+                style={{
+                  background: isDanger
+                    ? "linear-gradient(135deg, #d63d63, #b8304c)"
+                    : "linear-gradient(135deg, #2b62f5, #17c2e0)",
+                  color: "#fff",
+                  boxShadow: isDanger
+                    ? "0 4px 14px rgba(214, 61, 99,0.3)"
+                    : "0 4px 14px rgba(43, 98, 245,0.3)",
+                }}>
+                {confirmLabel}
+              </button>
+              <button
+                type="button"
+                onClick={onCancel}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all active:scale-95"
+                style={{
+                  background: "var(--color-surface-elevated)",
+                  color: "var(--color-text-body)",
+                  border: "1px solid var(--color-line)",
+                }}>
+                {cancelLabel}
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </Portal>
   );
 }

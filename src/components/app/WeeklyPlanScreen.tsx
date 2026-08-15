@@ -38,6 +38,7 @@ import {
   relativeDay,
 } from "@/lib/deniz-derive";
 import { Card, CardTitle, Eyebrow, MeterBar, ScreenHeader, SegmentedControl } from "./primitives";
+import { Portal } from "@/components/ui/Portal";
 
 interface Props {
   readonly now: Date;
@@ -517,86 +518,88 @@ function Composer({
   } as const;
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label={`${dayLabel} gününe seans ekle`}>
-      <button type="button" aria-label="Kapat" onClick={onClose} className="absolute inset-0 cursor-default border-none" style={{ background: "rgba(5,11,22,0.5)", backdropFilter: "blur(4px)" }} />
-      {/* Telefonda pencere yüksekliği 568px'e kadar inebiliyor; klavye
-          açılınca form alta taşıyordu. Kutu ekranı aşarsa kendi içinde
-          kayar (`overflow-auto`; `overflow-y-auto` sınıfı mobilde kabuk
-          kuralıyla serbest bırakıldığı için burada işe yaramaz). */}
-      <div
-        className="relative w-full max-w-md rounded-[18px] p-[17px] lg:p-[22px] max-h-[calc(100dvh-2rem)] overflow-auto"
-        style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <Eyebrow>{dayLabel}</Eyebrow>
-            <CardTitle className="block mt-1">Seans Planla</CardTitle>
+    <Portal>
+      <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label={`${dayLabel} gününe seans ekle`}>
+        <button type="button" aria-label="Kapat" onClick={onClose} className="absolute inset-0 cursor-default border-none" style={{ background: "rgba(5,11,22,0.5)", backdropFilter: "blur(4px)" }} />
+        {/* Telefonda pencere yüksekliği 568px'e kadar inebiliyor; klavye
+            açılınca form alta taşıyordu. Kutu ekranı aşarsa kendi içinde
+            kayar (`overflow-auto`; `overflow-y-auto` sınıfı mobilde kabuk
+            kuralıyla serbest bırakıldığı için burada işe yaramaz). */}
+        <div
+          className="relative w-full max-w-md rounded-[18px] p-[17px] lg:p-[22px] max-h-[calc(100dvh-2rem)] overflow-auto"
+          style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <Eyebrow>{dayLabel}</Eyebrow>
+              <CardTitle className="block mt-1">Seans Planla</CardTitle>
+            </div>
+            <button type="button" onClick={onClose} aria-label="Kapat" className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-soft) hover:text-(--color-text-strong)" style={{ width: 30, height: 30 }}>
+              <X size={16} />
+            </button>
           </div>
-          <button type="button" onClick={onClose} aria-label="Kapat" className="grid place-items-center cursor-pointer border-none bg-transparent text-(--color-text-soft) hover:text-(--color-text-strong)" style={{ width: 30, height: 30 }}>
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5">
-            <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Danışan</span>
-            <select value={clientId} onChange={(e) => setClientId(e.target.value)} className={field} style={fieldStyle}>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>{c.displayName}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="flex flex-col gap-1.5">
-            <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Oyun</span>
-            <select value={gameKey} onChange={(e) => setGameKey(e.target.value as PlatformGameKey)} className={field} style={fieldStyle}>
-              {GAME_TABS.map((g) => {
-                const d = gameDomain(g.key as PlatformGameKey);
-                return (
-                  <option key={g.key} value={g.key}>
-                    {g.title} — {d ? DOMAIN_META[d].label : g.kicker}
-                  </option>
-                );
-              })}
-            </select>
-          </label>
-
-          {/* Saat + hedef telefonda alt alta: 320px'te iki sütun saat
-              alanını 116px'e düşürüyor, yerleşik saat seçici kırpılıyordu. */}
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+  
+          <div className="flex flex-col gap-3">
             <label className="flex flex-col gap-1.5">
-              <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Saat</span>
-              <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={field} style={fieldStyle} />
+              <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Danışan</span>
+              <select value={clientId} onChange={(e) => setClientId(e.target.value)} className={field} style={fieldStyle}>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>{c.displayName}</option>
+                ))}
+              </select>
             </label>
+  
             <label className="flex flex-col gap-1.5">
-              <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Hedef</span>
-              <input
-                type="text"
-                value={goal}
-                onChange={(e) => setGoal(e.target.value)}
-                placeholder="ör. Çalışma belleği"
-                className={`${field} placeholder:text-(--color-text-muted)`}
-                style={fieldStyle}
-              />
+              <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Oyun</span>
+              <select value={gameKey} onChange={(e) => setGameKey(e.target.value as PlatformGameKey)} className={field} style={fieldStyle}>
+                {GAME_TABS.map((g) => {
+                  const d = gameDomain(g.key as PlatformGameKey);
+                  return (
+                    <option key={g.key} value={g.key}>
+                      {g.title} — {d ? DOMAIN_META[d].label : g.kicker}
+                    </option>
+                  );
+                })}
+              </select>
             </label>
+  
+            {/* Saat + hedef telefonda alt alta: 320px'te iki sütun saat
+                alanını 116px'e düşürüyor, yerleşik saat seçici kırpılıyordu. */}
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Saat</span>
+                <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={field} style={fieldStyle} />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Hedef</span>
+                <input
+                  type="text"
+                  value={goal}
+                  onChange={(e) => setGoal(e.target.value)}
+                  placeholder="ör. Çalışma belleği"
+                  className={`${field} placeholder:text-(--color-text-muted)`}
+                  style={fieldStyle}
+                />
+              </label>
+            </div>
           </div>
-        </div>
-
-        <div className="flex gap-2.5 mt-5">
-          <button type="button" onClick={onClose} className="flex-1 text-[12.5px] font-semibold text-(--color-text-body) cursor-pointer transition-colors hover:text-(--color-primary)" style={{ padding: 11, borderRadius: 11, background: "transparent", border: "1px solid var(--color-line)" }}>
-            Vazgeç
-          </button>
-          <button
-            type="button"
-            disabled={!clientId}
-            onClick={() => onSubmit(clientId, { gameKey, goal: goal.trim(), time: time || undefined })}
-            className="btn-signature flex-1 text-[12.5px] font-semibold cursor-pointer"
-            style={{ padding: 11, borderRadius: 11 }}
-          >
-            Plana Ekle
-          </button>
+  
+          <div className="flex gap-2.5 mt-5">
+            <button type="button" onClick={onClose} className="flex-1 text-[12.5px] font-semibold text-(--color-text-body) cursor-pointer transition-colors hover:text-(--color-primary)" style={{ padding: 11, borderRadius: 11, background: "transparent", border: "1px solid var(--color-line)" }}>
+              Vazgeç
+            </button>
+            <button
+              type="button"
+              disabled={!clientId}
+              onClick={() => onSubmit(clientId, { gameKey, goal: goal.trim(), time: time || undefined })}
+              className="btn-signature flex-1 text-[12.5px] font-semibold cursor-pointer"
+              style={{ padding: 11, borderRadius: 11 }}
+            >
+              Plana Ekle
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Portal>
   );
 }

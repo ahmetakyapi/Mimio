@@ -229,7 +229,7 @@ export function ProgressReportScreen({
                         width: 16,
                         height: 16,
                         borderRadius: 5,
-                        background: on(sec.key) ? "var(--gradient-signature)" : "transparent",
+                        background: on(sec.key) ? "var(--gradient-signature-ink)" : "transparent",
                         border: `1px solid ${on(sec.key) ? "transparent" : "var(--color-line-strong)"}`,
                       }}
                     />

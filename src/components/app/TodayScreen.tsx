@@ -246,7 +246,7 @@ export function TodayScreen({
             üstelik ekranın cevapladığı soru ("şimdi ne yapıyorum?") en altta
             kalıyordu. */}
         <div
-          className="tile-signature tile-signature-grain rounded-[16px] p-[15px_16px] lg:p-[17px_18px] max-lg:col-span-2 max-lg:order-first"
+          className="tile-signature-ink tile-signature-grain rounded-[16px] p-[15px_16px] lg:p-[17px_18px] max-lg:col-span-2 max-lg:order-first"
           style={{ boxShadow: "var(--shadow-glow)" }}
         >
           <div className="relative">
