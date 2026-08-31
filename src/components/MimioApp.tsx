@@ -152,6 +152,20 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [allNotes, setAllNotes] = useState<SessionNote[]>([]);
   const [allWeeklyPlans, setAllWeeklyPlans] = useState<WeeklyPlan[]>([]);
+  /*
+   * Planların senkron aynası.
+   *
+   * `mutateWeeklyPlan` planı closure'daki `allWeeklyPlans`ten okuyordu. Tek
+   * çağrıda sorun çıkmıyor ama aynı tick içinde art arda iki çağrı (protokol
+   * uygularken bir haftanın birkaç oyununu birden eklemek gibi) ikisi de aynı
+   * eski diziyi görüyor, ikincisi birincisinin yazdığını eziyordu: "2 seans
+   * eklendi" denip plana bir tanesi düşüyordu.
+   *
+   * Ref, state'i effect ile takip eder; `mutateWeeklyPlan` ayrıca kendi
+   * sonucunu ref'e senkron yazar, böylece sıradaki çağrı güncel diziyi görür.
+   */
+  const weeklyPlansRef = useRef<WeeklyPlan[]>([]);
+  useEffect(() => { weeklyPlansRef.current = allWeeklyPlans; }, [allWeeklyPlans]);
   const [clientDetailTab, setClientDetailTab] = useState<"notes" | "plan" | "scores" | "progress" | "suggestions">("notes");
   const [noteForm, setNoteForm] = useState({ date: getTodayString(), content: "" });
   const [showNoteForm, setShowNoteForm] = useState(false);
@@ -594,7 +608,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     mutate: (days: Record<DayKey, WeeklyPlanEntry[]>) => Record<DayKey, WeeklyPlanEntry[]>,
   ) {
     const weekStartDate = denizIso(denizWeekStart(new Date()));
-    const existing = allWeeklyPlans.find((p) => p.clientId === clientId && p.weekStartDate.slice(0, 10) === weekStartDate);
+    const source = weeklyPlansRef.current;
+    const existing = source.find((p) => p.clientId === clientId && p.weekStartDate.slice(0, 10) === weekStartDate);
     const base: Record<DayKey, WeeklyPlanEntry[]> =
       existing?.days ?? { mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: [] };
     const days = mutate(base);
@@ -608,10 +623,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
       updatedAt: new Date().toISOString(),
     };
 
-    setAllWeeklyPlans((current) => {
-      const idx = current.findIndex((p) => p.clientId === clientId && p.weekStartDate.slice(0, 10) === weekStartDate);
-      return idx >= 0 ? current.map((p, i) => (i === idx ? plan : p)) : [...current, plan];
-    });
+    const idx = source.findIndex((p) => p.clientId === clientId && p.weekStartDate.slice(0, 10) === weekStartDate);
+    const next = idx >= 0 ? source.map((p, i) => (i === idx ? plan : p)) : [...source, plan];
+    weeklyPlansRef.current = next;
+    setAllWeeklyPlans(next);
 
     try {
       await fetch("/api/platform/plans", {
@@ -678,6 +693,27 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
   function handlePlanAddEntry(clientId: string, day: DayKey, entry: WeeklyPlanEntry) {
     void mutateWeeklyPlan(clientId, (days) => ({ ...days, [day]: [...(days[day] ?? []), entry] }));
     showToast("Seans plana eklendi", "success");
+  }
+
+  /*
+   * Birden çok bloğu tek yazımda ekler.
+   *
+   * `handlePlanAddEntry`i döngüde çağırmak yetmiyordu: her çağrı kendi
+   * POST'unu atıyor, üç istek sunucuya sırasız varıyor ve en son varan
+   * diğerlerini eziyordu. Ekranda üç blok görünüyor, yenileyince bir tanesi
+   * kalıyordu. Protokol uygulaması tek bir mutasyon, dolayısıyla tek istek.
+   */
+  function handlePlanAddEntries(
+    clientId: string,
+    items: readonly { day: DayKey; entry: WeeklyPlanEntry }[],
+  ) {
+    if (items.length === 0) return;
+    void mutateWeeklyPlan(clientId, (days) => {
+      const next = { ...days };
+      for (const { day, entry } of items) next[day] = [...(next[day] ?? []), entry];
+      return next;
+    });
+    showToast(`${items.length} seans plana eklendi`, "success");
   }
 
   function handlePlanRemoveEntry(clientId: string, day: DayKey, index: number) {
@@ -2213,6 +2249,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               weekCapacity={weekCapacity}
               onNavigate={setActiveAppView}
               onAddEntry={handlePlanAddEntry}
+              onAddEntries={handlePlanAddEntries}
               onRemoveEntry={handlePlanRemoveEntry}
               onStartSession={handleStartSessionFor}
             />

@@ -22,6 +22,7 @@ import type {
 } from "@/lib/platform-data";
 import { GAME_TABS } from "@/lib/game-constants";
 import { THERAPY_PROTOCOLS } from "@/lib/therapy-protocols";
+import type { TherapyProtocol } from "@/lib/game-types";
 import {
   DAY_KEYS,
   DAY_LABELS,
@@ -48,6 +49,8 @@ interface Props {
   readonly weekCapacity: number;
   readonly onNavigate: (v: AppView) => void;
   readonly onAddEntry: (clientId: string, day: DayKey, entry: WeeklyPlanEntry) => void;
+  /** Protokol uygulaması gibi çok bloklu eklemeler — tek yazım, tek istek. */
+  readonly onAddEntries: (clientId: string, items: readonly { day: DayKey; entry: WeeklyPlanEntry }[]) => void;
   readonly onRemoveEntry: (clientId: string, day: DayKey, index: number) => void;
   readonly onStartSession: (clientId: string, gameKey: PlatformGameKey) => void;
 }
@@ -68,10 +71,15 @@ export function WeeklyPlanScreen({
   weekCapacity,
   onNavigate,
   onAddEntry,
+  onAddEntries,
   onRemoveEntry,
   onStartSession,
 }: Props) {
   const [scope, setScope] = useState<"week" | "client">("week");
+  /* Açık protokol paneli. Liste eskiden `onNavigate("therapy-program")`
+     çağırıyordu: hangi protokole basıldığı taşınmıyor, kullanıcı Aktivite
+     Kitaplığı'na düşüyordu. Artı işareti "bunu ekle" diyor ama etmiyordu. */
+  const [protocol, setProtocol] = useState<TherapyProtocol | null>(null);
   const [clientFilter, setClientFilter] = useState<string>(clients[0]?.id ?? "");
   const [composer, setComposer] = useState<DayKey | null>(null);
 
@@ -367,7 +375,7 @@ export function WeeklyPlanScreen({
                 <button
                   key={p.id}
                   type="button"
-                  onClick={() => onNavigate("therapy-program")}
+                  onClick={() => setProtocol(p)}
                   className="w-full flex items-center gap-2.5 text-left bg-transparent cursor-pointer group"
                   style={{ padding: "8px 0", borderBottom: "1px solid var(--color-line-soft)", border: "none", borderBottomWidth: 1, borderBottomStyle: "solid" }}
                 >
@@ -386,6 +394,16 @@ export function WeeklyPlanScreen({
           </Card>
         </div>
       </div>
+
+      {protocol && (
+        <ProtocolPanel
+          protocol={protocol}
+          clients={clients}
+          blocks={blocks}
+          onClose={() => setProtocol(null)}
+          onAddEntries={onAddEntries}
+        />
+      )}
 
       {composer && (
         <Composer
@@ -490,6 +508,184 @@ function PlanBlock({
 }
 
 /* ── Seans ekleyici ────────────────────────────────────────────────────── */
+
+/**
+ * Protokol paneli — bir şablonun hafta hafta içeriğini gösterir ve seçilen
+ * haftayı plana aktarır.
+ *
+ * Bu akış 2 Ağustos'ta Aktivite Kitaplığı üç sütuna geçerken kaldırılmıştı;
+ * protokol listesi ekranda kaldı ama artı işareti hiçbir şey eklemiyordu ve
+ * protokollerin hafta verisi (5 protokol, 30 hafta) yalnızca tanıtım
+ * sayfasındaki sayacı besliyordu. Akış Aktivite Kitaplığı'na değil buraya
+ * konuyor: protokol bir plana dönüşüyor, kitaplık ise seans sırasında hızlı
+ * arama için üç sütunlu hâliyle kalıyor.
+ *
+ * Uygulama kuralı: mevcut seansların üzerine yazılmaz. Yalnızca o danışanın
+ * o hafta boş olan günlerine eklenir; sığmayan oyunlar sayıyla bildirilir.
+ * Plan terapistin kararı, protokol yalnızca bir öneri.
+ */
+function ProtocolPanel({
+  protocol,
+  clients,
+  blocks,
+  onClose,
+  onAddEntries,
+}: {
+  readonly protocol: TherapyProtocol;
+  readonly clients: readonly ClientProfile[];
+  readonly blocks: Record<DayKey, Block[]>;
+  readonly onClose: () => void;
+  readonly onAddEntries: (clientId: string, items: readonly { day: DayKey; entry: WeeklyPlanEntry }[]) => void;
+}) {
+  const [clientId, setClientId] = useState(clients[0]?.id ?? "");
+  const [weekNo, setWeekNo] = useState(protocol.weeks[0]?.week ?? 1);
+  const [result, setResult] = useState<string | null>(null);
+
+  const week = protocol.weeks.find((w) => w.week === weekNo) ?? protocol.weeks[0];
+
+  /* Danışanın bu hafta boş günleri. Hafta sonu da kullanılabilir ama sıra
+     hafta içinden başlar — planların çoğu oraya kuruluyor. */
+  const freeDays = useMemo(() => {
+    if (!clientId) return [];
+    return DAY_KEYS.filter((d) => !blocks[d].some((b) => b.clientId === clientId));
+  }, [blocks, clientId]);
+
+  const willAdd = week ? Math.min(week.games.length, freeDays.length) : 0;
+  const overflow = week ? week.games.length - willAdd : 0;
+
+  function apply() {
+    if (!week || !clientId) return;
+    const items: { day: DayKey; entry: WeeklyPlanEntry }[] = [];
+    week.games.forEach((gameKey, i) => {
+      const day = freeDays[i];
+      if (!day) return;
+      items.push({
+        day,
+        entry: {
+          gameKey: gameKey as PlatformGameKey,
+          goal: week.focus,
+          time: `${String(9 + i).padStart(2, "0")}:30`,
+        },
+      });
+    });
+    onAddEntries(clientId, items);
+    const used = items.map((x) => x.day);
+    setResult(
+      used.length === 0
+        ? "Bu danışanın haftası dolu; eklenebilecek boş gün yok."
+        : `${used.map((d) => DAY_LABELS[d]).join(", ")} günlerine ${used.length} seans eklendi.` +
+            (overflow > 0 ? ` ${overflow} oyun sığmadı.` : ""),
+    );
+  }
+
+  const label = "block text-[11px] font-bold uppercase tracking-widest text-(--color-text-muted) mb-1.5";
+
+  return (
+    <Portal>
+      <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label={`${protocol.name} protokolü`}>
+        <button type="button" aria-label="Kapat" onClick={onClose} className="absolute inset-0 cursor-default border-none" style={{ background: "rgba(5,11,22,0.5)" }} />
+        <div
+          className="relative w-full max-w-2xl rounded-[18px] p-[17px] lg:p-[22px] max-h-[calc(100dvh-2rem)] overflow-auto"
+          style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}
+        >
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="min-w-0">
+              <span className="block text-[11px] font-bold uppercase tracking-widest" style={{ color: protocol.color }}>
+                {protocol.domain}
+              </span>
+              <CardTitle className="block mt-1 !text-[15px]">{protocol.name}</CardTitle>
+              <p className="text-[12.5px] text-(--color-text-soft) mt-1.5 mb-0 leading-relaxed">{protocol.description}</p>
+              <p className="text-[11.5px] text-(--color-text-muted) mt-2 mb-0">
+                {protocol.duration} hafta · {protocol.frequency} · {protocol.targetGroup}
+              </p>
+            </div>
+            <button type="button" onClick={onClose} aria-label="Kapat" className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-(--color-text-soft) border border-(--color-line) bg-transparent cursor-pointer">
+              <X size={15} />
+            </button>
+          </div>
+
+          <div className="mb-4">
+            <span className={label}>Hafta</span>
+            <div className="flex flex-wrap gap-1.5">
+              {protocol.weeks.map((w) => (
+                <button
+                  key={w.week}
+                  type="button"
+                  onClick={() => { setWeekNo(w.week); setResult(null); }}
+                  aria-pressed={w.week === weekNo}
+                  className="text-[12px] font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
+                  style={{
+                    background: w.week === weekNo ? "var(--color-primary-light)" : "transparent",
+                    color: w.week === weekNo ? "var(--color-primary-ink)" : "var(--color-text-soft)",
+                    border: `1px solid ${w.week === weekNo ? "var(--color-line-strong)" : "var(--color-line-soft)"}`,
+                  }}
+                >
+                  {w.week}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {week && (
+            <div className="rounded-[14px] p-4 mb-4" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
+              <p className="text-[13px] font-bold text-(--color-text-strong) m-0 mb-2.5">{week.focus}</p>
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {week.games.map((g) => (
+                  <span key={g} className="text-[11.5px] font-semibold px-2.5 py-1 rounded-full text-(--color-primary-ink)" style={{ background: "var(--color-primary-light)" }}>
+                    {gameTitle(g as PlatformGameKey)}
+                  </span>
+                ))}
+              </div>
+              <ul className="list-none p-0 m-0 flex flex-col gap-1">
+                {week.activities.map((a) => (
+                  <li key={a} className="text-[12.5px] text-(--color-text-soft)">{a}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="mb-4">
+            <span className={label}>Danışan</span>
+            <select
+              value={clientId}
+              onChange={(e) => { setClientId(e.target.value); setResult(null); }}
+              className="w-full text-[13px] text-(--color-text-strong) outline-none"
+              style={{ padding: "10px 12px", borderRadius: 11, background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}
+            >
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>{c.displayName}</option>
+              ))}
+            </select>
+          </div>
+
+          {result ? (
+            <p className="text-[12.5px] text-(--color-text-body) m-0 mb-3">{result}</p>
+          ) : (
+            <p className="text-[12px] text-(--color-text-muted) m-0 mb-3">
+              {clientId
+                ? `Boş gün: ${freeDays.length}. ${willAdd} seans eklenecek, mevcut seanslara dokunulmaz.`
+                : "Önce bir danışan ekleyin."}
+            </p>
+          )}
+
+          <div className="flex items-center justify-end gap-2">
+            <button type="button" onClick={onClose} className="text-[13px] font-semibold px-4 py-2.5 rounded-xl text-(--color-text-body) bg-transparent cursor-pointer" style={{ border: "1px solid var(--color-line)" }}>
+              Kapat
+            </button>
+            <button
+              type="button"
+              onClick={apply}
+              disabled={!clientId || willAdd === 0}
+              className="btn-signature text-[13px] font-semibold px-4 py-2.5 rounded-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Bu Haftayı Plana Ekle
+            </button>
+          </div>
+        </div>
+      </div>
+    </Portal>
+  );
+}
 
 function Composer({
   day,
