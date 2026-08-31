@@ -165,9 +165,22 @@
     radial-gradient(900px 420px at 4% -10%, rgba(43, 98, 245, 0.17), transparent 62%),
     radial-gradient(760px 400px at 98% -4%, rgba(23, 194, 224, 0.16), transparent 62%),
     radial-gradient(620px 380px at 70% 108%, rgba(124, 92, 255, 0.10), transparent 62%);
-  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.42'/%3E%3C/svg%3E");
-  /* Dark'ta aurora doygun olduğu için grain soluk; light'ta tersi. */
-  --grain-opacity: 0.28;
+  /*
+   * Grain artık `mix-blend-mode` kullanmıyor.
+   *
+   * Tam ekran, sabit ve harmanlanan bir katman compositor'ı her karede
+   * viewport'un tamamını geri okuyup yeniden harmanlamaya zorlar; altındaki
+   * aurora sürekli animasyonlu olduğu için bu iş hiçbir karede atlanamıyordu.
+   * Güçlü bir GPU'da görünmeyen bu maliyet zayıf makinelerde kaydırmayı
+   * doğrudan kasıyor.
+   *
+   * Harmanlamanın yerini tema başına tek renk gürültü aldı: koyu zeminde
+   * beyaz, açık zeminde siyah taneler. Alfa gürültünün parlaklığından
+   * türüyor (feColorMatrix son satırı), böylece doku eskisi gibi düzensiz
+   * kalıyor ama katman sıradan bir alfa bindirmesi — önbelleğe alınabiliyor.
+   */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.34 0.34 0.34 0 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  --grain-opacity: 0.028;
 
   /* ── Shadow ── */
   --shadow-sm:       0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.28);
@@ -480,8 +493,10 @@ html[data-theme='light'] {
   --color-domain-cognitive: #1b4bc4;
   --color-domain-social: #0a778c;
 
-  /* Texture — light'ta grain daha belirgin, aurora daha soluk */
-  --grain-opacity: 0.5;
+  /* Texture — light'ta grain daha belirgin, aurora daha soluk.
+     Açık zeminde beyaz tane görünmez; gürültü siyaha çevrilir. */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.34 0.34 0.34 0 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  --grain-opacity: 0.03;
 
   /* Shadows — mürekkep mavisi tabanlı, katmanlı */
   --shadow-sm:       0 1px 2px rgba(15, 32, 51, 0.06);
@@ -578,7 +593,6 @@ html[data-theme='light'] body::before {
 body::after {
   background-image: var(--grain);
   opacity: var(--grain-opacity);
-  mix-blend-mode: overlay;
 }
 
 @keyframes mim-drift {
@@ -731,20 +745,53 @@ html[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
 }
 
 /* ── Glass morphism surface ── */
+/* Bulanıklık maliyeti yarıçapla ölçeklenir ve `.glass` sayfada onlarca
+   elemanda kullanılıyor. 14 → 10 ve 22 → 14: görünüm neredeyse aynı,
+   compositor işi belirgin biçimde az. */
 .glass {
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   box-shadow: var(--shadow-card);
 }
 
 .glass-strong {
   background: var(--color-surface-strong);
   border: 1px solid var(--color-line);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   box-shadow: var(--shadow-elevated);
+}
+
+/*
+ * Saydamlık azaltma tercihi (Windows'ta "Şeffaflık efektleri" kapalıyken
+ * tarayıcıya bu şekilde iletilir) hem erişilebilirlik hem performans
+ * talebidir: bulanıklık tümüyle kalkar, yüzeyler opak zemine düşer.
+ */
+@media (prefers-reduced-transparency: reduce) {
+  /* Talep sayfanın tamamı için geçerli; bulanıklık `.glass` dışında da
+     kullanılıyor (üst çubuk, oyun kartı katmanı). Evrensel seçici burada
+     doğru araç: istisna bırakmak talebi yarım karşılamak olurdu. */
+  /*
+     Yalnızca öneksiz özellik yazılıyor. İkisi birden yazıldığında minifier
+     (Lightning CSS) bunları aynı bildirim sayıp tek başlıkta birleştiriyor
+     ve geriye `-webkit-` önekli olanı bırakıyordu; Chrome ise öneksiz
+     özelliği okuduğu için kural hiç tutmuyordu. `prefers-reduced-transparency`
+     destekleyen her tarayıcı öneksiz `backdrop-filter`ı da destekliyor.
+  */
+  *,
+  *::before,
+  *::after {
+    backdrop-filter: none !important;
+  }
+  .glass,
+  .glass-strong { background: var(--color-surface-strong); }
+  /* Üst çubuk bulanıklığa güveniyordu; opak zemine düşmezse altındaki
+     içerik metnin arasından okunur. */
+  header[class*="fixed"] { background: var(--color-surface-strong) !important; }
+  body::before,
+  body::after { display: none; }
 }
 
 /* ─────────────────────────────────────────────
@@ -2209,7 +2256,6 @@ html[data-theme='light'] .noise-overlay {
     rotateY(var(--ry, 0deg))
     translate3d(0, 0, 0);
   transition: transform 0.12s cubic-bezier(0.22,1,0.36,1);
-  will-change: transform;
   transform-style: preserve-3d;
 }
 .tilt-3d > * { transform: translateZ(0); }
@@ -2275,15 +2321,14 @@ html[data-theme='light'] .noise-overlay {
   gap: 0.75rem;
   padding: 0.75rem 0.5rem;
   border-radius: 999px;
-  background: rgba(17,22,20,0.55);
+  background: rgba(17,22,20,0.72);
   border: 1px solid var(--color-line);
-  backdrop-filter: blur(14px);
 }
 @media (min-width: 1280px) {
   .section-dots { display: flex; }
 }
 html[data-theme='light'] .section-dots {
-  background: rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.86);
 }
 .section-dot {
   width: 8px;
@@ -2315,7 +2360,10 @@ html[data-theme='light'] .section-dots {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
-  backdrop-filter: blur(8px);
+  /* Bulanıklık yok: zemin zaten %85 opak, blur neredeyse hiçbir şey
+     eklemiyordu. Buna karşılık dokuz etiketin dokuzu da `opacity: 0`
+     olmasına rağmen bulanıklığı her karede hesaplanıyordu — backdrop-filter
+     maliyeti elemanın görünürlüğünden bağımsızdır. */
 }
 .section-dot:hover .section-dot-label { opacity: 1; }
 html[data-theme='light'] .section-dot-label {
@@ -2422,6 +2470,18 @@ html[data-theme='high-contrast'] .floating-cta-dismiss { color: var(--color-text
 .h-snap::-webkit-scrollbar { display: none; }
 .h-snap > * { scroll-snap-align: start; flex-shrink: 0; }
 
+/*
+ * `content-visibility: auto` denendi ve geri alındı.
+ *
+ * Teorisi doğru: ekran dışı bölümlerin düzeni ve boyaması atlanır. Ölçümde
+ * ise ana iş parçacığında kazanç çıkmadı (kaydırma boyunca 232 → 229 stil
+ * hesabı) ve bir bedeli vardı: yer tutucu yükseklik tek bir değer olmak
+ * zorunda, gerçek bölüm yükseklikleri ise 437 ile 1327 piksel arasında
+ * değişiyor (ekran genişliğine de bağlı). Bölümler render oldukça sayfa
+ * boyu değişiyor, kaydırma zıplıyordu — düzeltmeye çalıştığımız kasılmadan
+ * daha kötü bir davranış. Kazanç ölçülemediği için risk alınmadı.
+ */
+
 /* Split-text word reveal — used for hero heading */
 .word-reveal {
   display: inline-block;
@@ -2469,8 +2529,18 @@ html[data-theme='light'] .dot-grid {
 .magnetic {
   display: inline-flex;
   transition: transform 0.25s cubic-bezier(0.22,1,0.36,1);
-  will-change: transform;
 }
+/*
+ * `will-change` yalnızca imleç üstündeyken.
+ *
+ * Kalıcı yazıldığında tarayıcı bu elemanları sayfa açıldığı andan itibaren
+ * ayrı birer compositor katmanına terfi ettiriyor ve o katmanları bellekte
+ * tutuyor. Sekiz kart + düğmeler için bu, hiç dönmeyecek kartlar uğruna
+ * sürekli ayrılmış GPU belleği demek — zayıf GPU'larda doğrudan zarar.
+ * İpucunu etkileşim başlarken vermek yeterli.
+ */
+.magnetic:hover,
+.tilt-3d:hover { will-change: transform; }
 
 /* Ping halo — used for status dots */
 @keyframes halo-ping {

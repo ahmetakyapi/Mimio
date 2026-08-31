@@ -1157,7 +1157,7 @@ export function GamesCarousel({ onLogin }: { onLogin: () => void }) {
                     sizes="(max-width: 639px) 300px, 340px"
                     className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                   />
-                  <span className="absolute bottom-4 right-4 w-11 h-11 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <span className="absolute bottom-4 right-4 w-11 h-11 rounded-full bg-white/20 group-hover:backdrop-blur-md flex items-center justify-center border border-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <Play size={16} className="text-white ml-0.5" aria-hidden="true" />
                   </span>
                 </div>
