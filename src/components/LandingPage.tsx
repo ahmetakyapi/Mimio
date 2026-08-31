@@ -33,6 +33,7 @@ import {
   Stethoscope,
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
+import { HeroPulse } from "./landing/HeroPulse";
 import { WeekRhythmPanel } from "./landing/WeekRhythmPanel";
 import { BlockMark, BrandLockup } from "./brand/BlockMark";
 import { HERO_STATS, PLATFORM_STATS } from "@/lib/platform-stats";
@@ -588,7 +589,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
           style={{ y: heroY, opacity: heroOpacity }}
           className="shell shell-wide relative"
         >
-          <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.22fr)] gap-y-8 sm:gap-y-12 lg:gap-x-10 xl:gap-x-14 items-center">
+          <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-y-8 sm:gap-y-12 lg:gap-x-10 xl:gap-x-14 items-center">
             {/* Sol — tez */}
             <motion.div
               initial="hidden"
@@ -616,9 +617,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                   akar, 640px'ten itibaren eski ölçek aynen devam eder. */}
               <motion.h1
                 variants={fadeUp}
-                /* xl'de 72px'ti; görsel sütunu genişleyince başlık üç satıra düşüyordu.
-                    60px iki satırı koruyor ve ölçek yine kahraman ölçeği. */
-                className="text-[clamp(1.75rem,8vw,2.75rem)] sm:text-6xl lg:text-[3.5rem] xl:text-[3.75rem] text-(--color-text-strong) leading-[1.06] sm:leading-[1.02] m-0"
+                className="text-[clamp(1.75rem,8vw,2.75rem)] sm:text-6xl lg:text-[4.25rem] xl:text-7xl text-(--color-text-strong) leading-[1.06] sm:leading-[1.02] m-0"
               >
                 {/* Vurgu tek kelimede: dokümanda yalnızca "oyuna" renkleniyor.
                     İki kelimeyi birden boyamak cümlenin ağırlık merkezini
@@ -676,40 +675,26 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             </motion.div>
 
             {/*
-              Sağ — haftanın ritmi.
+              Sağ — tek bir ölçümün büyütülmüş hâli.
 
-              Bu bölge sırayla dört şey denedi: tek bir seans kartı (dürüst ama
-              sessiz), kartın arkasında oyun tahtası, panelin ekran görüntüsü
-              (küçültülünce okunmuyordu), tam boy ekran görüntüsü (okunuyordu
-              ama sayfanın alt bölümüyle aynı şeyi söylüyordu).
+              Buraya sırayla ne konduysa bir yerden tutmadı: seans kartı fazla
+              sessizdi, oyun tahtası dekoratifti, ekran görüntüsü küçülünce
+              okunmuyordu, haftalık takvim ise yirmi bir küçük bloğuyla bilgi
+              veriyor ama göz yoruyordu.
 
-              Şimdi burada çizilmiş yüzey var, ekran görüntüsü aşağıya indi.
-              Kahraman ürünün *kurduğu şeyi* gösteriyor — bir haftanın planı —
-              aşağıdaki bölüm de o planın içinde geçen günü.
-
-              Görsel sütunu metinden biraz geniş (1 / 1.12): yedi sütunlu bir
-              takvim eşit paylı bir kolonda okunmuyor. Sağdan taşırmayı denedim
-              ama taşma bilgi taşıyan kısımları kesiyordu (doluluk yüzdesi,
-              dengedeki son alan) — panel sütunun içinde kalıyor.
+              Üçünün ortak hatası aynıydı: kahraman görselini bir *bilgi
+              yüzeyi* sanmak. Kahramanın işi bilgi vermek değil, tek bir şeyi
+              güzel söylemek — bilgi zaten sayfanın geri kalanında var.
+              Bkz. HeroPulse.
             */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.85, delay: 0.2, ease }}
+              transition={{ duration: 0.85, delay: 0.15, ease }}
               style={{ y: parallaxMockY }}
               className="relative"
             >
-              {/* İmza degradesinden çok soluk bir hâle. Renk %8'in altında
-                  kaldığı için yüzey değil ışık olarak okunuyor. */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute -inset-x-10 -inset-y-12 -z-10 hidden sm:block"
-                style={{
-                  background:
-                    "radial-gradient(54% 48% at 68% 24%, color-mix(in srgb, var(--color-signature-from) 8%, transparent), transparent 70%), radial-gradient(46% 42% at 28% 78%, color-mix(in srgb, var(--color-signature-to) 7%, transparent), transparent 72%)",
-                }}
-              />
-              <WeekRhythmPanel />
+              <HeroPulse />
             </motion.div>
           </div>
         </motion.div>
@@ -939,6 +924,49 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
 
       {/* ══════════════════════ STICKY WALKTHROUGH ══════════════════════ */}
       <StickyWalkthrough />
+
+      {/* ══════════════════════ HAFTANIN RİTMİ ══════════════════════
+          Kahraman tek bir ölçümü büyütüyor; burası o ölçümün içinde durduğu
+          haftayı gösteriyor, aşağıdaki bölüm de o haftanın içindeki günü.
+          Üçü aynı veriyi üç ölçekte anlatıyor: seans, hafta, gün.
+
+          Yüzey burada, kahramanda değil: yedi sütunlu bir takvim ancak tam
+          genişlikte okunuyor. Dar bir kolonda danışan adları kırpılıyor ve
+          panelin tek işi ("kim, ne zaman, hangi oyun") kayboluyor. */}
+      <section className="section max-sm:py-10! relative overflow-hidden">
+        <div className="shell shell-wide">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={REVEAL_VIEWPORT}
+            variants={stagger}
+            className="max-w-2xl mb-8 sm:mb-12"
+          >
+            <motion.h2
+              variants={fadeUp}
+              className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl text-(--color-text-strong) mb-3 sm:mb-4"
+            >
+              Haftayı <span className="accent-line">Bir Bakışta</span> Kurun
+            </motion.h2>
+            <motion.p
+              variants={fadeUp}
+              className="text-(--color-text-soft) text-[0.9375rem] sm:text-lg m-0"
+            >
+              Yedi günün tamamı, alan renkleriyle bloklar ve planın hangi
+              beceriye ne kadar yer ayırdığını söyleyen denge.
+            </motion.p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 26 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={REVEAL_VIEWPORT}
+            transition={{ duration: 0.7, ease }}
+          >
+            <WeekRhythmPanel />
+          </motion.div>
+        </div>
+      </section>
 
       {/* ══════════════════════ HOW IT WORKS ══════════════════════
           Numaralandırma burada gerçek bir sıra bildiriyor: hesap açmadan
