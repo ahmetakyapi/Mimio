@@ -413,12 +413,19 @@ export function StickyWalkthrough() {
         */
         style={{ "--wt-track": `calc(100dvh + ${steps * STEP_TRAVEL_DVH}dvh)` } as React.CSSProperties}
       >
-        <div className="relative lg:sticky lg:top-0 lg:h-[100dvh] lg:max-h-[46rem] flex items-center overflow-visible lg:overflow-hidden max-lg:py-12">
+        {/*
+          Sahne ekranın tamamını kaplar ve içerik ortalanır.
+          `max-h-[46rem]` sahneyi 736px'e sabitliyordu: 1080px'lik bir ekranda
+          altta 344px boşluk kalıyor, üstelik sahne `top-0` olduğu için başlık
+          sabit üst çubuğun dibine yapışıyordu. Yükseklik ekranı takip ediyor,
+          `pt-16` üst çubuğun payını düşüyor, `items-center` kalanı ortalıyor.
+        */}
+        <div className="wt-scene relative lg:sticky lg:top-0 lg:h-[100dvh] flex items-center overflow-visible lg:overflow-hidden max-lg:py-12 lg:pt-16">
           <div className="absolute inset-0 -z-10 dot-grid opacity-70" />
 
           {/* Yan boşluk sayfanın kendi oluğuyla aynı: telefonda adım kartları
               üstteki/alttaki bölümlerle aynı hizadan başlar. */}
-          <div className="max-w-7xl mx-auto w-full px-[var(--gutter)] lg:px-6 grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+          <div className="max-w-7xl mx-auto w-full px-[var(--gutter)] lg:px-6 grid lg:grid-cols-[1fr_1.15fr] gap-8 lg:gap-12 xl:gap-16 items-center">
             {/* Left — step list */}
             <div className="flex flex-col gap-4">
               <div className="inline-flex w-fit items-center gap-2 text-xs font-bold tracking-widest text-(--color-primary) uppercase bg-(--color-primary-light) px-4 py-2 rounded-full">
@@ -431,7 +438,7 @@ export function StickyWalkthrough() {
                 <span className="accent-line">Dijital Terapi Akışı</span>
               </h2>
 
-              <div className="mt-4 flex flex-col gap-2">
+              <div className="wt-steps mt-4 flex flex-col gap-2">
                 {WALKTHROUGH.map((w, i) => {
                   const Icon = w.icon;
                   const isActive = active === i;

@@ -2494,6 +2494,21 @@ html[data-theme='high-contrast'] .floating-cta-dismiss { color: var(--color-text
  * daha kötü bir davranış. Kazanç ölçülemediği için risk alınmadı.
  */
 
+/*
+ * Kısa ekranlarda tur sahnesi.
+ *
+ * Adım listesi 683px; 768px yüksekliğinde bir ekranda üst çubuğun payı
+ * düşülünce 704px kalıyor ve sahne kılpayı sığıyor. Dizüstü çözünürlükleri
+ * (1366x768, 1536x864) Windows'ta en yaygın olanlar, o yüzden bu aralıkta
+ * başlık ve kart payları sıkılaştırılıyor — kırpılmaktansa biraz daralsın.
+ */
+@media (min-width: 1024px) and (max-height: 860px) {
+  .wt-scene h2 { font-size: 2.25rem; line-height: 1.1; }
+  .wt-scene .wt-steps { gap: 0.375rem; margin-top: 0.75rem; }
+  .wt-scene .wt-steps > button { padding: 0.75rem 1rem; }
+  .wt-scene .wt-steps p { font-size: 0.8125rem; line-height: 1.45; }
+}
+
 /* Split-text word reveal — used for hero heading */
 .word-reveal {
   display: inline-block;
