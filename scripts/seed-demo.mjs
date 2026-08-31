@@ -49,6 +49,18 @@ const sql = neon(process.env.DATABASE_URL);
 const RESET = process.argv.includes("--reset");
 /* Şifre yalnızca açıkça istenirse değişir — seed'in yan etkisi olarak değil. */
 const SET_PASSWORD = process.argv.includes("--set-password");
+/*
+ * `--purge-legacy`: arşivlenmiş eski test danışanlarının kayıtlarını siler.
+ *
+ * Geliştirme sırasında elle açılmış kayıtlar (bkz. 2b) arşive alınıyor ama
+ * seansları duruyor ve bu seanslar eski bir puanlama şemasından kalma
+ * değerler taşıyor — 100 üzerinden okunan bir ölçekte 711'e kadar. Genel
+ * bakış sorguları ne terapiste ne arşiv durumuna göre filtrelediği için bu
+ * satırlar "Ortalama Skor" gibi ölçüleri yukarı çekiyor.
+ *
+ * Silme varsayılan değil: karar veriye sahip olanın.
+ */
+const PURGE_LEGACY = process.argv.includes("--purge-legacy");
 
 /* ── Sabitler ── */
 
@@ -93,6 +105,7 @@ const CLIENTS = [
     displayName: "Ela Selin", ageGroup: "6-8", primaryGoal: "Çalışma belleği",
     supportLevel: "Gözetim", difficultyLevel: "Orta", tags: ["Pediatrik"],
     birthDate: "2019-03-14",
+    freeNote: "Aile görüşmesi. Anne, akşam ev programının yatma saatiyle çakıştığını söyledi; program okul sonrasına alındı. Öğretmenden sınıf içi dikkat gözlemi istenecek.",
     games: ["memory", "pairs", "logic"], base: 62, trend: "plateau", sessions: 16, idleDays: 0,
     goals: [
       { title: "Blok Açıklığı 6", description: "Corsi blok testinde 6 birimlik sekans", target: 7, current: 6 },
@@ -110,6 +123,7 @@ const CLIENTS = [
     displayName: "Tuna Akarsu", ageGroup: "9-11", primaryGoal: "El-göz koordinasyonu",
     supportLevel: "Sözel ipucu", difficultyLevel: "Orta", tags: ["Nörolojik"],
     birthDate: "2016-06-02",
+    freeNote: "Okul rehberlik servisiyle telefon görüşmesi. Beden eğitimi öğretmeni top yakalama görevlerinde belirgin ilerleme bildirdi. Bir sonraki değerlendirmede bilateral görevler yeniden ölçülecek.",
     games: ["pulse", "route", "scan"], base: 58, trend: "rise", sessions: 18, idleDays: 0,
     goals: [
       { title: "Reaksiyon Süresi", description: "Hedefe dokunma gecikmesi (persentil)", target: 10, current: 9 },
@@ -126,6 +140,7 @@ const CLIENTS = [
     displayName: "Asya Demir", ageGroup: "6-8", primaryGoal: "Seçici dikkat",
     supportLevel: "Fiziksel yardım", difficultyLevel: "Kolay", tags: ["Otizm & DEHB"],
     birthDate: "2018-11-20",
+    freeNote: "Kurum yazışması: bireysel eğitim planı toplantısı iki hafta sonra. Duyusal profil formu aileye gönderildi, doldurulup getirilecek.",
     games: ["scan", "difference", "memory"], base: 48, trend: "rise", sessions: 13, idleDays: 0,
     goals: [
       { title: "Tarama Hızı", description: "Izgarada hedef bulma (sn)", target: 12, current: 7 },
@@ -141,6 +156,7 @@ const CLIENTS = [
     displayName: "Mina Yıldız", ageGroup: "4-5", primaryGoal: "Görsel ayrım",
     supportLevel: "Bağımsız", difficultyLevel: "Zor", tags: ["Pediatrik"],
     birthDate: "2021-01-09",
+    freeNote: "Seans dışı gözlem. Bekleme odasında akranıyla sıra alma davranışı kendiliğinden görüldü; sosyal hedefe veri olarak eklendi.",
     games: ["difference", "pairs"], base: 74, trend: "rise", sessions: 11, idleDays: 1,
     goals: [
       { title: "Figür-Zemin Ayrımı", description: "Benzer kartlar arasında fark bulma", target: 15, current: 13 },
@@ -155,6 +171,7 @@ const CLIENTS = [
     displayName: "Kerem Arslan", ageGroup: "9-11", primaryGoal: "Örüntü tamamlama",
     supportLevel: "Gözetim", difficultyLevel: "Orta", tags: ["Nörolojik"],
     birthDate: "2016-02-11",
+    freeNote: "Aile, evde ekran süresini günde 40 dakikaya indirdiklerini aktardı. Akşam yorgunluğunun azaldığı, ödev süresinin kısaldığı bildirildi.",
     games: ["logic", "memory", "scan"], base: 55, trend: "dip", sessions: 14, idleDays: 2,
     goals: [
       { title: "Tümevarım", description: "Kural çıkarma", target: 10, current: 5 },
@@ -169,6 +186,7 @@ const CLIENTS = [
     displayName: "Mert Yiğit", ageGroup: "12-14", primaryGoal: "Yürütücü işlev",
     supportLevel: "Bağımsız", difficultyLevel: "Zor", tags: ["Otizm & DEHB"],
     birthDate: "2013-08-27",
+    freeNote: "Ara verme dönemi. Aile yaz tatili nedeniyle üç hafta seans alamayacaklarını bildirdi; dönüşte yeniden değerlendirme planlandı.",
     /* Uzun süredir gelmiyor — "ara verdi" önerisini ve plandaki boş slotu tetikler. */
     games: ["logic", "route"], base: 70, trend: "plateau", sessions: 8, idleDays: 11,
     goals: [{ title: "Görev Değiştirme", description: "Kural değişiminde uyum", target: 8, current: 6 }],
@@ -181,6 +199,7 @@ const CLIENTS = [
     displayName: "Derin Kaya", ageGroup: "12-14", primaryGoal: "İnce motor kontrol",
     supportLevel: "Sözel ipucu", difficultyLevel: "Orta", tags: ["Nörolojik"],
     birthDate: "2013-04-18",
+    freeNote: "Fizyoterapi raporu dosyaya eklendi. Omuz kuşağı stabilitesi çalışmaları sürüyor; ince motor hedefleriyle çakışmayacak şekilde saat ayarlandı.",
     games: ["pulse", "route", "pairs"], base: 52, trend: "rise", sessions: 15, idleDays: 0,
     goals: [
       { title: "Hedefleme Hassasiyeti", description: "Küçük hedefe ilk temasla isabet", target: 10, current: 6 },
@@ -195,6 +214,7 @@ const CLIENTS = [
     displayName: "Zeynep Ada", ageGroup: "4-5", primaryGoal: "Oyun katılımı",
     supportLevel: "Fiziksel yardım", difficultyLevel: "Kolay", tags: ["Pediatrik", "Otizm & DEHB"],
     birthDate: "2021-09-30",
+    freeNote: "İlk üç ayın özeti aileyle paylaşıldı. Oyun katılım süresi 4 dakikadan 11 dakikaya çıktı; hedef yukarı revize edilecek.",
     /* 5 gün aradan sonra plan önerisi tetiklenir ama "ara verdi" uyarısına düşmez. */
     games: ["pairs", "difference", "pulse"], base: 44, trend: "rise", sessions: 9, idleDays: 5,
     goals: [
@@ -229,6 +249,51 @@ function rng(seed) {
     return x / 4294967296;
   };
 }
+
+/**
+ * Hedef bitiş tarihi ilerlemeden türer; elle 18 tarih yazmak yerine kural
+ * yazıldı ki hedef verisi değişince tarihler kendiliğinden tutarlı kalsın.
+ * Amaç her durumu en az bir hedefte göstermek: kapanmış, yaklaşan, geride.
+ */
+function goalDeadline(goal, index, rand) {
+  const ratio = goal.target > 0 ? goal.current / goal.target : 0;
+  const d = new Date();
+  if (ratio >= 1) d.setDate(d.getDate() - (5 + Math.round(rand() * 20)));      // zamanında kapandı
+  else if (ratio >= 0.7) d.setDate(d.getDate() + (7 + Math.round(rand() * 14))); // yaklaşıyor
+  else if (index === 2) d.setDate(d.getDate() - (3 + Math.round(rand() * 6)));   // tarihi geçti
+  else d.setDate(d.getDate() + (35 + Math.round(rand() * 40)));                  // uzak vadeli
+  return isoDate(d);
+}
+
+/*
+ * Seans sonu tek satırlık gözlem (`session_runs.session_note`).
+ *
+ * Sütun şemada vardı ama seed hiç doldurmuyordu: Seans Notları ekranı bu
+ * satırı seansın yanında gösteriyor, 115 seansın 115'i boştu. Her seansta
+ * not olması gerçekçi değil — terapist yalnızca bir şey dikkatini çektiğinde
+ * yazar — bu yüzden üçte birine yazılıyor ve metin skorun o seanstaki
+ * anlamına göre seçiliyor.
+ */
+const SESSION_NOTES = {
+  high: [
+    "Yönergeyi ilk seferde aldı, ipucu gerekmedi.",
+    "Kendi hatasını fark edip düzeltti.",
+    "Süre dolmadan bitirdi; zorluk artırılabilir.",
+    "Seans boyunca oturma pozisyonunu korudu.",
+  ],
+  mid: [
+    "İlk turda ısınma gerekti, sonrasında toparladı.",
+    "İki kez sözel ipucu verildi.",
+    "Dikkati seansın ortasında bir kez dağıldı.",
+    "Tempo iyiydi, isabet dalgalı.",
+  ],
+  low: [
+    "Yorgun geldi, seans kısa tutuldu.",
+    "Fiziksel yardım gerekti; frustrasyon belirtisi var.",
+    "Yönergeyi tekrar etmek gerekti.",
+    "Mola verildi, sonrasında katılım arttı.",
+  ],
+};
 
 /**
  * Danışanın skor eğrisi. Düz rastgele sayı kullanılmıyor: gelişim eğrisi
@@ -346,6 +411,29 @@ if (strays.length) {
   console.log(`   • seed dışı ${strays.length} danışan arşivlendi: ${strays.map((r) => r.display_name).join(", ")}`);
 }
 
+/* 2c — İsteğe bağlı: arşivlenmiş eski test kayıtlarının verisini sil. */
+if (PURGE_LEGACY) {
+  const legacy = await sql.query(
+    `SELECT id::text, display_name FROM client_profiles
+     WHERE archived_at IS NOT NULL AND display_name <> ALL($1)`,
+    [CLIENTS.map((c) => c.displayName)],
+  );
+  const ids = legacy.map((r) => r.id);
+  if (ids.length) {
+    const [{ count: sessions }] = await sql.query(
+      "SELECT COUNT(*)::int AS count FROM session_runs WHERE client_id = ANY($1)", [ids],
+    );
+    await sql.query("DELETE FROM session_runs WHERE client_id = ANY($1)", [ids]);
+    await sql.query("DELETE FROM client_notes  WHERE client_id = ANY($1)", [ids]);
+    await sql.query("DELETE FROM client_goals  WHERE client_id = ANY($1)", [ids]);
+    await sql.query("DELETE FROM weekly_plans  WHERE client_id = ANY($1)", [ids]);
+    await sql.query("DELETE FROM client_profiles WHERE id = ANY($1)", [ids]);
+    console.log(`   • eski test kayıtları silindi: ${legacy.map((r) => r.display_name).join(", ")} (${sessions} seans)`);
+  } else {
+    console.log("   • silinecek eski test kaydı yok");
+  }
+}
+
 /* 3 — Danışanlar, seanslar, hedefler, notlar */
 const now = new Date();
 const clientIds = new Map();
@@ -379,14 +467,20 @@ for (let ci = 0; ci < CLIENTS.length; ci += 1) {
       ? { satisfactionRating: score >= 75 ? 5 : score >= 60 ? 4 : 3 }
       : {};
 
+    /* Gözlem satırı üç seansta bire yakın; metin skorun bandından seçilir. */
+    const band = score >= 78 ? "high" : score >= 58 ? "mid" : "low";
+    const pool = SESSION_NOTES[band];
+    const sessionNote = rand() < 0.34 ? pool[Math.floor(rand() * pool.length)] : null;
+
     await sql.query(
       `INSERT INTO session_runs
-        (therapist_id, therapist_name, client_id, client_name, game_key, game_label, score, source, played_at, duration_seconds, metadata)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb)`,
+        (therapist_id, therapist_name, client_id, client_name, game_key, game_label, score, source, played_at, duration_seconds, session_note, metadata)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb)`,
       [
         therapistId, THERAPIST.displayName, row.id, c.displayName,
         gameKey, GAMES[gameKey].label, score, "seed",
         playedAt.toISOString(), 240 + Math.round(rand() * 360),
+        sessionNote,
         JSON.stringify(metadata),
       ],
     );
@@ -394,11 +488,12 @@ for (let ci = 0; ci < CLIENTS.length; ci += 1) {
     sessionCount += 1;
   }
 
-  for (const g of c.goals) {
+  for (let gi = 0; gi < c.goals.length; gi += 1) {
+    const g = c.goals[gi];
     await sql.query(
-      `INSERT INTO client_goals (client_id, therapist_id, title, description, target_value, current_value)
-       VALUES ($1,$2,$3,$4,$5,$6)`,
-      [row.id, therapistId, g.title, g.description, g.target, g.current],
+      `INSERT INTO client_goals (client_id, therapist_id, title, description, target_value, current_value, deadline)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [row.id, therapistId, g.title, g.description, g.target, g.current, goalDeadline(g, gi, rand)],
     );
   }
 
@@ -419,6 +514,23 @@ for (let ci = 0; ci < CLIENTS.length; ci += 1) {
       `INSERT INTO client_notes (client_id, therapist_id, date, content, note_mode, soap_content, created_at)
        VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7)`,
       [row.id, therapistId, isoDate(d), flat, "soap", JSON.stringify(n), d.toISOString()],
+    );
+  }
+
+  /*
+   * Serbest kipli not.
+   *
+   * Notların 19'unun 19'u SOAP'tı; Seans Notları ekranı iki kipi de
+   * destekliyor ama `free` kipini hiçbir kayıt göstermiyordu — kip
+   * değiştirici boş bir durumu açıyordu. Her danışana bir serbest not:
+   * SOAP'a sığmayan, aile görüşmesi / kurum yazışması gibi kayıtlar.
+   */
+  if (c.freeNote && sessionDates.length > 1) {
+    const fd = new Date(sessionDates[Math.floor(sessionDates.length / 2)].getTime() + 90 * 60000);
+    await sql.query(
+      `INSERT INTO client_notes (client_id, therapist_id, date, content, note_mode, soap_content, created_at)
+       VALUES ($1,$2,$3,$4,'free',NULL,$5)`,
+      [row.id, therapistId, isoDate(fd), c.freeNote, fd.toISOString()],
     );
   }
 }
@@ -443,33 +555,70 @@ const SCHEDULE = {
   "Zeynep Ada":   [["thu", "09:30", "pairs"], ["sat", "11:30", "difference"]],
 };
 
+/*
+ * Beş hafta yazılıyor: üç geçmiş, bu hafta, bir gelecek.
+ *
+ * Önce yalnızca bu hafta vardı. Haftalık Plan ekranının hafta gezinme okları
+ * her iki yönde de boş bir takvim açıyor, İlerleme Raporu'nun "Son 30 gün /
+ * Son 90 gün" aralıkları da plan bağlamı olmadan okunuyordu. Geçmiş
+ * haftaların blokları tamamlanmış, gelecek hafta tümüyle planlı.
+ *
+ * Doluluk haftadan haftaya değişiyor (`drop`): sabit yoğunluk takvimi
+ * kopyala-yapıştır gösteriyor, üstelik "kapasite %60" gibi ölçüler her
+ * hafta aynı çıkınca anlamsızlaşıyordu.
+ *
+ * `drop` bir olasılık, sabit sayı değil. Sabit sayıyken iki-üç slotu olan
+ * danışanların takvimi tümüyle boşalıyor, hafta 7 danışana 3 blok düşüyordu:
+ * bu çeşitlilik değil, bozuk görünüyor. Her danışanda en az bir blok kalır.
+ */
+const WEEK_PLAN = [
+  { offset: -3, drop: 0.25 },
+  { offset: -2, drop: 0.1 },
+  { offset: -1, drop: 0.2 },
+  { offset: 0, drop: 0 },
+  { offset: 1, drop: 0.15 },
+];
+
+const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 let blockCount = 0;
-for (const [name, slots] of Object.entries(SCHEDULE)) {
-  const clientId = clientIds.get(name);
-  if (!clientId) continue;
-  const days = emptyWeek();
-  const client = CLIENTS.find((c) => c.displayName === name);
+let weekCount = 0;
 
-  for (const [day, time, gameKey] of slots) {
-    /* Bugünden önceki bloklar tamamlanmış sayılır — çizelge geçmişi
-       "planlandı" diye göstermesin. */
-    const dayIndex = DAY_KEYS.indexOf(day);
-    const dayDate = new Date(weekStart.getTime() + dayIndex * DAY);
-    const past = dayDate < new Date(now.getFullYear(), now.getMonth(), now.getDate());
+for (const { offset, drop } of WEEK_PLAN) {
+  const ws = new Date(weekStart.getTime() + offset * 7 * DAY);
+  const wrand = rng(7000 + offset * 131);
 
-    days[day].push({ gameKey, goal: client?.primaryGoal ?? "", time, ...(past ? { completed: true } : {}) });
-    blockCount += 1;
+  for (const [name, slots] of Object.entries(SCHEDULE)) {
+    const clientId = clientIds.get(name);
+    if (!clientId) continue;
+    const days = emptyWeek();
+    const client = CLIENTS.find((c) => c.displayName === name);
+
+    /* Hangi bloğun düşeceği tohumdan gelir ki her çalıştırmada aynı takvim
+       çıksın. En az bir blok her zaman kalır. */
+    const skip = new Set();
+    slots.forEach((_, si) => {
+      if (skip.size < slots.length - 1 && wrand() < drop) skip.add(si);
+    });
+
+    slots.forEach(([day, time, gameKey], si) => {
+      if (skip.has(si)) return;
+      const dayDate = new Date(ws.getTime() + DAY_KEYS.indexOf(day) * DAY);
+      const past = dayDate < today;
+      days[day].push({ gameKey, goal: client?.primaryGoal ?? "", time, ...(past ? { completed: true } : {}) });
+      blockCount += 1;
+    });
+
+    await sql.query(
+      `INSERT INTO weekly_plans (client_id, therapist_id, week_start_date, days, updated_at)
+       VALUES ($1,$2,$3,$4::jsonb,NOW())
+       ON CONFLICT (client_id, week_start_date) DO UPDATE SET days = EXCLUDED.days, updated_at = NOW()`,
+      [clientId, therapistId, isoDate(ws), JSON.stringify(days)],
+    );
   }
-
-  await sql.query(
-    `INSERT INTO weekly_plans (client_id, therapist_id, week_start_date, days, updated_at)
-     VALUES ($1,$2,$3,$4::jsonb,NOW())
-     ON CONFLICT (client_id, week_start_date) DO UPDATE SET days = EXCLUDED.days, updated_at = NOW()`,
-    [clientId, therapistId, isoDate(weekStart), JSON.stringify(days)],
-  );
+  weekCount += 1;
 }
 
-console.log(`   • ${isoDate(weekStart)} haftasına ${blockCount} seans bloğu planlandı`);
+console.log(`   • ${weekCount} haftaya ${blockCount} seans bloğu planlandı (${isoDate(new Date(weekStart.getTime() - 21 * DAY))} → ${isoDate(new Date(weekStart.getTime() + 7 * DAY))})`);
 
 console.log("\n🎉  Demo verisi hazır.");
 if (therapistExisted) {
@@ -479,4 +628,7 @@ if (therapistExisted) {
   console.log("    Şifreyi sıfırlamak isterseniz: node scripts/seed-demo.mjs --set-password");
 } else {
   console.log(`    Giriş: ${THERAPIST.username} / ${THERAPIST.password}`);
+}
+if (!PURGE_LEGACY) {
+  console.log("    Eski test danışanlarının kayıtlarını temizlemek için: node scripts/seed-demo.mjs --purge-legacy");
 }
