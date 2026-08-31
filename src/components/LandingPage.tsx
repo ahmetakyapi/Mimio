@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import {
   motion,
@@ -228,6 +229,15 @@ const stagger = {
 export default function LandingPage({ onLogin, onRegister }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [persona, setPersona] = useState(0);
+  /*
+   * Ürün önizlemesi temaya göre iki ayrı görüntü taşıyor. `theme` ilk
+   * render'da sunucudaki varsayılana ("light") eşit; localStorage ancak
+   * effect'te okunuyor. Koruma olmadan koyu temadaki ziyaretçi önce açık
+   * görüntüyü indirip sonra koyusuna geçerdi. Bölüm katlamanın çok
+   * altında olduğu için bu bekleme görünmez.
+   */
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const { theme, toggle: toggleTheme } = useTheme();
   const [scrolled, setScrolled] = useState(false);
 
@@ -716,7 +726,24 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                   }
                 >
                   <TiltCard max={7}>
-                    <div className="glass rounded-2xl sm:rounded-3xl p-[1.125rem] sm:p-7 relative overflow-hidden group cursor-default transition-all duration-300 h-full">
+                    {/*
+                      Geniş hücreler kalıcı bir ton taşır. Altı hücrenin altısı
+                      da cam + metinken ızgara tek bir gri blok gibi okunuyor,
+                      "large/small" ayrımı yalnızca genişlikten anlaşılıyordu.
+                      Ton hücrenin kendi alan renginden türer, yani dekorasyon
+                      değil; hangi hücrenin ızgaranın çapası olduğunu söyler.
+                      Dar hücrelerde ton yok — hepsine verilince ayrım kaybolur.
+                    */}
+                    <div
+                      className="glass rounded-2xl sm:rounded-3xl p-[1.125rem] sm:p-7 relative overflow-hidden group cursor-default transition-all duration-300 h-full"
+                      style={
+                        isLarge
+                          ? {
+                              backgroundImage: `radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, ${f.color} 11%, transparent), transparent 62%)`,
+                            }
+                          : undefined
+                      }
+                    >
                       <div
                         className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10"
                         style={{
@@ -751,15 +778,79 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
         </div>
       </section>
 
+      {/* ══════════════════════ ÜRÜN ÖNİZLEMESİ ══════════════════════
+          Burada önce trafik ışıkları, sahte bir adres çubuğu ve iskelet
+          çubuklarından kurulu bir "gösterge paneli" duruyordu: üründen hiçbir
+          şey göstermiyor, yalnızca bir ekran görüntüsü taklit ediyordu.
+          Yerine ürünün kendisi geldi — `scripts/capture-app-shots.mjs` bu
+          görüntüyü demo hesabına gerçekten girerek çeker, ekrandaki her sayı
+          seed verisinden gelir. Pencere çerçevesi bilerek yok: çerçeve ekran
+          görüntüsünün gerçek olduğunu değil, öyle görünmeye çalıştığını
+          söylüyordu.
+
+          Bölüm, yetenekleri sayan bento ile onları dört adımda anlatan tur
+          arasında duruyor: "hepsi tek yerde" dedikten sonra o yerin neye
+          benzediğini gösterir, sonra tur ayrıntıya iner. */}
+      <section className="section max-sm:py-10! relative overflow-hidden">
+        <div className="shell shell-wide">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={REVEAL_VIEWPORT}
+            variants={stagger}
+            className="max-w-2xl mb-8 sm:mb-12"
+          >
+            <motion.h2
+              variants={fadeUp}
+              className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl text-(--color-text-strong) mb-3 sm:mb-4"
+            >
+              Seansın Sabahı <span className="accent-line">Tek Ekranda</span>
+            </motion.h2>
+            <motion.p
+              variants={fadeUp}
+              className="text-(--color-text-soft) text-[0.9375rem] sm:text-lg m-0"
+            >
+              Günün akışı, sıradaki danışan, ortalama skorun eğilimi ve plana
+              dokunması gereken uyarılar.
+            </motion.p>
+          </motion.div>
+
+          <motion.figure
+            initial={{ opacity: 0, y: 28 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={REVEAL_VIEWPORT}
+            transition={{ duration: 0.7, ease }}
+            className="m-0"
+          >
+            <div
+              className="rounded-2xl md:rounded-3xl overflow-hidden border border-(--color-line-strong)"
+              style={{ boxShadow: "var(--shadow-lg)" }}
+            >
+              {mounted ? (
+                <Image
+                  src={theme === "dark" ? "/app/dashboard-dark.webp" : "/app/dashboard-light.webp"}
+                  alt="Mimio panelinde bir günün akışı: zaman çizelgesi, sıradaki seans ve gelişim uyarıları"
+                  width={2200}
+                  height={1375}
+                  sizes="(max-width: 767px) 100vw, (max-width: 1279px) 90vw, 1200px"
+                  className="w-full h-auto block"
+                />
+              ) : (
+                /* Tema çözülene kadar aynı orana sahip sessiz bir yüzey:
+                   görüntü yerine oturduğunda düzen kaymaz (CLS). */
+                <div className="w-full aspect-[2200/1375] bg-(--color-surface)" />
+              )}
+            </div>
+            <figcaption className="mt-3 text-xs text-(--color-text-muted)">
+              Demo hesabındaki gerçek ekran. Danışan adları kurgusaldır.
+            </figcaption>
+          </motion.figure>
+        </div>
+      </section>
+
       {/* ══════════════════════ STICKY WALKTHROUGH ══════════════════════ */}
       <StickyWalkthrough />
 
-      {/* Sahte tarayıcı penceresi taşıyan "Platform Arayüzü" bölümü kaldırıldı:
-          trafik ışıkları, sahte adres çubuğu ve iskelet çubuklarından kurulu
-          bir gösterge paneli üründen bir şey göstermiyor, yalnızca bir ekran
-          görüntüsü taklit ediyordu. Ürünün akışını zaten StickyWalkthrough
-          dört adımda anlatıyor. Buraya gerçek bir ekran görüntüsü konacaksa
-          `next/image` ile, `priority` olmadan eklenmeli. */}
       {/* ══════════════════════ HOW IT WORKS ══════════════════════
           Numaralandırma burada gerçek bir sıra bildiriyor: hesap açmadan
           danışan eklenemez, danışan olmadan seans oynanamaz. Bu yüzden
