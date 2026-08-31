@@ -69,7 +69,9 @@ export function HeroSessionCard() {
   const lastOffsetRem = ((H - last.y) / H) * CHART_REM;
 
   return (
-    <div className="relative w-full max-w-[30rem] mx-auto lg:ml-auto lg:mr-0">
+    /* Hizalama dışarıdan: kart kahraman kompozisyonunda oyun tahtasının
+       önüne, ondan bağımsız konumlanıyor. */
+    <div className="relative w-full max-w-[30rem]">
       {/* Arkada duran ikinci kayıt — arşiv derinliği, tek bir kayıt değil */}
       <div
         aria-hidden="true"

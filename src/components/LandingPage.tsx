@@ -208,6 +208,11 @@ const ease = [0.22, 1, 0.36, 1] as const;
  */
 const REVEAL_VIEWPORT = { once: true, margin: "-72px", amount: 0.15 } as const;
 
+/** "Kimler İçin" sekmelerinin kendiliğinden geçiş aralığı. */
+const PERSONA_DURATION_MS = 5200;
+/** Kullanıcı sekmeye dokunduktan sonra zamanlayıcının susacağı süre. */
+const PERSONA_GRACE_MS = 9000;
+
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease } },
@@ -228,7 +233,41 @@ const stagger = {
 
 export default function LandingPage({ onLogin, onRegister }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
+  /* Hem kahraman paralaksı hem sekme/tur zamanlayıcıları okuyor; tek yerde. */
+  const reducedMotion = useReducedMotion();
   const [persona, setPersona] = useState(0);
+  /*
+   * Sekmeler kendiliğinden ilerler. Dört uzmanlık alanı var ve okur yalnızca
+   * kendisininkine bakıyordu; diğer üçü hiç görünmüyordu. Bölüm ekrandayken
+   * dönüyor, kullanıcı bir sekmeye dokunduğunda susuyor — seçimini okumaya
+   * vakti olsun; kendi seçtiği sekme altından kaymasın.
+   */
+  const personaRef = useRef<HTMLElement | null>(null);
+  const [personaInView, setPersonaInView] = useState(false);
+  const personaTouchedAt = useRef(0);
+
+  const selectPersona = (i: number) => {
+    personaTouchedAt.current = Date.now();
+    setPersona(i);
+  };
+
+  useEffect(() => {
+    const el = personaRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => setPersonaInView(e.isIntersecting), { threshold: 0.35 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (reducedMotion || !personaInView) return;
+    const id = window.setInterval(() => {
+      if (document.hidden) return;
+      if (Date.now() - personaTouchedAt.current < PERSONA_GRACE_MS) return;
+      setPersona((prev) => (prev + 1) % PERSONAS.length);
+    }, PERSONA_DURATION_MS);
+    return () => window.clearInterval(id);
+  }, [reducedMotion, personaInView]);
   /*
    * Ürün önizlemesi temaya göre iki ayrı görüntü taşıyor. `theme` ilk
    * render'da sunucudaki varsayılana ("light") eşit; localStorage ancak
@@ -276,7 +315,6 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
    * kaydırma olaylarıyla birlikte sıçrar, yay bunu sürekli hâle getirir.
    */
   const heroRef = useRef<HTMLDivElement | null>(null);
-  const reducedMotion = useReducedMotion();
   const { scrollYProgress: heroProgress } = useScroll({
     target: heroRef,
     offset: ["start start", "end start"],
@@ -285,6 +323,9 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
   const heroY = useTransform(heroEased, [0, 1], [0, reducedMotion ? 0 : -72]);
   const heroOpacity = useTransform(heroEased, [0, 1], [1, reducedMotion ? 1 : 0.62]);
   const parallaxMockY = useTransform(heroEased, [0, 1], [0, reducedMotion ? 0 : 54]);
+  /* Arka katman daha çok kayar: iki yüzey arasındaki hız farkı derinliği
+     kurar. Tek hızda kayarlarsa kompozisyon düz bir resim gibi okunur. */
+  const parallaxBoardY = useTransform(heroEased, [0, 1], [0, reducedMotion ? 0 : 104]);
 
   /*
    * Üst çubuğun durumu `scroll` olayıyla değil Motion'ın kendi değeriyle
@@ -635,17 +676,70 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
 
             </motion.div>
 
-            {/* Sağ — seans kaydı kartı. Sahte tarayıcı penceresi + tanıtım
-                videosu yerine ürünün gerçek çıktısı gösteriliyor. */}
-            <motion.div
-              initial={{ opacity: 0, y: 32 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.25, ease }}
-              style={{ y: parallaxMockY }}
-              className="relative"
-            >
-              <HeroSessionCard />
-            </motion.div>
+            {/*
+              Sağ — iki katmanlı sahne.
+
+              Tek başına duran seans kartı ürünün yarısını anlatıyordu:
+              terapistin ölçtüğü şeyi gösteriyor ama çocuğun ne gördüğünü
+              hiç göstermiyordu. İki katman bu iki yarıyı üst üste koyuyor:
+              arkada oyunun gerçek tahtası (koyu, dokulu), önde ölçüm kartı
+              (cam, açık). Karttaki oyun adı ile arkadaki tahta aynı oyun —
+              "Sıra Hafızası" yazan kart, Sıra Hafızası tahtasının önünde.
+
+              İkisi de gerçek: tahta `capture-game-shots.mjs` ile
+              uygulamadan yakalandı, kart da gerçek bir Corsi kaydının
+              alanlarını taşıyor. Sahne süslenmiş değil, katmanlanmış.
+            */}
+            <div className="relative">
+              {/* İmza degradesinden çok soluk bir hâle — iki katmanı birbirine
+                  bağlayan zemin. Degradenin kendisi yalnızca üç yerde
+                  görünebilir (THEME.md), bu yüzden burada renk %8'in altında
+                  kalıyor ve bir yüzey değil ışık olarak okunuyor. */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -inset-x-10 -inset-y-12 -z-10 hidden sm:block"
+                style={{
+                  background:
+                    "radial-gradient(52% 46% at 72% 26%, color-mix(in srgb, var(--color-signature-from) 7%, transparent), transparent 70%), radial-gradient(46% 42% at 24% 74%, color-mix(in srgb, var(--color-signature-to) 6%, transparent), transparent 72%)",
+                }}
+              />
+
+              {/* Arka katman — çocuğun gördüğü tahta */}
+              <motion.div
+                aria-hidden="true"
+                initial={reducedMotion ? false : { opacity: 0, y: 26, rotate: 4 }}
+                animate={{ opacity: 1, y: 0, rotate: 3.2 }}
+                transition={{ duration: 0.85, delay: 0.12, ease }}
+                style={{ y: parallaxBoardY }}
+                className="hidden sm:block absolute right-0 -top-5 w-[70%] max-w-[23rem] rounded-2xl overflow-hidden"
+              >
+                <Image
+                  src="/games/memory.webp"
+                  alt=""
+                  width={760}
+                  height={657}
+                  priority
+                  sizes="(max-width: 1023px) 46vw, 368px"
+                  className="w-full h-auto block"
+                />
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-0 rounded-2xl"
+                  style={{ border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}
+                />
+              </motion.div>
+
+              {/* Ön katman — terapistin ölçümü */}
+              <motion.div
+                initial={{ opacity: 0, y: 32 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.25, ease }}
+                style={{ y: parallaxMockY }}
+                className="relative mx-auto sm:mx-0 sm:mt-[7.5rem] sm:mr-[12%] lg:mr-[16%]"
+              >
+                <HeroSessionCard />
+              </motion.div>
+            </div>
           </div>
         </motion.div>
       </section>
@@ -962,7 +1056,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
         Burada okur dört rolden yalnızca kendisininkini arıyor: seçim işi
         sekmeye devrediliyor, seçilen rol tam genişlikte anlatılıyor.
       */}
-      <section id="testimonials" className="section max-sm:py-10! relative overflow-hidden">
+      <section ref={personaRef} id="testimonials" className="section max-sm:py-10! relative overflow-hidden">
         <div className="shell" style={{ maxWidth: "68rem" }}>
           <motion.div
             initial="hidden"
@@ -993,6 +1087,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
               e.preventDefault();
               const step = e.key === "ArrowRight" ? 1 : -1;
+              personaTouchedAt.current = Date.now();
               setPersona((i) => (i + step + PERSONAS.length) % PERSONAS.length);
             }}
             className="flex gap-2 overflow-x-auto no-scrollbar -mx-(--gutter) px-(--gutter) sm:mx-0 sm:px-0 pb-1"
@@ -1008,7 +1103,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                   aria-selected={selected}
                   aria-controls="persona-panel"
                   tabIndex={selected ? 0 : -1}
-                  onClick={() => setPersona(i)}
+                  onClick={() => selectPersona(i)}
                   className={`shrink-0 whitespace-nowrap text-[0.8125rem] sm:text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors ${
                     selected
                       ? "text-(--color-primary-ink)"
