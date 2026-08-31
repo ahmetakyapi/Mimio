@@ -155,11 +155,13 @@ export function WeekRhythmPanel() {
         </span>
       </header>
 
-      {/* Telefonda yedi sütun 55 piksele iner ve blokların içi okunmaz;
-          şerit yatay kayar, sütunlar okunur genişliğini korur. */}
+      {/* Yedi sütunun okunur kaldığı en dar genişlik 38rem. Bunun altında
+          (telefon, dar kolonlar) şerit yatay kayar; sütunlar daralmaz, çünkü
+          daraldıklarında danışan adları kırpılıyor ve panelin tek işi olan
+          "kim, ne zaman, hangi oyun" okunmaz hâle geliyor. */}
       <div className="overflow-x-auto no-scrollbar">
-        <div className="min-w-[46rem] px-5 sm:px-6 pt-5 pb-6">
-          <div className="grid grid-cols-7 gap-2">
+        <div className="min-w-[38rem] px-4 sm:px-5 pt-4 pb-5">
+          <div className="grid grid-cols-7 gap-1.5">
             {WEEK.map((d) => (
               <div key={d.day} className="min-w-0">
                 <div
@@ -188,7 +190,7 @@ export function WeekRhythmPanel() {
                           delay: si * 0.05 + d.date * 0.01,
                           ease: [0.22, 1, 0.36, 1],
                         }}
-                        className="rounded-lg px-2.5 py-2"
+                        className="rounded-lg px-2 py-1.5"
                         style={{
                           background: `color-mix(in srgb, ${c} 12%, transparent)`,
                           borderLeft: `2px solid ${c}`,
@@ -213,7 +215,7 @@ export function WeekRhythmPanel() {
                   {Array.from({ length: MAX_PER_DAY - d.slots.length }).map((_, i) => (
                     <span
                       key={`bos-${d.day}-${i}`}
-                      className="block rounded-lg h-[3.75rem]"
+                      className="block rounded-lg h-[3.25rem]"
                       style={{ border: "1px dashed var(--color-line-strong)" }}
                     />
                   ))}
