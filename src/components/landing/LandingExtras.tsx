@@ -10,6 +10,7 @@ import {
 import {
   AnimatePresence,
   motion,
+  useMotionValueEvent,
   useScroll,
   useSpring,
   useTransform,
@@ -27,9 +28,7 @@ import {
   FileText,
   Gamepad2,
   Hand,
-  HeartPulse,
   LayoutDashboard,
-  Microscope,
   Minus,
   Play,
   Plus,
@@ -209,11 +208,9 @@ export function TrustMarquee() {
     <section className="section-tight border-y border-(--color-line) relative overflow-hidden">
       <div className="shell shell-wide">
         <div className="flex flex-col items-center gap-6">
-          <div className="flex items-center gap-2 text-[11px] font-bold tracking-[0.2em] text-(--color-text-muted) uppercase">
-            <span className="w-6 h-px bg-(--color-line-strong)" />
-            Oyunlar ve Aktivitelerle Çalışılan Beceri Alanları
-            <span className="w-6 h-px bg-(--color-line-strong)" />
-          </div>
+          <p className="text-sm text-(--color-text-soft) text-center m-0">
+            Oyunlar ve aktiviteler bu beceri alanlarını çalışır.
+          </p>
           <div className="w-full marquee-viewport marquee-mask">
             <div className="marquee-track slow">
               {items.map((t, i) => {
@@ -335,7 +332,7 @@ export function StickyWalkthrough() {
                 <Sparkles size={12} />
                 Platform Turu
               </div>
-              <h2 className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl font-extrabold text-(--color-text-strong) leading-[1.05] tracking-tight">
+              <h2 className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl text-(--color-text-strong) leading-[1.05] tracking-tight">
                 Dört Adımda
                 <br />
                 <span className="accent-line">Dijital Terapi Akışı</span>
@@ -427,7 +424,7 @@ export function StickyWalkthrough() {
               <div
                 className="relative glass-strong rounded-3xl overflow-hidden aspect-[4/3]"
                 style={{
-                  boxShadow: "0 28px 80px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.04) inset",
+                  boxShadow: "var(--shadow-lg)",
                 }}
               >
                 <AnimatePresence mode="wait">
@@ -593,7 +590,7 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
           <div className="flex items-center gap-1.5">
             <span
               className="halo-dot w-2 h-2 rounded-full"
-              style={{ color: "#d63d63", background: "#d63d63" }}
+              style={{ color: "var(--color-accent-red)", background: "var(--color-accent-red)" }}
             />
             <span className="text-[10px] font-bold text-(--color-text-body)">CANLI</span>
           </div>
@@ -752,11 +749,7 @@ export function ComparisonSection() {
     <section id="comparison" className="section max-sm:py-10! relative overflow-hidden">
       <div className="shell" style={{ maxWidth: "68rem" }}>
         <div className="text-center mb-10 md:mb-16">
-          <span className="inline-flex items-center gap-2 text-xs font-bold tracking-widest text-(--color-primary) uppercase mb-4 bg-(--color-primary-light) px-4 py-2 rounded-full">
-            <Microscope size={12} />
-            Neden Mimio?
-          </span>
-          <h2 className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl font-extrabold text-(--color-text-strong) leading-tight mb-4">
+          <h2 className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl text-(--color-text-strong) leading-tight mb-4">
             Geleneksel vs.{" "}
             <span className="accent-line">
               Dijital Ergoterapi
@@ -811,7 +804,7 @@ export function ComparisonSection() {
                 <div className="relative flex items-start gap-2">
                   <ShieldCheck
                     size={16}
-                    className="shrink-0 mt-0.5 text-[#19d19b]"
+                    className="shrink-0 mt-0.5 text-(--color-accent-green)"
                   />
                   <div className="min-w-0">
                     <span className="block lg:hidden text-[10px] font-bold uppercase tracking-[0.14em] text-(--color-text-muted) mb-0.5">
@@ -879,11 +872,7 @@ export function FAQSection() {
     <section id="faq" className="section relative">
       <div className="shell" style={{ maxWidth: "56rem" }}>
         <div className="text-center mb-10 md:mb-14">
-          <span className="inline-flex items-center gap-2 text-xs font-bold tracking-widest text-(--color-primary) uppercase mb-4 bg-(--color-primary-light) px-4 py-2 rounded-full">
-            <HelpCircleFallback />
-            Sıkça Sorulanlar
-          </span>
-          <h2 className="text-3xl md:text-5xl font-extrabold text-(--color-text-strong) leading-tight mb-4">
+          <h2 className="text-3xl md:text-5xl text-(--color-text-strong) leading-tight mb-4">
             Aklınızdaki Soruları
             <br />
             <span className="accent-line">
@@ -935,24 +924,6 @@ export function FAQSection() {
     </section>
   );
 }
-function HelpCircleFallback() {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 3.5" />
-      <circle cx="12" cy="17" r="0.4" fill="currentColor" />
-    </svg>
-  );
-}
 
 /* ════════════════════════════════════════════════════════════════
   10. FLOATING CTA — pill that appears after hero, hides near footer
@@ -973,16 +944,14 @@ export function FloatingCTA({ onRegister }: FloatingCTAProps) {
   const [ctaInView, setCtaInView] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
-  useEffect(() => {
-    const handle = () => {
-      const y = window.scrollY;
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      setScrolledPastHero(y > 720 && max - y > 240);
-    };
-    window.addEventListener("scroll", handle, { passive: true });
-    handle();
-    return () => window.removeEventListener("scroll", handle);
-  }, []);
+  /* Kaydırma konumu olay dinleyicisiyle değil Motion değeriyle okunur;
+     dinleyici her karede React'i uyandırıyordu. */
+  const { scrollY } = useScroll();
+  useMotionValueEvent(scrollY, "change", (y) => {
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    const next = y > 720 && max - y > 240;
+    setScrolledPastHero((prev) => (prev === next ? prev : next));
+  });
 
   useEffect(() => {
     const target = document.getElementById("cta");
@@ -1007,21 +976,12 @@ export function FloatingCTA({ onRegister }: FloatingCTAProps) {
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           className="floating-cta"
         >
-          <span className="hidden sm:flex items-center gap-2 text-xs font-bold text-(--color-text-body) pr-1">
-            <span
-              className="halo-dot w-2 h-2 rounded-full"
-              style={{ color: "var(--color-accent-green)", background: "var(--color-accent-green)" }}
-            />
-            Ücretsiz
-          </span>
           <button
             type="button"
             onClick={onRegister}
-            className="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-full transition-shadow hover:shadow-(--shadow-md)"
-            style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }}
+            className="btn-signature flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-full"
           >
-            Hesap oluştur
-            <Zap size={12} />
+            Ücretsiz Başla
           </button>
           <button
             type="button"
@@ -1055,7 +1015,7 @@ const EXTENDED_GAMES: readonly GameEntry[] = [
   { key: "pairs", label: "Kart Eşle", area: "Görsel Hafıza", desc: "Kapalı kartları açarak eşleşen çiftleri bul; görsel hafızayı pekiştir.", color: "var(--color-accent-amber)", icon: Sparkles },
   { key: "pulse", label: "Mavi Nabız", area: "El-Göz Koordinasyonu", desc: "Beliren hedeflere hızla dokunarak el-göz koordinasyonunu geliştir.", color: "var(--color-primary)", icon: Target },
   { key: "route", label: "Komut Rotası", area: "Yön & Planlama", desc: "Gösterilen yön komutlarını doğru sırayla uygula; işlem hızını artır.", color: "var(--color-accent-green)", icon: Activity },
-  { key: "difference", label: "Fark Avcısı", area: "Görsel Ayrım", desc: "Benzer kartlar arasından farklı olanı bul; görsel ayrım becerisini destekle.", color: "#f0708a", icon: Eye },
+  { key: "difference", label: "Fark Avcısı", area: "Görsel Ayrım", desc: "Benzer kartlar arasından farklı olanı bul; görsel ayrım becerisini destekle.", color: "var(--color-accent-red)", icon: Eye },
   { key: "scan", label: "Hedef Tarama", area: "Seçici Dikkat", desc: "Hedef simgeyi ızgara içinde tara ve bul; seçici dikkati çalıştır.", color: "var(--color-accent-teal)", icon: Zap },
   { key: "logic", label: "Dizi Mantık", area: "Yürütücü İşlevler", desc: "Matristeki örüntüyü çöz, eksik hücreyi tamamla; akıl yürütmeyi geliştir.", color: "var(--color-accent-violet)", icon: Puzzle },
 ];
@@ -1100,20 +1060,13 @@ export function GamesCarousel({ onLogin }: { onLogin: () => void }) {
       <div className="shell shell-wide">
         <div className="flex items-end justify-between gap-6 flex-wrap px-4 sm:px-6 mb-8 sm:mb-10">
           <div>
-            <span className="inline-flex items-center gap-2 text-xs font-bold tracking-widest text-(--color-primary) uppercase mb-4 bg-(--color-primary-light) px-4 py-2 rounded-full">
-              <Gamepad2 size={12} />
-              Terapötik İçerik
-            </span>
-            <h2 className="text-3xl md:text-5xl font-extrabold text-(--color-games-text) leading-tight max-w-lg">
+            <h2 className="text-3xl md:text-5xl text-(--color-games-text) leading-tight max-w-lg">
               Her Oyun Bir
               <br />
               <span className="accent-line">Gelişim Hedefi</span>
             </h2>
           </div>
           <div className="flex items-center gap-3">
-            <span className="numeral text-xs font-bold text-(--color-games-text-soft)">
-              {index + 1} / {EXTENDED_GAMES.length}
-            </span>
             <div className="flex items-center gap-2">
               <button
                 type="button"

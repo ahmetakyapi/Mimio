@@ -2361,6 +2361,14 @@ html[data-theme='light'] .floating-cta {
 
 /* Yatay karusel — kenardan taşan kartlar kırpılmış görünmesin diye
    sağ/sol uçlarda yumuşama maskesi var; ilk kart içerik hizasında başlar. */
+/* Kaydırma çubuğu gizli yatay şerit — sekme listesi telefonda kayar ama
+   çubuk düzeni bozmaz. `h-snap`ten ayrı: burada yapışma yok, yalnızca kayma. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
 .h-snap {
   display: flex;
   overflow-x: auto;

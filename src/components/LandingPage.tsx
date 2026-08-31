@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   motion,
   AnimatePresence,
+  useMotionValueEvent,
   useReducedMotion,
   useScroll,
   useSpring as useSpringFM,
@@ -21,19 +22,14 @@ import {
   X,
   Brain,
   CheckCircle2,
-  LayoutDashboard,
   Sun,
   Moon,
-  Target,
   Sparkles,
-  Zap,
-  Star,
   Play,
   Heart,
   Shield,
   Clock,
   Stethoscope,
-  BarChart3,
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { HeroSessionCard } from "./landing/HeroSessionCard";
@@ -58,27 +54,6 @@ import {
  * birbirinden bağımsız hızlarda "yüzmesini" engeller.
  */
 const SCROLL_SPRING = { stiffness: 90, damping: 26, mass: 0.35, restDelta: 0.0005 } as const;
-
-/*
- * Dar ekran sorgusu.
- *
- * Giriş animasyonlarının yönü telefonda değişmek zorunda: yatay kayan
- * (`slideRight`) kartlar masaüstünde sütun genişliğinin içinde kalıyor,
- * telefonda ise kart tam genişlikte olduğu için 48px'lik başlangıç ötelemesi
- * bölümün sağ kenarından taşıyor ve `overflow-hidden` tarafından kırpılıyordu
- * — kart ekrana "yarım" giriyordu. Sorgu bir kez burada çözülür.
- */
-function useNarrowViewport() {
-  const [narrow, setNarrow] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 639px)");
-    const sync = () => setNarrow(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
-  return narrow;
-}
 
 /* ── Scroll Progress Bar ── */
 function ScrollProgress() {
@@ -237,11 +212,6 @@ const fadeUp = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease } },
 };
 
-const slideRight = {
-  hidden: { opacity: 0, x: 48 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.65, ease } },
-};
-
 const scaleIn = {
   hidden: { opacity: 0, scale: 0.88 },
   visible: { opacity: 1, scale: 1, transition: { duration: 0.55, ease } },
@@ -251,19 +221,15 @@ const stagger = {
   visible: { transition: { staggerChildren: 0.1 } },
 };
 
-const staggerFast = {
-  visible: { transition: { staggerChildren: 0.07 } },
-};
-
 /* ══════════════════════════════════════════════════════════════ */
 /*  MAIN COMPONENT                                               */
 /* ══════════════════════════════════════════════════════════════ */
 
 export default function LandingPage({ onLogin, onRegister }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [persona, setPersona] = useState(0);
   const { theme, toggle: toggleTheme } = useTheme();
   const [scrolled, setScrolled] = useState(false);
-  const narrow = useNarrowViewport();
 
   /*
    * Kahraman paralaksı.
@@ -285,11 +251,17 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
   const heroOpacity = useTransform(heroEased, [0, 1], [1, reducedMotion ? 1 : 0.62]);
   const parallaxMockY = useTransform(heroEased, [0, 1], [0, reducedMotion ? 0 : 54]);
 
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  /*
+   * Üst çubuğun durumu `scroll` olayıyla değil Motion'ın kendi değeriyle
+   * okunur. Olay dinleyicisi her kaydırma karesinde React'i uyandırıyordu;
+   * `useMotionValueEvent` değeri render döngüsünün dışında izler ve durum
+   * yalnızca eşik geçildiğinde değişir.
+   */
+  const { scrollY } = useScroll();
+  useMotionValueEvent(scrollY, "change", (y) => {
+    const next = y > 20;
+    setScrolled((prev) => (prev === next ? prev : next));
+  });
 
   // Mobil menü açıkken: scroll kilidi, Esc ile kapatma, odak tuzağı
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -359,7 +331,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
   };
 
   return (
-    <div id="top" className="min-h-screen font-(--font-sans) relative">
+    <div id="top" className="min-h-[100dvh] font-(--font-sans) relative">
       <ScrollProgress />
       <SectionDots sections={SECTION_DOTS} />
       <FloatingCTA onRegister={onRegister} />
@@ -426,7 +398,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 onClick={onRegister}
                 className="btn-signature text-sm font-semibold px-5 py-2.5 rounded-xl"
               >
-                Hemen Başla
+                Ücretsiz Başla
               </button>
             </Magnetic>
           </div>
@@ -518,7 +490,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 }}
                 className="btn-signature w-full py-3.5 text-center font-semibold rounded-xl"
               >
-                Hemen Başla
+                Ücretsiz Başla
               </button>
             </div>
           </motion.div>
@@ -562,10 +534,6 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                   border: "1px solid var(--color-line-strong)",
                 }}
               >
-                <span
-                  className="halo-dot w-1.5 h-1.5 rounded-full"
-                  style={{ color: "var(--color-primary)", background: "var(--color-primary)" }}
-                />
                 Ölçüm temelli ergoterapi platformu
               </motion.span>
 
@@ -575,7 +543,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                   akar, 640px'ten itibaren eski ölçek aynen devam eder. */}
               <motion.h1
                 variants={fadeUp}
-                className="text-[clamp(1.75rem,8vw,2.75rem)] sm:text-6xl lg:text-[4.25rem] xl:text-7xl font-extrabold text-(--color-text-strong) leading-[1.06] sm:leading-[1.02] m-0"
+                className="text-[clamp(1.75rem,8vw,2.75rem)] sm:text-6xl lg:text-[4.25rem] xl:text-7xl text-(--color-text-strong) leading-[1.06] sm:leading-[1.02] m-0"
               >
                 {/* Vurgu tek kelimede: dokümanda yalnızca "oyuna" renkleniyor.
                     İki kelimeyi birden boyamak cümlenin ağırlık merkezini
@@ -606,21 +574,13 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                   <button
                     type="button"
                     onClick={onRegister}
-                    className="group relative flex items-center justify-center gap-2.5 font-semibold px-7 py-3.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 text-sm w-full sm:w-auto overflow-hidden"
-                    style={{
-                      background: "var(--gradient-signature-ink)",
-                      color: "#ffffff",
-                      boxShadow: "var(--shadow-primary)",
-                    }}
+                    className="btn-signature group flex items-center justify-center gap-2.5 font-semibold px-7 py-3.5 rounded-xl text-sm w-full sm:w-auto"
                   >
-                    <span className="beam-sweep opacity-40" />
-                    <span className="relative z-10 flex items-center gap-2.5">
-                      Ücretsiz Başla
-                      <ArrowRight
-                        size={16}
-                        className="transition-transform group-hover:translate-x-1"
-                      />
-                    </span>
+                    Ücretsiz Başla
+                    <ArrowRight
+                      size={16}
+                      className="transition-transform group-hover:translate-x-1"
+                    />
                   </button>
                 </Magnetic>
                 <button
@@ -638,17 +598,6 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 </button>
               </motion.div>
 
-              {/*
-                Üç ayrı rozet ("Güvenli veri / Anında başla / Ücretsiz")
-                yerine tek satır. Rozetler belirsiz bir güven hissi
-                satıyordu; bu satır somut bir bilgi veriyor.
-              */}
-              <motion.p
-                variants={fadeUp}
-                className="text-xs text-(--color-text-muted) m-0"
-              >
-                Ücretsiz — kredi kartı istemez, kurulum gerektirmez.
-              </motion.p>
             </motion.div>
 
             {/* Sağ — seans kaydı kartı. Sahte tarayıcı penceresi + tanıtım
@@ -663,42 +612,52 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               <HeroSessionCard />
             </motion.div>
           </div>
-
-          {/* Rakamlarla Mimio — her değer platform verisinden türetilir,
-              elle yazılmış sayı yoktur (bkz. lib/platform-stats.ts).
-              Kutulanmış ızgara yerine editoryal ölçek: üstte tek bir
-              kılcal çizgi, sütunlar arasında dikey ayraç. */}
-          {/* Dikey ayraç ve sol pay sıraya (i > 0) bağlıydı. Telefonda ızgara
-              iki sütuna indiğinde üçüncü kutu satır başına düşüyor, ayracı
-              ekranın sol kenarına yapışıyor, metni içeri kaçıyordu. Ayraç
-              artık yalnızca dört sütunlu düzende (lg) çizilir; telefonda
-              sütunları boşluk ayırır. */}
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={stagger}
-            className="mt-9 sm:mt-14 md:mt-20 pt-5 sm:pt-7 grid grid-cols-2 gap-x-4 gap-y-5 lg:grid-cols-4 lg:gap-0"
-            style={{ borderTop: "1px solid var(--color-line-strong)" }}
-          >
-            {HERO_STATS.map((stat) => (
-              <motion.div
-                key={stat.label}
-                variants={fadeUp}
-                className="flex flex-col gap-1.5 py-2 min-w-0 lg:px-6 lg:border-l lg:border-(--color-line) lg:first:pl-0 lg:first:border-l-0 lg:last:pr-0"
-              >
-                <p className="numeral text-[1.75rem] sm:text-[2.75rem] font-extrabold text-(--color-text-strong) leading-none m-0">
-                  {stat.value}
-                </p>
-                <p className="text-[0.8125rem] sm:text-sm font-semibold text-(--color-text-body) m-0">
-                  {stat.label}
-                </p>
-                <p className="text-xs text-(--color-text-muted) leading-snug m-0">
-                  {stat.hint}
-                </p>
-              </motion.div>
-            ))}
-          </motion.div>
         </motion.div>
+      </section>
+
+      {/* ══════════════════════ RAKAMLARLA MİMİO ══════════════════════
+          Şerit kahraman bölümünün içindeyken onu beş metin ögesine
+          çıkarıyor ve birincil eylemi katlamanın altına itiyordu. Kendi
+          bölümüne alındı: kahraman tek bir iddiada bulunur, sayılar hemen
+          altında onu doğrular. */}
+      <section className="section-tight relative">
+        <div className="shell shell-wide">
+        {/* Rakamlarla Mimio — her değer platform verisinden türetilir,
+            elle yazılmış sayı yoktur (bkz. lib/platform-stats.ts).
+            Kutulanmış ızgara yerine editoryal ölçek: üstte tek bir
+            kılcal çizgi, sütunlar arasında dikey ayraç. */}
+        {/* Dikey ayraç ve sol pay sıraya (i > 0) bağlıydı. Telefonda ızgara
+            iki sütuna indiğinde üçüncü kutu satır başına düşüyor, ayracı
+            ekranın sol kenarına yapışıyor, metni içeri kaçıyordu. Ayraç
+            artık yalnızca dört sütunlu düzende (lg) çizilir; telefonda
+            sütunları boşluk ayırır. */}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={REVEAL_VIEWPORT}
+          variants={stagger}
+          className="pt-5 sm:pt-7 grid grid-cols-2 gap-x-4 gap-y-5 lg:grid-cols-4 lg:gap-0"
+          style={{ borderTop: "1px solid var(--color-line-strong)" }}
+        >
+          {HERO_STATS.map((stat) => (
+            <motion.div
+              key={stat.label}
+              variants={fadeUp}
+              className="flex flex-col gap-1.5 py-2 min-w-0 lg:px-6 lg:border-l lg:border-(--color-line) lg:first:pl-0 lg:first:border-l-0 lg:last:pr-0"
+            >
+              <p className="figure text-[1.75rem] sm:text-[2.75rem] text-(--color-text-strong) leading-none m-0">
+                {stat.value}
+              </p>
+              <p className="text-[0.8125rem] sm:text-sm font-semibold text-(--color-text-body) m-0">
+                {stat.label}
+              </p>
+              <p className="text-xs text-(--color-text-muted) leading-snug m-0">
+                {stat.hint}
+              </p>
+            </motion.div>
+          ))}
+        </motion.div>
+        </div>
       </section>
 
       {/* ══════════════════════ TRUST MARQUEE ══════════════════════ */}
@@ -718,19 +677,12 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             variants={stagger}
             className="text-center mb-10 sm:mb-16"
           >
-            <motion.div
-              variants={fadeUp}
-              className="inline-flex items-center gap-2 text-[10.5px] sm:text-xs font-bold tracking-widest text-(--color-primary) uppercase mb-3 sm:mb-4 bg-(--color-primary-light) px-3 py-1.5 sm:px-4 sm:py-2 rounded-full"
-            >
-              <Sparkles size={12} />
-              Özellikler
-            </motion.div>
             {/* Bölüm başlıkları telefonda 36px basıyordu: iki satırlık başlık
                 üç satıra taşıp ekranın yarısını yiyordu. Ölçek 640px'in
                 altında viewport'la akar, üstünde eski değerinde kalır. */}
             <motion.h2
               variants={fadeUp}
-              className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl font-extrabold text-(--color-text-strong) mb-3 sm:mb-5"
+              className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl text-(--color-text-strong) mb-3 sm:mb-5"
             >
               İhtiyacınız Olan
               <br />
@@ -802,264 +754,12 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       {/* ══════════════════════ STICKY WALKTHROUGH ══════════════════════ */}
       <StickyWalkthrough />
 
-      {/* ══════════════════════ PLATFORM PREVIEW ══════════════════════ */}
-      <section className="section max-sm:py-10! relative overflow-hidden">
-        <div className="absolute inset-0 -z-10">
-        </div>
-        <div className="shell">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={REVEAL_VIEWPORT}
-            variants={stagger}
-            className="text-center mb-8 sm:mb-14"
-          >
-            <motion.div
-              variants={fadeUp}
-              className="inline-flex items-center gap-2 text-[10.5px] sm:text-xs font-bold tracking-widest text-(--color-primary) uppercase mb-3 sm:mb-4 bg-(--color-primary-light) px-3 py-1.5 sm:px-4 sm:py-2 rounded-full"
-            >
-              <LayoutDashboard size={12} />
-              Platform Arayüzü
-            </motion.div>
-            <motion.h2
-              variants={fadeUp}
-              className="text-[clamp(1.5rem,6.5vw,1.875rem)] md:text-4xl font-extrabold text-(--color-text-strong) mb-3 sm:mb-4"
-            >
-              Güçlü Araçlar,{" "}
-              <span className="accent-line">
-                Sade Arayüz
-              </span>
-            </motion.h2>
-            <motion.p
-              variants={fadeUp}
-              className="text-(--color-text-soft) text-[0.9375rem] sm:text-base md:text-lg max-w-xl mx-auto"
-            >
-              Danışan yönetimi, haftalık plan, seans kayıtları ve ilerleme
-              takibi — hepsi tek ekranda.
-            </motion.p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={REVEAL_VIEWPORT}
-            transition={{ duration: 0.7, ease }}
-            className="relative"
-          >
-            <TiltCard max={4}>
-              <div
-                className="relative glass-strong rounded-2xl md:rounded-3xl overflow-hidden"
-                style={{
-                  boxShadow:
-                    "0 25px 60px rgba(0,0,0,0.2), 0 0 80px rgba(43, 98, 245,0.08)",
-                }}
-              >
-                
-                <div
-                  className="flex items-center gap-2 px-3.5 py-2.5 sm:px-5 sm:py-3 border-b border-(--color-line)"
-                  style={{ background: "var(--color-surface)" }}
-                >
-                  <div className="flex gap-1.5 sm:gap-2 shrink-0">
-                    <div className="w-3 h-3 rounded-full bg-[#f0708a]/60" />
-                    <div className="w-3 h-3 rounded-full bg-[#f5c26b]/60" />
-                    <div className="w-3 h-3 rounded-full bg-[#19d19b]/60" />
-                  </div>
-                  {/* Sahte adres çubuğu telefonda 16px'lik yatay payla üç
-                      noktayı sıkıştırıyordu; pay dar ekranda daraltıldı. */}
-                  <div className="flex-1 min-w-0 mx-2 sm:mx-4 max-w-sm">
-                    <div className="h-6 rounded-lg bg-(--color-surface-elevated) border border-(--color-line) flex items-center justify-center">
-                      <span className="text-[10px] text-(--color-text-muted) flex items-center gap-1.5">
-                        <Shield
-                          size={9}
-                          className="text-(--color-accent-green)"
-                        />
-                        mimio.app/dashboard
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex" style={{ minHeight: 340 }}>
-                  <div
-                    className="hidden sm:flex w-14 border-r border-(--color-line) flex-col items-center py-4 gap-2 shrink-0"
-                    style={{ background: "var(--color-sidebar)" }}
-                  >
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-[10px] mb-3"
-                      style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }}>
-                      M
-                    </div>
-                    {[
-                      { Icon: LayoutDashboard, active: true },
-                      { Icon: Users, active: false },
-                      { Icon: Gamepad2, active: false },
-                      { Icon: Stethoscope, active: false },
-                      { Icon: BarChart3, active: false },
-                    ].map(({ Icon, active }, i) => (
-                      <div
-                        key={i}
-                        className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-                          active
-                            ? "bg-(--color-primary)/15 text-(--color-primary)"
-                            : "text-(--color-text-muted)"
-                        }`}
-                      >
-                        <Icon size={15} />
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex-1 min-w-0 p-3.5 sm:p-4 md:p-6 flex flex-col gap-3 sm:gap-4 overflow-hidden">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex flex-col gap-1.5 min-w-0">
-                        <div
-                          className="h-5 rounded-full w-28 sm:w-40"
-                          style={{
-                            background:
-                              "linear-gradient(90deg, var(--color-primary), rgba(77, 125, 255,0.6))",
-                            opacity: 0.7,
-                          }}
-                        />
-                        <div className="h-2.5 rounded-full w-24 bg-(--color-skeleton-lo)" />
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <div className="w-14 sm:w-20 h-8 rounded-lg bg-(--color-primary)/15 flex items-center justify-center">
-                          <Gamepad2
-                            size={12}
-                            className="text-(--color-primary)"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                      {[
-                        /* Renkler paletten ve TAM opaklıkta.
-                           Önce sabit rgba'lar %60 opaklıkla basılıyordu: 9px'lik
-                           versal etiketler açık zeminde 1.59–1.77:1 kalıyor, yani
-                           WCAG AA'nın (4.5:1) çok altında — etiket okunmuyor,
-                           yalnızca renkli bir leke olarak duruyordu. Anlam
-                           renklerinin açık temadaki `-ink` varyantları tam bu iş
-                           için var; tint zemin `color-mix` ile aynı renkten türer. */
-                        {
-                          label: "Toplam Seans",
-                          value: "24",
-                          bg: "var(--color-primary-light)",
-                          color: "var(--color-primary-ink)",
-                          icon: CalendarDays,
-                        },
-                        {
-                          label: "Danışanlar",
-                          value: "8",
-                          bg: "color-mix(in srgb, var(--color-accent-green) 12%, transparent)",
-                          color: "var(--color-accent-green)",
-                          icon: Users,
-                        },
-                        {
-                          label: "Ort. Skor",
-                          value: "84",
-                          bg: "color-mix(in srgb, var(--color-accent-amber) 14%, transparent)",
-                          color: "var(--color-accent-amber)",
-                          icon: TrendingUp,
-                        },
-                        {
-                          label: "Bu Hafta",
-                          value: "6",
-                          bg: "color-mix(in srgb, var(--color-accent-teal) 13%, transparent)",
-                          color: "var(--color-accent-teal)",
-                          icon: Target,
-                        },
-                      ].map((s) => (
-                        <div
-                          key={s.label}
-                          className="rounded-xl p-3"
-                          style={{ background: s.bg }}
-                        >
-                          <div className="flex items-center gap-1.5 mb-1.5">
-                            <s.icon size={11} style={{ color: s.color }} />
-                            <span
-                              className="text-[9px] font-bold uppercase tracking-wider"
-                              style={{ color: s.color }}
-                            >
-                              {s.label}
-                            </span>
-                          </div>
-                          <strong className="text-xl font-extrabold text-(--color-text-strong) leading-none">
-                            {s.value}
-                          </strong>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="space-y-2">
-                      {[
-                        {
-                          name: "Ela Selin",
-                          game: "Sıra Hafızası",
-                          score: 92,
-                          color: "var(--color-primary)",
-                        },
-                        {
-                          name: "Tuna Akarsu",
-                          game: "Mavi Nabız",
-                          score: 78,
-                          color: "var(--color-primary)",
-                        },
-                        {
-                          name: "Asya Demir",
-                          game: "Hedef Tarama",
-                          score: 85,
-                          color: "var(--color-accent-teal)",
-                        },
-                      ].map((s) => (
-                        <div
-                          key={s.name}
-                          className="flex items-center gap-2.5 border border-(--color-line) rounded-xl px-3 py-2.5"
-                          style={{ background: "var(--color-surface)" }}
-                        >
-                          <div
-                            className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-white text-[10px] font-bold"
-                            style={{
-                              background: `linear-gradient(135deg, ${s.color}, color-mix(in srgb, ${s.color} 53%, transparent))`,
-                            }}
-                          >
-                            {s.name[0]}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-semibold text-(--color-text-strong) m-0 truncate">
-                              {s.name}
-                            </p>
-                            <p className="text-[10px] text-(--color-text-muted) m-0">
-                              {s.game}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span
-                              className="text-xs font-extrabold tabular-nums"
-                              style={{ color: s.color }}
-                            >
-                              {s.score}
-                            </span>
-                            <div className="w-10 sm:w-14 h-1.5 bg-(--color-surface-elevated) rounded-full overflow-hidden">
-                              <div
-                                className="h-full rounded-full"
-                                style={{
-                                  width: `${s.score}%`,
-                                  background: s.color,
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </TiltCard>
-          </motion.div>
-        </div>
-      </section>
-
+      {/* Sahte tarayıcı penceresi taşıyan "Platform Arayüzü" bölümü kaldırıldı:
+          trafik ışıkları, sahte adres çubuğu ve iskelet çubuklarından kurulu
+          bir gösterge paneli üründen bir şey göstermiyor, yalnızca bir ekran
+          görüntüsü taklit ediyordu. Ürünün akışını zaten StickyWalkthrough
+          dört adımda anlatıyor. Buraya gerçek bir ekran görüntüsü konacaksa
+          `next/image` ile, `priority` olmadan eklenmeli. */}
       {/* ══════════════════════ HOW IT WORKS ══════════════════════
           Numaralandırma burada gerçek bir sıra bildiriyor: hesap açmadan
           danışan eklenemez, danışan olmadan seans oynanamaz. Bu yüzden
@@ -1080,47 +780,50 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               Kurulum yok, kart bilgisi yok. Hesabı açtığınız gün ilk seansı oynatabilirsiniz.
             </motion.p>
           </motion.div>
+          {/*
+            Üç eş kart yerine tek sütunlu dikey akış. Kartlar burada bir
+            hiyerarşi bildirmiyordu: üç adım eşit ağırlıkta ve sırayla
+            okunuyor. Sol ray sırayı taşır, `01/02/03` etiketine gerek
+            bırakmaz — `<ol>` sırayı zaten hem anlamsal hem görsel olarak
+            veriyor. Ray son adımın ikonunda biter, boşluğa uzamaz.
+          */}
           <motion.ol
             initial="hidden"
             whileInView="visible"
             viewport={REVEAL_VIEWPORT}
             variants={stagger}
-            className="grid md:grid-cols-3 gap-4 list-none p-0 m-0"
+            className="relative mx-auto max-w-2xl list-none p-0 m-0 flex flex-col gap-7 sm:gap-9"
           >
-            {STEPS.map((step, i) => {
+            <span
+              aria-hidden="true"
+              className="absolute left-[1.375rem] top-6 bottom-6 w-px"
+              style={{ background: "var(--color-line-strong)" }}
+            />
+            {STEPS.map((step) => {
               const StepIcon = step.icon;
               return (
                 <motion.li
                   key={step.num}
                   variants={fadeUp}
-                  className="surface surface-interactive relative flex items-start gap-3.5 sm:gap-4 p-[1.125rem] sm:p-5"
+                  className="relative flex items-start gap-4 sm:gap-5"
                 >
                   <div
-                    className="w-11 h-11 sm:w-12 sm:h-12 shrink-0 rounded-xl flex items-center justify-center"
-                    style={{ background: `color-mix(in srgb, ${step.color} 9%, transparent)`, border: `1px solid color-mix(in srgb, ${step.color} 19%, transparent)` }}
+                    className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center"
+                    style={{
+                      background: "var(--color-surface-strong)",
+                      border: `1px solid color-mix(in srgb, ${step.color} 24%, transparent)`,
+                    }}
                   >
-                    <StepIcon size={22} style={{ color: step.color }} />
+                    <StepIcon size={20} style={{ color: step.color }} aria-hidden="true" />
                   </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="numeral text-[11px] font-extrabold tracking-widest" style={{ color: step.color }}>
-                        {step.num}
-                      </span>
-                      <h3 className="font-bold text-(--color-text-strong) text-base m-0">
-                        {step.title}
-                      </h3>
-                    </div>
+                  <div className="min-w-0 pt-1.5">
+                    <h3 className="font-bold text-(--color-text-strong) text-base m-0 mb-1">
+                      {step.title}
+                    </h3>
                     <p className="text-[0.8125rem] sm:text-sm text-(--color-text-soft) leading-relaxed m-0">
                       {step.body}
                     </p>
                   </div>
-                  {i < STEPS.length - 1 && (
-                    <ArrowRight
-                      size={16}
-                      aria-hidden="true"
-                      className="hidden md:block absolute top-1/2 -right-3 -translate-y-1/2 text-(--color-text-disabled)"
-                    />
-                  )}
                 </motion.li>
               );
             })}
@@ -1135,69 +838,123 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       <ComparisonSection />
 
       {/* ══════════════════════ PERSONAS — KİMLER İÇİN ══════════════════════ */}
+      {/*
+        Dört uzmanlık alanı, dört eş kart olarak `md:grid-cols-4` içinde
+        sıkışıyordu: Türkçe rol adları ("Nörolojik Rehabilitasyon Uzmanı")
+        üç satıra bölünüyor, gövde metni kartın içinde nefes alamıyordu.
+        Ayrıca eş kart ızgarası sayfada zaten Özellikler bölümünün dili.
+        Burada okur dört rolden yalnızca kendisininkini arıyor: seçim işi
+        sekmeye devrediliyor, seçilen rol tam genişlikte anlatılıyor.
+      */}
       <section id="testimonials" className="section max-sm:py-10! relative overflow-hidden">
-        <div className="shell shell-wide">
+        <div className="shell" style={{ maxWidth: "68rem" }}>
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={REVEAL_VIEWPORT}
             variants={stagger}
-            className="text-center mb-8 sm:mb-16"
+            className="max-w-2xl mb-8 sm:mb-10"
           >
             <motion.h2
               variants={fadeUp}
-              className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl font-extrabold text-(--color-text-strong) mb-3 sm:mb-4"
+              className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl text-(--color-text-strong) mb-3 sm:mb-4"
             >
               Kimler İçin Tasarlandı?
             </motion.h2>
             <motion.p
               variants={fadeUp}
-              className="text-(--color-text-soft) text-[0.9375rem] sm:text-lg"
+              className="text-(--color-text-soft) text-[0.9375rem] sm:text-lg m-0"
             >
               Mimio, farklı uzmanlık alanlarının klinik iş akışına uyum sağlar.
             </motion.p>
           </motion.div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={REVEAL_VIEWPORT}
-            variants={staggerFast}
-            className="grid sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6"
+
+          {/* Sekme şeridi telefonda yatay kayar; ok tuşları listeyi dolaşır. */}
+          <div
+            role="tablist"
+            aria-label="Uzmanlık alanları"
+            onKeyDown={(e) => {
+              if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+              e.preventDefault();
+              const step = e.key === "ArrowRight" ? 1 : -1;
+              setPersona((i) => (i + step + PERSONAS.length) % PERSONAS.length);
+            }}
+            className="flex gap-2 overflow-x-auto no-scrollbar -mx-(--gutter) px-(--gutter) sm:mx-0 sm:px-0 pb-1"
           >
-            {PERSONAS.map((p) => {
-              const PersonaIcon = p.icon;
+            {PERSONAS.map((p, i) => {
+              const selected = persona === i;
               return (
-                <motion.div
+                <button
+                  type="button"
                   key={p.role}
-                  variants={narrow ? fadeUp : slideRight}
-                  whileHover={{ y: -6, transition: { duration: 0.3 } }}
-                  className="glass rounded-2xl sm:rounded-3xl p-[1.125rem] sm:p-6 relative overflow-hidden group flex flex-col"
+                  role="tab"
+                  id={`persona-tab-${i}`}
+                  aria-selected={selected}
+                  aria-controls="persona-panel"
+                  tabIndex={selected ? 0 : -1}
+                  onClick={() => setPersona(i)}
+                  className={`shrink-0 whitespace-nowrap text-[0.8125rem] sm:text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors ${
+                    selected
+                      ? "text-(--color-primary-ink)"
+                      : "text-(--color-text-soft) hover:text-(--color-text-strong)"
+                  }`}
+                  style={{
+                    background: selected ? "var(--color-primary-light)" : "transparent",
+                    border: `1px solid ${selected ? "var(--color-line-strong)" : "var(--color-line-soft)"}`,
+                  }}
                 >
-                  <div
-                    className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-3 sm:mb-4"
-                    style={{ background: p.accent, color: "#fff" }}
-                  >
-                    <PersonaIcon size={19} />
-                  </div>
-                  <h3 className="text-[0.9375rem] sm:text-sm font-bold text-(--color-text-strong) mb-1.5 sm:mb-2">
-                    {p.role}
-                  </h3>
-                  <p className="text-[0.8125rem] sm:text-sm text-(--color-text-soft) leading-relaxed mb-4 sm:mb-5 flex-1">
-                    {p.text}
-                  </p>
-                  <div className="pt-3 sm:pt-4 border-t border-(--color-line)">
-                    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-(--color-primary) bg-(--color-primary-light) px-2.5 py-1 rounded-full">
-                      <Sparkles size={10} />
-                      {p.module}
-                    </span>
-                  </div>
-                </motion.div>
+                  {p.role}
+                </button>
               );
             })}
-          </motion.div>
+          </div>
+
+          <div
+            id="persona-panel"
+            role="tabpanel"
+            aria-labelledby={`persona-tab-${persona}`}
+            className="glass rounded-2xl sm:rounded-3xl mt-4 p-5 sm:p-8"
+          >
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={PERSONAS[persona].role}
+                initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reducedMotion ? undefined : { opacity: 0, y: -6 }}
+                transition={{ duration: 0.28, ease }}
+                className="grid gap-5 sm:gap-8 md:grid-cols-[auto_1fr] items-start"
+              >
+                <div
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+                  style={{
+                    background: `color-mix(in srgb, ${PERSONAS[persona].accent} 12%, transparent)`,
+                    border: `1px solid color-mix(in srgb, ${PERSONAS[persona].accent} 26%, transparent)`,
+                  }}
+                >
+                  {(() => {
+                    const PersonaIcon = PERSONAS[persona].icon;
+                    return (
+                      <PersonaIcon
+                        size={22}
+                        aria-hidden="true"
+                        style={{ color: PERSONAS[persona].accent }}
+                      />
+                    );
+                  })()}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[0.9375rem] sm:text-lg text-(--color-text-body) leading-relaxed m-0 max-w-[58ch]">
+                    {PERSONAS[persona].text}
+                  </p>
+                  <p className="text-xs text-(--color-text-muted) m-0 mt-4 sm:mt-5">
+                    Çalıştığı ekran: {PERSONAS[persona].module}
+                  </p>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
       </section>
-
       {/* ══════════════════════ FAQ ══════════════════════ */}
       <FAQSection />
 
@@ -1218,16 +975,9 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             variants={stagger}
             className="flex flex-col items-center gap-5 sm:gap-8"
           >
-            <motion.div
-              variants={fadeUp}
-              className="inline-flex items-center gap-2 text-[10.5px] sm:text-xs font-bold text-(--color-primary) bg-(--color-primary-light) px-3 py-1.5 sm:px-4 sm:py-2 rounded-full"
-            >
-              <Zap size={12} />
-              Hemen Başla
-            </motion.div>
             <motion.h2
               variants={fadeUp}
-              className="text-[clamp(1.75rem,7.5vw,2.25rem)] md:text-6xl font-extrabold text-(--color-text-strong) leading-tight"
+              className="text-[clamp(1.75rem,7.5vw,2.25rem)] md:text-6xl text-(--color-text-strong) leading-tight"
             >
               Klinik Süreçlerinizi
               <br />
@@ -1248,26 +998,19 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 <button
                   type="button"
                   onClick={onRegister}
-                  className="group relative flex items-center gap-2.5 font-semibold px-6 sm:px-10 py-4 rounded-xl text-[0.9375rem] sm:text-base transition-all duration-300 hover:-translate-y-0.5 overflow-hidden w-full sm:w-auto justify-center"
-                  style={{
-                    background: "var(--color-primary)",
-                    color: "var(--color-text-inverse)",
-                    boxShadow: "var(--shadow-md)",
-                  }}
+                  className="btn-signature group flex items-center justify-center gap-2.5 font-semibold px-6 sm:px-10 py-4 rounded-xl text-[0.9375rem] sm:text-base w-full sm:w-auto"
                 >
-                  <span className="relative z-10 flex items-center gap-2.5">
-                    Ücretsiz Hesabını Oluştur
-                    <ArrowRight
-                      size={18}
-                      className="transition-transform group-hover:translate-x-1"
-                    />
-                  </span>
+                  Ücretsiz Başla
+                  <ArrowRight
+                    size={18}
+                    className="transition-transform group-hover:translate-x-1"
+                  />
                 </button>
               </Magnetic>
               <button
                 type="button"
                 onClick={onLogin}
-                className="text-sm font-semibold text-(--color-text-body) hover:text-(--color-text-strong) px-6 py-4 rounded-2xl border border-(--color-line) hover:border-(--color-primary)/30 transition-all w-full sm:w-auto text-center"
+                className="text-sm font-semibold text-(--color-text-body) hover:text-(--color-text-strong) px-6 py-4 rounded-xl border border-(--color-line) hover:border-(--color-primary)/30 transition-all w-full sm:w-auto text-center"
               >
                 Giriş Yap
               </button>
@@ -1306,15 +1049,8 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               <p className="text-sm text-(--color-text-soft) leading-relaxed">
                 Ergoterapistler için oyun temelli seans yönetimi: danışan
                 takibi, haftalık plan, ilerleme raporları ve kanıta dayalı
-                terapi oyunları — tek platformda.
+                terapi oyunları, tek platformda.
               </p>
-              <span className="inline-flex w-fit items-center gap-2 text-xs font-semibold text-(--color-text-muted) px-3 py-1.5 rounded-full border border-(--color-line) bg-(--color-surface-elevated)">
-                <span
-                  className="halo-dot w-1.5 h-1.5 rounded-full"
-                  style={{ color: "var(--color-accent-green)", background: "var(--color-accent-green)" }}
-                />
-                Tüm sistemler çalışıyor
-              </span>
             </div>
 
             {/* Keşfet — dokunma hedefleri zaten 44px'e yükseltiliyor; araya
@@ -1352,8 +1088,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 <button
                   type="button"
                   onClick={onRegister}
-                  className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-(--shadow-md) text-center"
-                  style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }}
+                  className="btn-signature text-sm font-semibold px-5 py-2.5 rounded-xl text-center"
                 >
                   Ücretsiz Başla
                 </button>
