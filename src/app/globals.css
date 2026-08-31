@@ -2383,8 +2383,11 @@ html[data-theme='light'] .floating-cta {
   padding: 0.35rem var(--gutter) 1.5rem;
   scroll-padding-inline-start: var(--gutter);
   -webkit-overflow-scrolling: touch;
-  mask-image: linear-gradient(90deg, transparent 0, #000 var(--gutter), #000 calc(100% - var(--gutter)), transparent 100%);
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--gutter), #000 calc(100% - var(--gutter)), transparent 100%);
+  /* Uç yumuşatma maskesi kaldırıldı. Kapaklar açık degrade kutularken maske
+     görünmüyordu; artık gerçek oyun tahtaları (koyu) taşındığı için maske
+     kartın sağ ucunu sayfanın açık zeminine karıştırıyor, görsel "kesilmiş"
+     gibi duruyordu. Şeridin kaydığını zaten ileri/geri düğmeleri ve alttaki
+     konum göstergesi söylüyor; sert kenar viewport ucuna denk geliyor. */
 }
 .h-snap::-webkit-scrollbar { display: none; }
 .h-snap > * { scroll-snap-align: start; flex-shrink: 0; }

@@ -11,6 +11,7 @@ import {
   AnimatePresence,
   motion,
   useMotionValueEvent,
+  useReducedMotion,
   useScroll,
   useSpring,
   useTransform,
@@ -278,6 +279,15 @@ const WALKTHROUGH = [
   },
 ] as const;
 
+/** Adım başına ayrılan kaydırma payı (dvh). Sabitlenen ekran payı hariç. */
+const STEP_TRAVEL_DVH = 70;
+
+/**
+ * Adım değişimi için gereken güvenlik payı (bant genişliğinin oranı).
+ * Sınırda ileri geri salınan kaydırmanın adımı zıplatmasını engeller.
+ */
+const STEP_HYSTERESIS = 0.12;
+
 export function StickyWalkthrough() {
   const ref = useRef<HTMLDivElement | null>(null);
   const { scrollYProgress } = useScroll({
@@ -286,27 +296,34 @@ export function StickyWalkthrough() {
   });
   const [active, setActive] = useState(0);
   const steps = WALKTHROUGH.length;
-  const smoothProgress = useSpring(0, { stiffness: 80, damping: 25, mass: 1 });
-
-  useEffect(() => {
-    return scrollYProgress.on("change", (v) => {
-      smoothProgress.set(v);
-    });
-  }, [scrollYProgress, smoothProgress]);
-
-  useEffect(() => {
-    return smoothProgress.on("change", (v) => {
-      const idx = Math.min(steps - 1, Math.floor(v * steps));
-      setActive((prev) => (prev === idx ? prev : idx));
-    });
-  }, [smoothProgress, steps]);
+  const reducedMotion = useReducedMotion();
+  /* Çubuğu besleyen değer: ham kaydırma hafifçe yumuşatılır — çubuk sürekli
+     aktığı için buradaki yay salınım değil yalnızca akıcılık üretir. */
+  const trackProgress = useSpring(scrollYProgress, { stiffness: 140, damping: 30, mass: 0.3 });
 
   /*
-    Adım başına ayrılan kaydırma payı. Dört adım × 110vh, ekranın üçte
-    birini neredeyse boş geçiyordu: adım listesi zaten tamamen görünür,
-    kaydırma yalnızca sağdaki önizlemeyi değiştiriyor. 58vh, her adıma
-    kendi anını veren en kısa mesafe.
+   * Hangi adımdayız?
+   *
+   * Önceki kurgu ham kaydırmayı bir yaya veriyor, adımı da yayın çıktısından
+   * `Math.floor` ile buluyordu. İki hata birden: yay sönümlenirken sınırın
+   * çevresinde salınıyor (2 → 3 → 2), ve `floor` sınırda histerezissiz
+   * olduğu için her salınım bir adım değişimi sayılıyordu. Bölüm bu yüzden
+   * kaydırırken takılıyordu.
+   *
+   * Artık eşik ham kaydırmadan okunur ve bir güvenlik payı taşır: adım
+   * ancak mevcut bandın HYSTERESIS kadar dışına çıkılınca değişir. Yumuşatma
+   * gerektiği yerde, yani geçişin kendisinde yapılır — sayının hesabında değil.
+   */
+  useMotionValueEvent(scrollYProgress, "change", (v) => {
+    const raw = v * steps;
+    setActive((prev) => {
+      if (raw >= prev + 1 + STEP_HYSTERESIS) return Math.min(steps - 1, Math.floor(raw));
+      if (raw < prev - STEP_HYSTERESIS) return Math.max(0, Math.floor(raw));
+      return prev;
+    });
+  });
 
+  /*
     Telefonda sabitleme (`sticky` + `h-screen` + `overflow-hidden`) tümüyle
     kapalı: tek sütuna inen liste + önizleme bir ekrana sığmadığı için ilk
     adım üst çubuğun altında, önizleme kartı da ortasından kesiliyordu.
@@ -318,7 +335,15 @@ export function StickyWalkthrough() {
       <div
         ref={ref}
         className="h-auto lg:h-[var(--wt-track)]"
-        style={{ "--wt-track": `${steps * 58}dvh` } as React.CSSProperties}
+        /*
+          Sabitlenen sahne bir ekran kaplar; `useScroll` ilerlemeyi
+          `ray - ekran` üzerinde ölçer. Ray `steps * 58dvh` iken gerçek pay
+          232 - 100 = 132dvh, yani adım başına 33dvh kalıyordu: ekranın
+          üçte biri kaydırmada bir adım tükeniyor, bazı adımlar göz
+          kırpmasında geçiyordu. Ekran payı formüle açıkça yazıldı ki
+          `STEP_TRAVEL_DVH` gerçekten adım başına düşen mesafe olsun.
+        */
+        style={{ "--wt-track": `calc(100dvh + ${steps * STEP_TRAVEL_DVH}dvh)` } as React.CSSProperties}
       >
         <div className="relative lg:sticky lg:top-0 lg:h-[100dvh] lg:max-h-[46rem] flex items-center overflow-visible lg:overflow-hidden max-lg:py-12">
           <div className="absolute inset-0 -z-10 dot-grid opacity-70" />
@@ -427,13 +452,24 @@ export function StickyWalkthrough() {
                   boxShadow: "var(--shadow-lg)",
                 }}
               >
-                <AnimatePresence mode="wait">
+                {/*
+                  `mode="wait"` çıkışı bitmeden girişi başlatmıyordu: adım
+                  başına 0.45s + 0.45s. Hızlı kaydırmada değişimler kuyruğa
+                  giriyor, önizleme kaydırmanın gerisinde kalıyordu. İki
+                  katman üst üste duruyor (ikisi de `absolute inset-0`), giriş
+                  ve çıkış aynı anda akıyor: geçiş yarı yarıya kısaldı ve
+                  kuyruk oluşmuyor.
+                */}
+                <AnimatePresence initial={false}>
                   <motion.div
                     key={WALKTHROUGH[active].preview}
-                    initial={{ opacity: 0, scale: 0.96, y: 12 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.98, y: -8 }}
-                    transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                    initial={reducedMotion ? false : { opacity: 0, scale: 0.985 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 1.015 }}
+                    transition={{
+                      duration: reducedMotion ? 0 : 0.42,
+                      ease: [0.22, 1, 0.36, 1],
+                    }}
                     className="absolute inset-0 p-5 sm:p-8"
                   >
                     <WalkthroughPreview
@@ -443,15 +479,20 @@ export function StickyWalkthrough() {
                   </motion.div>
                 </AnimatePresence>
 
-                {/* Progress bar */}
+                {/*
+                  Çubuk adım sayısından değil kaydırmanın kendisinden besleniyor:
+                  önceden `width` yüzdesi basılıyordu — düzen özelliği olduğu için
+                  animasyonlanmıyor, adım değişince zıplıyordu. `scaleX` dönüşümdür,
+                  kaydırmayla sürekli akar ve kullanıcıya bölümün neresinde
+                  olduğunu adım adım değil kesintisiz söyler.
+                */}
                 <div className="absolute bottom-3 left-3 right-3 h-1 rounded-full bg-white/10 overflow-hidden">
                   <motion.div
-                    className="h-full rounded-full"
+                    className="h-full w-full rounded-full origin-left"
                     style={{
                       background: WALKTHROUGH[active].accent,
-                      width: `${((active + 1) / steps) * 100}%`,
+                      scaleX: trackProgress,
                     }}
-                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                   />
                 </div>
               </div>
