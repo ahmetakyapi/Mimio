@@ -17,7 +17,6 @@ import {
   type MotionValue,
 } from "framer-motion";
 import {
-  Activity,
   BarChart3,
   Brain,
   ChevronLeft,
@@ -40,6 +39,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import Image from "next/image";
 import { PLATFORM_STATS } from "@/lib/platform-stats";
 
 const prefersReduced =
@@ -1006,18 +1006,26 @@ interface GameEntry {
   label: string;
   area: string;
   desc: string;
-  color: string;
-  icon: typeof Brain;
+  /** `scripts/capture-game-shots.mjs` ile uygulamadan yakalanan tahta. */
+  shot: string;
 }
-// Platformdaki gerçek 7 oyun (GAME_LABELS ile birebir aynı adlar)
+/*
+ * Platformdaki gerçek 7 oyun (GAME_LABELS ile birebir aynı adlar).
+ *
+ * Kapaklar önce her oyun için aynı degrade kutu + bir lucide ikonuydu:
+ * yedi kart yedi ayrı oyunu satıyor ama hiçbiri oyunun neye benzediğini
+ * göstermiyordu. Artık kapak, oyunun kendi tahtası — uygulamadan yakalanıyor.
+ * Tahtalar tema değişiminden bağımsız olarak koyu (bkz. THEME.md § Game
+ * Canvas), bu yüzden tek görsel iki temada da doğru duruyor.
+ */
 const EXTENDED_GAMES: readonly GameEntry[] = [
-  { key: "memory", label: "Sıra Hafızası", area: "Çalışma Belleği", desc: "Sırayla yanan kutuları hatırlayıp aynı sırayla tekrar et; çalışma belleğini güçlendir.", color: "var(--color-primary)", icon: Brain },
-  { key: "pairs", label: "Kart Eşle", area: "Görsel Hafıza", desc: "Kapalı kartları açarak eşleşen çiftleri bul; görsel hafızayı pekiştir.", color: "var(--color-accent-amber)", icon: Sparkles },
-  { key: "pulse", label: "Mavi Nabız", area: "El-Göz Koordinasyonu", desc: "Beliren hedeflere hızla dokunarak el-göz koordinasyonunu geliştir.", color: "var(--color-primary)", icon: Target },
-  { key: "route", label: "Komut Rotası", area: "Yön & Planlama", desc: "Gösterilen yön komutlarını doğru sırayla uygula; işlem hızını artır.", color: "var(--color-accent-green)", icon: Activity },
-  { key: "difference", label: "Fark Avcısı", area: "Görsel Ayrım", desc: "Benzer kartlar arasından farklı olanı bul; görsel ayrım becerisini destekle.", color: "var(--color-accent-red)", icon: Eye },
-  { key: "scan", label: "Hedef Tarama", area: "Seçici Dikkat", desc: "Hedef simgeyi ızgara içinde tara ve bul; seçici dikkati çalıştır.", color: "var(--color-accent-teal)", icon: Zap },
-  { key: "logic", label: "Dizi Mantık", area: "Yürütücü İşlevler", desc: "Matristeki örüntüyü çöz, eksik hücreyi tamamla; akıl yürütmeyi geliştir.", color: "var(--color-accent-violet)", icon: Puzzle },
+  { key: "memory", label: "Sıra Hafızası", area: "Çalışma belleği", desc: "Sırayla yanan kutuları hatırlayıp aynı sırayla tekrar et; çalışma belleğini güçlendir.", shot: "/games/memory.webp" },
+  { key: "pairs", label: "Kart Eşle", area: "Görsel hafıza", desc: "Kapalı kartları açarak eşleşen çiftleri bul; görsel hafızayı pekiştir.", shot: "/games/pairs.webp" },
+  { key: "pulse", label: "Mavi Nabız", area: "El-göz koordinasyonu", desc: "Beliren hedeflere hızla dokunarak el-göz koordinasyonunu geliştir.", shot: "/games/pulse.webp" },
+  { key: "route", label: "Komut Rotası", area: "Yön ve planlama", desc: "Gösterilen yön komutlarını doğru sırayla uygula; işlem hızını artır.", shot: "/games/route.webp" },
+  { key: "difference", label: "Fark Avcısı", area: "Görsel ayrım", desc: "Benzer kartlar arasından farklı olanı bul; görsel ayrım becerisini destekle.", shot: "/games/difference.webp" },
+  { key: "scan", label: "Hedef Tarama", area: "Seçici dikkat", desc: "Hedef simgeyi ızgara içinde tara ve bul; seçici dikkati çalıştır.", shot: "/games/scan.webp" },
+  { key: "logic", label: "Dizi Mantık", area: "Yürütücü işlevler", desc: "Matristeki örüntüyü çöz, eksik hücreyi tamamla; akıl yürütmeyi geliştir.", shot: "/games/logic.webp" },
 ];
 
 export function GamesCarousel({ onLogin }: { onLogin: () => void }) {
@@ -1091,8 +1099,7 @@ export function GamesCarousel({ onLogin }: { onLogin: () => void }) {
         </div>
 
         <div ref={scrollerRef} className="h-snap">
-          {EXTENDED_GAMES.map((g, gi) => {
-            const Icon = g.icon;
+          {EXTENDED_GAMES.map((g) => {
             return (
               <button
                 type="button"
@@ -1100,32 +1107,26 @@ export function GamesCarousel({ onLogin }: { onLogin: () => void }) {
                 onClick={onLogin}
                 className="group relative w-[300px] sm:w-[340px] text-left rounded-3xl border border-(--color-games-card-border) overflow-hidden bg-(--color-games-card-bg) transition-colors hover:border-(--color-primary)/40"
               >
-                <div
-                  className="aspect-[4/3] relative flex items-center justify-center overflow-hidden"
-                  style={{
-                    background: `radial-gradient(circle at 30% 20%, color-mix(in srgb, ${g.color} 20%, transparent), transparent 60%), linear-gradient(to bottom right, var(--color-games-tile-from), var(--color-games-tile-to))`,
-                  }}
-                >
-                  <span className="beam-sweep" style={{ animationDelay: `${(gi * 0.7) % 2}s` }} />
-                  <motion.div
-                    whileHover={{ scale: 1.08, rotate: -2 }}
-                    transition={{ duration: 0.35 }}
-                    className="relative w-24 h-24 rounded-[28px] flex items-center justify-center"
-                    style={{
-                      background: `linear-gradient(135deg, ${g.color}, color-mix(in srgb, ${g.color} 60%, transparent))`,
-                      boxShadow: `0 20px 40px color-mix(in srgb, ${g.color} 33%, transparent)`,
-                    }}
-                  >
-                    <Icon size={38} className="text-white drop-shadow-lg" />
-                  </motion.div>
-                  <span className="absolute top-4 left-4 text-xs font-semibold text-(--color-games-text) bg-(--color-games-badge-bg) backdrop-blur-md px-3 py-1.5 rounded-full border border-(--color-games-badge-border)">
-                    {g.area}
-                  </span>
+                {/* Beceri alanı etiketi görselin üstünde değil altında:
+                    gerçek bir görüntünün üzerine rozet basmak tahtanın kendisini
+                    örtüyor ve etiketin okunurluğu tahtanın o anki durumuna
+                    bağlı kalıyordu. */}
+                <div className="aspect-[4/3] relative overflow-hidden bg-(--color-games-tile-to)">
+                  <Image
+                    src={g.shot}
+                    alt={`${g.label} oyununun tahtası`}
+                    fill
+                    sizes="(max-width: 639px) 300px, 340px"
+                    className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                  />
                   <span className="absolute bottom-4 right-4 w-11 h-11 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <Play size={16} className="text-white ml-0.5" />
+                    <Play size={16} className="text-white ml-0.5" aria-hidden="true" />
                   </span>
                 </div>
                 <div className="p-5">
+                  <p className="text-xs font-semibold text-(--color-games-text-soft) m-0 mb-1">
+                    {g.area}
+                  </p>
                   <h3 className="font-bold text-(--color-games-text) text-lg mb-2">
                     {g.label}
                   </h3>
