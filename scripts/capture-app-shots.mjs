@@ -32,7 +32,10 @@ const OUT_DIR = path.join(process.cwd(), "public", "app");
 const OUTPUT_WIDTH = 2200;
 const WEBP_QUALITY = 80;
 
-const SHOTS = [{ key: "dashboard", nav: null, label: "Bugün" }];
+const SHOTS = [
+  { key: "dashboard", nav: null, label: "Bugün" },
+  { key: "weekly-plan", nav: "Haftalık Plan", label: "Haftalık Plan" },
+];
 
 async function login(context, theme) {
   const page = await context.newPage();

@@ -677,51 +677,59 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             </motion.div>
 
             {/*
-              Sağ — iki katmanlı sahne.
+              Sağ — geniş plan + okunabilir detay.
 
-              Tek başına duran seans kartı ürünün yarısını anlatıyordu:
-              terapistin ölçtüğü şeyi gösteriyor ama çocuğun ne gördüğünü
-              hiç göstermiyordu. İki katman bu iki yarıyı üst üste koyuyor:
-              arkada oyunun gerçek tahtası (koyu, dokulu), önde ölçüm kartı
-              (cam, açık). Karttaki oyun adı ile arkadaki tahta aynı oyun —
-              "Sıra Hafızası" yazan kart, Sıra Hafızası tahtasının önünde.
+              Kahraman görseli önce tek bir seans kartıydı: dürüst ama sessiz,
+              ürünün ne kadar iş yaptığını göstermiyordu. Ardından kartın
+              arkasına oyun tahtası kondu; derinlik geldi ama sayfa hâlâ
+              "bu çalışan bir uygulama" demiyordu.
 
-              İkisi de gerçek: tahta `capture-game-shots.mjs` ile
-              uygulamadan yakalandı, kart da gerçek bir Corsi kaydının
-              alanlarını taşıyor. Sahne süslenmiş değil, katmanlanmış.
+              Şimdi arkada panelin kendisi duruyor — gerçek ekran görüntüsü,
+              `capture-app-shots.mjs` ile demo hesabına girilerek çekildi,
+              ekrandaki her sayı seed verisinden geliyor. Bu ölçekte metni
+              okunmuyor; okunması da gerekmiyor: zengin bir doku ve "çalışan
+              ürün" sinyali taşıyor. Okunacak parça önde duran seans kartı.
+
+              Geniş plan + detay kadrajı: panel ürünün ölçeğini, kart onun
+              ürettiği asıl şeyi söylüyor. İkisi de gerçek; sahne kurgulanmadı,
+              kadrajlandı.
             */}
             <div className="relative">
-              {/* İmza degradesinden çok soluk bir hâle — iki katmanı birbirine
-                  bağlayan zemin. Degradenin kendisi yalnızca üç yerde
-                  görünebilir (THEME.md), bu yüzden burada renk %8'in altında
-                  kalıyor ve bir yüzey değil ışık olarak okunuyor. */}
+              {/* İmza degradesinden çok soluk bir hâle — iki katmanı bağlayan
+                  zemin. Renk %8'in altında kaldığı için yüzey değil ışık olarak
+                  okunuyor (degrade yalnızca üç yerde, bkz. THEME.md). */}
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute -inset-x-10 -inset-y-12 -z-10 hidden sm:block"
+                className="pointer-events-none absolute -inset-x-12 -inset-y-14 -z-10 hidden sm:block"
                 style={{
                   background:
-                    "radial-gradient(52% 46% at 72% 26%, color-mix(in srgb, var(--color-signature-from) 7%, transparent), transparent 70%), radial-gradient(46% 42% at 24% 74%, color-mix(in srgb, var(--color-signature-to) 6%, transparent), transparent 72%)",
+                    "radial-gradient(52% 46% at 70% 22%, color-mix(in srgb, var(--color-signature-from) 8%, transparent), transparent 70%), radial-gradient(46% 42% at 26% 78%, color-mix(in srgb, var(--color-signature-to) 7%, transparent), transparent 72%)",
                 }}
               />
 
-              {/* Arka katman — çocuğun gördüğü tahta */}
+              {/* Arka katman — panelin geniş planı. Sağdan taşar: ürünün
+                  kadrajın dışında da devam ettiğini söyleyen bir kesim. */}
               <motion.div
                 aria-hidden="true"
-                initial={reducedMotion ? false : { opacity: 0, y: 26, rotate: 4 }}
-                animate={{ opacity: 1, y: 0, rotate: 3.2 }}
-                transition={{ duration: 0.85, delay: 0.12, ease }}
+                initial={reducedMotion ? false : { opacity: 0, y: 28 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.9, delay: 0.1, ease }}
                 style={{ y: parallaxBoardY }}
-                className="hidden sm:block absolute right-0 -top-5 w-[70%] max-w-[23rem] rounded-2xl overflow-hidden"
+                className="hidden sm:block absolute left-[8%] -top-2 w-[122%] rounded-2xl overflow-hidden"
               >
-                <Image
-                  src="/games/memory.webp"
-                  alt=""
-                  width={760}
-                  height={657}
-                  priority
-                  sizes="(max-width: 1023px) 46vw, 368px"
-                  className="w-full h-auto block"
-                />
+                {mounted ? (
+                  <Image
+                    src={theme === "dark" ? "/app/dashboard-dark.webp" : "/app/dashboard-light.webp"}
+                    alt=""
+                    width={2200}
+                    height={1375}
+                    priority
+                    sizes="(max-width: 1023px) 80vw, 760px"
+                    className="w-full h-auto block"
+                  />
+                ) : (
+                  <div className="w-full aspect-[2200/1375] bg-(--color-surface)" />
+                )}
                 <span
                   aria-hidden="true"
                   className="absolute inset-0 rounded-2xl"
@@ -729,13 +737,13 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 />
               </motion.div>
 
-              {/* Ön katman — terapistin ölçümü */}
+              {/* Ön katman — okunacak detay */}
               <motion.div
                 initial={{ opacity: 0, y: 32 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.25, ease }}
+                transition={{ duration: 0.8, delay: 0.28, ease }}
                 style={{ y: parallaxMockY }}
-                className="relative mx-auto sm:mx-0 sm:mt-[7.5rem] sm:mr-[12%] lg:mr-[16%]"
+                className="relative mx-auto sm:mx-0 sm:mt-[9.5rem] sm:w-[88%] lg:w-[84%]"
               >
                 <HeroSessionCard />
               </motion.div>
@@ -907,9 +915,10 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
           görüntüsünün gerçek olduğunu değil, öyle görünmeye çalıştığını
           söylüyordu.
 
-          Bölüm, yetenekleri sayan bento ile onları dört adımda anlatan tur
-          arasında duruyor: "hepsi tek yerde" dedikten sonra o yerin neye
-          benzediğini gösterir, sonra tur ayrıntıya iner. */}
+          Ekran kahramandakinden farklı: kahraman paneli (Bugün) gösteriyor,
+          burası haftalık planı. Aynı görseli iki kez basmak sayfayı
+          tekrara düşürürdü; iki ekran ürünün iki ayrı sorusunu yanıtlıyor —
+          "bugün ne var" ve "haftayı nasıl kuruyorum". */}
       <section className="section max-sm:py-10! relative overflow-hidden">
         <div className="shell shell-wide">
           <motion.div
@@ -923,14 +932,14 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               variants={fadeUp}
               className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl text-(--color-text-strong) mb-3 sm:mb-4"
             >
-              Seansın Sabahı <span className="accent-line">Tek Ekranda</span>
+              Haftayı <span className="accent-line">Bir Bakışta</span> Kurun
             </motion.h2>
             <motion.p
               variants={fadeUp}
               className="text-(--color-text-soft) text-[0.9375rem] sm:text-lg m-0"
             >
-              Günün akışı, sıradaki danışan, ortalama skorun eğilimi ve plana
-              dokunması gereken uyarılar.
+              Yedi günün tamamı, danışan başına slotlar, alan dengesi ve
+              hedefin altında kalan alanı söyleyen öneri motoru.
             </motion.p>
           </motion.div>
 
@@ -947,8 +956,8 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             >
               {mounted ? (
                 <Image
-                  src={theme === "dark" ? "/app/dashboard-dark.webp" : "/app/dashboard-light.webp"}
-                  alt="Mimio panelinde bir günün akışı: zaman çizelgesi, sıradaki seans ve gelişim uyarıları"
+                  src={theme === "dark" ? "/app/weekly-plan-dark.webp" : "/app/weekly-plan-light.webp"}
+                  alt="Mimio haftalık plan ekranı: yedi günlük takvim, alan dengesi ve öneri motoru"
                   width={2200}
                   height={1375}
                   sizes="(max-width: 767px) 100vw, (max-width: 1279px) 90vw, 1200px"
