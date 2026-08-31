@@ -38,6 +38,7 @@ import {
   Target,
   TrendingUp,
   Users,
+  X,
   Zap,
 } from "lucide-react";
 import Image from "next/image";
@@ -1017,20 +1018,16 @@ export function FloatingCTA({ onRegister }: FloatingCTAProps) {
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           className="floating-cta"
         >
-          <button
-            type="button"
-            onClick={onRegister}
-            className="btn-signature flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-full"
-          >
+          <button type="button" onClick={onRegister} className="floating-cta-action">
             Ücretsiz Başla
           </button>
           <button
             type="button"
             onClick={() => setDismissed(true)}
-            aria-label="Bu kısayolu kapat"
-            className="w-6 h-6 rounded-full flex items-center justify-center text-(--color-text-muted) hover:text-(--color-text-strong) hover:bg-(--color-surface-elevated) transition-colors"
+            aria-label="Bu kısayolu gizle"
+            className="floating-cta-dismiss"
           >
-            <Minus size={12} />
+            <X size={14} aria-hidden="true" />
           </button>
         </motion.div>
       )}

@@ -2324,25 +2324,55 @@ html[data-theme='light'] .section-dot-label {
 
 /* Yüzen CTA — sağ alt köşede; okuma sütununu kapatmaz.
    Geniş ekranda kenar boşluğuna, dar ekranda alt köşeye oturur. */
+/* Yüzen kayıt kısayolu.
+
+   Önceki hâl iki kabuktu: dışta cam bir kap, içinde ayrı bir degrade düğme,
+   yanında da tek başına duran bir tire. Kapta bir zamanlar "Ücretsiz" etiketi
+   vardı; etiket kalkınca kap boşta kaldı ve kısayol "düğmenin içindeki düğme"
+   gibi okunmaya başladı. Artık tek bir yüzey: degrade pilin kendisi. Kapatma
+   aynı pilin içinde, kılcal bir çizgiyle ayrılmış durumda — ayrı bir nesne
+   değil, aynı nesnenin ikinci eylemi. */
 .floating-cta {
   position: fixed;
   right: 1rem;
   bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
   z-index: 44;
   display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.45rem 0.5rem 0.45rem 0.9rem;
+  align-items: stretch;
   border-radius: 999px;
-  background: rgba(17,22,20,0.78);
-  border: 1px solid var(--color-line);
-  backdrop-filter: blur(18px);
-  box-shadow: 0 20px 48px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.05) inset;
+  overflow: hidden;
+  background: var(--gradient-signature-ink);
+  box-shadow: var(--shadow-glow);
 }
-html[data-theme='light'] .floating-cta {
-  background: rgba(255,255,255,0.85);
-  box-shadow: 0 20px 48px rgba(43, 98, 245,0.18), 0 0 0 1px rgba(255,255,255,0.9) inset;
+.floating-cta-action {
+  padding: 0.75rem 1.1rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #ffffff;
+  white-space: nowrap;
+  transition: background-color 0.18s ease;
 }
+.floating-cta-action:hover { background: rgba(255,255,255,0.12); }
+/* Kapatma dokunma hedefi 44px'i tutar: yükseklik pilden, genişlik buradan. */
+.floating-cta-dismiss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  color: rgba(255,255,255,0.7);
+  border-left: 1px solid rgba(255,255,255,0.24);
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+.floating-cta-dismiss:hover { color: #ffffff; background: rgba(255,255,255,0.14); }
+
+/* Yüksek kontrast temasında degrade kapalı; pil düz birincil renge düşer. */
+html[data-theme='high-contrast'] .floating-cta {
+  background: var(--color-primary);
+  border: 1px solid var(--color-line-strong);
+}
+html[data-theme='high-contrast'] .floating-cta-action,
+html[data-theme='high-contrast'] .floating-cta-dismiss { color: var(--color-text-inverse); }
 
 /* İmleç spotu (.cursor-spotlight) kaldırıldı: 520px'lik bulanık daire,
    açık temada `mix-blend-mode: multiply` ile zemine gri bir leke basıyor,
