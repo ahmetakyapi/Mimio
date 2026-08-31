@@ -78,12 +78,15 @@ export function Avatar({
   return (
     <span
       aria-hidden="true"
-      className={`grid place-items-center shrink-0 font-bold text-white ${className}`}
+      className={`grid place-items-center shrink-0 font-bold ${className}`}
       style={{
         width: size,
         height: size,
         borderRadius: radius,
         background: `var(--gradient-avatar-${variant})`,
+        /* Beyaz sabit yazılıydı; yüksek kontrast temasında avatar zemini sarıya
+           döndüğü için baş harf 1.07:1'e düşüp kayboluyordu. */
+        color: "var(--color-on-brand)",
         /* Oran tek başına küçük avatarlarda baş harfi 9-10px'e düşürüyordu;
            degradenin üstünde o punto okunmuyor. 11px taban her boyutta
            harfi okunur tutuyor, 30px'in üstünde oran yine devralıyor. */

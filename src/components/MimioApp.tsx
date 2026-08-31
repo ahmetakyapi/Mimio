@@ -2145,8 +2145,8 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             type="button"
             onClick={() => setActiveAppView("settings")}
             aria-label={`${activeTherapist?.displayName ?? "Hesap"} — hesap ve ayarlar`}
-            className="grid place-items-center shrink-0 cursor-pointer border-none font-bold text-white text-[11px]"
-            style={{ width: 30, height: 30, borderRadius: 10, background: "var(--gradient-avatar-3)" }}
+            className="grid place-items-center shrink-0 cursor-pointer border-none font-bold text-[11px]"
+            style={{ width: 30, height: 30, borderRadius: 10, background: "var(--gradient-avatar-3)", color: "var(--color-on-brand)" }}
           >
             {(activeTherapist?.displayName ?? "T").trim()[0]?.toLocaleUpperCase("tr-TR")}
           </button>

@@ -59,6 +59,16 @@
   /* Avatar degradeleri — danışan kimliğinden türeyen dört sabit varyant.
      Rastgele değil: id'nin hash'i seçtiği için aynı kişi her ekranda aynı
      rengi taşır ve terapist listeyi renkten tanıyabilir. */
+  /*
+   * Marka renkli bir yüzeyin üstündeki metin.
+   *
+   * Avatar, rozet ve imza döşemeleri "beyaz" değerini sabit yazıyordu. Mavi
+   * zeminde doğru sonuç veriyordu ama yüksek kontrast temasında birincil renk
+   * sarıya (#ffff00) dönüyor ve beyaz metin 1.07:1'e düşüyor — yani okunmuyor.
+   * Renk artık temadan geliyor.
+   */
+  --color-on-brand: #ffffff;
+
   --gradient-avatar-1: linear-gradient(135deg, #4d7dff, #2ad6ef);
   --gradient-avatar-2: linear-gradient(135deg, #19d19b, #2ad6ef);
   --gradient-avatar-3: linear-gradient(135deg, #9a80ff, #4d7dff);
@@ -443,6 +453,7 @@ html[data-theme='light'] {
   --gradient-signature-soft: linear-gradient(135deg, rgba(43, 98, 245, 0.13), rgba(23, 194, 224, 0.10));
   --gradient-bar: linear-gradient(90deg, #2b62f5, #17c2e0);
 
+  --color-on-brand: #ffffff;
   --gradient-avatar-1: linear-gradient(135deg, #2b62f5, #17c2e0);
   --gradient-avatar-2: linear-gradient(135deg, #12b886, #17c2e0);
   --gradient-avatar-3: linear-gradient(135deg, #7c5cff, #2b62f5);
@@ -531,7 +542,10 @@ html[data-theme='high-contrast'] {
 
   --color-primary: #ffff00;
   --color-primary-hover: #e6e600;
-  --color-primary-light: rgba(255, 255, 0, 0.15);
+  /* Opak tint. Saydam olduğunda iç içe geçen yüzeylerde (etkin gezinme
+     satırı + içindeki sayaç rozeti) üst üste binip sarıya yaklaşıyor, üstündeki
+     sarı metin 1.05:1'e düşüyordu. Opak değer istiflenemez. */
+  --color-primary-light: #2b2b00;
   --color-primary-ink: #ffff00;
 
   /* Degrade ve doku yüksek kontrastta kapalı: ikisi de kenar bulanıklaştırır. */
@@ -541,6 +555,8 @@ html[data-theme='high-contrast'] {
   --gradient-signature-ink: none;
   --gradient-signature-soft: none;
   --gradient-bar: #ffff00;
+  /* Sarı zeminde tek okunur seçenek siyah: 19.6:1. */
+  --color-on-brand: #000000;
   --gradient-avatar-1: #ffff00;
   --gradient-avatar-2: #ffff00;
   --gradient-avatar-3: #ffff00;
@@ -2433,6 +2449,34 @@ html[data-theme='high-contrast'] .floating-cta {
 }
 html[data-theme='high-contrast'] .floating-cta-action,
 html[data-theme='high-contrast'] .floating-cta-dismiss { color: var(--color-text-inverse); }
+
+/*
+ * İmza degradesini zemin olarak kullanan yüzeyler.
+ *
+ * Yüksek kontrastta `--gradient-signature*` tokenları `none`. Zemin olarak
+ * kullanıldıklarında yüzey tümüyle kayboluyor, üstündeki beyaz metin de
+ * sayfanın zeminine düşüyordu: düğme düğme gibi durmuyor, avatar karosu hiç
+ * görünmüyordu. Degrade yerine düz birincil renk, metin de o rengin üstünde
+ * okunan renk.
+ */
+html[data-theme='high-contrast'] .btn-signature,
+html[data-theme='high-contrast'] .tile-signature,
+html[data-theme='high-contrast'] .tile-signature-ink {
+  background: var(--color-primary);
+  color: var(--color-on-brand);
+}
+html[data-theme='high-contrast'] .nav-active {
+  background: var(--color-primary-light);
+  color: var(--color-primary-ink);
+}
+/* Degrade yüzeyi üstündeki metin yardımcıları beyazı sabit yazıyor; o yüzey
+   yüksek kontrastta sarıya döndüğü için metin de tersine çevrilmeli. */
+html[data-theme='high-contrast'] .on-signature,
+html[data-theme='high-contrast'] .on-signature-soft,
+html[data-theme='high-contrast'] .tile-signature-ink *,
+html[data-theme='high-contrast'] .tile-signature * {
+  color: var(--color-on-brand);
+}
 
 /* İmleç spotu (.cursor-spotlight) kaldırıldı: 520px'lik bulanık daire,
    açık temada `mix-blend-mode: multiply` ile zemine gri bir leke basıyor,

@@ -92,8 +92,8 @@ export function SettingsScreen({
           <Eyebrow className="mb-3.5">Profil</Eyebrow>
           <div className="flex items-center gap-3 mb-4">
             <span
-              className="grid place-items-center shrink-0 font-bold text-white text-[15px]"
-              style={{ width: 46, height: 46, borderRadius: 14, background: "var(--gradient-avatar-3)" }}
+              className="grid place-items-center shrink-0 font-bold text-[15px]"
+              style={{ width: 46, height: 46, borderRadius: 14, background: "var(--gradient-avatar-3)", color: "var(--color-on-brand)" }}
             >
               {initials(therapist?.displayName ?? "T")}
             </span>

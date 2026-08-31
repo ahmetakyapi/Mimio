@@ -570,8 +570,8 @@ function AgendaRow({
           <span className="font-bold text-[13px] text-(--color-text-strong) truncate">{item.clientName}</span>
           {isNext && (
             <span
-              className="numeral text-[9px] font-semibold text-white shrink-0"
-              style={{ padding: "2px 6px", borderRadius: 5, background: "var(--color-primary)" }}
+              className="numeral text-[9px] font-semibold shrink-0"
+              style={{ padding: "2px 6px", borderRadius: 5, background: "var(--color-primary)", color: "var(--color-on-brand)" }}
             >
               SIRADAKİ
             </span>

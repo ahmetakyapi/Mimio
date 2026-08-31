@@ -347,8 +347,8 @@ export function TopBar({
                 ama ekran okuyucunun adı iki kez okumaması için işaretlenmeli. */}
             <span
               aria-hidden="true"
-              className="grid place-items-center shrink-0 font-bold text-white text-[11.5px]"
-              style={{ width: 27, height: 27, borderRadius: 9, background: "var(--gradient-avatar-3)" }}
+              className="grid place-items-center shrink-0 font-bold text-[11.5px]"
+              style={{ width: 27, height: 27, borderRadius: 9, background: "var(--gradient-avatar-3)", color: "var(--color-on-brand)" }}
             >
               {initials(therapistName)}
             </span>
