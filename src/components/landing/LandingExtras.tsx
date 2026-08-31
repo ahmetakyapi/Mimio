@@ -283,6 +283,18 @@ const WALKTHROUGH = [
 /** Adım başına ayrılan kaydırma payı (dvh). Sabitlenen ekran payı hariç. */
 const STEP_TRAVEL_DVH = 70;
 
+/** Kendiliğinden ilerlemede bir adımın ekranda kalma süresi. */
+const STEP_DURATION_MS = 4600;
+
+/**
+ * Kaydırmadan sonra zamanlayıcının susacağı süre.
+ *
+ * İkisi aynı anda çalışırsa kullanıcı kaydırırken adım altından kayıyor.
+ * Kaydırma her zaman önceliklidir; durduktan bu kadar sonra tur kaldığı
+ * yerden kendi kendine devam eder.
+ */
+const SCROLL_GRACE_MS = 2600;
+
 /**
  * Adım değişimi için gereken güvenlik payı (bant genişliğinin oranı).
  * Sınırda ileri geri salınan kaydırmanın adımı zıplatmasını engeller.
@@ -298,9 +310,20 @@ export function StickyWalkthrough() {
   const [active, setActive] = useState(0);
   const steps = WALKTHROUGH.length;
   const reducedMotion = useReducedMotion();
-  /* Çubuğu besleyen değer: ham kaydırma hafifçe yumuşatılır — çubuk sürekli
-     aktığı için buradaki yay salınım değil yalnızca akıcılık üretir. */
-  const trackProgress = useSpring(scrollYProgress, { stiffness: 140, damping: 30, mass: 0.3 });
+
+  /* Bölüm ekranda mı? Zamanlayıcı yalnızca buradayken çalışır; sayfanın
+     başka yerindeyken görünmeyen bir turu ilerletmenin anlamı yok. */
+  const [inView, setInView] = useState(false);
+  /* Son kaydırma anı. Ref, çünkü değeri her değiştiğinde yeniden render
+     etmenin gereği yok — yalnızca zamanlayıcı okuyor. */
+  const lastScrollAt = useRef(0);
+
+  /* İlerleme çubuğu adım sayısını gösterir. Kaydırmaya bağlıyken zamanlayıcı
+     adımı değiştirdiğinde çubuk yerinde kalıyor, ikisi birbirini yalanlıyordu. */
+  const stepProgress = useSpring(1 / steps, { stiffness: 120, damping: 26, mass: 0.4 });
+  useEffect(() => {
+    stepProgress.set((active + 1) / steps);
+  }, [active, steps, stepProgress]);
 
   /*
    * Hangi adımdayız?
@@ -316,13 +339,57 @@ export function StickyWalkthrough() {
    * gerektiği yerde, yani geçişin kendisinde yapılır — sayının hesabında değil.
    */
   useMotionValueEvent(scrollYProgress, "change", (v) => {
+    lastScrollAt.current = Date.now();
     const raw = v * steps;
+    /*
+     * Mutlak indekse atlamak yerine tek adım ilerleniyor. Zamanlayıcı adımı
+     * kaydırma konumundan bağımsız değiştirebildiği için `Math.floor(raw)`
+     * kullanıcı yeniden kaydırdığı anda turu bambaşka bir adıma sıçratıyordu.
+     * Tek adımlık hareket iki mekanizmayı birbirine ekliyor: kaydırma nereden
+     * bırakıldıysa oradan devam eder. Olaylar saniyede onlarca kez geldiği
+     * için hızlı kaydırma yine hızlı ilerliyor.
+     */
     setActive((prev) => {
-      if (raw >= prev + 1 + STEP_HYSTERESIS) return Math.min(steps - 1, Math.floor(raw));
-      if (raw < prev - STEP_HYSTERESIS) return Math.max(0, Math.floor(raw));
+      const target = Math.min(steps - 1, Math.max(0, Math.floor(raw)));
+      /* Büyük sıçrama (kaydırma çubuğunu sürükleme, End tuşu) tek adımla
+         takip edilemez; orada konuma uyulur. Küçük hareketlerde tek adım. */
+      if (Math.abs(target - prev) >= 2) return target;
+      if (raw >= prev + 1 + STEP_HYSTERESIS) return Math.min(steps - 1, prev + 1);
+      if (raw < prev - STEP_HYSTERESIS) return Math.max(0, prev - 1);
       return prev;
     });
   });
+
+  /*
+   * Kendiliğinden ilerleme.
+   *
+   * Tur yalnızca kaydırmaya bağlıyken, sayfayı okuyup duran biri ilk adımda
+   * kalıyordu — dört adımın üçü hiç görünmüyordu. Zamanlayıcı bölüm ekranda
+   * ve kullanıcı kaydırmıyorken devreye giriyor, son adımdan başa dönüyor.
+   *
+   * `prefers-reduced-motion` altında kapalı: kendiliğinden değişen içerik
+   * tam olarak bu tercihin kapsadığı şey. Sekme arkada olduğunda da durur.
+   */
+  useEffect(() => {
+    if (reducedMotion || !inView) return;
+    const id = window.setInterval(() => {
+      if (document.hidden) return;
+      if (Date.now() - lastScrollAt.current < SCROLL_GRACE_MS) return;
+      setActive((prev) => (prev + 1) % steps);
+    }, STEP_DURATION_MS);
+    return () => window.clearInterval(id);
+  }, [reducedMotion, inView, steps]);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => setInView(entry.isIntersecting),
+      { threshold: 0.2 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   /*
     Telefonda sabitleme (`sticky` + `h-screen` + `overflow-hidden`) tümüyle
@@ -492,7 +559,7 @@ export function StickyWalkthrough() {
                     className="h-full w-full rounded-full origin-left"
                     style={{
                       background: WALKTHROUGH[active].accent,
-                      scaleX: trackProgress,
+                      scaleX: stepProgress,
                     }}
                   />
                 </div>
