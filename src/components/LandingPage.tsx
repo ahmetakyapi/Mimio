@@ -238,6 +238,31 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
    */
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  /*
+   * Aurora sürüklenmesini kahraman bölümüne bağla.
+   *
+   * Katman sabit konumlu, yani animasyon sayfanın her yerinde çalışıyor ve
+   * compositor hiç boşa çıkmıyordu. Kahraman ekrandan çıkınca duraklatılır;
+   * geri dönüldüğünde kaldığı yerden devam eder.
+   */
+  useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) root.removeAttribute("data-aurora");
+        else root.setAttribute("data-aurora", "paused");
+      },
+      { threshold: 0 },
+    );
+    obs.observe(el);
+    return () => {
+      obs.disconnect();
+      root.removeAttribute("data-aurora");
+    };
+  }, []);
   const { theme, toggle: toggleTheme } = useTheme();
   const [scrolled, setScrolled] = useState(false);
 

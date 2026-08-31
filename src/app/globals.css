@@ -586,6 +586,18 @@ body::before {
   animation: mim-drift 24s ease-in-out infinite;
 }
 
+/*
+ * Aurora yalnızca kahraman bölümü ekrandayken sürüklenir.
+ *
+ * Katman `position: fixed` olduğu için sonsuz animasyon sayfa boşta dururken
+ * bile compositor'ı sürekli yeni kare üretmeye zorluyordu — zayıf GPU'da hem
+ * kasılma hem pil. Sürüklenme 24 saniyede %2'lik bir kayma; kahramanın
+ * altında durması fark edilmiyor, zemin yine yerinde duruyor.
+ */
+html[data-aurora="paused"] body::before {
+  animation-play-state: paused;
+}
+
 html[data-theme='light'] body::before {
   background: var(--aurora-light);
 }
