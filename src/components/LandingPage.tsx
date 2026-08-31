@@ -33,8 +33,7 @@ import {
   Stethoscope,
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
-import { HeroSessionCard } from "./landing/HeroSessionCard";
-import { HeroWeekPanel } from "./landing/HeroWeekPanel";
+import { WeekRhythmPanel } from "./landing/WeekRhythmPanel";
 import { BlockMark, BrandLockup } from "./brand/BlockMark";
 import { HERO_STATS, PLATFORM_STATS } from "@/lib/platform-stats";
 import {
@@ -324,9 +323,6 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
   const heroY = useTransform(heroEased, [0, 1], [0, reducedMotion ? 0 : -72]);
   const heroOpacity = useTransform(heroEased, [0, 1], [1, reducedMotion ? 1 : 0.62]);
   const parallaxMockY = useTransform(heroEased, [0, 1], [0, reducedMotion ? 0 : 54]);
-  /* Arka katman daha çok kayar: iki yüzey arasındaki hız farkı derinliği
-     kurar. Tek hızda kayarlarsa kompozisyon düz bir resim gibi okunur. */
-  const parallaxBoardY = useTransform(heroEased, [0, 1], [0, reducedMotion ? 0 : 104]);
 
   /*
    * Üst çubuğun durumu `scroll` olayıyla değil Motion'ın kendi değeriyle
@@ -678,61 +674,65 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             </motion.div>
 
             {/*
-              Sağ — geniş plan + okunabilir detay.
+              Sağ — tek görsel: ürünün kendisi.
 
-              Kahraman görseli önce tek bir seans kartıydı: dürüst ama sessiz,
-              ürünün ne kadar iş yaptığını göstermiyordu. Ardından kartın
-              arkasına oyun tahtası kondu; derinlik geldi ama sayfa hâlâ
-              "bu çalışan bir uygulama" demiyordu.
+              Bu bölge sırayla üç şey denedi. Önce tek bir seans kartı: dürüst
+              ama sessiz. Sonra kartın arkasına oyun tahtası, ardından panelin
+              ekran görüntüsü: derinlik geldi ama küçültülmüş ekran görüntüsü
+              okunmuyor, kenar bar ve yarım kalmış kartlar gürültüye dönüşüyordu.
+              Sonra iki çizilmiş yüzey üst üste: temizdi ama kahraman iki şeyi
+              birden söylemeye çalışıyordu.
 
-              Ardından arkaya panelin ekran görüntüsü kondu. O da tutmadı:
-              küçültülmüş bir ekran görüntüsü kahraman ölçeğinde okunmuyor,
-              kenar bar ve yarım kalmış kartlar parça parça bir gürültüye
-              dönüşüyordu — tasarlanmış bir sahne değil, arkaya yapıştırılmış
-              bir resim gibi duruyordu.
+              Şimdi tek şey söylüyor. Ekran görüntüsü tam genişlikte basıldığı
+              için okunuyor; katman yok, kadraj yok, ürünün kendisi. Haftanın
+              ritmini anlatan yüzey kendi bölümüne indi.
 
-              Şimdi arka yüzey de kahramana özel çiziliyor: bir haftanın
-              ritmi (bkz. HeroWeekPanel). İki yüzey tek bir cümle kuruyor —
-              arkada haftanın tamamı, önde o haftanın içinden tek bir seansın
-              kaydı. İkisi de ürünün ürettiği şeyi kendi ölçeğinde çiziyor,
-              ekran görüntüsü taklidi yapmıyor.
+              Görüntü `capture-app-shots.mjs` ile demo hesabına gerçekten
+              girilerek çekiliyor; ekrandaki her sayı seed verisinden geliyor.
+              Pencere çerçevesi bilerek yok: çerçeve ekran görüntüsünün gerçek
+              olduğunu değil, öyle görünmeye çalıştığını söylüyordu.
             */}
-            <div className="relative">
-              {/* İmza degradesinden çok soluk bir hâle — iki katmanı bağlayan
-                  zemin. Renk %8'in altında kaldığı için yüzey değil ışık olarak
-                  okunuyor (degrade yalnızca üç yerde, bkz. THEME.md). */}
+            <motion.figure
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.85, delay: 0.2, ease }}
+              style={{ y: parallaxMockY }}
+              className="relative m-0"
+            >
+              {/* İmza degradesinden çok soluk bir hâle. Renk %8'in altında
+                  kaldığı için yüzey değil ışık olarak okunuyor. */}
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute -inset-x-12 -inset-y-14 -z-10 hidden sm:block"
+                className="pointer-events-none absolute -inset-x-10 -inset-y-12 -z-10 hidden sm:block"
                 style={{
                   background:
-                    "radial-gradient(52% 46% at 70% 22%, color-mix(in srgb, var(--color-signature-from) 8%, transparent), transparent 70%), radial-gradient(46% 42% at 26% 78%, color-mix(in srgb, var(--color-signature-to) 7%, transparent), transparent 72%)",
+                    "radial-gradient(54% 48% at 68% 24%, color-mix(in srgb, var(--color-signature-from) 8%, transparent), transparent 70%), radial-gradient(46% 42% at 28% 78%, color-mix(in srgb, var(--color-signature-to) 7%, transparent), transparent 72%)",
                 }}
               />
-
-              {/* Arka katman — haftanın ritmi. Kahramana özel çizilir;
-                  ekran görüntüsü değil (bkz. HeroWeekPanel). */}
-              <motion.div
-                initial={reducedMotion ? false : { opacity: 0, y: 26 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.85, delay: 0.1, ease }}
-                style={{ y: parallaxBoardY }}
-                className="hidden sm:block absolute left-[4%] -top-2 w-[100%]"
+              <div
+                className="rounded-2xl overflow-hidden"
+                style={{ border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}
               >
-                <HeroWeekPanel />
-              </motion.div>
-
-              {/* Ön katman — okunacak detay */}
-              <motion.div
-                initial={{ opacity: 0, y: 32 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.28, ease }}
-                style={{ y: parallaxMockY }}
-                className="relative mx-auto sm:mx-0 sm:mt-[7.5rem] sm:w-[88%] lg:w-[84%]"
-              >
-                <HeroSessionCard />
-              </motion.div>
-            </div>
+                {mounted ? (
+                  <Image
+                    src={theme === "dark" ? "/app/dashboard-dark.webp" : "/app/dashboard-light.webp"}
+                    alt="Mimio panelinde bir günün akışı: zaman çizelgesi, sıradaki seans ve gelişim uyarıları"
+                    width={2200}
+                    height={1375}
+                    priority
+                    sizes="(max-width: 1023px) 92vw, 620px"
+                    className="w-full h-auto block"
+                  />
+                ) : (
+                  /* Tema çözülene kadar aynı orana sahip sessiz bir yüzey:
+                     görüntü yerine oturduğunda düzen kaymaz (CLS). */
+                  <div className="w-full aspect-[2200/1375] bg-(--color-surface)" />
+                )}
+              </div>
+              <figcaption className="mt-2.5 text-[11px] text-(--color-text-muted)">
+                Demo hesabındaki gerçek ekran. Danışan adları kurgusaldır.
+              </figcaption>
+            </motion.figure>
           </div>
         </motion.div>
       </section>
@@ -890,20 +890,15 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
         </div>
       </section>
 
-      {/* ══════════════════════ ÜRÜN ÖNİZLEMESİ ══════════════════════
-          Burada önce trafik ışıkları, sahte bir adres çubuğu ve iskelet
-          çubuklarından kurulu bir "gösterge paneli" duruyordu: üründen hiçbir
-          şey göstermiyor, yalnızca bir ekran görüntüsü taklit ediyordu.
-          Yerine ürünün kendisi geldi — `scripts/capture-app-shots.mjs` bu
-          görüntüyü demo hesabına gerçekten girerek çeker, ekrandaki her sayı
-          seed verisinden gelir. Pencere çerçevesi bilerek yok: çerçeve ekran
-          görüntüsünün gerçek olduğunu değil, öyle görünmeye çalıştığını
-          söylüyordu.
+      {/* ══════════════════════ HAFTANIN RİTMİ ══════════════════════
+          Kahraman ürünün kendisini gösteriyor; burası ürünün kurduğu şeyi.
+          Yüzey bir süre kahramanın arka katmanıydı, oradan buraya indi: tam
+          genişlikte durduğu için üstü örtülmüyor ve alan dengesi de görünüyor.
 
-          Kahraman haftanın ritmini çiziyor, burası günün kendisini gösteriyor —
-          ve burası gerçek bir ekran görüntüsü. Kahramanda ekran görüntüsü
-          okunmuyordu; burada tam genişlikte basıldığı için okunuyor ve
-          "işte ürün bu" cümlesini asıl burası kuruyor. */}
+          Neden burada ekran görüntüsü yok: haftalık plan ekranının görüntüsü
+          kenar bar, araç çubuğu ve yan panellerle geliyor; anlatılmak istenen
+          tek şey (haftanın ritmi) o gürültünün içinde kayboluyordu. Bkz.
+          WeekRhythmPanel. */}
       <section className="section max-sm:py-10! relative overflow-hidden">
         <div className="shell shell-wide">
           <motion.div
@@ -917,47 +912,25 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               variants={fadeUp}
               className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl text-(--color-text-strong) mb-3 sm:mb-4"
             >
-              Seansın Sabahı <span className="accent-line">Tek Ekranda</span>
+              Haftayı <span className="accent-line">Bir Bakışta</span> Kurun
             </motion.h2>
             <motion.p
               variants={fadeUp}
               className="text-(--color-text-soft) text-[0.9375rem] sm:text-lg m-0"
             >
-              Günün akışı, sıradaki danışan, ortalama skorun eğilimi ve plana
-              dokunması gereken uyarılar.
+              Yedi günün tamamı, alan renkleriyle bloklar ve planın hangi
+              beceriye ne kadar yer ayırdığını söyleyen denge.
             </motion.p>
           </motion.div>
 
-          <motion.figure
-            initial={{ opacity: 0, y: 28 }}
+          <motion.div
+            initial={{ opacity: 0, y: 26 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={REVEAL_VIEWPORT}
             transition={{ duration: 0.7, ease }}
-            className="m-0"
           >
-            <div
-              className="rounded-2xl md:rounded-3xl overflow-hidden border border-(--color-line-strong)"
-              style={{ boxShadow: "var(--shadow-lg)" }}
-            >
-              {mounted ? (
-                <Image
-                  src={theme === "dark" ? "/app/dashboard-dark.webp" : "/app/dashboard-light.webp"}
-                  alt="Mimio panelinde bir günün akışı: zaman çizelgesi, sıradaki seans ve gelişim uyarıları"
-                  width={2200}
-                  height={1375}
-                  sizes="(max-width: 767px) 100vw, (max-width: 1279px) 90vw, 1200px"
-                  className="w-full h-auto block"
-                />
-              ) : (
-                /* Tema çözülene kadar aynı orana sahip sessiz bir yüzey:
-                   görüntü yerine oturduğunda düzen kaymaz (CLS). */
-                <div className="w-full aspect-[2200/1375] bg-(--color-surface)" />
-              )}
-            </div>
-            <figcaption className="mt-3 text-xs text-(--color-text-muted)">
-              Demo hesabındaki gerçek ekran. Danışan adları kurgusaldır.
-            </figcaption>
-          </motion.figure>
+            <WeekRhythmPanel />
+          </motion.div>
         </div>
       </section>
 
