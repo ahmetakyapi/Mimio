@@ -17,6 +17,7 @@ import { useEffect, useId, type ReactNode } from "react";
 import { Home, Users, CalendarDays, Gamepad2, MoreHorizontal, X } from "lucide-react";
 import type { AppView } from "@/lib/platform-data";
 import { Portal } from "@/components/ui/Portal";
+import { motion } from "framer-motion";
 
 const TABS: ReadonlyArray<{ view: AppView; label: string; icon: typeof Home; match?: readonly AppView[] }> = [
   { view: "dashboard", label: "Bugün", icon: Home },
@@ -71,16 +72,28 @@ export function MobileTabBar({
               type="button"
               aria-current={on ? "page" : undefined}
               onClick={() => onNavigate(view)}
-              className="flex-1 flex flex-col items-center gap-1 cursor-pointer border-none transition-colors"
-              style={{
-                padding: "5px 0",
-                borderRadius: 12,
-                background: on ? "var(--gradient-signature-soft)" : "transparent",
-              }}
+              className="relative flex-1 flex flex-col items-center gap-1 cursor-pointer border-none bg-transparent transition-colors"
+              style={{ padding: "5px 0", borderRadius: 12 }}
             >
-              <Icon size={20} strokeWidth={1.9} style={{ color: on ? "var(--color-primary)" : "var(--color-text-muted)" }} />
+              {/* Seçim zemini sekmeler arasında kayar (bkz. kenar çubuğu). */}
+              {on && (
+                <motion.span
+                  layoutId="tabbar-active"
+                  aria-hidden="true"
+                  className="absolute inset-0"
+                  style={{ borderRadius: 12, background: "var(--gradient-signature-soft)" }}
+                  transition={{ type: "spring", stiffness: 460, damping: 36 }}
+                />
+              )}
+              <motion.span
+                className="relative flex"
+                animate={{ y: on ? -1 : 0, scale: on ? 1.08 : 1 }}
+                transition={{ type: "spring", stiffness: 500, damping: 26 }}
+              >
+                <Icon size={20} strokeWidth={1.9} style={{ color: on ? "var(--color-primary)" : "var(--color-text-muted)" }} />
+              </motion.span>
               <span
-                className="text-[9.5px]"
+                className="relative text-[9.5px]"
                 style={{ fontWeight: on ? 700 : 500, color: on ? "var(--color-primary-ink)" : "var(--color-text-muted)" }}
               >
                 {label}

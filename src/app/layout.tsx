@@ -95,7 +95,7 @@ export default function RootLayout({ children }: { readonly children: React.Reac
     // önce data-theme'i yazar; bu kasıtlı sunucu/istemci farkıdır.
     <html lang="tr" suppressHydrationWarning className={`${sans.variable} ${display.variable} ${mono.variable}`}>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('mimio-theme');var v=(t==='dark'||t==='high-contrast')?t:(t==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):'light');document.documentElement.setAttribute('data-theme',v);}catch(e){document.documentElement.setAttribute('data-theme','light');}` }} />
+        <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('mimio-theme');var v=(t==='dark'||t==='high-contrast')?t:(t==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):'light');document.documentElement.setAttribute('data-theme',v);}catch(e){document.documentElement.setAttribute('data-theme','light');}try{if(sessionStorage.getItem('mimio-intro-seen')||localStorage.getItem('mimio-active-therapist-v2'))document.documentElement.setAttribute('data-intro','skip');}catch(e){}` }} />
         <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

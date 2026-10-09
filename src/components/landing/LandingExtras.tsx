@@ -43,6 +43,8 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { PLATFORM_STATS } from "@/lib/platform-stats";
+import { MaskLines, VelocityMarquee } from "@/components/motion/Reveal";
+import { smoothScrollTo } from "@/components/motion/SmoothScroll";
 
 const prefersReduced =
   typeof window !== "undefined" &&
@@ -87,7 +89,7 @@ export function SectionDots({ sections }: SectionDotsProps) {
           className="section-dot group"
           data-active={active === s.id}
           aria-label={s.label}
-          onClick={() => document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth" })}
+          onClick={() => smoothScrollTo(s.id, s.id === "top" ? { offset: 0 } : undefined)}
         >
           <span className="section-dot-label">{s.label}</span>
         </button>
@@ -204,42 +206,42 @@ const SKILL_AREAS = [
   { name: "Planlama & Problem Çözme", kind: "Bilişsel", icon: ClipboardList },
 ] as const;
 
+/**
+ * Beceri alanları şeridi.
+ *
+ * Önceki şerit küçük çipler halinde sabit hızda akıyordu; sayfanın geri
+ * kalanıyla hiçbir bağı yoktu ve bir "logo bandı" gibi okunuyordu. Şimdi
+ * iki satır, ekran genişliğinde dev yazı: biri dolu, biri kontur; ters
+ * yönlerde akarlar. Sayfa kaydırıldıkça hızlanır, yönünü kaydırmaya göre
+ * çevirir ve hızla birlikte hafifçe eğilir (bkz. `VelocityMarquee`).
+ *
+ * Bilgi aynı: sekiz beceri alanı. Ekran okuyucu için liste ayrıca düz
+ * metin olarak verilir; kayan kopyalar `aria-hidden`.
+ */
 export function TrustMarquee() {
-  const items = [...SKILL_AREAS, ...SKILL_AREAS];
+  const half = Math.ceil(SKILL_AREAS.length / 2);
+  const rows = [SKILL_AREAS.slice(0, half), SKILL_AREAS.slice(half)];
   return (
-    <section className="section-tight border-y border-(--color-line) relative overflow-hidden">
-      <div className="shell shell-wide">
-        <div className="flex flex-col items-center gap-6">
-          <p className="text-sm text-(--color-text-soft) text-center m-0">
-            Oyunlar ve aktiviteler bu beceri alanlarını çalışır.
-          </p>
-          <div className="w-full marquee-viewport marquee-mask">
-            <div className="marquee-track slow">
-              {items.map((t, i) => {
-                const Icon = t.icon;
-                return (
-                  <div
-                    key={`${t.name}-${i}`}
-                    className="flex items-center gap-3 px-5 py-3 rounded-2xl border border-(--color-line) bg-(--color-surface) hover:border-(--color-primary)/30 transition-colors"
-                  >
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-(--color-line)"
-                      style={{ background: "var(--color-primary-light)" }}>
-                      <Icon size={15} className="text-(--color-primary)" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold text-(--color-text-strong) tracking-tight whitespace-nowrap">
-                        {t.name}
-                      </span>
-                      <span className="text-[10px] font-semibold text-(--color-text-muted) tracking-wider uppercase whitespace-nowrap">
-                        {t.kind}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+    <section className="py-[clamp(2.5rem,6vw,5rem)] relative overflow-hidden border-y border-(--color-line)">
+      <p className="sr-only">
+        Oyunlar ve aktiviteler şu beceri alanlarını çalışır: {SKILL_AREAS.map((s) => s.name).join(", ")}.
+      </p>
+      <div aria-hidden="true" className="flex flex-col gap-2 sm:gap-4">
+        {rows.map((row, r) => (
+          <VelocityMarquee key={r} baseVelocity={r === 0 ? -1.6 : 1.6}>
+            {row.map((t) => {
+              const Icon = t.icon;
+              return (
+                <span key={t.name} className="mega-marquee-item" data-outline={r === 1 || undefined}>
+                  {t.name}
+                  <span className="mega-marquee-sep">
+                    <Icon className="w-[45%] h-[45%]" strokeWidth={2.2} />
+                  </span>
+                </span>
+              );
+            })}
+          </VelocityMarquee>
+        ))}
       </div>
     </section>
   );
@@ -433,9 +435,7 @@ export function StickyWalkthrough() {
                 Platform Turu
               </div>
               <h2 className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl text-(--color-text-strong) leading-[1.05] tracking-tight">
-                Dört Adımda
-                <br />
-                <span className="accent-line">Dijital Terapi Akışı</span>
+                <MaskLines lines={["Dört Adımda", <span key="a" className="accent-line">Dijital Terapi Akışı</span>]} />
               </h2>
 
               <div className="wt-steps mt-4 flex flex-col gap-2">
@@ -452,12 +452,9 @@ export function StickyWalkthrough() {
                            bölüm yalnızca kaydırmaya bağlı kalmaz. */
                         const el = ref.current;
                         if (!el) return;
-                        const start = el.offsetTop;
+                        const start = el.getBoundingClientRect().top + window.scrollY;
                         const span = el.offsetHeight - window.innerHeight;
-                        window.scrollTo({
-                          top: start + (span * (i + 0.5)) / steps,
-                          behavior: "smooth",
-                        });
+                        smoothScrollTo(start + (span * (i + 0.5)) / steps);
                       }}
                       animate={{
                         opacity: isActive ? 1 : 0.5,
@@ -865,11 +862,8 @@ export function ComparisonSection() {
     <section id="comparison" className="section max-sm:py-10! relative overflow-hidden">
       <div className="shell" style={{ maxWidth: "68rem" }}>
         <div className="text-center mb-10 md:mb-16">
-          <h2 className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl text-(--color-text-strong) leading-tight mb-4">
-            Geleneksel vs.{" "}
-            <span className="accent-line">
-              Dijital Ergoterapi
-            </span>
+          <h2 className="text-[clamp(1.875rem,8vw,2.5rem)] md:text-6xl text-(--color-text-strong) leading-tight mb-4">
+            <MaskLines lines={["Geleneksel vs.", <span key="a" className="accent-line">Dijital Ergoterapi</span>]} />
           </h2>
           <p className="text-(--color-text-soft) text-base md:text-lg max-w-xl mx-auto">
             Kağıt-kalem yönteminden dijital terapi akışına geçtiğinizde ne değişir?
@@ -988,12 +982,8 @@ export function FAQSection() {
     <section id="faq" className="section relative">
       <div className="shell" style={{ maxWidth: "56rem" }}>
         <div className="text-center mb-10 md:mb-14">
-          <h2 className="text-3xl md:text-5xl text-(--color-text-strong) leading-tight mb-4">
-            Aklınızdaki Soruları
-            <br />
-            <span className="accent-line">
-              Hızlıca Yanıtlayalım
-            </span>
+          <h2 className="text-[clamp(1.875rem,8vw,2.5rem)] md:text-6xl text-(--color-text-strong) leading-tight mb-4">
+            <MaskLines lines={["Aklınızdaki Soruları", <span key="a" className="accent-line">Hızlıca Yanıtlayalım</span>]} />
           </h2>
         </div>
 
@@ -1141,6 +1131,164 @@ const EXTENDED_GAMES: readonly GameEntry[] = [
 ];
 
 export function GamesCarousel({ onLogin }: { onLogin: () => void }) {
+  /*
+   * İki düzen, tek içerik.
+   *
+   * Masaüstünde bölüm sabitlenir ve dikey kaydırma kart şeridini yatay
+   * sürükler: okur tekerleği çevirmeye devam eder, yedi oyun sırayla
+   * önünden geçer. Ok düğmeleri ve gizli yatay kaydırma çubuğu yerine
+   * sayfanın kendi hareketi kullanılır.
+   *
+   * Telefonda sabitleme yok — dikey kaydırmayı yatay harekete çevirmek
+   * parmağın altında "takılma" hissi veriyor. Orada yerel yatay şerit
+   * (kaydırma yakalamalı) kalır.
+   *
+   * Sunucu her zaman telefon düzenini basar; masaüstü kararı ilk effect'te
+   * verilir. Bölüm katlamanın çok altında olduğu için değişim görünmez.
+   */
+  const [desktop, setDesktop] = useState(false);
+  const reduced = useReducedMotion();
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px) and (min-height: 640px)");
+    const update = () => setDesktop(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  if (desktop && !reduced) return <GamesPinned onLogin={onLogin} />;
+  return <GamesSnap onLogin={onLogin} />;
+}
+
+function GamesHeading({ dark = true }: { dark?: boolean }) {
+  return (
+    <h2 className={`text-[clamp(1.875rem,8vw,2.5rem)] md:text-6xl leading-[1.02] max-w-lg m-0 ${dark ? "text-(--color-games-text)" : ""}`}>
+      <MaskLines lines={["Her Oyun Bir", <span key="a" className="accent-line">Gelişim Hedefi</span>]} />
+    </h2>
+  );
+}
+
+function GameCard({ g, i, onLogin, wide = false }: { g: GameEntry; i: number; onLogin: () => void; wide?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onLogin}
+      data-cursor="Oyna"
+      className={`group relative ${wide ? "w-[min(30rem,38vw)]" : "w-[300px] sm:w-[340px]"} shrink-0 text-left rounded-3xl border border-(--color-games-card-border) overflow-hidden bg-(--color-games-card-bg) transition-colors hover:border-(--color-primary)/40`}
+    >
+      {/* Beceri alanı etiketi görselin üstünde değil altında: gerçek bir
+          görüntünün üzerine rozet basmak tahtanın kendisini örtüyor. */}
+      <div className="aspect-[4/3] relative overflow-hidden bg-(--color-games-tile-to)">
+        <Image
+          src={g.shot}
+          alt={`${g.label} oyununun tahtası`}
+          fill
+          sizes={wide ? "(min-width: 1024px) 38vw, 340px" : "(max-width: 639px) 300px, 340px"}
+          className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.06]"
+        />
+        <span className="absolute top-4 left-4 numeral text-[11px] font-semibold px-2.5 py-1 rounded-full text-white/85 bg-black/35 backdrop-blur-md border border-white/10">
+          {String(i + 1).padStart(2, "0")} / {String(EXTENDED_GAMES.length).padStart(2, "0")}
+        </span>
+        <span className="absolute bottom-4 right-4 w-11 h-11 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20 opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300">
+          <Play size={16} className="text-white ml-0.5" aria-hidden="true" />
+        </span>
+      </div>
+      <div className={wide ? "p-6" : "p-5"}>
+        <p className="text-xs font-semibold text-(--color-games-text-soft) m-0 mb-1">
+          {g.area}
+        </p>
+        <h3 className={`font-bold text-(--color-games-text) mb-2 ${wide ? "text-2xl" : "text-lg"}`}>
+          {g.label}
+        </h3>
+        <p className="text-sm text-(--color-games-text-soft) leading-relaxed mb-4">
+          {g.desc}
+        </p>
+        <div className="flex items-center gap-2 text-xs font-bold text-(--color-primary) group-hover:translate-x-1 transition-transform">
+          Seansı başlat
+          <ChevronRight size={13} />
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function GamesPinned({ onLogin }: { onLogin: () => void }) {
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const [distance, setDistance] = useState(0);
+  const [index, setIndex] = useState(0);
+
+  /* Şeridin taşma payı = kaydırılacak yatay mesafe. Bölüm bu kadar
+     uzatılır ki tekerleğin her pikseli şeritte bir piksel olsun. */
+  useEffect(() => {
+    const measure = () => {
+      const track = trackRef.current;
+      const vp = viewportRef.current;
+      if (!track || !vp) return;
+      setDistance(Math.max(0, track.scrollWidth - vp.clientWidth));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (trackRef.current) ro.observe(trackRef.current);
+    if (viewportRef.current) ro.observe(viewportRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end end"] });
+  const eased = useSpring(scrollYProgress, { stiffness: 110, damping: 28, mass: 0.35 });
+  const x = useTransform(eased, (v) => -v * distance);
+  const bar = useTransform(eased, [0, 1], [1 / EXTENDED_GAMES.length, 1]);
+  useMotionValueEvent(scrollYProgress, "change", (v) => {
+    const next = Math.min(EXTENDED_GAMES.length - 1, Math.round(v * (EXTENDED_GAMES.length - 1)));
+    setIndex((prev) => (prev === next ? prev : next));
+  });
+
+  return (
+    <section
+      id="games"
+      ref={sectionRef}
+      className="section-games relative"
+      style={{ height: `calc(100dvh + ${distance}px)` }}
+    >
+      <div className="sticky top-0 h-[100dvh] overflow-hidden flex flex-col justify-center gap-10 pt-16">
+        <div className="shell shell-wide w-full flex items-end justify-between gap-6">
+          <GamesHeading />
+          <div className="flex flex-col items-end gap-3 pb-2">
+            <span className="numeral text-(--color-games-text) text-5xl leading-none tracking-[-0.04em]">
+              <AnimatePresence mode="popLayout" initial={false}>
+                <motion.span
+                  key={index}
+                  className="inline-block"
+                  initial={{ y: "100%", opacity: 0 }}
+                  animate={{ y: "0%", opacity: 1 }}
+                  exit={{ y: "-100%", opacity: 0 }}
+                  transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  {String(index + 1).padStart(2, "0")}
+                </motion.span>
+              </AnimatePresence>
+              <span className="text-(--color-games-text-soft) text-2xl"> / {String(EXTENDED_GAMES.length).padStart(2, "0")}</span>
+            </span>
+            <span className="text-sm text-(--color-games-text-soft)">{EXTENDED_GAMES[index].area}</span>
+            <span className="block w-48 h-[3px] rounded-full overflow-hidden" style={{ background: "var(--color-games-card-border)" }}>
+              <motion.span className="block h-full origin-left" style={{ scaleX: bar, background: "var(--gradient-bar)" }} />
+            </span>
+          </div>
+        </div>
+        <div ref={viewportRef} className="w-full overflow-hidden">
+          <motion.div ref={trackRef} className="games-track px-[max(var(--gutter),calc((100vw-88rem)/2+var(--gutter)))]" style={{ x }}>
+            {EXTENDED_GAMES.map((g, i) => (
+              <GameCard key={g.key} g={g} i={i} onLogin={onLogin} wide />
+            ))}
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function GamesSnap({ onLogin }: { onLogin: () => void }) {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   /* Yüzde yerine kaçıncı kartta olduğunu göster — okur bunu kullanabilir. */
   const [index, setIndex] = useState(0);
@@ -1178,81 +1326,34 @@ export function GamesCarousel({ onLogin }: { onLogin: () => void }) {
   return (
     <section id="games" className="section section-games relative">
       <div className="shell shell-wide">
-        <div className="flex items-end justify-between gap-6 flex-wrap px-4 sm:px-6 mb-8 sm:mb-10">
-          <div>
-            <h2 className="text-3xl md:text-5xl text-(--color-games-text) leading-tight max-w-lg">
-              Her Oyun Bir
-              <br />
-              <span className="accent-line">Gelişim Hedefi</span>
-            </h2>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => scrollBy(-1)}
-                disabled={atStart}
-                aria-label="Önceki oyun"
-                className="w-11 h-11 rounded-full flex items-center justify-center border border-(--color-games-card-border) bg-(--color-games-badge-bg) text-(--color-games-text) hover:border-(--color-primary)/40 transition-all disabled:opacity-35 disabled:cursor-not-allowed"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollBy(1)}
-                disabled={atEnd}
-                aria-label="Sonraki oyun"
-                className="w-11 h-11 rounded-full flex items-center justify-center border border-(--color-games-card-border) bg-(--color-games-badge-bg) text-(--color-games-text) hover:border-(--color-primary)/40 transition-all disabled:opacity-35 disabled:cursor-not-allowed"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
+        <div className="flex items-end justify-between gap-6 flex-wrap mb-8 sm:mb-10">
+          <GamesHeading />
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => scrollBy(-1)}
+              disabled={atStart}
+              aria-label="Önceki oyun"
+              className="w-11 h-11 rounded-full flex items-center justify-center border border-(--color-games-card-border) bg-(--color-games-badge-bg) text-(--color-games-text) hover:border-(--color-primary)/40 transition-all disabled:opacity-35 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollBy(1)}
+              disabled={atEnd}
+              aria-label="Sonraki oyun"
+              className="w-11 h-11 rounded-full flex items-center justify-center border border-(--color-games-card-border) bg-(--color-games-badge-bg) text-(--color-games-text) hover:border-(--color-primary)/40 transition-all disabled:opacity-35 disabled:cursor-not-allowed"
+            >
+              <ChevronRight size={16} />
+            </button>
           </div>
         </div>
 
-        <div ref={scrollerRef} className="h-snap">
-          {EXTENDED_GAMES.map((g) => {
-            return (
-              <button
-                type="button"
-                key={g.key}
-                onClick={onLogin}
-                className="group relative w-[300px] sm:w-[340px] text-left rounded-3xl border border-(--color-games-card-border) overflow-hidden bg-(--color-games-card-bg) transition-colors hover:border-(--color-primary)/40"
-              >
-                {/* Beceri alanı etiketi görselin üstünde değil altında:
-                    gerçek bir görüntünün üzerine rozet basmak tahtanın kendisini
-                    örtüyor ve etiketin okunurluğu tahtanın o anki durumuna
-                    bağlı kalıyordu. */}
-                <div className="aspect-[4/3] relative overflow-hidden bg-(--color-games-tile-to)">
-                  <Image
-                    src={g.shot}
-                    alt={`${g.label} oyununun tahtası`}
-                    fill
-                    sizes="(max-width: 639px) 300px, 340px"
-                    className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-                  />
-                  <span className="absolute bottom-4 right-4 w-11 h-11 rounded-full bg-white/20 group-hover:backdrop-blur-md flex items-center justify-center border border-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <Play size={16} className="text-white ml-0.5" aria-hidden="true" />
-                  </span>
-                </div>
-                <div className="p-5">
-                  <p className="text-xs font-semibold text-(--color-games-text-soft) m-0 mb-1">
-                    {g.area}
-                  </p>
-                  <h3 className="font-bold text-(--color-games-text) text-lg mb-2">
-                    {g.label}
-                  </h3>
-                  <p className="text-sm text-(--color-games-text-soft) leading-relaxed mb-4">
-                    {g.desc}
-                  </p>
-                  <div className="flex items-center gap-2 text-xs font-bold text-(--color-primary) group-hover:translate-x-1 transition-transform">
-                    Seansı başlat
-                    <ChevronRight size={13} />
-                  </div>
-                </div>
-              </button>
-            );
-          })}
+        <div ref={scrollerRef} className="h-snap" data-lenis-prevent-wheel>
+          {EXTENDED_GAMES.map((g, i) => (
+            <GameCard key={g.key} g={g} i={i} onLogin={onLogin} />
+          ))}
         </div>
 
         {/* Konum göstergesi — hangi karttayız, kaç kart var */}
@@ -1264,7 +1365,7 @@ export function GamesCarousel({ onLogin }: { onLogin: () => void }) {
               className="h-1 rounded-full transition-all duration-300"
               style={{
                 width: i === index ? 28 : 10,
-                background: i === index ? "var(--color-primary)" : "var(--color-games-card-border)",
+                background: i === index ? "var(--gradient-bar)" : "var(--color-games-card-border)",
               }}
             />
           ))}

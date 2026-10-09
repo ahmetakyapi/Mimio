@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   motion,
   AnimatePresence,
+  useMotionValue,
   useMotionValueEvent,
   useReducedMotion,
   useScroll,
@@ -49,6 +50,9 @@ import {
   TiltCard,
   TrustMarquee,
 } from "./landing/LandingExtras";
+import { CountUp, MaskLines, Rise, ScrollPerspective, ScrollRail, ScrubWords } from "./motion/Reveal";
+import { setScrollLocked, smoothScrollTo } from "./motion/SmoothScroll";
+import { useIntroDone } from "./motion/Intro";
 
 /*
  * Kaydırmaya bağlı her hareket aynı yayı kullanır. Tek bir katsayı seti,
@@ -63,8 +67,8 @@ function ScrollProgress() {
   const scaleX = useSpringFM(scrollYProgress, SCROLL_SPRING);
   return (
     <motion.div
-      style={{ scaleX, background: "var(--color-primary)" }}
-      className="fixed top-0 left-0 right-0 z-[200] h-[2px] origin-left pointer-events-none"
+      style={{ scaleX, background: "var(--gradient-bar)" }}
+      className="fixed top-0 left-0 right-0 z-[200] h-[3px] origin-left pointer-events-none"
       aria-hidden
     />
   );
@@ -216,12 +220,12 @@ const PERSONA_GRACE_MS = 9000;
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease } },
 };
 
 const scaleIn = {
-  hidden: { opacity: 0, scale: 0.88 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.55, ease } },
+  hidden: { opacity: 0, y: 40, scale: 0.94, filter: "blur(8px)" },
+  visible: { opacity: 1, y: 0, scale: 1, filter: "blur(0px)", transition: { duration: 0.9, ease } },
 };
 
 const stagger = {
@@ -332,10 +336,61 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
    * yalnızca eşik geçildiğinde değişir.
    */
   const { scrollY } = useScroll();
+  /*
+   * Üst çubuk aşağı kaydırırken çekilir, yukarı kaydırınca geri gelir.
+   * Okurken ekranın tepesindeki 64px içeriğe kalır; geri dönmek isteyen
+   * okurun ilk hareketi (yukarı kaydırma) çubuğu zaten çağırır. Menü
+   * açıkken ya da sayfanın ilk ekranındayken çubuk her zaman görünür.
+   */
+  const [navHidden, setNavHidden] = useState(false);
   useMotionValueEvent(scrollY, "change", (y) => {
     const next = y > 20;
     setScrolled((prev) => (prev === next ? prev : next));
+    const prev = scrollY.getPrevious() ?? 0;
+    const hide = y > 640 && y > prev + 2;
+    const show = y < prev - 2 || y <= 640;
+    if (hide) setNavHidden(true);
+    else if (show) setNavHidden(false);
   });
+
+  /* Açılış perdesi kalktı mı — kahraman girişi buna bağlı. */
+  const introDone = useIntroDone();
+
+  /*
+   * Kahraman ışığı imleci izler. Konum motion değerinde tutulur, React'e
+   * hiç dokunmaz; yay ışığa ağırlık verir, imlecin hemen arkasından
+   * süzülür. Dokunmatik cihazda ışık sabit bir köşede durur.
+   */
+  const glowX = useMotionValue(0);
+  const glowY = useMotionValue(0);
+  const glowSX = useSpringFM(glowX, { stiffness: 60, damping: 20, mass: 0.8 });
+  const glowSY = useSpringFM(glowY, { stiffness: 60, damping: 20, mass: 0.8 });
+  /* Kart imlece doğru eğilir — en fazla 6°. */
+  const tiltX = useMotionValue(0);
+  const tiltY = useMotionValue(0);
+  const cardRX = useSpringFM(tiltY, { stiffness: 120, damping: 18 });
+  const cardRY = useSpringFM(tiltX, { stiffness: 120, damping: 18 });
+  useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    glowX.set(r.width * 0.72);
+    glowY.set(r.height * 0.32);
+  }, [glowX, glowY]);
+  const onHeroPointer = (e: React.PointerEvent<HTMLElement>) => {
+    if (e.pointerType !== "mouse" || reducedMotion) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const px = e.clientX - r.left;
+    const py = e.clientY - r.top;
+    glowX.set(px);
+    glowY.set(py);
+    tiltX.set(((px / r.width) - 0.5) * 12);
+    tiltY.set(((py / r.height) - 0.5) * -12);
+  };
+  const onHeroLeave = () => {
+    tiltX.set(0);
+    tiltY.set(0);
+  };
 
   // Mobil menü açıkken: scroll kilidi, Esc ile kapatma, odak tuzağı
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -349,10 +404,12 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
      */
     document.documentElement.style.overflow = menuOpen ? "hidden" : "";
     document.body.style.overflow = menuOpen ? "hidden" : "";
+    setScrollLocked(menuOpen);
     if (!menuOpen) {
       return () => {
         document.documentElement.style.overflow = "";
         document.body.style.overflow = "";
+        setScrollLocked(false);
       };
     }
 
@@ -385,6 +442,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
     return () => {
       document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
+      setScrollLocked(false);
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [menuOpen]);
@@ -399,7 +457,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
     setMenuOpen(false);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+        smoothScrollTo(id, id === "top" ? { offset: 0 } : undefined);
       });
     });
   };
@@ -412,9 +470,13 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
 
       {/* ── Navbar ── */}
       <motion.header
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        initial={{ y: -80, opacity: 0 }}
+        animate={
+          introDone
+            ? { y: navHidden && !menuOpen ? -80 : 0, opacity: 1 }
+            : { y: -80, opacity: 0 }
+        }
+        transition={{ duration: navHidden ? 0.45 : 0.7, delay: introDone && !scrolled ? 0.55 : 0, ease: [0.22, 1, 0.36, 1] }}
         className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
           scrolled
             ? "backdrop-blur-md border-b border-(--color-line) shadow-lg"
@@ -444,9 +506,12 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 type="button"
                 key={l.id}
                 onClick={() => scrollTo(l.id)}
-                className="text-sm text-(--color-text-soft) hover:text-(--color-text-strong) font-medium transition-colors px-4 py-2 rounded-lg hover:bg-(--color-surface)"
+                className="text-sm text-(--color-text-soft) hover:text-(--color-text-strong) font-medium transition-colors px-4 py-2 rounded-lg"
               >
-                {l.label}
+                <span className="roll">
+                  <span>{l.label}</span>
+                  <span aria-hidden="true">{l.label}</span>
+                </span>
               </button>
             ))}
           </nav>
@@ -472,7 +537,10 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 onClick={onRegister}
                 className="btn-signature text-sm font-semibold px-5 py-2.5 rounded-xl"
               >
-                Ücretsiz Başla
+                <span className="roll">
+                  <span>Ücretsiz Başla</span>
+                  <span aria-hidden="true">Ücretsiz Başla</span>
+                </span>
               </button>
             </Magnetic>
           </div>
@@ -510,10 +578,14 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             role="dialog"
             aria-modal="true"
             aria-label="Gezinme menüsü"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            /* Menü, açan düğmenin olduğu köşeden büyüyen bir daire olarak
+               açılır; kapanırken aynı noktaya geri çekilir. Kullanıcı
+               menünün nereden geldiğini ve nereye gittiğini görür. */
+            initial={reducedMotion ? { opacity: 0 } : { clipPath: "circle(0% at calc(100% - 2.6rem) 2rem)" }}
+            animate={reducedMotion ? { opacity: 1 } : { clipPath: "circle(150% at calc(100% - 2.6rem) 2rem)" }}
+            exit={reducedMotion ? { opacity: 0 } : { clipPath: "circle(0% at calc(100% - 2.6rem) 2rem)" }}
+            transition={{ duration: reducedMotion ? 0.15 : 0.75, ease: [0.76, 0, 0.24, 1] }}
+            data-lenis-prevent
             className="fixed inset-0 z-[60] flex flex-col px-(--gutter) pt-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
             style={{ background: "var(--color-page-bg)" }}
           >
@@ -532,17 +604,25 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             </div>
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain flex flex-col gap-1 -mx-2 px-2">
               {NAV_LINKS.map((l, i) => (
-                <motion.button
+                <button
                   type="button"
                   key={l.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}
                   onClick={() => scrollTo(l.id)}
-                  className="shrink-0 text-left text-[17px] font-semibold text-(--color-text-body) py-3.5 px-4 rounded-xl hover:bg-(--color-surface) transition-colors"
+                  className="shrink-0 flex items-baseline gap-4 text-left text-(--color-text-strong) py-2.5 px-2 rounded-xl"
                 >
-                  {l.label}
-                </motion.button>
+                  <span className="numeral text-xs text-(--color-text-muted) w-6">0{i + 1}</span>
+                  <span className="mask-line">
+                    <motion.span
+                      className="menu-link inline-block"
+                      initial={reducedMotion ? false : { y: "110%" }}
+                      animate={{ y: "0%" }}
+                      exit={reducedMotion ? undefined : { y: "-110%" }}
+                      transition={{ duration: 0.7, delay: 0.25 + i * 0.06, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      {l.label}
+                    </motion.span>
+                  </span>
+                </button>
               ))}
             </div>
             <div className="flex flex-col gap-2.5 shrink-0 pt-4 mt-2 border-t border-(--color-line)">
@@ -581,123 +661,159 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
       */}
       <section
         ref={heroRef}
-        className="pt-[5.25rem] sm:pt-24 md:pt-28 pb-10 sm:pb-12 md:pb-16 relative overflow-hidden"
+        onPointerMove={onHeroPointer}
+        onPointerLeave={onHeroLeave}
+        className="pt-[5.25rem] sm:pt-24 md:pt-28 pb-10 sm:pb-12 md:pb-16 relative overflow-hidden lg:min-h-[100dvh] lg:flex lg:flex-col lg:justify-center"
       >
         <PaperBackdrop />
+        {/* İmleci izleyen ışık — kâğıdın üstünde, içeriğin altında. */}
+        <motion.span
+          aria-hidden="true"
+          className="hero-glow"
+          style={{ x: glowSX, y: glowSY }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: introDone ? 1 : 0 }}
+          transition={{ duration: 1.6, delay: 0.3 }}
+        />
 
         <motion.div
           style={{ y: heroY, opacity: heroOpacity }}
           className="shell shell-wide relative"
         >
-          <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-y-8 sm:gap-y-12 lg:gap-x-10 xl:gap-x-14 items-center">
+          <div className="grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] gap-y-8 sm:gap-y-12 lg:gap-x-10 xl:gap-x-14 items-center">
             {/* Sol — tez */}
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={stagger}
-              className="flex flex-col items-start gap-4 sm:gap-6"
-            >
+            <div className="flex flex-col items-start gap-4 sm:gap-6">
               {/* Rozet telefonda 11.5px + 0.14em ile 34 karakteri iki satıra
                   bölüp kutuya dönüşüyordu; dar ekranda punto ve harf aralığı
                   gevşetildi. */}
-              <motion.span
-                variants={fadeUp}
-                className="inline-flex items-center gap-2 sm:gap-2.5 text-[10.5px] tracking-[0.06em] px-3 py-1 sm:text-[11px] sm:tracking-[0.14em] sm:px-3.5 sm:py-1.5 font-bold uppercase text-(--color-primary) rounded-full"
-                style={{
-                  background: "var(--color-primary-light)",
-                  border: "1px solid var(--color-line-strong)",
-                }}
-              >
-                Ölçüm temelli ergoterapi platformu
-              </motion.span>
+              <Rise play={introDone} y={14} delay={0.05}>
+                <span
+                  className="inline-flex items-center gap-2 sm:gap-2.5 text-[10.5px] tracking-[0.06em] px-3 py-1 sm:text-[11px] sm:tracking-[0.14em] sm:px-3.5 sm:py-1.5 font-bold uppercase text-(--color-primary) rounded-full"
+                  style={{
+                    background: "var(--color-primary-light)",
+                    border: "1px solid var(--color-line-strong)",
+                  }}
+                >
+                  <span className="live-pulse w-1.5 h-1.5 rounded-full" style={{ background: "var(--color-primary)" }} />
+                  Ölçüm temelli ergoterapi platformu
+                </span>
+              </Rise>
 
-              {/* Taban 44px'ti: 320px'lik ekranda başlık dört satıra bölünüp
-                  kahraman bölümünü tek başına dolduruyor, birincil eylem
-                  katlamanın altına düşüyordu. Dar ekranda ölçek viewport'la
-                  akar, 640px'ten itibaren eski ölçek aynen devam eder. */}
-              <motion.h1
-                variants={fadeUp}
-                className="text-[clamp(1.75rem,8vw,2.75rem)] sm:text-6xl lg:text-[4.25rem] xl:text-7xl text-(--color-text-strong) leading-[1.06] sm:leading-[1.02] m-0"
-              >
-                {/* Vurgu tek kelimede: dokümanda yalnızca "oyuna" renkleniyor.
-                    İki kelimeyi birden boyamak cümlenin ağırlık merkezini
-                    kaydırıyor — asıl iddia dönüşümün nereye olduğu. */}
-                Terapi Seanslarını
-                <br />
-                <span className="accent-line">Oyuna</span> Dönüştür
-              </motion.h1>
+              {/*
+                Başlık satır satır, kendi maskesinin altından yükselir. Önceki
+                kurguda başlık tek blok olarak kayıyordu; satırların ağırlık
+                merkezi ("Oyuna") okurun gözüne ancak blok durduktan sonra
+                çarpıyordu. Şimdi her satır kendi anında gelir, vurgu satırı
+                en son oturur.
 
-              <motion.p
-                variants={fadeUp}
-                className="text-[0.9375rem] sm:text-lg md:text-xl text-(--color-text-soft) leading-relaxed max-w-[34rem] m-0"
-              >
-                Çocukların bilişsel ve motor becerilerini geliştirirken
-                eğlenmelerini sağlayın. İlerlemeyi dijital olarak takip edin,
-                seansları kişiselleştirin.
-              </motion.p>
+                Taban 44px'ti: 320px'lik ekranda başlık dört satıra bölünüp
+                kahraman bölümünü tek başına dolduruyor, birincil eylem
+                katlamanın altına düşüyordu. Dar ekranda ölçek viewport'la
+                akar, 640px'ten itibaren eski ölçek aynen devam eder.
+              */}
+              <h1 className="text-[clamp(2rem,9vw,2.75rem)] sm:text-6xl lg:text-[4.25rem] xl:text-[4.75rem] text-(--color-text-strong) leading-[1.02] sm:leading-[0.98] m-0 tracking-[-0.045em]">
+                <MaskLines
+                  play={introDone}
+                  delay={0.1}
+                  stagger={0.11}
+                  lines={[
+                    "Terapi Seanslarını",
+                    <>
+                      {/* Vurgu tek kelimede: asıl iddia dönüşümün nereye olduğu. */}
+                      <span className="accent-line">Oyuna</span> Dönüştür
+                    </>,
+                  ]}
+                />
+              </h1>
+
+              <Rise play={introDone} delay={0.4}>
+                <p className="text-[0.9375rem] sm:text-lg md:text-xl text-(--color-text-soft) leading-relaxed max-w-[34rem] m-0">
+                  Çocukların bilişsel ve motor becerilerini geliştirirken
+                  eğlenmelerini sağlayın. İlerlemeyi dijital olarak takip edin,
+                  seansları kişiselleştirin.
+                </p>
+              </Rise>
 
               {/* `.magnetic` sarmalayıcısı `inline-flex`: içindeki `w-full`
                   sarmalayıcının içerik genişliğini ölçü alıyordu, birincil
                   eylem telefonda ikincil eylemden dar çıkıp zayıf görünüyordu.
                   Genişlik sarmalayıcıya da veriliyor. */}
-              <motion.div
-                variants={fadeUp}
-                className="flex items-center gap-2.5 sm:gap-3 flex-wrap w-full sm:w-auto"
-              >
-                <Magnetic strength={14} className="w-full sm:w-auto">
+              <Rise play={introDone} delay={0.52} className="w-full sm:w-auto">
+                <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap w-full sm:w-auto">
+                  <Magnetic strength={14} className="w-full sm:w-auto">
+                    <button
+                      type="button"
+                      onClick={onRegister}
+                      data-cursor="Başla"
+                      className="btn-signature group flex items-center justify-center gap-2.5 font-semibold px-7 py-3.5 rounded-xl text-sm w-full sm:w-auto"
+                    >
+                      <span className="roll">
+                        <span>Ücretsiz Başla</span>
+                        <span aria-hidden="true">Ücretsiz Başla</span>
+                      </span>
+                      <ArrowRight
+                        size={16}
+                        className="transition-transform group-hover:translate-x-1"
+                      />
+                    </button>
+                  </Magnetic>
                   <button
                     type="button"
-                    onClick={onRegister}
-                    className="btn-signature group flex items-center justify-center gap-2.5 font-semibold px-7 py-3.5 rounded-xl text-sm w-full sm:w-auto"
+                    onClick={() => scrollTo("games")}
+                    className="flex items-center justify-center gap-2.5 font-semibold px-7 py-3.5 rounded-xl text-sm w-full sm:w-auto transition-colors duration-200 hover:bg-(--color-surface-elevated)"
+                    style={{
+                      background: "var(--color-surface)",
+                      color: "var(--color-text-body)",
+                      border: "1px solid var(--color-line-strong)",
+                    }}
                   >
-                    Ücretsiz Başla
-                    <ArrowRight
-                      size={16}
-                      className="transition-transform group-hover:translate-x-1"
-                    />
+                    <Play size={14} />
+                    <span className="roll">
+                      <span>Oyunları İncele</span>
+                      <span aria-hidden="true">Oyunları İncele</span>
+                    </span>
                   </button>
-                </Magnetic>
-                <button
-                  type="button"
-                  onClick={() => scrollTo("games")}
-                  className="flex items-center justify-center gap-2.5 font-semibold px-7 py-3.5 rounded-xl text-sm w-full sm:w-auto transition-colors duration-200 hover:bg-(--color-surface-elevated)"
-                  style={{
-                    background: "var(--color-surface)",
-                    color: "var(--color-text-body)",
-                    border: "1px solid var(--color-line-strong)",
-                  }}
-                >
-                  <Play size={14} />
-                  Oyunları İncele
-                </button>
-              </motion.div>
-
-            </motion.div>
+                </div>
+              </Rise>
+            </div>
 
             {/*
               Sağ — tek bir ölçümün büyütülmüş hâli.
 
-              Buraya sırayla ne konduysa bir yerden tutmadı: seans kartı fazla
-              sessizdi, oyun tahtası dekoratifti, ekran görüntüsü küçülünce
-              okunmuyordu, haftalık takvim ise yirmi bir küçük bloğuyla bilgi
-              veriyor ama göz yoruyordu.
+              Kahramanın işi bilgi vermek değil, tek bir şeyi güzel söylemek —
+              bilgi zaten sayfanın geri kalanında var. Bkz. HeroPulse.
 
-              Üçünün ortak hatası aynıydı: kahraman görselini bir *bilgi
-              yüzeyi* sanmak. Kahramanın işi bilgi vermek değil, tek bir şeyi
-              güzel söylemek — bilgi zaten sayfanın geri kalanında var.
-              Bkz. HeroPulse.
+              Kart imlece doğru hafifçe eğilir (perspektif sarmalayıcıda) ve
+              kaydırmayla kendi hızında aşağı süzülür: kahramanın iki katmanı
+              farklı derinlikte okunur.
             */}
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.85, delay: 0.15, ease }}
-              style={{ y: parallaxMockY }}
+              initial={{ opacity: 0, y: 60, scale: 0.94 }}
+              animate={introDone ? { opacity: 1, y: 0, scale: 1 } : undefined}
+              transition={{ duration: 1.2, delay: 0.25, ease }}
+              style={{ y: parallaxMockY, perspective: 1200 }}
               className="relative"
             >
-              <HeroPulse />
+              <motion.div style={{ rotateX: cardRX, rotateY: cardRY, transformStyle: "preserve-3d" }}>
+                <HeroPulse />
+              </motion.div>
             </motion.div>
           </div>
         </motion.div>
+
+        {/* Kaydırma ipucu — yalnızca kahraman tam ekranken (lg). */}
+        <motion.button
+          type="button"
+          onClick={() => scrollTo("manifesto")}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: introDone ? 1 : 0 }}
+          transition={{ duration: 0.8, delay: 1.1 }}
+          className="hidden lg:flex absolute bottom-8 left-1/2 -translate-x-1/2 flex-col items-center gap-3 text-(--color-text-muted) hover:text-(--color-text-strong) transition-colors"
+          aria-label="Aşağı kaydır"
+        >
+          <span className="numeral text-[10.5px] uppercase tracking-[0.2em]">Kaydır</span>
+          <span className="scroll-cue" aria-hidden="true" />
+        </motion.button>
       </section>
 
       {/* ══════════════════════ RAKAMLARLA MİMİO ══════════════════════
@@ -730,8 +846,8 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               variants={fadeUp}
               className="flex flex-col gap-1.5 py-2 min-w-0 lg:px-6 lg:border-l lg:border-(--color-line) lg:first:pl-0 lg:first:border-l-0 lg:last:pr-0"
             >
-              <p className="figure text-[1.75rem] sm:text-[2.75rem] text-(--color-text-strong) leading-none m-0">
-                {stat.value}
+              <p className="figure text-[2rem] sm:text-[3.5rem] text-(--color-text-strong) leading-none m-0">
+                <CountUp value={stat.value} />
               </p>
               <p className="text-[0.8125rem] sm:text-sm font-semibold text-(--color-text-body) m-0">
                 {stat.label}
@@ -745,7 +861,30 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
         </div>
       </section>
 
-      {/* ══════════════════════ TRUST MARQUEE ══════════════════════ */}
+      {/* ══════════════════════ MANİFESTO ══════════════════════
+          Sayfanın tezi tek bir paragrafta. Okur kaydırdıkça kelimeler
+          soluk tondan tam tona geçer: paragraf okurun hızında yazılır.
+          Kahramanın vaadi ("oyuna dönüştür") ile ürünün geri kalanı
+          (ölçüm, plan, rapor) arasındaki köprü burası. */}
+      <section id="manifesto" className="section relative">
+        <div className="shell shell-wide">
+          <div className="grid lg:grid-cols-[14rem_minmax(0,1fr)] gap-6 lg:gap-12">
+            <Rise>
+              <span className="numeral text-[11px] uppercase tracking-[0.2em] text-(--color-text-muted) flex items-center gap-3">
+                <span className="w-8 h-px" style={{ background: "var(--color-line-strong)" }} />
+                Neden Mimio
+              </span>
+            </Rise>
+            <ScrubWords
+              className="m-0 font-display text-[clamp(1.5rem,4.4vw,3.6rem)] leading-[1.12] tracking-[-0.035em] text-(--color-text-strong) font-semibold"
+              accent={["oyunda", "ölçümdür", "planına"]}
+              text="Bir çocuğun oyunda geçirdiği her saniye, terapist için bir ölçümdür. Mimio o saniyeleri kaydeder, önceki seanslarla karşılaştırır ve gelecek haftanın planına geri yazar — siz yalnızca çocuğa bakın."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════ BECERİ ŞERİDİ ══════════════════════ */}
       <TrustMarquee />
 
       {/* ══════════════════════ FEATURES — BENTO GRID w/ TILT ══════════════════════
@@ -765,14 +904,9 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             {/* Bölüm başlıkları telefonda 36px basıyordu: iki satırlık başlık
                 üç satıra taşıp ekranın yarısını yiyordu. Ölçek 640px'in
                 altında viewport'la akar, üstünde eski değerinde kalır. */}
-            <motion.h2
-              variants={fadeUp}
-              className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl text-(--color-text-strong) mb-3 sm:mb-5"
-            >
-              İhtiyacınız Olan
-              <br />
-              <span className="accent-line">Her Şey Tek Yerde</span>
-            </motion.h2>
+            <h2 className="text-[clamp(1.875rem,8vw,2.5rem)] md:text-6xl text-(--color-text-strong) mb-3 sm:mb-5">
+              <MaskLines lines={["İhtiyacınız Olan", <span key="a" className="accent-line">Her Şey Tek Yerde</span>]} />
+            </h2>
             <motion.p
               variants={fadeUp}
               className="text-(--color-text-soft) text-[0.9375rem] sm:text-lg max-w-xl mx-auto"
@@ -782,12 +916,23 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             </motion.p>
           </motion.div>
 
+          {/* Izgara imleç konumunu her karta yazar; kartın kenarı imlece
+              yakın tarafında aydınlanır (bkz. `.spotlight-card`). */}
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={REVEAL_VIEWPORT}
             variants={stagger}
-            className="grid sm:grid-cols-2 md:grid-cols-4 gap-4"
+            onPointerMove={(e) => {
+              if (e.pointerType !== "mouse") return;
+              const cards = e.currentTarget.querySelectorAll<HTMLElement>(".spotlight-card");
+              cards.forEach((c) => {
+                const r = c.getBoundingClientRect();
+                c.style.setProperty("--sx", `${e.clientX - r.left}px`);
+                c.style.setProperty("--sy", `${e.clientY - r.top}px`);
+              });
+            }}
+            className="spotlight-grid grid sm:grid-cols-2 md:grid-cols-4 gap-4"
           >
             {FEATURES.map((f) => {
               const Icon = f.icon;
@@ -810,7 +955,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                       Dar hücrelerde ton yok — hepsine verilince ayrım kaybolur.
                     */}
                     <div
-                      className="glass rounded-2xl sm:rounded-3xl p-[1.125rem] sm:p-7 relative overflow-hidden group cursor-default transition-all duration-300 h-full"
+                      className="spotlight-card glass rounded-2xl sm:rounded-3xl p-[1.125rem] sm:p-7 relative overflow-hidden group cursor-default transition-all duration-300 h-full"
                       style={
                         isLarge
                           ? {
@@ -874,12 +1019,9 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             variants={stagger}
             className="max-w-2xl mb-8 sm:mb-12"
           >
-            <motion.h2
-              variants={fadeUp}
-              className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl text-(--color-text-strong) mb-3 sm:mb-4"
-            >
-              Seansın Sabahı <span className="accent-line">Tek Ekranda</span>
-            </motion.h2>
+            <h2 className="text-[clamp(1.875rem,8vw,2.5rem)] md:text-6xl text-(--color-text-strong) mb-3 sm:mb-4">
+              <MaskLines lines={["Seansın Sabahı", <span key="a" className="accent-line">Tek Ekranda</span>]} />
+            </h2>
             <motion.p
               variants={fadeUp}
               className="text-(--color-text-soft) text-[0.9375rem] sm:text-lg m-0"
@@ -889,16 +1031,12 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             </motion.p>
           </motion.div>
 
-          <motion.figure
-            initial={{ opacity: 0, y: 28 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={REVEAL_VIEWPORT}
-            transition={{ duration: 0.7, ease }}
-            className="m-0"
-          >
+          <ScrollPerspective>
+          <figure className="m-0">
             <div
               className="rounded-2xl md:rounded-3xl overflow-hidden border border-(--color-line-strong)"
               style={{ boxShadow: "var(--shadow-lg)" }}
+              data-cursor="Demo"
             >
               {mounted ? (
                 <Image
@@ -918,7 +1056,8 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             <figcaption className="mt-3 text-xs text-(--color-text-muted)">
               Demo hesabındaki gerçek ekran. Danışan adları kurgusaldır.
             </figcaption>
-          </motion.figure>
+          </figure>
+          </ScrollPerspective>
         </div>
       </section>
 
@@ -942,12 +1081,9 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             variants={stagger}
             className="max-w-2xl mb-8 sm:mb-12"
           >
-            <motion.h2
-              variants={fadeUp}
-              className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl text-(--color-text-strong) mb-3 sm:mb-4"
-            >
-              Haftayı <span className="accent-line">Bir Bakışta</span> Kurun
-            </motion.h2>
+            <h2 className="text-[clamp(1.875rem,8vw,2.5rem)] md:text-6xl text-(--color-text-strong) mb-3 sm:mb-4">
+              <MaskLines lines={[<>Haftayı <span className="accent-line">Bir Bakışta</span></>, "Kurun"]} />
+            </h2>
             <motion.p
               variants={fadeUp}
               className="text-(--color-text-soft) text-[0.9375rem] sm:text-lg m-0"
@@ -957,14 +1093,9 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             </motion.p>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 26 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={REVEAL_VIEWPORT}
-            transition={{ duration: 0.7, ease }}
-          >
+          <Rise y={60}>
             <WeekRhythmPanel />
-          </motion.div>
+          </Rise>
         </div>
       </section>
 
@@ -981,9 +1112,9 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             variants={stagger}
             className="section-head section-head-center"
           >
-            <motion.h2 variants={fadeUp} className="section-title">
-              Üç adımda başlayın
-            </motion.h2>
+            <h2 className="section-title">
+              <MaskLines lines={["Üç adımda başlayın"]} />
+            </h2>
             <motion.p variants={fadeUp} className="section-sub">
               Kurulum yok, kart bilgisi yok. Hesabı açtığınız gün ilk seansı oynatabilirsiniz.
             </motion.p>
@@ -1002,11 +1133,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             variants={stagger}
             className="relative mx-auto max-w-2xl list-none p-0 m-0 flex flex-col gap-7 sm:gap-9"
           >
-            <span
-              aria-hidden="true"
-              className="absolute left-[1.375rem] top-6 bottom-6 w-px"
-              style={{ background: "var(--color-line-strong)" }}
-            />
+            <ScrollRail className="absolute left-[1.375rem] top-6 bottom-6 w-px overflow-hidden" />
             {STEPS.map((step) => {
               const StepIcon = step.icon;
               return (
@@ -1063,12 +1190,9 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             variants={stagger}
             className="max-w-2xl mb-8 sm:mb-10"
           >
-            <motion.h2
-              variants={fadeUp}
-              className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl text-(--color-text-strong) mb-3 sm:mb-4"
-            >
-              Kimler İçin Tasarlandı?
-            </motion.h2>
+            <h2 className="text-[clamp(1.875rem,8vw,2.5rem)] md:text-6xl text-(--color-text-strong) mb-3 sm:mb-4">
+              <MaskLines lines={["Kimler İçin", "Tasarlandı?"]} />
+            </h2>
             <motion.p
               variants={fadeUp}
               className="text-(--color-text-soft) text-[0.9375rem] sm:text-lg m-0"
@@ -1175,73 +1299,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
           ekranın kenarına yapışıyor, metin kenar boşluksuz okunuyordu.
           Yatay pay yalnızca dar ekranda ekleniyor — masaüstünde blok zaten
           ortalanmış ve genişliği sınırlı. */}
-      <section id="cta" className="section max-sm:py-10! relative overflow-hidden">
-        <div className="relative max-w-3xl mx-auto text-center px-(--gutter) sm:px-0">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={REVEAL_VIEWPORT}
-            variants={stagger}
-            className="flex flex-col items-center gap-5 sm:gap-8"
-          >
-            <motion.h2
-              variants={fadeUp}
-              className="text-[clamp(1.75rem,7.5vw,2.25rem)] md:text-6xl text-(--color-text-strong) leading-tight"
-            >
-              Klinik Süreçlerinizi
-              <br />
-              <span className="accent-line">Bugün Dijitalleştirin</span>
-            </motion.h2>
-            <motion.p
-              variants={fadeUp}
-              className="text-[0.9375rem] sm:text-lg md:text-xl text-(--color-text-soft) max-w-lg"
-            >
-              Mimio ile terapi seanslarınızı daha ölçülebilir, daha eğlenceli ve
-              daha verimli hale getirin.
-            </motion.p>
-            <motion.div
-              variants={fadeUp}
-              className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto"
-            >
-              <Magnetic strength={18} className="w-full sm:w-auto">
-                <button
-                  type="button"
-                  onClick={onRegister}
-                  className="btn-signature group flex items-center justify-center gap-2.5 font-semibold px-6 sm:px-10 py-4 rounded-xl text-[0.9375rem] sm:text-base w-full sm:w-auto"
-                >
-                  Ücretsiz Başla
-                  <ArrowRight
-                    size={18}
-                    className="transition-transform group-hover:translate-x-1"
-                  />
-                </button>
-              </Magnetic>
-              <button
-                type="button"
-                onClick={onLogin}
-                className="text-sm font-semibold text-(--color-text-body) hover:text-(--color-text-strong) px-6 py-4 rounded-xl border border-(--color-line) hover:border-(--color-primary)/30 transition-all w-full sm:w-auto text-center"
-              >
-                Giriş Yap
-              </button>
-            </motion.div>
-            <motion.div
-              variants={fadeUp}
-              className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2.5 sm:gap-8 mt-1 sm:mt-4 text-[0.8125rem] sm:text-sm text-(--color-text-soft)"
-            >
-              {[
-                { icon: CheckCircle2, text: "Ücretsiz başla" },
-                { icon: Clock, text: "Kurulum gerektirmez" },
-                { icon: Shield, text: "Güvenli veri" },
-              ].map((t) => (
-                <span key={t.text} className="flex items-center gap-2">
-                  <t.icon size={15} className="text-(--color-accent-green)" />
-                  {t.text}
-                </span>
-              ))}
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
+      <ClosingCTA onLogin={onLogin} onRegister={onRegister} />
 
       {/* ══════════════════════ FOOTER ══════════════════════ */}
       <footer
@@ -1312,6 +1370,8 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             </div>
           </div>
 
+          <FooterWord />
+
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 border-t border-(--color-line-soft)">
             <p className="text-xs text-(--color-text-muted)">
               © {new Date().getFullYear()} Mimio. Tüm hakları saklıdır.
@@ -1322,6 +1382,127 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
           </div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════ */
+/*  KAPANIŞ                                                       */
+/* ══════════════════════════════════════════════════════════════ */
+
+/**
+ * Kapanış paneli kaydırmayla açılır.
+ *
+ * Panel sayfaya kenarlarından içeri çekilmiş, köşeleri yuvarlak bir kart
+ * olarak girer; okur yaklaştıkça kenarlarına doğru genişleyip ekranı
+ * kaplar. Sayfanın açık zemininden koyu bir "son sahneye" geçiş, perdenin
+ * kendisi gibi okunur. Koyu zemin temadan bağımsızdır: kapanış her iki
+ * temada da aynı ağırlıkta.
+ */
+function ClosingCTA({ onLogin, onRegister }: Props) {
+  const ref = useRef<HTMLElement | null>(null);
+  const reduced = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "start 0.15"] });
+  const p = useSpringFM(scrollYProgress, SCROLL_SPRING);
+  const inset = useTransform(p, [0, 1], [7, 0]);
+  const radius = useTransform(p, [0, 1], [44, 0]);
+  const clipPath = useTransform(
+    [inset, radius],
+    ([i, r]: number[]) => `inset(${i * 0.6}% ${i}% 0% ${i}% round ${r}px)`,
+  );
+
+  return (
+    <section id="cta" ref={ref} className="relative">
+      <motion.div
+        className="cta-panel py-[clamp(5rem,14vw,11rem)]"
+        style={reduced ? undefined : { clipPath }}
+      >
+        <div className="relative z-[1] max-w-5xl mx-auto text-center px-(--gutter) flex flex-col items-center gap-6 sm:gap-9">
+          <Rise>
+            <span className="numeral text-[11px] uppercase tracking-[0.22em]" style={{ color: "rgba(234,242,255,0.6)" }}>
+              Bir sonraki seans
+            </span>
+          </Rise>
+          <h2 className="text-[clamp(2.25rem,9vw,6.5rem)] leading-[0.98] tracking-[-0.05em] m-0" style={{ color: "#ffffff" }}>
+            <MaskLines
+              lines={[
+                "Klinik Süreçlerinizi",
+                <span key="a" style={{ color: "#8fe9f7" }}>Bugün Dijitalleştirin</span>,
+              ]}
+            />
+          </h2>
+          <Rise delay={0.2}>
+            <p className="text-[0.9375rem] sm:text-lg md:text-xl max-w-lg m-0" style={{ color: "rgba(234,242,255,0.72)" }}>
+              Mimio ile terapi seanslarınızı daha ölçülebilir, daha eğlenceli ve
+              daha verimli hale getirin.
+            </p>
+          </Rise>
+          <Rise delay={0.3} className="w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto">
+              <Magnetic strength={22} className="w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={onRegister}
+                  data-cursor="Başla"
+                  className="btn-light group flex items-center justify-center gap-2.5 font-semibold px-7 sm:px-11 py-4 sm:py-5 rounded-2xl text-[0.9375rem] sm:text-base w-full sm:w-auto"
+                >
+                  <span className="roll">
+                    <span>Ücretsiz Başla</span>
+                    <span aria-hidden="true">Ücretsiz Başla</span>
+                  </span>
+                  <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
+                </button>
+              </Magnetic>
+              <button
+                type="button"
+                onClick={onLogin}
+                className="text-sm font-semibold px-7 py-4 sm:py-5 rounded-2xl transition-colors w-full sm:w-auto text-center hover:bg-white/10"
+                style={{ color: "#eaf2ff", border: "1px solid rgba(234,242,255,0.22)" }}
+              >
+                <span className="roll">
+                  <span>Giriş Yap</span>
+                  <span aria-hidden="true">Giriş Yap</span>
+                </span>
+              </button>
+            </div>
+          </Rise>
+          <Rise delay={0.4}>
+            <div
+              className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2.5 sm:gap-8 mt-1 sm:mt-2 text-[0.8125rem] sm:text-sm"
+              style={{ color: "rgba(234,242,255,0.72)" }}
+            >
+              {[
+                { icon: CheckCircle2, text: "Ücretsiz başla" },
+                { icon: Clock, text: "Kurulum gerektirmez" },
+                { icon: Shield, text: "Güvenli veri" },
+              ].map((t) => (
+                <span key={t.text} className="flex items-center gap-2">
+                  <t.icon size={15} style={{ color: "#4fe3b5" }} />
+                  {t.text}
+                </span>
+              ))}
+            </div>
+          </Rise>
+        </div>
+      </motion.div>
+    </section>
+  );
+}
+
+/**
+ * Alt bilginin dev kelime markası. Sayfanın son ekranında yavaşça
+ * yükselir — okur sayfanın dibine indiğinde marka "yerine oturur".
+ */
+function FooterWord() {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const reduced = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end end"] });
+  const y = useTransform(scrollYProgress, [0, 1], ["45%", "0%"]);
+  return (
+    <div ref={ref} aria-hidden="true" className="overflow-hidden -mx-(--gutter) sm:mx-0 mb-4 flex justify-center">
+      <motion.span className="footer-word block" style={reduced ? undefined : { y }}>
+        Mimio
+      </motion.span>
     </div>
   );
 }

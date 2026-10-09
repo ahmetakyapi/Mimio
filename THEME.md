@@ -264,3 +264,30 @@ Degrade ve doku burada **kapalıdır** (`--gradient-signature: none`,
 `route`, `difference`) tema değişiminden bağımsız olarak koyu zemin taşır.
 Bu bilinçli bir karar: oyunun görsel tutarlılığı terapistin tema tercihine
 bağlı olmamalı. `text-white`, `border-white/10` bu bloklarda kasıtlıdır.
+
+---
+
+## Hareket Katmanı — "Akıntı"
+
+Tanıtım sayfası ve iki dünya (tanıtım ↔ uygulama) arasındaki geçiş için
+ortak hareket dili. Bileşenler `src/components/motion/`, stiller
+`globals.css` sonundaki "HAREKET KATMANI" bloğu.
+
+| Parça | Dosya | Ne yapar |
+|-------|-------|---------|
+| Açılış perdesi | `Intro.tsx` | Monogram çizilir, sayaç 000→100; perde kalkarken kahraman satır satır yükselir. Oturum başına bir kez. |
+| Geçiş perdesi | `PageTransition.tsx` | Beş sütun alttan kapanır, görünüm değişir, yukarı doğru açılır. `usePageTransition().run(swap, etiket)` |
+| Yumuşak kaydırma | `SmoothScroll.tsx` | Lenis — yalnızca tanıtımda, yalnızca tekerlek. Programatik kaydırma `smoothScrollTo()` üzerinden. |
+| İmleç | `Cursor.tsx` | Nokta + yaylı halka; `data-cursor="Etiket"` taşıyan öğede halka etiketle dolar. Sistem imleci gizlenmez. |
+| Metin / sayı | `Reveal.tsx` | `MaskLines` (satır maskesi), `Rise`, `ScrubWords` (kaydırmayla aydınlanan manifesto), `CountUp`, `VelocityMarquee`, `ScrollPerspective`, `ScrollRail` |
+
+Uygulama içinde hareket ölçülüdür: görünüm değişiminde içerik `.view-enter`
+ile yükselir, kenar çubuğu ve alt sekme seçimi `layoutId` ile kayar, giriş
+ekranı `.stagger-in` ile parça parça gelir. Seans ekranlarında süs hareketi yok.
+
+**Eğriler:** `--ease-out` (giriş) ve `--ease-curtain` (perde, maske).
+**Erişilebilirlik:** `prefers-reduced-motion` altında perde, Lenis, imleç ve
+kaydırmaya bağlı dönüşümler kapanır; içerik doğrudan görünür. Yüksek
+kontrast temasında imleç ve dekoratif ışıklar çizilmez.
+**Kapanış paneli ve perdeler** temadan bağımsız koyu (`--ink-deep`) zemin
+taşır; üzerindeki metin her zaman beyaz ailesidir.

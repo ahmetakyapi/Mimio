@@ -2169,8 +2169,12 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
 
         Tam ekran seansta krom hiç basılmaz, dolayısıyla pay da sıfırlanır.
       */}
+      {/* Görünüm değişince kap yeniden kurulur (`key`): kaydırma başa döner
+          ve içerik `.view-enter` ile yükselerek gelir. Ekranlar zaten koşullu
+          basıldığı için yeniden kurulumun ek bir maliyeti yok. */}
       <div
-        className={`flex-1 min-h-0 ${sessionFullscreen ? "" : "app-scroll"} ${
+        key={`${activeAppView}:${activeAppView === "games" ? gameStage : ""}`}
+        className={`view-enter flex-1 min-h-0 ${sessionFullscreen ? "" : "app-scroll"} ${
           ownsScroll ? "overflow-hidden flex flex-col" : "overflow-y-auto"
         }`}
       >

@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import type { AppView } from "@/lib/platform-data";
 import { BlockMark } from "@/components/brand/BlockMark";
+import { motion } from "framer-motion";
 import { MeterBar } from "./primitives";
 
 /*
@@ -110,18 +111,29 @@ export function Sidebar({
               type="button"
               aria-current={on ? "page" : undefined}
               onClick={() => onNavigate(view)}
-              className={`flex items-center gap-[11px] rounded-xl border cursor-pointer text-left transition-colors ${
+              className={`relative flex items-center gap-[11px] rounded-xl border border-transparent bg-transparent cursor-pointer text-left transition-colors ${
                 on
-                  ? "nav-active"
-                  : "border-transparent bg-transparent text-(--color-text-body) hover:bg-(--color-primary)/6"
+                  ? "text-(--color-primary-ink)"
+                  : "text-(--color-text-body) hover:bg-(--color-primary)/6"
               }`}
               style={{ padding: "11px 12px" }}
             >
-              <Icon size={17} strokeWidth={1.9} className="shrink-0" style={{ color: on ? "var(--color-primary)" : "var(--color-text-soft)" }} />
-              <span className={`text-[13px] flex-1 ${on ? "font-semibold" : "font-medium"}`}>{label}</span>
+              {/* Seçim zemini satırlar arasında kayar: tek bir öğe, `layoutId`
+                  ile bir satırdan diğerine taşınır. Önceden zemin satırda
+                  yanıp sönüyordu; göz yeni seçimi aramak zorunda kalıyordu. */}
+              {on && (
+                <motion.span
+                  layoutId="sidebar-active"
+                  className="nav-active absolute -inset-px rounded-xl"
+                  transition={{ type: "spring", stiffness: 420, damping: 36 }}
+                  aria-hidden="true"
+                />
+              )}
+              <Icon size={17} strokeWidth={1.9} className="relative shrink-0" style={{ color: on ? "var(--color-primary)" : "var(--color-text-soft)" }} />
+              <span className={`relative text-[13px] flex-1 ${on ? "font-semibold" : "font-medium"}`}>{label}</span>
               {badge && count > 0 && (
                 <span
-                  className="numeral text-[10px] font-semibold shrink-0"
+                  className="relative numeral text-[10px] font-semibold shrink-0"
                   style={{
                     padding: "2px 7px",
                     borderRadius: 6,

@@ -64,7 +64,7 @@ export function AuthScreen({
     <div className="min-h-dvh flex">
       {/* ── Sol: marka paneli ── */}
       <div
-        className="hidden lg:flex flex-col shrink-0 relative overflow-hidden"
+        className="stagger-in hidden lg:flex flex-col shrink-0 relative overflow-hidden"
         style={{ width: 560, padding: "48px 52px", borderRight: "1px solid var(--color-line)" }}
       >
         <button
@@ -126,7 +126,8 @@ export function AuthScreen({
         form kenarın altına giriyordu.
       */}
       <div className="flex-1 flex items-start lg:items-center justify-center min-w-0 pt-[max(14px,env(safe-area-inset-top))] pb-[max(30px,env(safe-area-inset-bottom))] pl-[max(20px,env(safe-area-inset-left))] pr-[max(20px,env(safe-area-inset-right))] lg:pt-10 lg:pb-10 lg:pl-6 lg:pr-6">
-        <div className="w-full" style={{ maxWidth: 380 }}>
+        {/* Form, geçiş perdesi açılırken parça parça yükselir (`.stagger-in`). */}
+        <div className="stagger-in w-full" style={{ maxWidth: 380 }}>
           {/*
             Marka satırı yalnızca telefonda. Sol tanıtım sütunu `hidden
             lg:flex` olduğu için mobilde ekranda ne marka ne de tanıtım
