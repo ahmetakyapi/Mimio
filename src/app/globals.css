@@ -3056,6 +3056,9 @@ html[data-theme='high-contrast'] .hero-glow { display: none; }
 }
 html[data-theme='high-contrast'] .cta-panel { background: #000; border: 2px solid var(--color-primary); }
 html[data-theme='high-contrast'] .cta-panel::before { display: none; }
+html[data-theme='high-contrast'] .cta-panel::after { display: none; }
+.cta-accent { color: #8fe9f7; }
+html[data-theme='high-contrast'] .cta-accent { color: var(--color-primary); }
 .btn-light {
   background: #ffffff;
   color: #0f2033;

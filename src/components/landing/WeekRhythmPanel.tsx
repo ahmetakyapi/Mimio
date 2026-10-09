@@ -1,6 +1,7 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
+import { useReducedMotionSafe } from "@/components/motion/Reveal";
 
 /**
  * Bir haftanın ritmi — çizilmiş yüzey, ekran görüntüsü değil.
@@ -120,7 +121,7 @@ const BALANCE = (Object.keys(DOMAIN) as DomainKey[])
   .sort((a, b) => b.pct - a.pct);
 
 export function WeekRhythmPanel() {
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
 
   return (
     <div

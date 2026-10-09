@@ -1,6 +1,7 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
+import { useReducedMotionSafe } from "@/components/motion/Reveal";
 
 /**
  * Kahraman görseli: tek bir ölçümün büyütülmüş hâli.
@@ -75,7 +76,7 @@ const LAST = points[points.length - 1];
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 export function HeroPulse() {
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
 
   return (
     <div className="relative mx-auto w-full max-w-[34rem]">

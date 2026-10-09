@@ -25,6 +25,22 @@ import {
  */
 
 export const EASE_OUT = [0.22, 1, 0.36, 1] as const;
+
+/**
+ * `useReducedMotion`, ama ilk boyamada her zaman `false`.
+ *
+ * Sunucu tercihi bilemez (`null` döner), istemci ilk render'da `true`
+ * okuyabilir. Bu değer `initial` ya da `style`a girince sunucunun bastığı
+ * stil ile istemcinin ilk stili ayrışıyor, React hidrasyonu atıp ağacı
+ * baştan kuruyordu. Tercih ancak bileşen yerleştikten sonra devreye girer;
+ * hareket azaltma kullanıcısı için içerik o an süresiz (0 sn) açılır.
+ */
+export function useReducedMotionSafe(): boolean {
+  const reduced = useReducedMotion();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  return mounted && !!reduced;
+}
 const VIEW = { once: true, margin: "-12% 0px -12% 0px" } as const;
 
 /* ───────────────────────── Satır maskesi ───────────────────────── */
@@ -53,8 +69,8 @@ export function MaskLines({
 }) {
   const ref = useRef<HTMLSpanElement | null>(null);
   const inView = useInView(ref, VIEW);
-  const reduced = useReducedMotion();
-  const show = play ?? inView;
+  const reduced = useReducedMotionSafe();
+  const show = reduced || (play ?? inView);
 
   return (
     <span ref={ref} className={className}>
@@ -62,9 +78,9 @@ export function MaskLines({
         <span key={i} className={`mask-line block ${lineClassName ?? ""}`}>
           <motion.span
             className="block"
-            initial={reduced ? false : { y: "108%", rotate: 2.5 }}
+            initial={{ y: "108%", rotate: 2.5 }}
             animate={show ? { y: "0%", rotate: 0 } : undefined}
-            transition={{ duration: 1, delay: delay + i * stagger, ease: EASE_OUT }}
+            transition={reduced ? { duration: 0 } : { duration: 1, delay: delay + i * stagger, ease: EASE_OUT }}
             style={{ transformOrigin: "0% 100%" }}
           >
             {line}
@@ -92,15 +108,15 @@ export function Rise({
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const inView = useInView(ref, VIEW);
-  const reduced = useReducedMotion();
-  const show = play ?? inView;
+  const reduced = useReducedMotionSafe();
+  const show = reduced || (play ?? inView);
   return (
     <motion.div
       ref={ref}
       className={className}
-      initial={reduced ? false : { opacity: 0, y, filter: "blur(6px)" }}
+      initial={{ opacity: 0, y, filter: "blur(6px)" }}
       animate={show ? { opacity: 1, y: 0, filter: "blur(0px)" } : undefined}
-      transition={{ duration: 0.9, delay, ease: EASE_OUT }}
+      transition={reduced ? { duration: 0 } : { duration: 0.9, delay, ease: EASE_OUT }}
     >
       {children}
     </motion.div>
@@ -126,7 +142,7 @@ export function ScrubWords({
   readonly className?: string;
 }) {
   const ref = useRef<HTMLParagraphElement | null>(null);
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.88", "end 0.42"] });
   const words = text.split(" ");
 
@@ -188,10 +204,10 @@ function ScrubWord({
 export function CountUp({ value, duration = 1.6, className }: { readonly value: string; readonly duration?: number; readonly className?: string }) {
   const ref = useRef<HTMLSpanElement | null>(null);
   const inView = useInView(ref, { once: true, margin: "-10% 0px" });
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
   const target = Number(value);
   const numeric = Number.isFinite(target) && value.trim() !== "";
-  const [shown, setShown] = useState(numeric && !reduced ? "0" : value);
+  const [shown, setShown] = useState(numeric ? "0" : value);
 
   useEffect(() => {
     if (!numeric || reduced || !inView) {
@@ -234,7 +250,7 @@ export function VelocityMarquee({
   readonly baseVelocity?: number;
   readonly className?: string;
 }) {
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
   const baseX = useMotionValue(0);
   const { scrollY } = useScroll();
   const scrollVelocity = useVelocity(scrollY);
@@ -278,7 +294,7 @@ export function VelocityMarquee({
  */
 export function ScrollPerspective({ children, className }: { readonly children: ReactNode; readonly className?: string }) {
   const ref = useRef<HTMLDivElement | null>(null);
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "start 0.18"] });
   const p = useSpring(scrollYProgress, { stiffness: 90, damping: 24, mass: 0.4 });
   const rotateX = useTransform(p, [0, 1], [28, 0]);
@@ -304,7 +320,7 @@ export function ScrollPerspective({ children, className }: { readonly children: 
  */
 export function ScrollRail({ className }: { readonly className?: string }) {
   const ref = useRef<HTMLSpanElement | null>(null);
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.75", "end 0.55"] });
   const scaleY = useSpring(scrollYProgress, { stiffness: 120, damping: 26 });
   return (

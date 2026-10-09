@@ -11,7 +11,6 @@ import {
   AnimatePresence,
   motion,
   useMotionValueEvent,
-  useReducedMotion,
   useScroll,
   useSpring,
   useTransform,
@@ -43,7 +42,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { PLATFORM_STATS } from "@/lib/platform-stats";
-import { MaskLines, VelocityMarquee } from "@/components/motion/Reveal";
+import { MaskLines, VelocityMarquee, useReducedMotionSafe } from "@/components/motion/Reveal";
 import { smoothScrollTo } from "@/components/motion/SmoothScroll";
 
 const prefersReduced =
@@ -89,7 +88,7 @@ export function SectionDots({ sections }: SectionDotsProps) {
           className="section-dot group"
           data-active={active === s.id}
           aria-label={s.label}
-          onClick={() => smoothScrollTo(s.id, s.id === "top" ? { offset: 0 } : undefined)}
+          onClick={() => smoothScrollTo(s.id)}
         >
           <span className="section-dot-label">{s.label}</span>
         </button>
@@ -311,7 +310,7 @@ export function StickyWalkthrough() {
   });
   const [active, setActive] = useState(0);
   const steps = WALKTHROUGH.length;
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSafe();
 
   /* Bölüm ekranda mı? Zamanlayıcı yalnızca buradayken çalışır; sayfanın
      başka yerindeyken görünmeyen bir turu ilerletmenin anlamı yok. */
@@ -1147,7 +1146,7 @@ export function GamesCarousel({ onLogin }: { onLogin: () => void }) {
    * verilir. Bölüm katlamanın çok altında olduğu için değişim görünmez.
    */
   const [desktop, setDesktop] = useState(false);
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px) and (min-height: 640px)");
     const update = () => setDesktop(mq.matches);

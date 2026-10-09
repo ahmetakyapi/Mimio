@@ -7,7 +7,6 @@ import {
   AnimatePresence,
   useMotionValue,
   useMotionValueEvent,
-  useReducedMotion,
   useScroll,
   useSpring as useSpringFM,
   useTransform,
@@ -50,7 +49,7 @@ import {
   TiltCard,
   TrustMarquee,
 } from "./landing/LandingExtras";
-import { CountUp, MaskLines, Rise, ScrollPerspective, ScrollRail, ScrubWords } from "./motion/Reveal";
+import { CountUp, MaskLines, Rise, ScrollPerspective, ScrollRail, ScrubWords, useReducedMotionSafe } from "./motion/Reveal";
 import { setScrollLocked, smoothScrollTo } from "./motion/SmoothScroll";
 import { useIntroDone } from "./motion/Intro";
 
@@ -239,7 +238,7 @@ const stagger = {
 export default function LandingPage({ onLogin, onRegister }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   /* Hem kahraman paralaksı hem sekme/tur zamanlayıcıları okuyor; tek yerde. */
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSafe();
   const [persona, setPersona] = useState(0);
   /*
    * Sekmeler kendiliğinden ilerler. Dört uzmanlık alanı var ve okur yalnızca
@@ -457,7 +456,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
     setMenuOpen(false);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        smoothScrollTo(id, id === "top" ? { offset: 0 } : undefined);
+        smoothScrollTo(id);
       });
     });
   };
@@ -1401,7 +1400,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
  */
 function ClosingCTA({ onLogin, onRegister }: Props) {
   const ref = useRef<HTMLElement | null>(null);
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "start 0.15"] });
   const p = useSpringFM(scrollYProgress, SCROLL_SPRING);
   const inset = useTransform(p, [0, 1], [7, 0]);
@@ -1427,7 +1426,7 @@ function ClosingCTA({ onLogin, onRegister }: Props) {
             <MaskLines
               lines={[
                 "Klinik Süreçlerinizi",
-                <span key="a" style={{ color: "#8fe9f7" }}>Bugün Dijitalleştirin</span>,
+                <span key="a" className="cta-accent">Bugün Dijitalleştirin</span>,
               ]}
             />
           </h2>
@@ -1495,7 +1494,7 @@ function ClosingCTA({ onLogin, onRegister }: Props) {
  */
 function FooterWord() {
   const ref = useRef<HTMLDivElement | null>(null);
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end end"] });
   const y = useTransform(scrollYProgress, [0, 1], ["45%", "0%"]);
   return (

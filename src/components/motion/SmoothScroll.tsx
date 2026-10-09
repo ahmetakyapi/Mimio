@@ -80,9 +80,13 @@ export function smoothScrollTo(target: string | number | HTMLElement, opts?: { o
   if (el == null) return;
 
   if (activeLenis) {
-    const headerPad = typeof el === "number" ? 0 : -(window.innerWidth < 640 ? 76 : 96);
+    /* Lenis hedefin `scroll-margin-top` değerini de html'in
+       `scroll-padding-top` değerini de düşüyor; globals.css ikisini aynı
+       başlık payı için tanımlıyor ve pay iki kez sayılınca bölüm başlığı
+       ekranın üçte birinde duruyordu. Birinin geri eklenmesi payı teke indirir. */
+    const margin = typeof el === "number" ? 0 : Number.parseFloat(getComputedStyle(el).scrollMarginTop) || 0;
     activeLenis.scrollTo(el, {
-      offset: opts?.offset ?? headerPad,
+      offset: opts?.offset ?? margin,
       immediate: opts?.immediate,
       duration: 1.4,
     });
