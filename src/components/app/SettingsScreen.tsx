@@ -77,7 +77,7 @@ export function SettingsScreen({
 
   return (
     <div className="flex flex-col gap-5 h-full min-h-0">
-      <ScreenHeader eyebrow="Hesap · klinik · görünüm" title="Ayarlar" sub="Tercihler cihaz başına saklanır." />
+      <ScreenHeader title="Ayarlar" sub="Tercihler cihaz başına saklanır." />
 
       {/*
        * `minmax(340px, …)` çıplak hâliyle 320px'lik telefonda kartı kabından

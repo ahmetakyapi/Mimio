@@ -363,8 +363,10 @@ export function Radar({
 /* ── Ekran başlığı ─────────────────────────────────────────────────────── */
 
 /**
- * Her ekranın tepesi aynı üçlüyü taşır: mono göz kapağı (bağlam), display
- * başlık (ekranın adı), gövde alt satırı (o an bilinmesi gereken tek şey).
+ * Her ekranın tepesi: display başlık (ekranın adı) ve gövde alt satırı (o an
+ * bilinmesi gereken tek şey). Başlığın üstündeki mono satır isteğe bağlı ve
+ * yalnızca veri taşıdığında (tarih, hafta, sayım, seçili danışan) kullanılır —
+ * süs amaçlı göz kapağı yok.
  */
 export function ScreenHeader({
   eyebrow,
@@ -372,7 +374,7 @@ export function ScreenHeader({
   sub,
   actions,
 }: {
-  readonly eyebrow: ReactNode;
+  readonly eyebrow?: ReactNode;
   readonly title: ReactNode;
   readonly sub?: ReactNode;
   readonly actions?: ReactNode;
@@ -380,9 +382,11 @@ export function ScreenHeader({
   return (
     <div className="screen-head">
       <div className="screen-head-main">
-        <div className="numeral text-[10px] font-medium uppercase tracking-[0.16em] text-(--color-text-soft) mb-1.5 lg:mb-2">
-          {eyebrow}
-        </div>
+        {eyebrow && (
+          <div className="numeral text-[10px] font-medium uppercase tracking-[0.16em] text-(--color-text-soft) mb-1.5 lg:mb-2">
+            {eyebrow}
+          </div>
+        )}
         <h1 className="m-0 mb-[6px] text-[clamp(1.25rem,1.9vw,1.75rem)] leading-[1.15] text-(--color-text-strong)">{title}</h1>
         {sub && <p className="m-0 text-[12.5px] leading-[1.45] text-(--color-text-body)">{sub}</p>}
       </div>

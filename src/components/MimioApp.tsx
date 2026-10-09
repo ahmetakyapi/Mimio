@@ -2330,7 +2330,6 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               activeClient={activeClient}
               onSelectClient={setActiveClientId}
               sessions={platformOverview.recentSessions}
-              activityCount={THERAPY_DOMAINS.reduce((n, d) => n + (d.activities?.length ?? 0), 0)}
               onStart={(key) => {
                 /* Yeni seans temiz ölçümle başlar; önceki seansın izi ve
                    ipucu sayaçları taşınırsa kayıt yanlış olur. */

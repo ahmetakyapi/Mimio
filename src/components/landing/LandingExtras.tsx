@@ -33,7 +33,6 @@ import {
   Plus,
   Puzzle,
   ShieldCheck,
-  Sparkles,
   Target,
   TrendingUp,
   Users,
@@ -429,10 +428,6 @@ export function StickyWalkthrough() {
           <div className="max-w-7xl mx-auto w-full px-[var(--gutter)] lg:px-6 grid lg:grid-cols-[1fr_1.15fr] gap-8 lg:gap-12 xl:gap-16 items-center">
             {/* Left — step list */}
             <div className="flex flex-col gap-4">
-              <div className="inline-flex w-fit items-center gap-2 text-xs font-bold tracking-widest text-(--color-primary) uppercase bg-(--color-primary-light) px-4 py-2 rounded-full">
-                <Sparkles size={12} />
-                Platform Turu
-              </div>
               <h2 className="text-[clamp(1.625rem,7.5vw,2.25rem)] md:text-5xl text-(--color-text-strong) leading-[1.05] tracking-tight">
                 <MaskLines lines={["Dört Adımda", <span key="a" className="accent-line">Dijital Terapi Akışı</span>]} />
               </h2>

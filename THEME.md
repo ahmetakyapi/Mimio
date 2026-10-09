@@ -275,7 +275,7 @@ ortak hareket dili. Bileşenler `src/components/motion/`, stiller
 
 | Parça | Dosya | Ne yapar |
 |-------|-------|---------|
-| Açılış perdesi | `Intro.tsx` | Monogram çizilir, sayaç 000→100; perde kalkarken kahraman satır satır yükselir. Oturum başına bir kez. |
+| Açılış — "Bloklar" | `Intro.tsx` | Sayaç yok. Sıra Hafızası'nın yumuşak blokları M'nin çizgisini izleyerek düşer, kenetlenip monogramı kurar; kelime markası yükselir, altında seans eğrisi çizilir; ardından ekranı örten blok ızgarası merkezden dışa blok blok küçülüp kahramanı açar (~2,2 sn). Kurulum saf CSS (transform/opacity/clip-path), zemin temayı izler. Oturum başına bir kez (`sessionStorage: mimio-intro-seen` → boyamadan önce `html[data-intro=skip]`); hareket azaltmada yok; betik çalışmazsa CSS 4,2 sn'de perdeyi kaldırır. |
 | Geçiş perdesi | `PageTransition.tsx` | Beş sütun alttan kapanır, görünüm değişir, yukarı doğru açılır. `usePageTransition().run(swap, etiket)` |
 | Yumuşak kaydırma | `SmoothScroll.tsx` | Lenis — yalnızca tanıtımda, yalnızca tekerlek. Programatik kaydırma `smoothScrollTo()` üzerinden. |
 | İmleç | `Cursor.tsx` | Nokta + yaylı halka; `data-cursor="Etiket"` taşıyan öğede halka etiketle dolar. Sistem imleci gizlenmez. |
@@ -289,5 +289,9 @@ ekranı `.stagger-in` ile parça parça gelir. Seans ekranlarında süs hareketi
 **Erişilebilirlik:** `prefers-reduced-motion` altında perde, Lenis, imleç ve
 kaydırmaya bağlı dönüşümler kapanır; içerik doğrudan görünür. Yüksek
 kontrast temasında imleç ve dekoratif ışıklar çizilmez.
-**Kapanış paneli ve perdeler** temadan bağımsız koyu (`--ink-deep`) zemin
+**Bölüm başlıkları** göz kapağı (başlık üstünde versal küçük etiket, numaralı
+bölüm etiketi, rozet-başlık) taşımaz: başlık + açıklama yeter. Uygulamada
+`ScreenHeader`ın üst satırı yalnızca veri taşıdığında (tarih, hafta, sayım,
+seçili danışan) kullanılır.
+**Kapanış paneli ve geçiş perdesi** temadan bağımsız koyu (`--ink-deep`) zemin
 taşır; üzerindeki metin her zaman beyaz ailesidir.

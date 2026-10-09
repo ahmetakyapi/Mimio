@@ -682,22 +682,6 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
           <div className="grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] gap-y-8 sm:gap-y-12 lg:gap-x-10 xl:gap-x-14 items-center">
             {/* Sol — tez */}
             <div className="flex flex-col items-start gap-4 sm:gap-6">
-              {/* Rozet telefonda 11.5px + 0.14em ile 34 karakteri iki satıra
-                  bölüp kutuya dönüşüyordu; dar ekranda punto ve harf aralığı
-                  gevşetildi. */}
-              <Rise play={introDone} y={14} delay={0.05}>
-                <span
-                  className="inline-flex items-center gap-2 sm:gap-2.5 text-[10.5px] tracking-[0.06em] px-3 py-1 sm:text-[11px] sm:tracking-[0.14em] sm:px-3.5 sm:py-1.5 font-bold uppercase text-(--color-primary) rounded-full"
-                  style={{
-                    background: "var(--color-primary-light)",
-                    border: "1px solid var(--color-line-strong)",
-                  }}
-                >
-                  <span className="live-pulse w-1.5 h-1.5 rounded-full" style={{ background: "var(--color-primary)" }} />
-                  Ölçüm temelli ergoterapi platformu
-                </span>
-              </Rise>
-
               {/*
                 Başlık satır satır, kendi maskesinin altından yükselir. Önceki
                 kurguda başlık tek blok olarak kayıyordu; satırların ağırlık
@@ -867,13 +851,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
           (ölçüm, plan, rapor) arasındaki köprü burası. */}
       <section id="manifesto" className="section relative">
         <div className="shell shell-wide">
-          <div className="grid lg:grid-cols-[14rem_minmax(0,1fr)] gap-6 lg:gap-12">
-            <Rise>
-              <span className="numeral text-[11px] uppercase tracking-[0.2em] text-(--color-text-muted) flex items-center gap-3">
-                <span className="w-8 h-px" style={{ background: "var(--color-line-strong)" }} />
-                Neden Mimio
-              </span>
-            </Rise>
+          <div className="max-w-[68rem]">
             <ScrubWords
               className="m-0 font-display text-[clamp(1.5rem,4.4vw,3.6rem)] leading-[1.12] tracking-[-0.035em] text-(--color-text-strong) font-semibold"
               accent={["oyunda", "ölçümdür", "planına"]}
@@ -1417,11 +1395,6 @@ function ClosingCTA({ onLogin, onRegister }: Props) {
         style={reduced ? undefined : { clipPath }}
       >
         <div className="relative z-[1] max-w-5xl mx-auto text-center px-(--gutter) flex flex-col items-center gap-6 sm:gap-9">
-          <Rise>
-            <span className="numeral text-[11px] uppercase tracking-[0.22em]" style={{ color: "rgba(234,242,255,0.6)" }}>
-              Bir sonraki seans
-            </span>
-          </Rise>
           <h2 className="text-[clamp(2.25rem,9vw,6.5rem)] leading-[0.98] tracking-[-0.05em] m-0" style={{ color: "#ffffff" }}>
             <MaskLines
               lines={[

@@ -42,7 +42,6 @@ interface Props {
   readonly activeClient: ClientProfile | null;
   readonly onSelectClient: (id: string) => void;
   readonly sessions: readonly RecentSessionEntry[];
-  readonly activityCount: number;
   readonly onStart: (gameKey: PlatformGameKey) => void;
   readonly onStartSequence: (keys: readonly PlatformGameKey[]) => void;
   readonly onOpenSetPicker: () => void;
@@ -53,7 +52,6 @@ export function GameLibraryScreen({
   activeClient,
   onSelectClient,
   sessions,
-  activityCount,
   onStart,
   onStartSequence,
   onOpenSetPicker,
@@ -114,7 +112,6 @@ export function GameLibraryScreen({
   return (
     <div className="flex flex-col gap-5 max-lg:gap-4 h-full min-h-0">
       <ScreenHeader
-        eyebrow={`${GAME_TABS.length} oyun · ${activityCount} kanıt temelli aktivite`}
         title="Terapi Oyunları"
         sub="Her oyun literatürde doğrulanmış bir paradigmaya dayanır."
         actions={

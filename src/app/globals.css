@@ -307,7 +307,8 @@
   margin-inline: 0 auto;
 }
 
-/* Bölüm başlığı bloğu — eyebrow + başlık + açıklama tek ritimde */
+/* Bölüm başlığı bloğu — başlık + açıklama tek ritimde. Başlığın üstünde
+   göz kapağı (versal küçük etiket) yok: okunmuyordu, başlığı da ezdi. */
 .section-head {
   display: flex;
   flex-direction: column;
@@ -319,31 +320,6 @@
   align-items: center;
   text-align: center;
   margin-inline: auto;
-}
-.section-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  align-self: flex-start;
-  padding: 0.3rem 0.7rem 0.3rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.6875rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-primary);
-  background: var(--color-primary-light);
-  border: 1px solid var(--color-line-strong);
-}
-.section-head-center .section-eyebrow { align-self: center; }
-/* Versal + 0.14em harf aralığı dar ekranda göz kapağını iki satıra bölüp
-   rozeti kutuya çeviriyordu; telefonda aralık gevşer, punto düşer. */
-@media (max-width: 640px) {
-  .section-eyebrow {
-    font-size: 0.625rem;
-    letter-spacing: 0.1em;
-    padding: 0.28rem 0.6rem 0.28rem 0.5rem;
-  }
 }
 .section-title {
   margin: 0;
@@ -2649,8 +2625,8 @@ html[data-theme='light'] .dot-grid {
 :root {
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-curtain: cubic-bezier(0.76, 0, 0.24, 1);
-  /* Perde ve açılış ekranı temadan bağımsız koyu: marka anı her iki
-     temada da aynı görünsün. */
+  /* Geçiş perdesi ve kapanış paneli temadan bağımsız koyu. Açılış
+     ("Bloklar") ise temayı izler: ilk an sayfanın kendi zemininde geçer. */
   --ink-deep: #050b16;
   --ink-raise: #0b1730;
 }
@@ -2676,109 +2652,210 @@ html.lenis, html.lenis body { height: auto; }
 }
 .mask-line.block { display: block; }
 
-/* ── Açılış perdesi ── */
-.preloader {
+/* ── Açılış: "Bloklar" ──
+   Bkz. src/components/motion/Intro.tsx. Kurulum CSS ile, işaretleme
+   boyandığı anda başlar; zaman çizelgesi (ms):
+     120–1230  M'nin 12 bloğu çizgi sırasıyla düşer, yaylanarak oturur
+     1180–1500 bloklar kenetlenir (boşluk kapanır), işaret "tık" der
+     700–1460  seans eğrisi soldan sağa çizilir, noktalar sırayla belirir
+     760–1560  kelime markası harf harf yükselir
+     1500→     [data-state="leave"]: sahne söner, zemin ızgarası merkezden
+               dışa doğru blok blok küçülür ve kahraman aralarından açılır
+   Yalnızca transform / opacity / clip-path. Zemin temayı izler. */
+.intro {
+  --cell: clamp(64px, 7.5vw, 128px);
+  --mark: clamp(88px, 9.5vw, 128px);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: var(--ink-deep);
-  color: #eaf2ff;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: clamp(1.25rem, 4vw, 2.5rem);
-  /* Betik hiç çalışmazsa perde sonsuza dek kalmasın. */
-  animation: preloader-failsafe 0.01s linear 6s forwards;
+  overflow: hidden;
+  pointer-events: all;
+  /* Saat: istemci çıkış anını bu animasyonun ilerlemesinden okur.
+     Betik hiç çalışmazsa perde 4,2 sn'de kendisi kalkar. */
+  animation: intro-failsafe 0.45s ease 4.2s forwards;
 }
-html[data-intro="skip"] .preloader { display: none; }
+html[data-intro="skip"] .intro { display: none; }
 @media (prefers-reduced-motion: reduce) {
-  .preloader { display: none; }
+  .intro { display: none; }
 }
-@keyframes preloader-failsafe {
-  to { visibility: hidden; pointer-events: none; }
+@keyframes intro-failsafe {
+  to { opacity: 0; visibility: hidden; pointer-events: none; }
 }
-.preloader::before {
+.intro[data-state="leave"] { pointer-events: none; }
+/* Çok geniş ekranda ızgaranın yetişmediği kenarlar için düz zemin. */
+.intro::before {
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(60% 50% at 70% 20%, rgba(77, 125, 255, 0.18), transparent 70%),
-    radial-gradient(50% 45% at 20% 85%, rgba(42, 214, 239, 0.12), transparent 70%);
-  pointer-events: none;
+  background: var(--color-page-bg);
+  transition: opacity 0.18s linear;
 }
-.preloader::after {
-  content: "";
+.intro[data-state="leave"]::before { opacity: 0; }
+
+/* Zemin ızgarası — bloklar birbirinin üstüne taşar (1.32×), köşe
+   yuvarlakları komşusunun altında kalır; dikiş görünmez. */
+.intro-cells {
   position: absolute;
-  inset: 0;
-  background-image: var(--grain);
-  opacity: 0.25;
-  pointer-events: none;
+  inset: calc(var(--cell) * -1);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--cell));
+  grid-auto-rows: var(--cell);
+  justify-content: center;
+  align-content: center;
 }
-.preloader-tail {
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 100%;
-  background: var(--gradient-signature);
-  transform-origin: 50% 100%;
-  z-index: 0;
-  opacity: 0.9;
+.intro-cell {
+  display: block;
+  background: var(--color-page-bg);
+  border-radius: 26%;
+  transform: scale(1.32);
 }
-.preloader-center {
+.intro[data-state="leave"] .intro-cell {
+  animation: intro-cell-out 0.42s cubic-bezier(0.55, 0, 0.25, 1) var(--d, 0ms) forwards;
+}
+@keyframes intro-cell-out {
+  0%   { transform: scale(1.32); opacity: 1; }
+  70%  { opacity: 1; }
+  100% { transform: scale(0.2); opacity: 0; }
+}
+
+/* Sahne */
+.intro-stage {
   position: absolute;
   inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1.25rem;
-  z-index: 1;
+  gap: clamp(1.25rem, 2.6vw, 1.75rem);
+  padding-bottom: 2vh;
 }
-.preloader-mark {
-  width: clamp(64px, 9vw, 96px);
-  height: auto;
-  color: rgba(234, 242, 255, 0.85);
-  overflow: visible;
+.intro[data-state="leave"] .intro-stage {
+  animation: intro-stage-out 0.24s cubic-bezier(0.3, 0, 0.2, 1) forwards;
 }
-.preloader-word {
-  font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: -0.045em;
-  font-size: clamp(2.75rem, 9vw, 6.5rem);
-  line-height: 1;
-  display: inline-flex;
+@keyframes intro-stage-out {
+  to { opacity: 0; transform: translateY(-10px) scale(0.97); }
 }
-.preloader-foot {
-  position: relative;
-  z-index: 1;
-  margin-top: auto;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1rem;
-}
-.preloader-label {
-  font-family: var(--font-numeric);
-  font-size: 0.75rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(234, 242, 255, 0.6);
-}
-.preloader-count {
-  font-size: clamp(3rem, 12vw, 9rem);
-  line-height: 0.8;
-  font-weight: 500;
-  letter-spacing: -0.06em;
-  color: #eaf2ff;
-}
-.preloader-bar {
+.intro-halo {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 3px;
-  background: var(--gradient-bar);
-  transform-origin: 0 50%;
-  z-index: 2;
+  left: 50%;
+  top: 50%;
+  width: min(70vmin, 560px);
+  aspect-ratio: 1;
+  margin: calc(min(70vmin, 560px) / -2) 0 0 calc(min(70vmin, 560px) / -2);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--color-primary-light), transparent);
+  opacity: 0;
+  transform: scale(0.7);
+  animation: intro-halo 1.2s var(--ease-out) 0.15s forwards;
+}
+@keyframes intro-halo {
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Monogram: 5×5 ızgarada 12 blok. */
+.intro-mark {
+  position: relative;
+  width: var(--mark);
+  height: var(--mark);
+  animation: intro-snap 0.34s var(--ease-out) 1.2s both;
+}
+@keyframes intro-snap {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+.intro-tile {
+  position: absolute;
+  width: 20%;
+  height: 20%;
+  left: calc(var(--c) * 20%);
+  top: calc(var(--r) * 20%);
+  opacity: 0;
+  animation: intro-drop 0.56s var(--ease-bounce) calc(120ms + var(--i) * 50ms) both;
+}
+@keyframes intro-drop {
+  0%   { opacity: 0; transform: translateY(-240%) scale(0.55); }
+  45%  { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.intro-tile-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 30%;
+  background: color-mix(in oklab, var(--color-signature-from), var(--color-signature-to) var(--mix));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 6px 14px -6px color-mix(in srgb, var(--color-primary) 55%, transparent);
+  transform: scale(0.8);
+  animation: intro-fuse 0.3s var(--ease-out) 1.2s both;
+}
+@keyframes intro-fuse {
+  from { transform: scale(0.8); }
+  to   { transform: scale(1.02); }
+}
+
+/* Kelime markası + seans eğrisi */
+.intro-lockup {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: clamp(0.5rem, 1vw, 0.75rem);
+}
+.intro-word {
+  display: inline-flex;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(2.25rem, 4.6vw, 3.5rem);
+  letter-spacing: -0.045em;
+  line-height: 1;
+  color: var(--color-text-strong);
+}
+.intro-letter {
+  display: inline-block;
+  opacity: 0;
+  animation: intro-rise 0.64s var(--ease-out) calc(760ms + var(--i) * 40ms) both;
+}
+@keyframes intro-rise {
+  from { opacity: 0; transform: translateY(0.45em); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.intro-chart {
+  display: block;
+  /* Eğri kelime markasının genişliğini alır, kendisi genişletmez. */
+  width: 0;
+  min-width: 100%;
+  height: auto;
+  overflow: visible;
+  clip-path: inset(-30% 100% -30% -10%);
+  animation: intro-draw 0.76s cubic-bezier(0.45, 0, 0.2, 1) 0.7s forwards;
+}
+@keyframes intro-draw {
+  to { clip-path: inset(-30% -10% -30% -10%); }
+}
+.intro-chart-base {
+  stroke: var(--color-line-strong);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+.intro-dot {
+  fill: var(--color-page-bg);
+  stroke: var(--color-primary);
+  stroke-width: 1.4;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0);
+  animation: intro-pop 0.38s var(--ease-bounce) var(--t) forwards;
+}
+.intro-dot-last {
+  fill: var(--color-signature-to);
+  stroke: var(--color-page-bg);
+  stroke-width: 1.6;
+}
+@keyframes intro-pop {
+  to { transform: scale(1); }
 }
 
 /* ── Geçiş perdesi ── */
