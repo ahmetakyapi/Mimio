@@ -36,7 +36,7 @@ export function SessionSetSummary({ sessionSet, onClose, onNewSet }: SessionSetS
                 🏁
               </div>
               <div>
-                <p className="text-[10px] font-extrabold uppercase tracking-widest text-[#4d7dff] m-0">{sessionSet.presetLabel} · Tamamlandı</p>
+                <p className="text-[12px] font-semibold text-[#4d7dff] m-0">{sessionSet.presetLabel} · Tamamlandı</p>
                 <h3 className="text-white font-extrabold text-lg m-0 leading-tight">Seri Özeti</h3>
               </div>
             </div>
@@ -48,7 +48,7 @@ export function SessionSetSummary({ sessionSet, onClose, onNewSet }: SessionSetS
             </div>
   
             <div className="rounded-2xl p-4 text-center" style={{ background: "rgba(43, 98, 245,0.08)", border: "1px solid rgba(43, 98, 245,0.2)" }}>
-              <p className="text-white/40 text-[10px] uppercase tracking-widest font-bold m-0 mb-1">Toplam Skor</p>
+              <p className="text-white/60 text-[12px] font-semibold m-0 mb-1">Toplam Skor</p>
               <span className="font-extrabold tabular-nums" style={{ fontSize: "clamp(2.5rem, 13vw, 3.5rem)", lineHeight: 1, background: "linear-gradient(135deg, #4d7dff, #4d7dff)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                 {total}
               </span>

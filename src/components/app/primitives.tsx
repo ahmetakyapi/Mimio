@@ -27,12 +27,15 @@ export function Card({
 }
 
 /**
- * Kart üstü etiket: mono, küçük, geniş harf aralıklı, versal.
- * Başlık değil — "bu blok neyi sayıyor" sorusunun cevabı.
+ * Kart üstü etiket — başlık değil, "bu blok neyi sayıyor" sorusunun cevabı.
+ *
+ * Gövde ailesi, normal harf, 12px. Önceki hâli 9,5px versal mono ve geniş
+ * harf aralıklıydı; seans sırasında okunmuyordu. Metin kaynakta Title Case
+ * yazılır ("Alan Dengesi"), CSS dönüşümü yok.
  */
 export function Eyebrow({ children, className = "" }: { readonly children: ReactNode; readonly className?: string }) {
   return (
-    <div className={`numeral text-[9.5px] font-semibold uppercase tracking-[0.14em] text-(--color-text-soft) ${className}`}>
+    <div className={`text-[12px] font-semibold text-(--color-text-soft) ${className}`}>
       {children}
     </div>
   );
@@ -131,7 +134,7 @@ export function Tag({ children, tone = "primary" }: { readonly children: ReactNo
   const t = TAG_TONE[tone];
   return (
     <span
-      className="inline-flex items-center px-[11px] py-[5px] rounded-lg text-[11px] font-semibold"
+      className="inline-flex items-center px-[11px] py-[5px] rounded-lg text-[12px] font-semibold"
       style={{ background: t.bg, color: t.fg }}
     >
       {children}
@@ -378,18 +381,20 @@ export function Radar({
 /* ── Ekran başlığı ─────────────────────────────────────────────────────── */
 
 /**
- * Her ekranın tepesi: display başlık (ekranın adı) ve gövde alt satırı (o an
- * bilinmesi gereken tek şey). Başlığın üstündeki mono satır isteğe bağlı ve
- * yalnızca veri taşıdığında (tarih, hafta, sayım, seçili danışan) kullanılır —
- * süs amaçlı göz kapağı yok.
+ * Her ekranın tepesi: display başlık (ekranın adı) ve altında tek satır.
+ *
+ * `meta` ekranın o anki verisi (tarih, hafta, sayım, seçili danışan);
+ * başlığın ALTINDA, alt satırın başında koyu yazılır. Eskiden başlığın
+ * üstünde versal mono bir "göz kapağı" satırıydı — sahibinin kuralı: başlık
+ * üstüne künye konmaz, veri başlığın altına iner (Ekim 2026).
  */
 export function ScreenHeader({
-  eyebrow,
+  meta,
   title,
   sub,
   actions,
 }: {
-  readonly eyebrow?: ReactNode;
+  readonly meta?: ReactNode;
   readonly title: ReactNode;
   readonly sub?: ReactNode;
   readonly actions?: ReactNode;
@@ -397,13 +402,14 @@ export function ScreenHeader({
   return (
     <div className="screen-head">
       <div className="screen-head-main">
-        {eyebrow && (
-          <div className="numeral text-[10px] font-medium uppercase tracking-[0.16em] text-(--color-text-soft) mb-1.5 lg:mb-2">
-            {eyebrow}
-          </div>
-        )}
         <h1 className="m-0 mb-[6px] text-[clamp(1.25rem,1.9vw,1.75rem)] leading-[1.15] text-(--color-text-strong)">{title}</h1>
-        {sub && <p className="m-0 text-[12.5px] leading-[1.45] text-(--color-text-body)">{sub}</p>}
+        {(meta || sub) && (
+          <p className="m-0 text-[12.5px] leading-[1.5] text-(--color-text-body)">
+            {meta && <span className="font-semibold text-(--color-text-strong)">{meta}</span>}
+            {meta && sub && <span aria-hidden="true" className="mx-[7px] text-(--color-text-muted)">·</span>}
+            {sub}
+          </p>
+        )}
       </div>
       {actions && <div className="screen-head-actions">{actions}</div>}
     </div>
@@ -437,7 +443,7 @@ export function SegmentedControl<T extends string>({
   readonly label: string;
   readonly size?: "sm" | "md";
 }) {
-  const pad = size === "sm" ? "px-[11px] py-[5px] text-[11px]" : "px-[13px] py-[7px] text-[11.5px]";
+  const pad = size === "sm" ? "px-[11px] py-[5px] text-[12px]" : "px-[13px] py-[7px] text-[12px]";
   return (
     <div
       className="flex p-[3px] rounded-xl shrink-0"

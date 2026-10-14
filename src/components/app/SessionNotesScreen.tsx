@@ -15,6 +15,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Plus, Download, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import type { ClientProfile, SessionNote, RecentSessionEntry } from "@/lib/platform-data";
+import { NOTE_MODE_LABELS } from "@/lib/platform-data";
 import { gameTitle } from "@/lib/deniz-derive";
 import { normalizeScore } from "@/lib/game-constants";
 import { Avatar, ScreenHeader, btnGhost } from "./primitives";
@@ -114,9 +115,9 @@ export function SessionNotesScreen({ notes, clients, sessions, onNewNote, onExpo
   return (
     <div className="flex flex-col gap-5 max-lg:gap-4 h-full min-h-0">
       <ScreenHeader
-        eyebrow={`${rows.length} not · ${RANGES.find((r) => r.key === range)?.label.toLocaleLowerCase("tr-TR")}`}
+        meta={`${rows.length} not · ${RANGES.find((r) => r.key === range)?.label.toLocaleLowerCase("tr-TR")}`}
         title="Seans Notları"
-        sub="SOAP formatı · oyun skorları otomatik bağlanır."
+        sub="SOAP formatında; oyun skorları nota kendiliğinden bağlanır."
         actions={
           <>
             {/* Düğme ne yapıyorsa onu söylemeli: indirilen dosya CSV. */}
@@ -219,10 +220,10 @@ export function SessionNotesScreen({ notes, clients, sessions, onNewNote, onExpo
                       adı "Ela Seren …" hâline getiriyordu. Tarih orada
                       aşağıdaki mikro satıra iniyor. */}
                   <span className="shrink-0 text-right w-[44px] max-lg:hidden">
-                    <span className="numeral block text-[10.5px] font-semibold text-(--color-text-body) leading-tight">
+                    <span className="numeral block text-[12px] font-semibold text-(--color-text-body) leading-tight">
                       {dayLabel}
                     </span>
-                    <span className="numeral block text-[9.5px] text-(--color-text-muted) leading-tight mt-0.5">
+                    <span className="numeral block text-[12px] text-(--color-text-soft) leading-tight mt-0.5">
                       {timeLabel}
                     </span>
                   </span>
@@ -235,19 +236,19 @@ export function SessionNotesScreen({ notes, clients, sessions, onNewNote, onExpo
                         {c?.displayName ?? "Danışan"}
                       </span>
                       {sess && (
-                        <span className="text-[10.5px] text-(--color-text-soft) truncate max-lg:hidden">
+                        <span className="text-[12px] text-(--color-text-soft) truncate max-lg:hidden">
                           {gameTitle(sess.gameKey)}
                         </span>
                       )}
                       {sess && (
-                        <span className="numeral ml-auto text-[11.5px] font-semibold shrink-0" style={{ color: "var(--color-primary)" }}>
+                        <span className="numeral ml-auto text-[12px] font-semibold shrink-0" style={{ color: "var(--color-primary)" }}>
                           %{Math.round(normalizeScore(sess.gameKey as never, sess.score) * 100)}
                         </span>
                       )}
                     </span>
                     {/* Telefonun tarih/oyun satırı — ad satırından ayrıldığı
                         için üçü de kesilmeden okunur. */}
-                    <span className="lg:hidden flex items-center gap-1.5 mb-1 text-[10px] text-(--color-text-muted)">
+                    <span className="lg:hidden flex items-center gap-1.5 mb-1 text-[12px] text-(--color-text-muted)">
                       <span className="numeral shrink-0">{dayLabel} · {timeLabel}</span>
                       {sess && <span className="truncate">· {gameTitle(sess.gameKey)}</span>}
                     </span>
@@ -255,12 +256,12 @@ export function SessionNotesScreen({ notes, clients, sessions, onNewNote, onExpo
                         görüntüsünü eziyordu: kırpma hiç çalışmıyor, telefonda
                         her satır dört satır özet taşıyordu. Masaüstü davranışı
                         `lg:block` ile olduğu gibi kalıyor. */}
-                    <span className="line-clamp-2 lg:block text-[11.5px] leading-[1.5] text-(--color-text-body)">
+                    <span className="line-clamp-2 lg:block text-[12px] leading-[1.5] text-(--color-text-body)">
                       {n.content || "—"}
                     </span>
                     {n.noteMode && (
-                      <span className="inline-flex mt-1.5 text-[9.5px] font-semibold" style={{ padding: "3px 9px", borderRadius: 7, background: "var(--color-primary-light)", color: "var(--color-primary-ink)" }}>
-                        {n.noteMode.toUpperCase()}
+                      <span className="inline-flex mt-1.5 text-[12px] font-semibold" style={{ padding: "3px 9px", borderRadius: 7, background: "var(--color-primary-light)", color: "var(--color-primary-ink)" }}>
+                        {NOTE_MODE_LABELS[n.noteMode]}
                       </span>
                     )}
                   </span>
@@ -302,7 +303,7 @@ export function SessionNotesScreen({ notes, clients, sessions, onNewNote, onExpo
                   <span className="font-display block text-[14px] font-bold tracking-[-0.02em] text-(--color-text-strong) truncate">
                     {selectedClient?.displayName ?? "Danışan"}
                   </span>
-                  <span className="block text-[10.5px] text-(--color-text-soft) truncate">
+                  <span className="block text-[12px] text-(--color-text-soft) truncate">
                     {new Date(selected.createdAt).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
                     {selectedSession ? ` · ${gameTitle(selectedSession.gameKey)}` : ""}
                   </span>
@@ -312,8 +313,8 @@ export function SessionNotesScreen({ notes, clients, sessions, onNewNote, onExpo
                     <span className="numeral block text-[20px] font-semibold leading-none" style={{ color: "var(--color-primary)" }}>
                       %{Math.round(normalizeScore(selectedSession.gameKey as never, selectedSession.score) * 100)}
                     </span>
-                    <span className="numeral block text-[9px] text-(--color-text-muted) mt-1 max-lg:mt-0">
-                      {selectedSession.score} ham
+                    <span className="block text-[12px] text-(--color-text-soft) mt-1 max-lg:mt-0">
+                      {selectedSession.score} ham puan
                     </span>
                   </span>
                 )}
@@ -335,15 +336,15 @@ export function SessionNotesScreen({ notes, clients, sessions, onNewNote, onExpo
                     <div key={key}>
                       <div className="flex items-center gap-2 mb-2">
                         <span
-                          className="numeral grid place-items-center text-[10px] font-bold shrink-0"
+                          className="numeral grid place-items-center text-[12px] font-bold shrink-0"
                           style={{ width: 20, height: 20, borderRadius: 6, background: "var(--color-primary-light)", color: "var(--color-primary-ink)" }}
                         >
                           {letter}
                         </span>
-                        <span className="text-[11px] font-semibold text-(--color-text-body)">{label}</span>
+                        <span className="text-[12px] font-semibold text-(--color-text-body)">{label}</span>
                       </div>
                       <p
-                        className="m-0 text-[11.5px] leading-[1.55] text-(--color-text-strong)"
+                        className="m-0 text-[12px] leading-[1.55] text-(--color-text-strong)"
                         style={{ padding: "11px 13px", borderRadius: 12, background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}
                       >
                         {selected.soapContent?.[key] || "—"}

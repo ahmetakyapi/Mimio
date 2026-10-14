@@ -146,7 +146,7 @@ export function ClientsScreen({
   return (
     <div className="flex flex-col gap-5 max-lg:gap-4 h-full max-lg:h-auto min-h-0">
       <ScreenHeader
-        eyebrow={`${clients.length - archived} aktif${archived ? ` · ${archived} arşivde` : ""}`}
+        meta={`${clients.length - archived} aktif${archived ? ` · ${archived} arşivde` : ""}`}
         title="Danışanlar"
         sub="Skor sütunu son 8 seansın eğilimini gösterir."
         actions={
@@ -231,7 +231,7 @@ export function ClientsScreen({
             style={{ ["--cols" as string]: COLS }}
           >
             {["Danışan", "Hedef", "Bağımsızlık", "Son Seans", "Eğilim / Skor", "Sıradaki", ""].map((h, i) => (
-              <Eyebrow key={i} className="!tracking-[0.1em]">{h}</Eyebrow>
+              <Eyebrow key={i}>{h}</Eyebrow>
             ))}
           </div>
 
@@ -333,7 +333,7 @@ function ClientRow({
           <span className="block font-bold text-[13.5px] text-(--color-text-strong) truncate group-hover:text-(--color-primary) transition-colors">
             {m.client.displayName}
           </span>
-          <span className="block text-[11px] text-(--color-text-soft) truncate">
+          <span className="block text-[12px] text-(--color-text-soft) truncate">
             {[m.client.ageGroup, (m.client.tags ?? [])[0]].filter(Boolean).join(" · ") || "—"}
           </span>
         </span>
@@ -346,13 +346,13 @@ function ClientRow({
         <div className="text-[12px] font-semibold text-(--color-text-body) max-lg:line-clamp-2 lg:truncate">
           {m.client.primaryGoal || "—"}
         </div>
-        <div className="numeral text-[10px] text-(--color-text-soft) mt-0.5">birincil hedef</div>
+        <div className="text-[12px] text-(--color-text-soft) mt-0.5">birincil hedef</div>
       </div>
 
       {/* Bağımsızlık */}
       <div className="min-w-0">
         <StepBar value={m.independence} />
-        <div className="numeral text-[10px] text-(--color-text-soft) mt-[5px]">bağımsızlık {m.independence}/5</div>
+        <div className="text-[12px] text-(--color-text-soft) mt-[5px]">bağımsızlık {m.independence}/5</div>
       </div>
 
       {/* Son seans — masaüstünde etiketini sütun başlığından alıyor; telefonda
@@ -360,8 +360,8 @@ function ClientRow({
           değerler kartın kenarına oturunca iki sütun tablo gibi okunuyor,
           ortada asılı kalmıyor. */}
       <div className="min-w-0 max-lg:text-right">
-        <div className="text-[11.5px] text-(--color-text-body) truncate">{relativeDay(m.lastPlayedAt)}</div>
-        <div className="numeral text-[10px] text-(--color-text-soft) mt-[5px] lg:hidden">son seans</div>
+        <div className="text-[12px] text-(--color-text-body) truncate">{relativeDay(m.lastPlayedAt)}</div>
+        <div className="text-[12px] text-(--color-text-soft) mt-[5px] lg:hidden">son seans</div>
       </div>
 
       {/* Eğilim / skor */}
@@ -372,22 +372,22 @@ function ClientRow({
             {m.lastScore ?? "—"}
           </span>
         </div>
-        <div className="numeral text-[10px] text-(--color-text-soft) mt-[5px] lg:hidden">eğilim / skor</div>
+        <div className="text-[12px] text-(--color-text-soft) mt-[5px] lg:hidden">eğilim / skor</div>
       </div>
 
       {/* Sıradaki */}
-      <div className="text-[11px] font-medium text-(--color-text-body) min-w-0 max-lg:text-right">
+      <div className="text-[12px] font-medium text-(--color-text-body) min-w-0 max-lg:text-right">
         <div className="min-w-0">
           {next ? (
             <>
               <span className="block truncate">{next.day}{next.time ? ` ${next.time}` : ""}</span>
-              <span className="block text-[10px] text-(--color-text-soft) truncate">{gameTitle(next.game)}</span>
+              <span className="block text-[12px] text-(--color-text-soft) truncate">{gameTitle(next.game)}</span>
             </>
           ) : (
             <span className="block truncate text-(--color-text-muted)">planlanmadı</span>
           )}
         </div>
-        <div className="numeral text-[10px] text-(--color-text-soft) mt-[5px] lg:hidden">sıradaki</div>
+        <div className="text-[12px] text-(--color-text-soft) mt-[5px] lg:hidden">sıradaki</div>
       </div>
 
       {/* Eylemler — telefonda kartın en altında kendi şeridinde, sağa yaslı.

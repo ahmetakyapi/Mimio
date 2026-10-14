@@ -96,7 +96,7 @@ export function Sidebar({
           <span className="font-display block font-bold text-[14.5px] tracking-[-0.02em] text-(--color-text-strong) leading-tight">
             Mimio
           </span>
-          <span className="numeral block text-[9.5px] text-(--color-text-soft) truncate leading-tight">{clinicName}</span>
+          <span className="block text-[12px] text-(--color-text-soft) truncate leading-tight">{clinicName}</span>
         </span>
       </div>
 
@@ -133,7 +133,7 @@ export function Sidebar({
               <span className={`relative text-[13px] flex-1 ${on ? "font-semibold" : "font-medium"}`}>{label}</span>
               {badge && count > 0 && (
                 <span
-                  className="relative numeral text-[10px] font-semibold shrink-0"
+                  className="relative numeral text-[12px] font-semibold shrink-0"
                   style={{
                     padding: "2px 7px",
                     borderRadius: 6,
@@ -164,7 +164,7 @@ export function Sidebar({
           border: "1px solid var(--color-line-strong)",
         }}
       >
-        <span className="numeral block text-[9.5px] font-semibold uppercase tracking-[0.12em] text-(--color-primary-ink) mb-2">
+        <span className="block text-[12px] font-semibold text-(--color-primary-ink) mb-2">
           Bu Hafta
         </span>
         <span className="figure block text-[22px] text-(--color-text-strong) leading-none">
@@ -267,7 +267,7 @@ export function TopBar({
           className="flex-1 min-w-0 bg-transparent border-none outline-none text-[12.5px] text-(--color-text-strong) placeholder:text-(--color-text-muted)"
         />
         <kbd
-          className="numeral shrink-0 text-[9.5px] font-medium text-(--color-text-soft)"
+          className="numeral shrink-0 text-[12px] font-medium text-(--color-text-soft)"
           style={{ padding: "2px 5px", borderRadius: 5, border: "1px solid var(--color-line)" }}
         >
           ⌘K
@@ -359,16 +359,16 @@ export function TopBar({
                 ama ekran okuyucunun adı iki kez okumaması için işaretlenmeli. */}
             <span
               aria-hidden="true"
-              className="grid place-items-center shrink-0 font-bold text-[11.5px]"
+              className="grid place-items-center shrink-0 font-bold text-[12px]"
               style={{ width: 27, height: 27, borderRadius: 9, background: "var(--gradient-avatar-3)", color: "var(--color-on-brand)" }}
             >
               {initials(therapistName)}
             </span>
             <span className="text-left min-w-0">
-              <span className="block text-[11.5px] font-semibold text-(--color-text-strong) truncate leading-tight">
+              <span className="block text-[12px] font-semibold text-(--color-text-strong) truncate leading-tight">
                 {therapistName}
               </span>
-              <span className="block text-[9.5px] text-(--color-text-soft) truncate leading-tight">{therapistRole}</span>
+              <span className="block text-[12px] text-(--color-text-soft) truncate leading-tight">{therapistRole}</span>
             </span>
             <ChevronDown
               size={13}

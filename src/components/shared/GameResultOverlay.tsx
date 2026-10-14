@@ -55,7 +55,7 @@ export function GameResultOverlay({ accent, gradFrom, gradTo, gameName, score, b
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center gap-4 px-6 w-full max-w-sm">
         {/* Game name chip */}
-        <div className="text-[10px] font-extrabold uppercase tracking-widest px-3 py-1.5 rounded-full" style={{ background: `${accent}18`, color: accent, border: `1px solid ${accent}33` }}>
+        <div className="text-[12px] font-semibold px-3 py-1.5 rounded-full" style={{ background: `${accent}18`, color: accent, border: `1px solid ${accent}33` }}>
           {gameName} · Tamamlandı
         </div>
 
@@ -64,7 +64,7 @@ export function GameResultOverlay({ accent, gradFrom, gradTo, gameName, score, b
 
         {/* Score */}
         <div className="score-count-in flex flex-col items-center">
-          <span className="text-white/40 text-xs uppercase tracking-widest font-bold mb-1">Final Skor</span>
+          <span className="text-white/60 text-xs font-semibold mb-1">Final Skor</span>
           <span className="font-extrabold tabular-nums leading-none" style={{ fontSize: "5rem", lineHeight: 1, background: `linear-gradient(135deg, ${gradFrom}, ${gradTo})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
             {score}
           </span>
@@ -75,7 +75,7 @@ export function GameResultOverlay({ accent, gradFrom, gradTo, gameName, score, b
           <div className="new-best-badge flex items-center gap-2 px-4 py-2 rounded-2xl" style={{ background: `${accent}20`, border: `1.5px solid ${accent}55` }}>
             <span className="text-lg">🏆</span>
             <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-widest m-0" style={{ color: accent }}>Yeni Rekor!</p>
+              <p className="text-[12px] font-semibold m-0" style={{ color: accent }}>Yeni Rekor!</p>
               <p className="text-white/40 text-xs m-0">Önceki en iyi: <strong className="text-white/60">{prevBest || "—"}</strong></p>
             </div>
           </div>
@@ -91,7 +91,7 @@ export function GameResultOverlay({ accent, gradFrom, gradTo, gameName, score, b
           {stats.map((stat, i) => (
             <div key={stat.label} className={`flex-1 flex flex-col items-center py-3 rounded-2xl result-stat-in-${Math.min(i + 1, 3)}`} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
               <strong className="text-xl font-extrabold tabular-nums leading-none" style={{ color: i === 0 ? accent : "white" }}>{stat.value}</strong>
-              <span className="text-white/35 text-[10px] uppercase tracking-wider font-bold mt-1">{stat.label}</span>
+              <span className="text-white/55 text-[12px] font-semibold mt-1">{stat.label}</span>
             </div>
           ))}
         </div>
@@ -103,7 +103,7 @@ export function GameResultOverlay({ accent, gradFrom, gradTo, gameName, score, b
               <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
                 <Timer size={11} style={{ color: accent, opacity: 0.8 }} />
                 <div>
-                  <p className="text-white/35 text-[9px] uppercase tracking-wider font-bold m-0">Süre</p>
+                  <p className="text-white/55 text-[12px] font-semibold m-0">Süre</p>
                   <p className="text-white/70 text-xs font-bold m-0">{Math.floor(durationSeconds / 60)}:{String(durationSeconds % 60).padStart(2, "0")}</p>
                 </div>
               </div>
@@ -112,7 +112,7 @@ export function GameResultOverlay({ accent, gradFrom, gradTo, gameName, score, b
               <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
                 <TrendingUp size={11} style={{ color: score >= sessionAvg ? "#12b886" : "#f0708a", opacity: 0.8 }} />
                 <div>
-                  <p className="text-white/35 text-[9px] uppercase tracking-wider font-bold m-0">Geçmiş Ort.</p>
+                  <p className="text-white/55 text-[12px] font-semibold m-0">Geçmiş Ort.</p>
                   <p className="text-xs font-bold m-0" style={{ color: score >= sessionAvg ? "#12b886" : "#f0708a" }}>
                     {score >= sessionAvg ? "↑" : "↓"} {Math.abs(score - sessionAvg)}p fark
                   </p>
@@ -166,7 +166,7 @@ export function GameResultOverlay({ accent, gradFrom, gradTo, gameName, score, b
         {/* Satisfaction rating */}
         {hasActiveClient && (
           <div className="w-full rounded-2xl p-3 space-y-2" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <p className="text-white/40 text-[10px] uppercase tracking-widest font-bold m-0">Danışan Memnuniyeti</p>
+            <p className="text-white/60 text-[12px] font-semibold m-0">Danışan Memnuniyeti</p>
             <div className="flex justify-between gap-1">
               {([
                 { rating: 1, emoji: "😞", label: "Çok zor" },
@@ -181,12 +181,12 @@ export function GameResultOverlay({ accent, gradFrom, gradTo, gameName, score, b
                   style={{ background: satisfaction === rating ? `${accent}25` : "transparent", outline: satisfaction === rating ? `1.5px solid ${accent}` : "1.5px solid transparent", opacity: satisfaction && satisfaction !== rating ? 0.4 : 1 }}
                   onClick={() => { setSatisfaction(rating); onSatisfaction?.(rating); }}>
                   <span className="text-xl leading-none">{emoji}</span>
-                  <span className="text-[9px] text-white/40 font-semibold">{rating}</span>
+                  <span className="text-[12px] text-white/40 font-semibold">{rating}</span>
                 </button>
               ))}
             </div>
             {satisfaction !== null && (
-              <p className="text-[10px] font-bold text-center m-0" style={{ color: accent }}>
+              <p className="text-[12px] font-bold text-center m-0" style={{ color: accent }}>
                 {["", "Çok zor gelmiş", "Biraz zorlandı", "Normal bir seans", "Keyif aldı", "Mükemmel seans!"][satisfaction]}
               </p>
             )}
@@ -196,7 +196,7 @@ export function GameResultOverlay({ accent, gradFrom, gradTo, gameName, score, b
         {/* Post-game note */}
         {hasActiveClient && onSaveNote && (
           <div className="w-full rounded-2xl p-3 space-y-2" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <p className="text-white/40 text-[10px] uppercase tracking-widest font-bold m-0">Seans Notu</p>
+            <p className="text-white/60 text-[12px] font-semibold m-0">Seans Notu</p>
             {noteSaved ? (
               <div className="flex items-center gap-2 text-xs" style={{ color: accent }}>
                 <Check size={12} /> Not kaydedildi

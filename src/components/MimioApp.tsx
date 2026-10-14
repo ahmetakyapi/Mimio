@@ -1847,7 +1847,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
         onModeChange={(m) => { setLoginError(""); setActiveAppView(m); }}
         error={loginError}
         busy={authBusy}
-        greeting="Tekrar hoş geldin."
+        greeting="Tekrar Hoş Geldin"
         subline={
           platformOverview.clients.length > 0
             ? `${platformOverview.clients.length} danışan kayıtlı.`
@@ -1895,7 +1895,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
     { label: "Seri", value: String(lastFeedback?.combo ?? 0), unit: "tur", tone: "primary" as const },
     /* Ölçüm rayı seans sırasında değişen değerleri gösterir; "En iyi" seansla
        değişmiyordu. Yerine gerçek tepki süresi geldi. */
-    { label: "Ort. tepki", value: liveAvgResponse === null ? "—" : liveAvgResponse.toFixed(1), unit: "sn", tone: "primary" as const },
+    { label: "Ort. Tepki", value: liveAvgResponse === null ? "—" : liveAvgResponse.toFixed(1), unit: "sn", tone: "primary" as const },
     { label: "Hata", value: String(liveTrace.filter((x) => !x).length), unit: "tur", tone: "amber" as const },
   ];
 
@@ -1975,7 +1975,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 <strong className="block text-[13px] font-bold text-(--color-text-strong) truncate leading-tight">
                   {activeTherapist?.displayName ?? "Terapist"}
                 </strong>
-                <span className="block text-[11px] text-(--color-text-muted) truncate leading-tight mt-0.5">
+                <span className="block text-[12px] text-(--color-text-muted) truncate leading-tight mt-0.5">
                   {activeTherapist?.clinicName || "Bağımsız terapist"}
                 </span>
               </span>
@@ -1987,7 +1987,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             {activeTherapist?.specialty ? (
               <div className="px-3 pb-3 -mt-0.5">
                 <span
-                  className="inline-block text-[10px] font-bold px-2 py-1 rounded-md"
+                  className="inline-block text-[12px] font-bold px-2 py-1 rounded-md"
                   style={{ background: "var(--color-primary-light)", color: "var(--color-primary)" }}
                 >
                   {activeTherapist.specialty}
@@ -2034,7 +2034,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 <Award size={14} className="shrink-0 text-(--color-text-muted)" />
                 <span className="flex-1 text-left">Başarımlar</span>
                 {earnedAchievementCount > 0 && (
-                  <span className="numeral text-[11px] text-(--color-text-muted)">
+                  <span className="numeral text-[12px] text-(--color-text-muted)">
                     {earnedAchievementCount}
                   </span>
                 )}
@@ -2154,7 +2154,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             type="button"
             onClick={() => setActiveAppView("settings")}
             aria-label={`${activeTherapist?.displayName ?? "Hesap"} — hesap ve ayarlar`}
-            className="grid place-items-center shrink-0 cursor-pointer border-none font-bold text-[11px]"
+            className="grid place-items-center shrink-0 cursor-pointer border-none font-bold text-[12px]"
             style={{ width: 30, height: 30, borderRadius: 10, background: "var(--gradient-avatar-3)", color: "var(--color-on-brand)" }}
           >
             {(activeTherapist?.displayName ?? "T").trim()[0]?.toLocaleUpperCase("tr-TR")}
@@ -2414,10 +2414,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               score={normalized}
               headline={
                 normalized >= best && mine.length > 1
-                  ? "En iyi seans — kişisel rekor kırıldı."
+                  ? "En İyi Seans — Kişisel Rekor"
                   : delta !== null && delta > 0
-                    ? `Yükseliş sürüyor — ${delta} puan kazanım.`
-                    : "Seans kaydedildi."
+                    ? `Yükseliş Sürüyor — ${delta} Puan Kazanım`
+                    : "Seans Kaydedildi"
               }
               badges={[
                 ...(delta !== null && delta !== 0
@@ -2429,7 +2429,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               metrics={[
                 /* Ham puan kendi biriminde: "12 dizi uzunluğu", "184 puan". */
                 { label: "Ham Puan", value: String(rawScore), unit: scale?.unit ?? "puan", delta: delta !== null ? `${delta > 0 ? "+" : ""}${delta} normalize` : undefined, deltaTone: delta && delta > 0 ? "green" : "neutral" },
-                { label: "Ort. tepki", value: avgResponse === null ? "—" : avgResponse.toFixed(1), unit: "sn" },
+                { label: "Ort. Tepki", value: avgResponse === null ? "—" : avgResponse.toFixed(1).replace(".", ","), unit: "sn" },
                 { label: "Süre", value: last?.durationSeconds ? formatElapsed(last.durationSeconds) : formatElapsed(gameElapsed), unit: "dk:sn" },
                 { label: "Tur", value: rounds.length ? `${okCount}/${rounds.length}` : "—", unit: "doğru", deltaTone: "neutral" },
               ]}
@@ -2557,7 +2557,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     stats={[
                       { label: "Seri", value: memoryState.score, tone: "accent" },
                       { label: "Uzunluk", value: memoryState.sequence.length || "—" },
-                      { label: "En iyi", value: scoreboard.memory.best || "—", optional: true },
+                      { label: "En İyi", value: scoreboard.memory.best || "—", optional: true },
                       { label: "Süre", value: elapsedLabel, optional: true },
                     ]}
                     primaryAction={{
@@ -3017,7 +3017,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     {scanState.targetLabel && (
                       <div className={`flex items-center gap-3 rounded-full pl-4 pr-5 py-2 border transition-all ${lastFeedback?.correct && activeGame === "scan" ? "correct-glow" : ""}`}
                         style={{ background: "rgba(13,20,18,0.92)", borderColor: "rgba(25, 209, 155,0.3)" }}>
-                        <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/60">Aranan</span>
+                        <span className="text-[12px] font-semibold text-white/60">Aranan</span>
                         <span className="text-3xl leading-none" style={{ color: targetSymbol?.accent }}>{targetSymbol?.icon ?? "?"}</span>
                         <strong className="text-white text-sm font-bold">{scanState.targetLabel}</strong>
                       </div>
@@ -3119,7 +3119,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                           </div>
 
                           <div className="flex flex-col items-center gap-2">
-                            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/60">Seçenekler</span>
+                            <span className="text-[12px] font-semibold text-white/60">Seçenekler</span>
                             <div className="grid grid-cols-2 gap-2.5">
                               {puzzle.options.map((opt, i) => {
                                 const isCursor = logicCursor === i;
@@ -3135,7 +3135,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                                     style={{ background: bg, border: `2px solid ${borderColor}` }}
                                     onClick={() => handleLogicPick(i)}
                                     disabled={logicState.showResult}>
-                                    <span className="numeral absolute top-1.5 left-2 text-[10px] font-bold text-white/55">{i + 1}</span>
+                                    <span className="numeral absolute top-1.5 left-2 text-[12px] font-bold text-white/55">{i + 1}</span>
                                     <svg className="w-11 h-11" viewBox={`0 0 ${cellSize} ${cellSize}`} dangerouslySetInnerHTML={{ __html: renderLogicShape(opt.shape, opt.color, cellSize) }} />
                                   </button>
                                 );
@@ -3168,14 +3168,14 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         <div className="w-2 h-7 rounded-full shrink-0" style={{ background: "linear-gradient(180deg, var(--color-primary), #4d7dff)" }} />
                       </div>
                       <div className="min-w-0">
-                        <span className="text-[10px] font-extrabold uppercase tracking-widest block mb-0.5 max-lg:hidden" style={{ color: "var(--color-primary)" }}>{activeCategory.title}</span>
+                        <span className="text-[12px] font-semibold block mb-0.5 max-lg:hidden" style={{ color: "var(--color-primary)" }}>{activeCategory.title}</span>
                         <h3 className="text-(--color-text-strong) font-bold text-base max-lg:text-[13px] m-0 truncate">{activeTab.title}</h3>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {[{l: "En iyi", v: activeScoreCard.best}, {l: "Tekrar", v: activeScoreCard.plays}].map(({l, v}) => (
+                      {[{l: "En İyi", v: activeScoreCard.best}, {l: "Tekrar", v: activeScoreCard.plays}].map(({l, v}) => (
                         <div key={l} className="hidden sm:flex flex-col items-center px-3 py-1.5 rounded-xl" style={{ background: "color-mix(in srgb, var(--color-primary) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--color-primary) 15%, transparent)" }}>
-                          <span className="text-[9px] uppercase tracking-wider font-bold text-(--color-text-muted)">{l}</span>
+                          <span className="text-[12px] font-semibold text-(--color-text-soft)">{l}</span>
                           <strong className="font-extrabold text-sm" style={{ color: "var(--color-primary)" }}>{v}</strong>
                         </div>
                       ))}
@@ -3188,9 +3188,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                       {activeTab.goals.map((goal) => <span key={goal} className="text-xs font-bold px-3 py-1 rounded-full" style={{ background: "color-mix(in srgb, var(--color-primary) 10%, transparent)", color: "var(--color-primary)", border: "1px solid color-mix(in srgb, var(--color-primary) 20%, transparent)" }}>{goal}</span>)}
                     </div>
                     <div className="grid grid-cols-3 gap-3">
-                      {[{l: "En iyi", v: activeScoreCard.best}, {l: "Son", v: activeScoreCard.last}, {l: "Tekrar", v: activeScoreCard.plays}].map(({l, v}) => (
+                      {[{l: "En İyi", v: activeScoreCard.best}, {l: "Son", v: activeScoreCard.last}, {l: "Tekrar", v: activeScoreCard.plays}].map(({l, v}) => (
                         <div key={l} className="flex flex-col rounded-2xl px-4 py-3" style={{ background: "color-mix(in srgb, var(--color-primary) 5%, transparent)", border: "1px solid color-mix(in srgb, var(--color-primary) 10%, transparent)" }}>
-                          <span className="text-(--color-text-muted) text-[10px] uppercase tracking-wider font-bold mb-1">{l}</span>
+                          <span className="text-(--color-text-soft) text-[12px] font-semibold mb-1">{l}</span>
                           <strong className="text-2xl font-extrabold tabular-nums" style={{ color: "var(--color-primary)" }}>{v}</strong>
                         </div>
                       ))}
@@ -3376,14 +3376,14 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   ] },
                 ] as { section: string; rows: { keys: string[]; desc: string }[] }[]).map(({ section, rows }) => (
                   <div key={section} className="mb-4 last:mb-0">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) m-0 mb-2">{section}</p>
+                    <p className="text-[12px] font-semibold text-(--color-text-soft) m-0 mb-2">{section}</p>
                     <div className="rounded-2xl overflow-hidden border" style={{ borderColor: "var(--color-line)" }}>
                       {rows.map(({ keys, desc }, i) => (
                         <div key={desc} className="flex items-center justify-between px-4 py-2.5 gap-4" style={{ borderTop: i === 0 ? "none" : "1px solid var(--color-line)", background: i % 2 === 0 ? "transparent" : "rgba(0,0,0,0.08)" }}>
                           <span className="text-sm text-(--color-text-body)">{desc}</span>
                           <div className="flex items-center gap-1 shrink-0">
                             {keys.map(k => (
-                              <kbd key={k} className="text-[11px] font-bold px-2 py-0.5 rounded-lg" style={{ background: "rgba(43, 98, 245,0.12)", color: "#4d7dff", border: "1px solid rgba(43, 98, 245,0.25)", fontFamily: "monospace" }}>{k}</kbd>
+                              <kbd key={k} className="text-[12px] font-bold px-2 py-0.5 rounded-lg" style={{ background: "rgba(43, 98, 245,0.12)", color: "#4d7dff", border: "1px solid rgba(43, 98, 245,0.25)", fontFamily: "monospace" }}>{k}</kbd>
                             ))}
                           </div>
                         </div>
@@ -3391,7 +3391,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     </div>
                   </div>
                 ))}
-                <p className="text-[11px] text-(--color-text-muted) text-center m-0 mt-3">Herhangi bir yere tıklayarak kapat</p>
+                <p className="text-[12px] text-(--color-text-muted) text-center m-0 mt-3">Herhangi bir yere tıklayarak kapat</p>
               </div>
             </div>
           </div>
@@ -3429,17 +3429,17 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               )}
               <div className="space-y-3">
                 <div>
-                  <label className="text-[10px] text-(--color-text-muted) font-bold uppercase tracking-wider mb-1 block">Ad Soyad</label>
+                  <label className="text-[12px] text-(--color-text-soft) font-semibold mb-1 block">Ad Soyad</label>
                   <input value={therapistEditDraft.displayName} onChange={e => setTherapistEditDraft(d => ({ ...d, displayName: e.target.value }))}
                     placeholder="Ad Soyad" className={inputCls} />
                 </div>
                 <div>
-                  <label className="text-[10px] text-(--color-text-muted) font-bold uppercase tracking-wider mb-1 block">Klinik / Kurum</label>
+                  <label className="text-[12px] text-(--color-text-soft) font-semibold mb-1 block">Klinik / Kurum</label>
                   <input value={therapistEditDraft.clinicName} onChange={e => setTherapistEditDraft(d => ({ ...d, clinicName: e.target.value }))}
                     placeholder="Klinik adı (isteğe bağlı)" className={inputCls} />
                 </div>
                 <div>
-                  <label className="text-[10px] text-(--color-text-muted) font-bold uppercase tracking-wider mb-1 block">Uzmanlık Alanı</label>
+                  <label className="text-[12px] text-(--color-text-soft) font-semibold mb-1 block">Uzmanlık Alanı</label>
                   <input value={therapistEditDraft.specialty} onChange={e => setTherapistEditDraft(d => ({ ...d, specialty: e.target.value }))}
                     placeholder="Uzmanlık alanı (isteğe bağlı)" className={inputCls} />
                 </div>
@@ -3524,20 +3524,20 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
               </div>
               <div className="flex flex-col gap-3">
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Başlık</span>
+                  <span className="text-[12px] font-semibold text-(--color-text-soft)">Başlık</span>
                   <input value={goalDraft.title} onChange={(e) => setGoalDraft((d) => ({ ...d, title: e.target.value }))} placeholder="ör. Blok Açıklığı 6" className={inputCls} />
                 </label>
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Açıklama</span>
+                  <span className="text-[12px] font-semibold text-(--color-text-soft)">Açıklama</span>
                   <input value={goalDraft.description} onChange={(e) => setGoalDraft((d) => ({ ...d, description: e.target.value }))} placeholder="Neyi, hangi koşulda ölçüyorsun? (isteğe bağlı)" className={inputCls} />
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <label className="flex flex-col gap-1.5">
-                    <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Hedef Değer</span>
+                    <span className="text-[12px] font-semibold text-(--color-text-soft)">Hedef Değer</span>
                     <input type="number" min={1} value={goalDraft.targetValue} onChange={(e) => setGoalDraft((d) => ({ ...d, targetValue: Math.max(1, Number(e.target.value) || 1) }))} className={`${inputCls} numeral`} />
                   </label>
                   <label className="flex flex-col gap-1.5">
-                    <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Son Tarih</span>
+                    <span className="text-[12px] font-semibold text-(--color-text-soft)">Son Tarih</span>
                     <input type="date" value={goalDraft.deadline} onChange={(e) => setGoalDraft((d) => ({ ...d, deadline: e.target.value }))} className={`${inputCls} numeral`} />
                   </label>
                 </div>
@@ -3575,7 +3575,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   <X size={16} />
                 </button>
               </div>
-              <p className="m-0 mb-4 text-[11.5px] text-(--color-text-soft)">
+              <p className="m-0 mb-4 text-[12px] text-(--color-text-soft)">
                 Set, oyunları arka arkaya zincirler; her oyunun sonunda bir sonrakine geçilir.
               </p>
               <div className="flex flex-col gap-2">
@@ -3597,7 +3597,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     <span className="text-[20px] shrink-0" aria-hidden="true">{preset.emoji}</span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-[13px] font-bold text-(--color-text-strong)">{preset.label}</span>
-                      <span className="block text-[10.5px] text-(--color-text-soft) mt-0.5">{preset.description}</span>
+                      <span className="block text-[12px] text-(--color-text-soft) mt-0.5">{preset.description}</span>
                     </span>
                     <ChevronRight size={15} className="shrink-0 text-(--color-text-muted)" />
                   </button>
@@ -3615,7 +3615,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
             <button type="button" aria-label="Kapat" onClick={() => setShowComparePicker(false)} className="absolute inset-0 cursor-default border-none" style={{ background: "rgba(5,11,22,0.5)", backdropFilter: "blur(4px)" }} />
             <div className="relative w-full max-w-md rounded-[18px]" style={{ padding: 22, background: "var(--color-surface-strong)", border: "1px solid var(--color-line-strong)", boxShadow: "var(--shadow-lg)" }}>
               <CardTitle className="block mb-1">Danışan Karşılaştır</CardTitle>
-              <p className="m-0 mb-4 text-[11.5px] text-(--color-text-soft)">
+              <p className="m-0 mb-4 text-[12px] text-(--color-text-soft)">
                 İki danışanın seans ölçümleri yan yana kıyaslanır.
               </p>
               {(() => {
@@ -3627,13 +3627,13 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   <>
                     <div className="grid grid-cols-2 gap-3">
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Danışan A</span>
+                        <span className="text-[12px] font-semibold text-(--color-text-soft)">Danışan A</span>
                         <select value={a} onChange={(e) => setCompareClientA(e.target.value)} className={selectCls} style={selectStyle}>
                           {clientOptions.map((c) => <option key={c.id} value={c.id}>{c.displayName}</option>)}
                         </select>
                       </label>
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Danışan B</span>
+                        <span className="text-[12px] font-semibold text-(--color-text-soft)">Danışan B</span>
                         <select value={b} onChange={(e) => setCompareClientB(e.target.value)} className={selectCls} style={selectStyle}>
                           {clientOptions.map((c) => <option key={c.id} value={c.id}>{c.displayName}</option>)}
                         </select>
@@ -3658,7 +3658,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         Karşılaştır
                       </button>
                     </div>
-                    {a === b && <p className="m-0 mt-2 text-[11px] text-(--color-accent-amber)">İki farklı danışan seç.</p>}
+                    {a === b && <p className="m-0 mt-2 text-[12px] text-(--color-accent-amber)">İki farklı danışan seç.</p>}
                   </>
                 );
               })()}
@@ -3679,9 +3679,9 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   <X size={16} />
                 </button>
               </div>
-              <p className="m-0 mb-3 text-[11.5px] leading-[1.55] text-(--color-text-soft)">
+              <p className="m-0 mb-3 text-[12px] leading-[1.55] text-(--color-text-soft)">
                 İlk satır başlık, sonraki her satır bir danışan:{" "}
-                <code className="numeral text-[10.5px]">Ad,Yaş Grubu,Birincil Hedef,Destek Düzeyi</code>
+                <code className="numeral text-[12px]">Ad,Yaş Grubu,Birincil Hedef,Destek Düzeyi</code>
               </p>
               <textarea
                 value={csvImportText}
@@ -3691,7 +3691,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 className="numeral w-full resize-none outline-none text-[12px] leading-[1.6] text-(--color-text-strong) placeholder:text-(--color-text-muted)"
                 style={{ padding: "12px 14px", borderRadius: 12, background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}
               />
-              {csvImportError && <p className="m-0 mt-2 text-[11.5px] text-(--color-accent-red)">{csvImportError}</p>}
+              {csvImportError && <p className="m-0 mt-2 text-[12px] text-(--color-accent-red)">{csvImportError}</p>}
               <div className="flex gap-2.5 mt-4">
                 <button type="button" onClick={() => { setShowCsvImport(false); setCsvImportError(""); }} className="flex-1 text-[12.5px] font-semibold text-(--color-text-body) cursor-pointer transition-colors hover:text-(--color-primary)" style={{ padding: 11, borderRadius: 11, background: "transparent", border: "1px solid var(--color-line)" }}>
                   Vazgeç
@@ -3757,7 +3757,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                         role="radio"
                         aria-checked={on}
                         onClick={() => setNoteMode(key)}
-                        className={`text-[11.5px] font-semibold cursor-pointer border-none transition-colors ${on ? "text-white" : "text-(--color-text-soft) bg-transparent hover:text-(--color-text-body)"}`}
+                        className={`text-[12px] font-semibold cursor-pointer border-none transition-colors ${on ? "text-white" : "text-(--color-text-soft) bg-transparent hover:text-(--color-text-body)"}`}
                         style={{ padding: "6px 13px", borderRadius: 7, background: on ? "var(--gradient-signature-ink)" : undefined }}
                       >
                         {label}
@@ -3785,10 +3785,10 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                   ]).map(({ key, letter, label, ph }) => (
                     <div key={key}>
                       <div className="flex items-center gap-2 mb-1.5">
-                        <span className="numeral grid place-items-center text-[10px] font-bold shrink-0" style={{ width: 20, height: 20, borderRadius: 6, background: "var(--color-primary-light)", color: "var(--color-primary-ink)" }}>
+                        <span className="numeral grid place-items-center text-[12px] font-bold shrink-0" style={{ width: 20, height: 20, borderRadius: 6, background: "var(--color-primary-light)", color: "var(--color-primary-ink)" }}>
                           {letter}
                         </span>
-                        <span className="text-[11px] font-semibold text-(--color-text-body)">{label}</span>
+                        <span className="text-[12px] font-semibold text-(--color-text-body)">{label}</span>
                       </div>
                       <textarea
                         value={soapDraft[key]}

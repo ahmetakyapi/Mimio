@@ -136,9 +136,10 @@ export function ProgressReportScreen({
   const toggle = (k: SectionKey) =>
     setEnabled((cur) => (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]));
 
-  const periodLabel = first && last
-    ? `${new Date(first.playedAt).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" })} – ${new Date(last.playedAt).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" })}`
-    : "—";
+  /* "14 Eylül – 14 Ekim 2026". Önceki biçim iki ucu farklı yazıyordu
+     ("14/09 – 14.10.2026"): tr-TR yılsız tarihi eğik çizgiyle basıyor. Ay
+     adı aileye giden raporda sayıdan daha az yanlış okunuyor. */
+  const periodLabel = first && last ? formatPeriod(new Date(first.playedAt), new Date(last.playedAt)) : "—";
 
   return (
     /*
@@ -156,9 +157,9 @@ export function ProgressReportScreen({
      */
     <div className="flex flex-col gap-5 max-lg:gap-4 h-full max-lg:h-auto min-h-0 max-lg:pb-[var(--chrome-bottom)]">
       <ScreenHeader
-        eyebrow={client ? `${shown(client.displayName)} · ${periodLabel}` : "Danışan seçilmedi"}
+        meta={client ? `${shown(client.displayName)} · ${periodLabel}` : "Danışan seçilmedi"}
         title="İlerleme Raporu"
-        sub="Aileyle paylaşılabilir · yazdırmaya hazır · CSV eki dahil"
+        sub="Aileyle paylaşmaya ve yazdırmaya hazır; CSV eki dahil."
         actions={
           <span className="print-hide flex items-center gap-2.5">
             {clients.length > 0 && (
@@ -284,10 +285,14 @@ export function ProgressReportScreen({
                     <span className="text-[12.5px] font-bold text-(--color-text-strong)">{clinicName}</span>
                   </span>
                   <span className="text-right shrink-0 max-[560px]:text-left">
-                    <span className="numeral block text-[9.5px] text-(--color-text-soft)">
-                      Rapor no MIM-{new Date().getFullYear()}-{String(scoped.length * 7 + 100).padStart(4, "0")}
+                    {/* Eskiden burada seans sayısından türetilmiş bir "Rapor no
+                        MIM-2026-0191" vardı; hiçbir kayda karşılık gelmeyen,
+                        resmî görünen uydurma bir numara. Yerine raporun gerçekten
+                        hazırlandığı gün yazılıyor. */}
+                    <span className="block text-[12px] font-medium text-(--color-text-soft)">
+                      Hazırlandı: {new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
                     </span>
-                    <span className="numeral block text-[9.5px] text-(--color-text-soft) mt-0.5">Dönem {periodLabel}</span>
+                    <span className="block text-[12px] font-medium text-(--color-text-soft) mt-0.5">Dönem: {periodLabel}</span>
                   </span>
                 </div>
 
@@ -323,7 +328,7 @@ export function ProgressReportScreen({
                       key={x.l}
                       className="rounded-[13px] p-[12px_14px] max-[560px]:p-[11px_12px] bg-(--color-surface-strong) border border-(--color-line)"
                     >
-                      <div className="numeral text-[9px] font-semibold uppercase tracking-[0.08em] text-(--color-text-soft) mb-1.5">{x.l}</div>
+                      <div className="text-[12px] font-semibold text-(--color-text-soft) mb-1.5">{x.l}</div>
                       <div className="figure text-[20px] text-(--color-text-strong) leading-none">{x.v}</div>
                     </div>
                   ))}
@@ -377,7 +382,7 @@ export function ProgressReportScreen({
                       {g.avg}
                     </span>
                     <span
-                      className="numeral text-[11px] font-semibold max-[560px]:ml-auto"
+                      className="text-[12px] font-semibold max-[560px]:ml-auto"
                       style={{ color: g.trend.startsWith("↑") ? "var(--color-accent-green)" : g.trend.startsWith("↓") ? "var(--color-accent-red)" : "var(--color-text-soft)" }}
                     >
                       {g.trend}
@@ -398,8 +403,8 @@ export function ProgressReportScreen({
                         {/* Uzun hedef başlığı sayıyı ezmesin: başlık sarar,
                             "12 / 20" hiçbir genişlikte kırılmaz. */}
                         <div className="flex items-baseline justify-between gap-3 mb-1.5">
-                          <span className="text-[11.5px] font-semibold text-(--color-text-body) min-w-0">{g.title}</span>
-                          <span className="numeral text-[11px] font-semibold shrink-0" style={{ color: "var(--color-primary)" }}>
+                          <span className="text-[12px] font-semibold text-(--color-text-body) min-w-0">{g.title}</span>
+                          <span className="numeral text-[12px] font-semibold shrink-0" style={{ color: "var(--color-primary)" }}>
                             {g.currentValue} / {g.targetValue}
                           </span>
                         </div>
@@ -427,7 +432,7 @@ export function ProgressReportScreen({
                     <StepBar value={m.independence} width={18} height={7} />
                   </span>
                   <span className="text-[12px] font-semibold text-(--color-text-strong) min-w-0">{m.independenceLabel}</span>
-                  <span className="numeral ml-auto shrink-0 text-[11px] text-(--color-text-soft)">{m.independence} / 5</span>
+                  <span className="numeral ml-auto shrink-0 text-[12px] text-(--color-text-soft)">{m.independence} / 5</span>
                 </div>
               </div>
             )}
@@ -439,7 +444,7 @@ export function ProgressReportScreen({
                   {scoped.slice().reverse().slice(0, 12).map((s) => (
                     <div
                       key={s.id}
-                      className="flex items-center gap-3 max-[560px]:gap-2 text-[11.5px] py-1.5 border-b border-(--color-line-soft)"
+                      className="flex items-center gap-3 max-[560px]:gap-2 text-[12px] py-1.5 border-b border-(--color-line-soft)"
                     >
                       {/* Tarih sütunu masaüstünde 68px; dar ekranda "15/08"
                           için 46px yetiyor, artan pay oyun adına gidiyor. */}
@@ -469,7 +474,7 @@ export function ProgressReportScreen({
               {/* Paylaşım bağlantısı altyapısı yok; olmayan bir özelliği
                   vadetmek yerine gerçek yolu sunuyoruz: yazdır ya da PDF
                   olarak kaydet, aileye o dosyayı ilet. */}
-              <p className="m-0 mb-3.5 text-[11px] leading-[1.5] text-(--color-text-soft)">
+              <p className="m-0 mb-3.5 text-[12px] leading-[1.5] text-(--color-text-soft)">
                 Raporu PDF olarak kaydet, aileyle ya da kurumla dosya olarak paylaş.
                 İsim maskeleme Ayarlar&apos;dan açılır.
               </p>
@@ -496,7 +501,7 @@ export function ProgressReportScreen({
                     "Seans sonrası çocuğun kendi değerlendirmesini sorun.",
                     "Yorgunluk belirtisinde süreyi kısaltın, sıklığı koruyun.",
                   ].map((t) => (
-                    <li key={t} className="flex gap-2 text-[11.5px] leading-[1.5] text-(--color-text-body)">
+                    <li key={t} className="flex gap-2 text-[12px] leading-[1.5] text-(--color-text-body)">
                       <span className="shrink-0 mt-1.5" style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--color-primary)" }} />
                       {t}
                     </li>
@@ -509,7 +514,7 @@ export function ProgressReportScreen({
               {client && <Avatar name={client.displayName} id={client.id} size={30} radius={10} />}
               <span className="min-w-0">
                 <span className="block text-[12px] font-bold text-(--color-text-strong) truncate">{shown(client.displayName)}</span>
-                <span className="numeral block text-[9.5px] text-(--color-text-soft)">{scoped.length} seans · {periodLabel}</span>
+                <span className="block text-[12px] text-(--color-text-soft)">{scoped.length} seans · {periodLabel}</span>
               </span>
             </div>
           </div>
@@ -517,4 +522,11 @@ export function ProgressReportScreen({
       )}
     </div>
   );
+}
+
+function formatPeriod(from: Date, to: Date): string {
+  const opts = { day: "numeric", month: "long" } as const;
+  const sameYear = from.getFullYear() === to.getFullYear();
+  const start = from.toLocaleDateString("tr-TR", sameYear ? opts : { ...opts, year: "numeric" });
+  return `${start} – ${to.toLocaleDateString("tr-TR", { ...opts, year: "numeric" })}`;
 }

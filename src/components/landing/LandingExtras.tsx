@@ -259,7 +259,7 @@ const WALKTHROUGH = [
   },
   {
     title: "Haftalık Planı Oluşturun",
-    body: "Terapi hedeflerine göre domainleri (motor, bilişsel, duyusal) seçin. Akıllı öneri motoru günün programını hazırlar.",
+    body: "Terapi hedeflerine göre beceri alanlarını (motor, bilişsel, duyusal) seçin. Akıllı öneri motoru günün programını hazırlar.",
     icon: LayoutDashboard,
     accent: "var(--color-primary)",
     preview: "plan",
@@ -491,7 +491,7 @@ export function StickyWalkthrough() {
                             yarısını yiyordu. Mobilde sarar, `lg`te kısalır. */}
                         <div className="flex items-center gap-2 mb-1">
                           <span
-                            className="shrink-0 text-[10px] font-extrabold tracking-[0.18em] uppercase"
+                            className="shrink-0 text-[12px] font-semibold"
                             style={{ color: w.accent }}
                           >
                             0{i + 1}
@@ -575,11 +575,11 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
     return (
       <div className="w-full h-full flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold uppercase tracking-widest text-(--color-text-muted)">
+          <span className="text-xs font-semibold text-(--color-text-soft)">
             Danışanlar
           </span>
           <span
-            className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+            className="text-[12px] font-bold px-2 py-0.5 rounded-full"
             style={{ background: `color-mix(in srgb, ${accent} 13%, transparent)`, color: accent }}
           >
             Aktif · 8
@@ -604,7 +604,7 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-(--color-text-strong) truncate">{n}</p>
-                  <p className="text-[11px] text-(--color-text-muted)">
+                  <p className="text-[12px] text-(--color-text-muted)">
                     Son seans · {4 - (i % 3)} gün önce
                   </p>
                 </div>
@@ -631,11 +631,11 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
     return (
       <div className="w-full h-full flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold uppercase tracking-widest text-(--color-text-muted)">
+          <span className="text-xs font-semibold text-(--color-text-soft)">
             Haftalık Plan
           </span>
           <span
-            className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+            className="text-[12px] font-bold px-2 py-0.5 rounded-full"
             style={{ background: `color-mix(in srgb, ${accent} 13%, transparent)`, color: accent }}
           >
             14 Nisan · Pazartesi
@@ -657,7 +657,7 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
                 }}
               >
                 <span
-                  className="text-[10px] font-extrabold uppercase"
+                  className="text-[12px] font-semibold"
                   style={{ color: filled ? accent : "var(--color-text-muted)" }}
                 >
                   {d}
@@ -679,7 +679,7 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
             );
           })}
         </div>
-        <div className="flex items-center gap-2 text-[11px] text-(--color-text-soft)">
+        <div className="flex items-center gap-2 text-[12px] text-(--color-text-soft)">
           <Zap size={12} style={{ color: accent }} />
           <span>Akıllı öneri: Bugün motor koordinasyonu + görsel algı</span>
         </div>
@@ -691,7 +691,7 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
     return (
       <div className="w-full h-full flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold uppercase tracking-widest text-(--color-text-muted)">
+          <span className="text-xs font-semibold text-(--color-text-soft)">
             Canlı Seans
           </span>
           <div className="flex items-center gap-1.5">
@@ -699,7 +699,7 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
               className="halo-dot w-2 h-2 rounded-full"
               style={{ color: "var(--color-accent-red)", background: "var(--color-accent-red)" }}
             />
-            <span className="text-[10px] font-bold text-(--color-text-body)">CANLI</span>
+            <span className="text-[12px] font-bold text-(--color-text-body)">Canlı</span>
           </div>
         </div>
         <div
@@ -754,7 +754,7 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
               >
                 {s.v}
               </p>
-              <p className="text-[9px] font-bold uppercase tracking-wider text-(--color-text-muted)">
+              <p className="text-[12px] font-semibold text-(--color-text-soft)">
                 {s.l}
               </p>
             </div>
@@ -768,11 +768,11 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
   return (
     <div className="w-full h-full flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-bold uppercase tracking-widest text-(--color-text-muted)">
+        <span className="text-xs font-semibold text-(--color-text-soft)">
           İlerleme Raporu
         </span>
         <span
-          className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+          className="text-[12px] font-bold px-2 py-0.5 rounded-full"
           style={{ background: `color-mix(in srgb, ${accent} 13%, transparent)`, color: accent }}
         >
           + %28 gelişim
@@ -798,25 +798,25 @@ function WalkthroughPreview({ kind, accent }: { kind: string; accent: string }) 
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-xl p-3 border border-(--color-line)" style={{ background: "var(--color-surface)" }}>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-(--color-text-muted) mb-1">
+          <p className="text-[12px] font-semibold text-(--color-text-soft) mb-1">
             Motor
           </p>
           <div className="flex items-center gap-2">
             <span className="text-lg font-extrabold text-(--color-text-strong)">86</span>
             <TrendingUp size={13} style={{ color: "var(--color-accent-green)" }} />
-            <span className="text-[10px] font-bold" style={{ color: "var(--color-accent-green)" }}>
+            <span className="text-[12px] font-bold" style={{ color: "var(--color-accent-green)" }}>
               +12
             </span>
           </div>
         </div>
         <div className="rounded-xl p-3 border border-(--color-line)" style={{ background: "var(--color-surface)" }}>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-(--color-text-muted) mb-1">
+          <p className="text-[12px] font-semibold text-(--color-text-soft) mb-1">
             Bilişsel
           </p>
           <div className="flex items-center gap-2">
             <span className="text-lg font-extrabold text-(--color-text-strong)">79</span>
             <TrendingUp size={13} style={{ color: "var(--color-accent-green)" }} />
-            <span className="text-[10px] font-bold" style={{ color: "var(--color-accent-green)" }}>
+            <span className="text-[12px] font-bold" style={{ color: "var(--color-accent-green)" }}>
               +8
             </span>
           </div>
@@ -835,7 +835,7 @@ const COMPARISON = [
   { label: "Veri görselleştirme", mimio: "Anlık skor grafikleri", traditional: "Manuel Excel" },
   { label: "Çocuk katılımı", mimio: "Oyun tabanlı etkileşim", traditional: "Standart materyal" },
   { label: "Aile paylaşımı", mimio: "Yazdırılabilir rapor + CSV", traditional: "Sözlü özet" },
-  { label: "Klinik standart", mimio: "Kanıta dayalı domainler", traditional: "Kişisel tercih" },
+  { label: "Klinik standart", mimio: "Kanıta dayalı beceri alanları", traditional: "Kişisel tercih" },
   { label: "Raporlama süresi", mimio: "Dakikalar içinde", traditional: "Saatler" },
 ] as const;
 
@@ -868,7 +868,7 @@ export function ComparisonSection() {
           {/* Sütun başlıkları yalnızca tablo düzeninde anlam taşır; kart
               düzeninde her satır kendi etiketini kendi taşıyor. */}
           <div className="hidden lg:grid grid-cols-[1.3fr_1fr_1fr] border-b border-(--color-line)">
-            <div className="p-6 text-sm font-bold uppercase tracking-widest text-(--color-text-muted)">
+            <div className="p-6 text-sm font-semibold text-(--color-text-soft)">
               Özellik
             </div>
             <div className="p-6 relative">
@@ -911,7 +911,7 @@ export function ComparisonSection() {
                     className="shrink-0 mt-0.5 text-(--color-accent-green)"
                   />
                   <div className="min-w-0">
-                    <span className="block lg:hidden text-[10px] font-bold uppercase tracking-[0.14em] text-(--color-text-muted) mb-0.5">
+                    <span className="block lg:hidden text-[12px] font-semibold text-(--color-text-soft) mb-0.5">
                       Mimio
                     </span>
                     <span className="text-sm font-semibold text-(--color-text-strong)">
@@ -923,7 +923,7 @@ export function ComparisonSection() {
               <div className="flex items-start gap-2 lg:p-6">
                 <Minus size={16} className="shrink-0 mt-0.5 text-(--color-text-muted)" />
                 <div className="min-w-0">
-                  <span className="block lg:hidden text-[10px] font-bold uppercase tracking-[0.14em] text-(--color-text-muted) mb-0.5">
+                  <span className="block lg:hidden text-[12px] font-semibold text-(--color-text-soft) mb-0.5">
                     Geleneksel
                   </span>
                   <span className="text-sm text-(--color-text-soft)">
@@ -1077,7 +1077,7 @@ export function FloatingCTA({ onRegister }: FloatingCTAProps) {
           className="floating-cta"
         >
           <button type="button" onClick={onRegister} className="floating-cta-action">
-            Ücretsiz Başla
+            Hemen Başla
           </button>
           <button
             type="button"
@@ -1167,7 +1167,6 @@ function GameCard({ g, i, onLogin, wide = false }: { g: GameEntry; i: number; on
     <button
       type="button"
       onClick={onLogin}
-      data-cursor="Oyna"
       className={`group relative ${wide ? "w-[min(30rem,38vw)]" : "w-[300px] sm:w-[340px]"} shrink-0 text-left rounded-3xl border border-(--color-games-card-border) overflow-hidden bg-(--color-games-card-bg) transition-colors hover:border-(--color-primary)/40`}
     >
       {/* Beceri alanı etiketi görselin üstünde değil altında: gerçek bir
@@ -1180,7 +1179,7 @@ function GameCard({ g, i, onLogin, wide = false }: { g: GameEntry; i: number; on
           sizes={wide ? "(min-width: 1024px) 38vw, 340px" : "(max-width: 639px) 300px, 340px"}
           className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.06]"
         />
-        <span className="absolute top-4 left-4 numeral text-[11px] font-semibold px-2.5 py-1 rounded-full text-white/85 bg-black/35 backdrop-blur-md border border-white/10">
+        <span className="absolute top-4 left-4 numeral text-[12px] font-semibold px-2.5 py-1 rounded-full text-white/85 bg-black/35 backdrop-blur-md border border-white/10">
           {String(i + 1).padStart(2, "0")} / {String(EXTENDED_GAMES.length).padStart(2, "0")}
         </span>
         <span className="absolute bottom-4 right-4 w-11 h-11 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20 opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300">
@@ -1198,7 +1197,7 @@ function GameCard({ g, i, onLogin, wide = false }: { g: GameEntry; i: number; on
           {g.desc}
         </p>
         <div className="flex items-center gap-2 text-xs font-bold text-(--color-primary) group-hover:translate-x-1 transition-transform">
-          Seansı başlat
+          Seansı Başlat
           <ChevronRight size={13} />
         </div>
       </div>

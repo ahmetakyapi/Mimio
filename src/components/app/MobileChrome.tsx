@@ -93,7 +93,7 @@ export function MobileTabBar({
                 <Icon size={20} strokeWidth={1.9} style={{ color: on ? "var(--color-primary)" : "var(--color-text-muted)" }} />
               </motion.span>
               <span
-                className="relative text-[9.5px]"
+                className="relative text-[12px]"
                 style={{ fontWeight: on ? 700 : 500, color: on ? "var(--color-primary-ink)" : "var(--color-text-muted)" }}
               >
                 {label}
@@ -111,7 +111,7 @@ export function MobileTabBar({
         >
           <MoreHorizontal size={20} strokeWidth={1.9} style={{ color: moreActive ? "var(--color-primary)" : "var(--color-text-muted)" }} />
           <span
-            className="text-[9.5px]"
+            className="text-[12px]"
             style={{ fontWeight: moreActive ? 700 : 500, color: moreActive ? "var(--color-primary-ink)" : "var(--color-text-muted)" }}
           >
             Daha

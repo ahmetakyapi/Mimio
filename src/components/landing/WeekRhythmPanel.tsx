@@ -136,8 +136,8 @@ export function WeekRhythmPanel() {
         className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 sm:px-6 py-3.5"
         style={{ borderBottom: "1px solid var(--color-line)" }}
       >
-        <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-(--color-text-muted)">
-          Haftalık plan
+        <span className="text-[12px] font-semibold text-(--color-text-soft)">
+          Haftalık Plan
         </span>
         {/* Renk anahtarı: bloklardaki renk ne anlama geliyor, tek satırda. */}
         <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1.5">
@@ -147,11 +147,11 @@ export function WeekRhythmPanel() {
                 className="w-2 h-2 rounded-sm shrink-0"
                 style={{ background: DOMAIN[k].color }}
               />
-              <span className="text-[11px] text-(--color-text-soft)">{DOMAIN[k].label}</span>
+              <span className="text-[12px] text-(--color-text-soft)">{DOMAIN[k].label}</span>
             </span>
           ))}
         </div>
-        <span className="numeral ml-auto text-[11px] text-(--color-text-soft)">
+        <span className="numeral ml-auto text-[12px] text-(--color-text-soft)">
           {TOTAL} / {CAPACITY} slot · %{Math.round((TOTAL / CAPACITY) * 100)}
         </span>
       </header>
@@ -169,9 +169,9 @@ export function WeekRhythmPanel() {
                   className="flex items-baseline gap-1.5 pb-2 mb-2.5"
                   style={{ borderBottom: "1px solid var(--color-line)" }}
                 >
-                  <span className="text-[11px] font-bold text-(--color-text-body)">{d.day}</span>
-                  <span className="numeral text-[11px] text-(--color-text-muted)">{d.date}</span>
-                  <span className="ml-auto numeral text-[10px] text-(--color-text-muted)">
+                  <span className="text-[12px] font-bold text-(--color-text-body)">{d.day}</span>
+                  <span className="numeral text-[12px] text-(--color-text-muted)">{d.date}</span>
+                  <span className="ml-auto numeral text-[12px] text-(--color-text-muted)">
                     {d.slots.length}
                   </span>
                 </div>
@@ -197,13 +197,13 @@ export function WeekRhythmPanel() {
                           borderLeft: `2px solid ${c}`,
                         }}
                       >
-                        <p className="numeral text-[10px] m-0 leading-none" style={{ color: c }}>
+                        <p className="numeral text-[12px] m-0 leading-none" style={{ color: c }}>
                           {s.time}
                         </p>
-                        <p className="text-[11.5px] font-bold text-(--color-text-strong) m-0 mt-1 leading-tight truncate">
+                        <p className="text-[12px] font-bold text-(--color-text-strong) m-0 mt-1 leading-tight truncate">
                           {s.client}
                         </p>
-                        <p className="text-[10.5px] text-(--color-text-muted) m-0 mt-0.5 leading-tight truncate">
+                        <p className="text-[12px] text-(--color-text-muted) m-0 mt-0.5 leading-tight truncate">
                           {g.title}
                         </p>
                       </motion.div>
@@ -236,10 +236,10 @@ export function WeekRhythmPanel() {
           {BALANCE.map((b, i) => (
             <div key={b.key} className="min-w-0">
               <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-[11px] font-semibold text-(--color-text-soft) truncate">
+                <span className="text-[12px] font-semibold text-(--color-text-soft) truncate">
                   {b.label}
                 </span>
-                <span className="numeral ml-auto text-[11px] text-(--color-text-muted)">
+                <span className="numeral ml-auto text-[12px] text-(--color-text-muted)">
                   %{b.pct}
                 </span>
               </div>

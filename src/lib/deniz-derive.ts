@@ -436,8 +436,9 @@ export function shortDate(d: Date): string {
 
 export function greeting(d: Date): string {
   const h = d.getHours();
-  if (h < 6) return "İyi geceler";
+  /* Başlıkta duruyor: Title Case, sonda nokta yok ("İyi Akşamlar, Ahmet"). */
+  if (h < 6) return "İyi Geceler";
   if (h < 12) return "Günaydın";
-  if (h < 18) return "İyi günler";
-  return "İyi akşamlar";
+  if (h < 18) return "İyi Günler";
+  return "İyi Akşamlar";
 }

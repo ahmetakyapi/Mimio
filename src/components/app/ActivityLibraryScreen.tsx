@@ -100,7 +100,7 @@ export function ActivityLibraryScreen({ onAddToPlan }: Props) {
   return (
     <div className="flex flex-col gap-5 h-full min-h-0">
       <ScreenHeader
-        eyebrow={`${all.length} aktivite · ${homeCount}'si ev programına uygun`}
+        meta={`${all.length} aktivite · ${homeCount}'si ev programına uygun`}
         title="Aktivite Kitaplığı"
         sub="AOTA OTPF-4 ve WHO ICF çerçevesiyle etiketlendi."
         actions={
@@ -136,7 +136,7 @@ export function ActivityLibraryScreen({ onAddToPlan }: Props) {
             <SlidersHorizontal size={15} strokeWidth={1.9} className="shrink-0 text-(--color-text-soft)" />
             <span className="flex-1 min-w-0">
               <span className="block text-[12px] font-semibold text-(--color-text-strong) truncate">{domainLabel}</span>
-              <span className="numeral block text-[10px] text-(--color-text-soft)">
+              <span className="block text-[12px] text-(--color-text-soft)">
                 {rows.length} aktivite{filters.length > 0 ? ` · ${filters.length} filtre` : ""}
               </span>
             </span>
@@ -240,7 +240,7 @@ export function ActivityLibraryScreen({ onAddToPlan }: Props) {
                     }}
                   >
                     <span className="block text-[13px] font-bold text-(--color-text-strong) mb-1">{a.label}</span>
-                    <span className="block text-[11px] text-(--color-text-soft) mb-2.5">
+                    <span className="block text-[12px] text-(--color-text-soft) mb-2.5">
                       {a.subSkill} · {a.activityType}
                     </span>
                     <span className="flex flex-wrap gap-1.5">
@@ -310,7 +310,7 @@ function ActivityDetail({ activity, games, onAdd, className = "", stretch = fals
   return (
     <div className={`glass rounded-[18px] flex flex-col ${className}`} style={{ padding: "20px 22px" }}>
       <span
-        className="self-start text-[10.5px] font-semibold mb-2.5"
+        className="self-start text-[12px] font-semibold mb-2.5"
         style={{
           padding: "4px 10px",
           borderRadius: 7,
@@ -324,7 +324,7 @@ function ActivityDetail({ activity, games, onAdd, className = "", stretch = fals
       <h2 className="font-display m-0 mb-2 text-[15px] font-bold tracking-[-0.02em] text-(--color-text-strong)">
         {activity.label}
       </h2>
-      <p className="m-0 mb-4 text-[11.5px] leading-[1.6] text-(--color-text-body)">{activity.description}</p>
+      <p className="m-0 mb-4 text-[12px] leading-[1.6] text-(--color-text-body)">{activity.description}</p>
 
       {activity.therapistTips && activity.therapistTips.length > 0 && (
         <>
@@ -333,12 +333,12 @@ function ActivityDetail({ activity, games, onAdd, className = "", stretch = fals
             {activity.therapistTips.map((tip, i) => (
               <div key={tip} className="flex gap-2.5" style={{ padding: "6px 0" }}>
                 <span
-                  className="numeral grid place-items-center shrink-0 text-[9.5px] font-bold"
+                  className="numeral grid place-items-center shrink-0 text-[12px] font-bold"
                   style={{ width: 18, height: 18, borderRadius: 6, background: "var(--color-primary-light)", color: "var(--color-primary-ink)" }}
                 >
                   {i + 1}
                 </span>
-                <span className="text-[11.5px] leading-[1.5] text-(--color-text-body)">{tip}</span>
+                <span className="text-[12px] leading-[1.5] text-(--color-text-body)">{tip}</span>
               </div>
             ))}
           </div>
@@ -359,7 +359,7 @@ function ActivityDetail({ activity, games, onAdd, className = "", stretch = fals
       {showEvidence && activity.evidenceBase && (
         <>
           <Eyebrow className="mb-2">Kanıt Atfı</Eyebrow>
-          <p className="m-0 mb-4 text-[11px] leading-[1.55] text-(--color-text-soft)">{activity.evidenceBase}</p>
+          <p className="m-0 mb-4 text-[12px] leading-[1.55] text-(--color-text-soft)">{activity.evidenceBase}</p>
         </>
       )}
 
@@ -405,7 +405,7 @@ function DomainRow({ label, count, color, on, onClick }: {
       <span className={`flex-1 text-[12px] truncate ${on ? "font-semibold text-(--color-primary-ink)" : "font-medium text-(--color-text-body)"}`}>
         {label}
       </span>
-      <span className="numeral text-[10.5px] text-(--color-text-soft) shrink-0">{count}</span>
+      <span className="numeral text-[12px] text-(--color-text-soft) shrink-0">{count}</span>
     </button>
   );
 }
@@ -426,7 +426,7 @@ function Chip({ children, icon, tone, className = "" }: {
       : "var(--color-text-soft)";
   return (
     <span
-      className={`inline-flex items-center gap-1 text-[10px] font-semibold ${className}`}
+      className={`inline-flex items-center gap-1 text-[12px] font-semibold ${className}`}
       style={{ padding: "4px 9px", borderRadius: 7, background: bg, color: fg }}
     >
       {icon}{children}

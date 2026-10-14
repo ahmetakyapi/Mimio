@@ -184,7 +184,7 @@ export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
               return (
                 <span key={s.n} className="flex items-center gap-2 max-lg:gap-1.5">
                   <span
-                    className="numeral grid place-items-center text-[11px] font-bold shrink-0 w-7 h-7"
+                    className="numeral grid place-items-center text-[12px] font-bold shrink-0 w-7 h-7"
                     style={{
                       borderRadius: 10,
                       background: done || on ? "var(--gradient-signature-ink)" : "var(--color-surface)",
@@ -210,7 +210,7 @@ export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
             {step === 1 && (
               <div className="flex flex-col gap-3.5">
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Ad Soyad</span>
+                  <span className="text-[12px] font-semibold text-(--color-text-soft)">Ad Soyad</span>
                   <input
                     autoFocus
                     value={d.displayName}
@@ -223,11 +223,11 @@ export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
   
                 <div className="grid grid-cols-2 gap-3">
                   <label className="flex flex-col gap-1.5">
-                    <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Doğum Tarihi</span>
+                    <span className="text-[12px] font-semibold text-(--color-text-soft)">Doğum Tarihi</span>
                     <input type="date" value={d.birthDate} onChange={(e) => set("birthDate", e.target.value)} className={field} style={fieldStyle} />
                   </label>
                   <label className="flex flex-col gap-1.5">
-                    <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Yaş Grubu</span>
+                    <span className="text-[12px] font-semibold text-(--color-text-soft)">Yaş Grubu</span>
                     <select value={d.ageGroup} onChange={(e) => set("ageGroup", e.target.value)} className={field} style={fieldStyle}>
                       {AGE_BANDS.map((a) => <option key={a} value={a}>{a}</option>)}
                     </select>
@@ -235,7 +235,7 @@ export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
                 </div>
   
                 <div>
-                  <span className="block text-[11.5px] font-semibold text-(--color-text-soft) mb-2">Uygulama Alanı</span>
+                  <span className="block text-[12px] font-semibold text-(--color-text-soft) mb-2">Uygulama Alanı</span>
                   <div className="flex flex-wrap gap-2">
                     {AREAS.map((a) => {
                       const on = d.area === a;
@@ -273,7 +273,7 @@ export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
                   <Avatar name={d.displayName || "?"} id={d.displayName} size={36} radius={12} />
                   <span className="flex-1 min-w-0">
                     <span className="block text-[13px] font-bold text-(--color-text-strong) truncate">{d.displayName || "—"}</span>
-                    <span className="block text-[11px] text-(--color-text-soft) truncate">
+                    <span className="block text-[12px] text-(--color-text-soft) truncate">
                       {[d.ageGroup + " yaş", d.birthDate ? new Date(d.birthDate).toLocaleDateString("tr-TR") : null, clinicName]
                         .filter(Boolean)
                         .join(" · ")}
@@ -282,14 +282,14 @@ export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
                   <button
                     type="button"
                     onClick={() => setStep(1)}
-                    className="text-[11.5px] font-semibold text-(--color-primary) bg-transparent border-none cursor-pointer hover:underline shrink-0"
+                    className="text-[12px] font-semibold text-(--color-primary) bg-transparent border-none cursor-pointer hover:underline shrink-0"
                   >
                     Düzenle
                   </button>
                 </div>
   
                 <div>
-                  <span className="block text-[11.5px] font-semibold text-(--color-text-soft) mb-2">Birincil Hedef Alanı</span>
+                  <span className="block text-[12px] font-semibold text-(--color-text-soft) mb-2">Birincil Hedef Alanı</span>
                   <div className="grid gap-2.5" style={{ gridTemplateColumns: "repeat(2, minmax(0,1fr))" }}>
                     {GOALS.map((g) => {
                       const on = d.primaryGoal === g.title;
@@ -321,7 +321,7 @@ export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
                           </span>
                           <span className="min-w-0">
                             <span className="block text-[12.5px] font-bold text-(--color-text-strong)">{g.title}</span>
-                            <span className="block text-[10.5px] text-(--color-text-soft) mt-0.5">{g.sub}</span>
+                            <span className="block text-[12px] text-(--color-text-soft) mt-0.5">{g.sub}</span>
                           </span>
                         </button>
                       );
@@ -331,13 +331,13 @@ export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
   
                 <div className="grid grid-cols-2 gap-3">
                   <label className="flex flex-col gap-1.5">
-                    <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Seans Sıklığı</span>
+                    <span className="text-[12px] font-semibold text-(--color-text-soft)">Seans Sıklığı</span>
                     <select value={d.frequency} onChange={(e) => set("frequency", e.target.value)} className={field} style={fieldStyle}>
                       {FREQUENCIES.map((f) => <option key={f} value={f}>{f}</option>)}
                     </select>
                   </label>
                   <label className="flex flex-col gap-1.5">
-                    <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Hedef Tarihi</span>
+                    <span className="text-[12px] font-semibold text-(--color-text-soft)">Hedef Tarihi</span>
                     <input type="date" value={d.targetDate} onChange={(e) => set("targetDate", e.target.value)} className={field} style={fieldStyle} />
                   </label>
                 </div>
@@ -358,7 +358,7 @@ export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
             {step === 3 && (
               <div className="flex flex-col gap-4">
                 <div>
-                  <span className="block text-[11.5px] font-semibold text-(--color-text-soft) mb-2.5">Bağımsızlık Düzeyi</span>
+                  <span className="block text-[12px] font-semibold text-(--color-text-soft) mb-2.5">Bağımsızlık Düzeyi</span>
                   <div className="flex flex-col gap-2">
                     {INDEPENDENCE_STEPS.map((label, i) => {
                       const n = i + 1;
@@ -378,7 +378,7 @@ export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
                           }}
                         >
                           <span
-                            className="numeral grid place-items-center shrink-0 text-[11px] font-bold"
+                            className="numeral grid place-items-center shrink-0 text-[12px] font-bold"
                             style={{
                               width: 24,
                               height: 24,
@@ -399,7 +399,7 @@ export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
                 </div>
   
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Başlangıç Zorluğu</span>
+                  <span className="text-[12px] font-semibold text-(--color-text-soft)">Başlangıç Zorluğu</span>
                   <select value={d.difficultyLevel} onChange={(e) => set("difficultyLevel", e.target.value)} className={field} style={fieldStyle}>
                     {["Kolay", "Orta", "Zor"].map((x) => <option key={x} value={x}>{x}</option>)}
                   </select>

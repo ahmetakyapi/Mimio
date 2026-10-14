@@ -43,6 +43,7 @@ export function AuthScreen({
   const [clinicName, setClinicName] = useState("");
   const [remember, setRemember] = useState(true);
   const [reveal, setReveal] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -77,14 +78,14 @@ export function AuthScreen({
           </span>
           <span className="text-left">
             <span className="font-display block text-[15px] font-bold tracking-[-0.02em] text-(--color-text-strong) leading-tight">Mimio</span>
-            <span className="numeral block text-[9.5px] text-(--color-text-soft) leading-tight">Ölçüm temelli ergoterapi</span>
+            <span className="block text-[12px] text-(--color-text-soft) leading-tight">Ölçüm temelli ergoterapi</span>
           </span>
         </button>
 
         {/* Tanıtım manşeti destekleyici içerik; sayfanın h1'i formda. */}
         <h2 className="m-0 mt-auto mb-4 text-[clamp(1.75rem,2.9vw,2.25rem)] leading-[1.08] text-(--color-text-strong)">
-          Terapi seanslarını<br />
-          <span style={{ color: "var(--color-primary)" }}>oyuna dönüştür.</span>
+          Terapi Seanslarını<br />
+          <span style={{ color: "var(--color-primary)" }}>Oyuna Dönüştür</span>
         </h2>
         <p className="m-0 mb-9 text-[13.5px] leading-[1.65] text-(--color-text-body)" style={{ maxWidth: 420 }}>
           Danışan takibi, haftalık plan, kanıta dayalı oyunlar ve yazdırılabilir raporlar — tek platformda.
@@ -94,7 +95,7 @@ export function AuthScreen({
           {stats.map((s) => (
             <span key={s.label}>
               <span className="figure block text-[26px] text-(--color-text-strong) leading-none">{s.value}</span>
-              <span className="numeral block text-[10px] text-(--color-text-soft) mt-1.5">{s.label}</span>
+              <span className="block text-[12px] font-medium text-(--color-text-soft) mt-1.5">{s.label}</span>
             </span>
           ))}
         </div>
@@ -109,8 +110,10 @@ export function AuthScreen({
               background: dbOnline ? "var(--color-accent-green)" : "var(--color-accent-amber)",
             }}
           />
-          <span className="numeral text-[10.5px] text-(--color-text-soft)">
-            {dbOnline ? "Tüm sistemler çalışıyor · TLS şifreli" : "Yerel mod · veriler bu tarayıcıda"}
+          <span className="text-[12px] text-(--color-text-soft)">
+            {/* Yalnızca ölçtüğümüzü söylüyoruz: kontrol edilen tek şey veri
+                katmanının bağlı olması ("Tüm sistemler çalışıyor" fazlasıydı). */}
+            {dbOnline ? "Veritabanı bağlı · kayıtlar bulutta" : "Yerel mod · veriler bu tarayıcıda"}
           </span>
         </span>
       </div>
@@ -148,7 +151,7 @@ export function AuthScreen({
             </span>
             <span className="text-left">
               <span className="font-display block text-[14px] font-bold tracking-[-0.02em] text-(--color-text-strong) leading-tight">Mimio</span>
-              <span className="numeral block text-[9.5px] text-(--color-text-soft) leading-tight">Ölçüm temelli ergoterapi</span>
+              <span className="block text-[12px] text-(--color-text-soft) leading-tight">Ölçüm temelli ergoterapi</span>
             </span>
           </button>
 
@@ -185,7 +188,7 @@ export function AuthScreen({
               basılmıyor ve sayfa h1'siz kalıyordu — ekran okuyucu başlık
               listesinde ekranın ne olduğunu söyleyen bir satır yoktu. */}
           <h1 className="font-display m-0 mb-1 lg:mb-1.5 text-[21px] font-bold tracking-[-0.03em] text-(--color-text-strong)">
-            {mode === "login" ? greeting : "Hesabını oluştur."}
+            {mode === "login" ? greeting : "Hesabını Oluştur"}
           </h1>
           <p className="m-0 mb-4 lg:mb-6 text-[12.5px] text-(--color-text-soft)">
             {mode === "login" ? subline : "Bir dakikada başla; danışanları sonra ekleyebilirsin."}
@@ -214,18 +217,18 @@ export function AuthScreen({
             {mode === "register" && (
               <>
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Ad Soyad</span>
+                  <span className="text-[12px] font-semibold text-(--color-text-soft)">Ad Soyad</span>
                   <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className={field} style={fieldStyle} required autoComplete="name" />
                 </label>
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Klinik</span>
+                  <span className="text-[12px] font-semibold text-(--color-text-soft)">Klinik</span>
                   <input value={clinicName} onChange={(e) => setClinicName(e.target.value)} placeholder="Bağımsız çalışıyorsan boş bırak" className={field} style={fieldStyle} autoComplete="organization" />
                 </label>
               </>
             )}
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Kullanıcı Adı</span>
+              <span className="text-[12px] font-semibold text-(--color-text-soft)">Kullanıcı Adı</span>
               <input
                 value={username}
                 onChange={(e) => setUsername(e.target.value.replace(/\s/g, "").toLocaleLowerCase("tr-TR"))}
@@ -237,7 +240,7 @@ export function AuthScreen({
             </label>
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Şifre</span>
+              <span className="text-[12px] font-semibold text-(--color-text-soft)">Şifre</span>
               <span className="relative flex items-center">
                 <input
                   type={reveal ? "text" : "password"}
@@ -275,7 +278,7 @@ export function AuthScreen({
                   role="checkbox"
                   aria-checked={remember}
                   onClick={() => setRemember((r) => !r)}
-                  className="flex items-center gap-2 min-h-11 lg:min-h-0 text-[11.5px] font-medium text-(--color-text-body) cursor-pointer bg-transparent border-none p-0"
+                  className="flex items-center gap-2 min-h-11 lg:min-h-0 text-[12px] font-medium text-(--color-text-body) cursor-pointer bg-transparent border-none p-0"
                 >
                   <span
                     className="grid place-items-center shrink-0 w-5 h-5 lg:w-[17px] lg:h-[17px]"
@@ -289,16 +292,33 @@ export function AuthScreen({
                   </span>
                   Beni Hatırla
                 </button>
-                {/* "Şifremi unuttum" burada tıklanamaz bir süs olarak duruyordu;
-                    sıfırlama altyapısı yok. Seed'in şifre komutuna işaret eden
-                    dürüst bir ipucu bırakıyoruz. */}
-                <span
-                  className="text-[11.5px] text-(--color-text-muted) cursor-help"
-                  title="Şifre sıfırlama e-postası henüz yok. Demo kurulumunda: node scripts/seed-demo.mjs --set-password"
+                {/* Sıfırlama altyapısı yok. Önceki hâl tıklanamayan bir yazıydı
+                    ve yalnızca fareyle üstüne gelene, ipucu balonunda bir
+                    geliştirici komutu (`seed-demo.mjs --set-password`)
+                    gösteriyordu; telefonda hiçbir şey olmuyordu. Artık düğme:
+                    formun altında ne yapılabileceğini düz Türkçeyle söylüyor. */}
+                <button
+                  type="button"
+                  onClick={() => setForgotOpen((o) => !o)}
+                  aria-expanded={forgotOpen}
+                  aria-controls="forgot-help"
+                  className="min-h-11 lg:min-h-0 text-[12px] font-medium text-(--color-text-soft) cursor-pointer bg-transparent border-none p-0 hover:text-(--color-primary)"
                 >
-                  Şifremi unuttum
-                </span>
+                  Şifremi Unuttum
+                </button>
               </div>
+            )}
+
+            {mode === "login" && forgotOpen && (
+              <p
+                id="forgot-help"
+                role="status"
+                className="m-0 text-[12.5px] leading-[1.55] text-(--color-text-body)"
+                style={{ padding: "11px 13px", borderRadius: 12, background: "var(--color-primary-light)" }}
+              >
+                E-postayla şifre sıfırlama henüz yok. Bu arada demo hesabıyla
+                platformu gezebilir ya da yeni bir hesap açabilirsin.
+              </p>
             )}
 
             <button
@@ -313,7 +333,7 @@ export function AuthScreen({
 
           <div className="flex items-center gap-3 my-5">
             <span className="flex-1" style={{ height: 1, background: "var(--color-line)" }} />
-            <span className="numeral text-[10px] text-(--color-text-muted)">veya</span>
+            <span className="text-[12px] text-(--color-text-soft)">veya</span>
             <span className="flex-1" style={{ height: 1, background: "var(--color-line)" }} />
           </div>
 
@@ -326,7 +346,7 @@ export function AuthScreen({
             Demo Hesapla Keşfet
           </button>
 
-          <p className="m-0 mt-5 text-[10.5px] leading-[1.55] text-(--color-text-muted) text-center">
+          <p className="m-0 mt-5 text-[12px] leading-[1.55] text-(--color-text-muted) text-center">
             Devam ederek <span className="text-(--color-text-soft)">Kullanım Koşulları</span> ve{" "}
             <span className="text-(--color-text-soft)">Gizlilik Politikası</span>'nı kabul etmiş olursun.
           </p>
@@ -343,8 +363,8 @@ export function AuthScreen({
                 background: dbOnline ? "var(--color-accent-green)" : "var(--color-accent-amber)",
               }}
             />
-            <span className="numeral text-[10px] text-(--color-text-soft)">
-              {dbOnline ? "Tüm sistemler çalışıyor · TLS şifreli" : "Yerel mod · veriler bu tarayıcıda"}
+            <span className="text-[12px] text-(--color-text-soft)">
+              {dbOnline ? "Veritabanı bağlı · kayıtlar bulutta" : "Yerel mod · veriler bu tarayıcıda"}
             </span>
           </span>
         </div>

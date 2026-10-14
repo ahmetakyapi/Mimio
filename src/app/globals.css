@@ -1150,34 +1150,19 @@ html[data-modal-open] .app-scroll {
 /* ─────────────────────────────────────────────
    MOBİL TİPOGRAFİ TABANI
 
-   Masaüstü ölçeği bilinçli olarak sıkı: 9-10px'lik mono etiketler 27"
-   bir ekranda, kol mesafesinden okunabilir bir "veri fısıltısı". Aynı
-   değerler telefonda okunmuyor — ölçüm sırasında 9px'lik "bağımsızlık
-   3/5" etiketi bilgi değil leke.
+   Masaüstünde de 12px'in altında metin yok (Ekim 2026): eskiden 9-10px'lik
+   versal mono etiketler "kol mesafesinden okunur bir veri fısıltısı"
+   sayılıyordu; pratikte terapist seans sırasında onları okuyamıyordu.
+   Kaynaktaki en küçük sınıf artık `text-[12px]`; telefonda o ve bir
+   üstü yarım piksel daha büyür.
 
-   Ölçek bileşen bileşen büyütülmüyor; taban burada bir kez yükseltiliyor.
    Tailwind yardımcıları katmanlı (`@layer utilities`) üretildiği için
    katmansız yazılan bu kurallar onları bastırır — `lg:` varyantları ayrı
    sınıf adı taşıdığından masaüstü ölçeği olduğu gibi kalır.
    ─────────────────────────────────────────── */
 @media (max-width: 1023px) {
-  .text-\[8px\]        { font-size: 10px; }
-  .text-\[8\.5px\]     { font-size: 10px; }
-  .text-\[9px\]        { font-size: 10.5px; }
-  .text-\[9\.5px\]     { font-size: 10.5px; }
-  .text-\[9\.6px\]     { font-size: 10.5px; }
-  .text-\[10px\]       { font-size: 11px; }
-  .text-\[10\.5px\]    { font-size: 11.5px; }
-  .text-\[11px\]       { font-size: 11.5px; }
-  .text-\[11\.5px\]    { font-size: 12px; }
   .text-\[12px\]       { font-size: 12.5px; }
   .text-\[12\.5px\]    { font-size: 13px; }
-
-  /* Versal mono etiketlerde harf aralığı da gevşetilmeli: 0.14em, 10px'in
-     altında sözcüğü harflere dağıtıyor. */
-  .numeral[class*="uppercase"] {
-    letter-spacing: 0.1em;
-  }
 }
 
 /* ── Dokunma hedefleri ──
@@ -1659,7 +1644,7 @@ html[data-theme='light'] .section-games {
   text-overflow: ellipsis;
 }
 .arena-rail-kicker {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: rgba(248, 250, 252, 0.42);
   white-space: nowrap;
@@ -1685,20 +1670,13 @@ html[data-theme='light'] .section-games {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.07);
 }
+/* Etiket normal harf ve 12px: 9px'lik versal "SERİ", "UZUNLUK" seans
+   sırasında, kol mesafesinden okunmuyordu. Metin kaynakta Title Case
+   yazılı ("En İyi", "Ort. Tepki"); versal dönüşüm yok. */
 .arena-stat-label {
-  font-size: 0.5625rem;
-  font-weight: 800;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: rgba(248, 250, 252, 0.45);
-}
-/* 9px'lik versal etiket ("SERİ", "UZUNLUK") kol mesafesindeki bir masaüstü
-   ekranında okunuyor; telefonda seans sırasında okunmuyor. */
-@media (max-width: 1023px) {
-  .arena-stat-label {
-    font-size: 0.65rem;
-    letter-spacing: 0.06em;
-  }
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(248, 250, 252, 0.6);
 }
 .arena-stat-value {
   font-family: var(--font-numeric);
@@ -1842,8 +1820,8 @@ html[data-theme='light'] .section-games {
 
 /* Kısayol ipucu — yalnızca klavye kullanan terapist için, sessiz */
 .arena-hint {
-  font-size: 0.6875rem;
-  color: rgba(248, 250, 252, 0.34);
+  font-size: 0.75rem;
+  color: rgba(248, 250, 252, 0.5);
   white-space: nowrap;
 }
 @media (max-width: 900px) { .arena-hint { display: none; } }
@@ -1989,8 +1967,8 @@ html[data-theme='light'] .section-games {
   text-align: center;
 
   /* Visuals */
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
   line-height: 1.4;
   letter-spacing: 0.01em;
   color: #d8e2ea;
@@ -2369,9 +2347,8 @@ html[data-theme='light'] .section-dots {
   top: 50%;
   transform: translateY(-50%);
   white-space: nowrap;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--color-text-strong);
   background: rgba(17,22,20,0.85);
   border: 1px solid var(--color-line);
@@ -2930,64 +2907,6 @@ html[data-intro="skip"] .intro { display: none; }
   from { background-position: 0 50%; }
   to { background-position: 10px 50%; }
 }
-
-/* ── İmleç ── */
-.cursor-layer {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1100;
-  transition: opacity 0.25s ease;
-}
-.cursor-ring,
-.cursor-dot {
-  position: fixed;
-  top: 0;
-  left: 0;
-  pointer-events: none;
-}
-.cursor-ring {
-  display: grid;
-  place-items: center;
-  width: 0;
-  height: 0;
-}
-.cursor-ring-inner {
-  position: absolute;
-  width: 34px;
-  height: 34px;
-  margin: -17px 0 0 -17px;
-  border-radius: 50%;
-  border: 1.5px solid color-mix(in srgb, var(--color-primary) 70%, transparent);
-  transition: background-color 0.25s ease, border-color 0.25s ease;
-}
-.cursor-ring-inner[data-hover] {
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-  border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
-}
-.cursor-ring-inner[data-label] {
-  background: var(--color-primary);
-  border-color: transparent;
-}
-.cursor-label {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  font-family: var(--font-numeric);
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #ffffff;
-  white-space: nowrap;
-}
-.cursor-dot {
-  width: 6px;
-  height: 6px;
-  margin: -3px 0 0 -3px;
-  border-radius: 50%;
-  background: var(--color-primary);
-}
-html[data-theme='high-contrast'] .cursor-layer { display: none; }
 
 /* ── Manifesto ── */
 .scrub-word { display: inline-block; white-space: pre; }

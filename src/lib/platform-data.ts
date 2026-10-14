@@ -1,6 +1,9 @@
 // ── Note modes ──
 export type NoteMode = "free" | "soap";
 
+/** Not biçiminin arayüz adı. `toUpperCase()` "free" için İngilizce "FREE" basıyordu. */
+export const NOTE_MODE_LABELS: Record<NoteMode, string> = { free: "Serbest", soap: "SOAP" };
+
 export interface SoapNoteContent {
   s: string; // Subjektif
   o: string; // Objektif

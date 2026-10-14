@@ -172,7 +172,7 @@ export function OnboardingTour({ onComplete }: { onComplete?: () => void }) {
             {!isLast && (
               <button type="button" onClick={handleSkip}
                 className="w-full text-center text-xs text-(--color-text-muted) mt-3 bg-transparent border-none cursor-pointer hover:text-(--color-text-body) transition-colors">
-                Turu atla
+                Turu Atla
               </button>
             )}
           </div>

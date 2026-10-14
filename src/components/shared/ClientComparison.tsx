@@ -75,9 +75,9 @@ function CompareBar({ metric, valueA, valueB, unit, colorA, colorB }: {
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center justify-between text-[10px] font-bold">
+      <div className="flex items-center justify-between text-[12px] font-bold">
         <span className="numeral" style={{ color: winner === "A" ? colorA : "var(--color-text-muted)" }}>{valueA}{unit}</span>
-        <span className="text-(--color-text-muted) uppercase tracking-widest">{metric}</span>
+        <span className="text-(--color-text-soft)">{metric}</span>
         <span className="numeral" style={{ color: winner === "B" ? colorB : "var(--color-text-muted)" }}>{valueB}{unit}</span>
       </div>
       <div className="flex gap-1 h-2">
@@ -143,12 +143,12 @@ export function ClientComparison({ clientA, clientB, sessions, onClose }: Client
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-bold text-(--color-text-strong) m-0 truncate">{client.displayName}</p>
-                        <p className="text-[10px] text-(--color-text-muted) m-0">{client.ageGroup ?? "—"}</p>
+                        <p className="text-[12px] text-(--color-text-muted) m-0">{client.ageGroup ?? "—"}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1 mt-1">
                       <TrendIcon size={10} style={{ color: trendColors[metrics.trend] }} />
-                      <span className="text-[10px] font-bold" style={{ color: trendColors[metrics.trend] }}>{trendLabels[metrics.trend]}</span>
+                      <span className="text-[12px] font-bold" style={{ color: trendColors[metrics.trend] }}>{trendLabels[metrics.trend]}</span>
                     </div>
                   </div>
                 );
@@ -158,7 +158,7 @@ export function ClientComparison({ clientA, clientB, sessions, onClose }: Client
   
           {/* Comparison bars */}
           <div className="p-4 space-y-4">
-            <p className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) m-0">Genel Karşılaştırma</p>
+            <p className="text-[12px] font-semibold text-(--color-text-soft) m-0">Genel Karşılaştırma</p>
   
             <CompareBar metric="Seans" valueA={metricsA.totalSessions} valueB={metricsB.totalSessions} colorA={colorA} colorB={colorB} />
             <CompareBar metric="Ort. Skor" valueA={metricsA.avgScore} valueB={metricsB.avgScore} colorA={colorA} colorB={colorB} />
@@ -168,7 +168,7 @@ export function ClientComparison({ clientA, clientB, sessions, onClose }: Client
             {/* Per-game comparison */}
             {commonGames.length > 0 && (
               <>
-                <p className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) m-0 mt-5">Oyun Bazlı</p>
+                <p className="text-[12px] font-semibold text-(--color-text-soft) m-0 mt-5">Oyun Bazlı</p>
                 {commonGames.map(game => (
                   <div key={game}>
                     <CompareBar
@@ -185,7 +185,7 @@ export function ClientComparison({ clientA, clientB, sessions, onClose }: Client
   
             {/* Summary */}
             <div className="rounded-xl p-3 mt-4" style={{ background: "var(--color-surface-elevated)", border: "1px solid var(--color-line)" }}>
-              <p className="text-[10px] font-black uppercase tracking-widest text-(--color-text-muted) m-0 mb-2">Özet</p>
+              <p className="text-[12px] font-semibold text-(--color-text-soft) m-0 mb-2">Özet</p>
               <div className="space-y-1.5">
                 {metricsA.avgScore > metricsB.avgScore ? (
                   <p className="text-xs text-(--color-text-soft) m-0">

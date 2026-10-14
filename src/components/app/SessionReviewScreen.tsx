@@ -119,13 +119,13 @@ export function SessionReviewScreen({
           <span className="block text-[13.5px] font-bold text-(--color-text-strong) truncate leading-tight">
             {client?.displayName ?? "Danışan"} · {gameTitle}
           </span>
-          <span className="block text-[10.5px] text-(--color-text-soft) truncate leading-tight">
+          <span className="block text-[12px] text-(--color-text-soft) truncate leading-tight">
             {whenLabel} · {difficulty}
           </span>
         </span>
 
         <span
-          className="flex items-center gap-[7px] shrink-0 text-[11px] font-semibold"
+          className="flex items-center gap-[7px] shrink-0 text-[12px] font-semibold"
           style={{
             padding: "7px 13px",
             borderRadius: 9,
@@ -137,8 +137,8 @@ export function SessionReviewScreen({
           Seans Tamamlandı
         </span>
 
-        <span className="numeral ml-auto shrink-0 text-[11px] text-(--color-text-soft) max-lg:hidden">
-          Otomatik kaydedildi · {savedAt}
+        <span className="ml-auto shrink-0 text-[12px] text-(--color-text-soft) max-lg:hidden">
+          Otomatik kaydedildi · <span className="numeral">{savedAt}</span>
         </span>
       </header>
 
@@ -164,7 +164,7 @@ export function SessionReviewScreen({
             <span className="max-lg:hidden"><ScoreRing value={score} size={132} /></span>
             <span className="lg:hidden"><ScoreRing value={score} size={92} /></span>
             <div className="min-w-0">
-              <div className="numeral text-[10px] font-medium uppercase tracking-[0.16em] text-(--color-text-soft) mb-2">
+              <div className="text-[12px] font-medium text-(--color-text-soft) mb-2">
                 Normalize Skor
               </div>
               <h1 className="m-0 mb-3 text-[clamp(1.1875rem,1.8vw,1.625rem)] leading-[1.1] text-(--color-text-strong)">
@@ -174,7 +174,7 @@ export function SessionReviewScreen({
                 {badges.map((b) => (
                   <span
                     key={b.text}
-                    className="text-[11.5px] font-semibold"
+                    className="text-[12px] font-semibold"
                     style={{
                       padding: "6px 12px",
                       borderRadius: 9,
@@ -206,14 +206,14 @@ export function SessionReviewScreen({
                 key={m.label}
                 style={{ padding: "15px 17px", borderRadius: 15, background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}
               >
-                <div className="numeral text-[9.5px] font-semibold uppercase tracking-[0.08em] text-(--color-text-soft) mb-2">
+                <div className="text-[12px] font-semibold text-(--color-text-soft) mb-2">
                   {m.label}
                 </div>
                 <div className="flex items-baseline gap-[5px]">
                   <span className="figure text-[25px] text-(--color-text-strong) leading-none">{m.value}</span>
-                  <span className="text-[11px] font-medium text-(--color-text-soft)">{m.unit}</span>
+                  <span className="text-[12px] font-medium text-(--color-text-soft)">{m.unit}</span>
                 </div>
-                <div className="numeral text-[10.5px] font-semibold mt-1.5" style={{ color: toneColor(m.deltaTone) }}>
+                <div className="text-[12px] font-semibold mt-1.5" style={{ color: toneColor(m.deltaTone) }}>
                   {m.delta ?? "değişmedi"}
                 </div>
               </div>
@@ -229,14 +229,14 @@ export function SessionReviewScreen({
               style={{ padding: "19px 21px", borderRadius: 18, background: "var(--color-surface)", border: "1px solid var(--color-line)", backdropFilter: "blur(14px)" }}
             >
               <h2 className="font-display m-0 mb-3.5 text-[14px] font-bold tracking-[-0.02em] text-(--color-text-strong)">
-                Domain Kazanımı
+                Alan Kazanımı
               </h2>
               <div className="flex flex-col gap-3.5">
                 {gains.map((g) => (
                   <div key={g.label}>
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[11.5px] font-semibold text-(--color-text-body)">{g.label}</span>
-                      <span className="numeral text-[11px] font-semibold" style={{ color: g.color }}>
+                      <span className="text-[12px] font-semibold text-(--color-text-body)">{g.label}</span>
+                      <span className="numeral text-[12px] font-semibold" style={{ color: g.color }}>
                         {g.from} → {g.to}
                       </span>
                     </div>
@@ -250,7 +250,7 @@ export function SessionReviewScreen({
               </div>
               {nextHint && (
                 <div
-                  className="mt-auto text-[11px] leading-[1.5]"
+                  className="mt-auto text-[12px] leading-[1.5]"
                   style={{ padding: "10px 12px", borderRadius: 11, background: "var(--color-primary-light)", color: "var(--color-text-body)" }}
                 >
                   {nextHint}
@@ -268,7 +268,7 @@ export function SessionReviewScreen({
                   Tur Bazında
                 </h2>
                 {rounds.length > 0 && (
-                  <span className="numeral text-[10.5px] font-semibold" style={{ color: "var(--color-accent-green)" }}>
+                  <span className="numeral text-[12px] font-semibold" style={{ color: "var(--color-accent-green)" }}>
                     {correct} / {rounds.length} doğru
                   </span>
                 )}
@@ -286,7 +286,7 @@ export function SessionReviewScreen({
               */}
               {rounds.length === 0 ? (
                 <div className="flex-1 grid place-items-center min-h-[110px]">
-                  <p className="m-0 text-center text-[11.5px] leading-[1.5] text-(--color-text-soft)">
+                  <p className="m-0 text-center text-[12px] leading-[1.5] text-(--color-text-soft)">
                     Bu seansta tur kaydı oluşmadı.<br />Oyun oynandığında her tur buraya düşer.
                   </p>
                 </div>
@@ -302,7 +302,7 @@ export function SessionReviewScreen({
                         }}
                         title={`${i + 1}. tur — ${ok ? "doğru" : "yanlış"}`}
                       />
-                      <span className="numeral text-[9px] text-(--color-text-muted)">{i + 1}</span>
+                      <span className="numeral text-[12px] text-(--color-text-muted)">{i + 1}</span>
                     </span>
                   ))}
                 </div>
@@ -324,25 +324,25 @@ export function SessionReviewScreen({
             <h2 className="font-display m-0 text-[14px] font-bold tracking-[-0.02em] text-(--color-text-strong)">
               Seans Notu
             </h2>
-            <p className="m-0 mb-4 mt-1 text-[11px] text-(--color-text-soft)">SOAP formatı · otomatik ön dolgu</p>
+            <p className="m-0 mb-4 mt-1 text-[12px] text-(--color-text-soft)">SOAP formatı · otomatik ön dolgu</p>
 
             <div className="flex flex-col gap-3.5">
               {SOAP_FIELDS.map(({ key, letter, label }) => (
                 <div key={key}>
                   <div className="flex items-center gap-2 mb-2">
                     <span
-                      className="numeral grid place-items-center text-[10px] font-bold shrink-0"
+                      className="numeral grid place-items-center text-[12px] font-bold shrink-0"
                       style={{ width: 20, height: 20, borderRadius: 6, background: "var(--color-primary-light)", color: "var(--color-primary-ink)" }}
                     >
                       {letter}
                     </span>
-                    <span className="text-[11px] font-semibold text-(--color-text-body)">{label}</span>
+                    <span className="text-[12px] font-semibold text-(--color-text-body)">{label}</span>
                   </div>
                   <textarea
                     value={soap[key]}
                     onChange={(e) => onSoapChange({ ...soap, [key]: e.target.value })}
                     rows={2}
-                    className="w-full resize-none outline-none text-[11.5px] leading-[1.5] text-(--color-text-strong) placeholder:text-(--color-text-muted)"
+                    className="w-full resize-none outline-none text-[12px] leading-[1.5] text-(--color-text-strong) placeholder:text-(--color-text-muted)"
                     style={{ padding: "10px 12px", borderRadius: 11, background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}
                   />
                 </div>
@@ -355,7 +355,7 @@ export function SessionReviewScreen({
               bunu terapist gözlemiyle işaretler.
             */}
             <div className="mt-5">
-              <div className="numeral text-[9.5px] font-semibold uppercase tracking-[0.08em] text-(--color-text-soft) mb-2.5">
+              <div className="text-[12px] font-semibold text-(--color-text-soft) mb-2.5">
                 Bağımsızlık Düzeyi
               </div>
               <div className="flex gap-1.5">
@@ -380,7 +380,7 @@ export function SessionReviewScreen({
                   );
                 })}
               </div>
-              <div className="text-[10.5px] text-(--color-text-soft) mt-2">
+              <div className="text-[12px] text-(--color-text-soft) mt-2">
                 {independence} · {INDEPENDENCE_STEPS[independence - 1]}
               </div>
             </div>

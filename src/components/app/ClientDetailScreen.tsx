@@ -22,6 +22,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRight, Sparkles, FileText, Plus, Minus, Archive, Trash2 } from "lucide-react";
 import type { AppView, ClientProfile, RecentSessionEntry, SessionNote, ClientGoal, PlatformGameKey } from "@/lib/platform-data";
+import { NOTE_MODE_LABELS } from "@/lib/platform-data";
 import {
   metricsFor,
   gameTitle,
@@ -108,7 +109,7 @@ export function ClientDetailScreen({
   return (
     <div className="flex flex-col gap-4 max-lg:gap-3 h-full min-h-0">
       {/* Kırıntı yolu */}
-      <nav className="flex items-center gap-2 text-[11px] font-medium text-(--color-text-soft)" aria-label="Konum">
+      <nav className="flex items-center gap-2 text-[12px] font-medium text-(--color-text-soft)" aria-label="Konum">
         {/* Geri bağlantısı 17px yüksekliğindeydi; parmakla vurulamıyordu.
             Telefonda satır 44px'e çıkar, görsel ağırlık aynı kalır. */}
         <button
@@ -217,7 +218,7 @@ export function ClientDetailScreen({
             <button
               type="button"
               onClick={onArchive}
-              className="mt-2 max-lg:mt-1 flex items-center gap-1.5 text-[11px] font-medium bg-transparent border-none p-0 max-lg:min-h-11 cursor-pointer text-(--color-text-muted) hover:text-(--color-accent-red) transition-colors"
+              className="mt-2 max-lg:mt-1 flex items-center gap-1.5 text-[12px] font-medium bg-transparent border-none p-0 max-lg:min-h-11 cursor-pointer text-(--color-text-muted) hover:text-(--color-accent-red) transition-colors"
             >
               <Archive size={12} className="shrink-0" /> Danışanı Arşivle
             </button>
@@ -232,7 +233,7 @@ export function ClientDetailScreen({
               return (
                 <div key={label} className="flex items-center gap-[9px]" style={{ padding: "6px 0" }}>
                   <span
-                    className="numeral text-[10px] font-semibold shrink-0"
+                    className="numeral text-[12px] font-semibold shrink-0"
                     style={{ width: 18, color: current ? "var(--color-primary)" : "var(--color-text-muted)" }}
                   >
                     {step}
@@ -245,7 +246,7 @@ export function ClientDetailScreen({
                     }}
                   />
                   <span
-                    className="text-[11px] shrink-0"
+                    className="text-[12px] shrink-0"
                     style={{
                       width: 96,
                       fontWeight: current ? 700 : 400,
@@ -298,7 +299,7 @@ export function ClientDetailScreen({
                 <div className="flex items-start justify-between mb-3.5 gap-3 max-lg:flex-col max-lg:items-stretch max-lg:gap-2.5">
                   <div className="min-w-0">
                     <CardTitle>Gelişim Eğrisi</CardTitle>
-                    <div className="text-[11px] text-(--color-text-soft) mt-0.5">
+                    <div className="text-[12px] text-(--color-text-soft) mt-0.5">
                       {curve.length} seans · normalize skor
                     </div>
                   </div>
@@ -344,7 +345,7 @@ export function ClientDetailScreen({
                 <button
                   type="button"
                   onClick={onAddNote}
-                  className="btn-signature flex shrink-0 items-center justify-center gap-1.5 text-[11.5px] font-semibold cursor-pointer px-3 py-[7px] rounded-[9px]"
+                  className="btn-signature flex shrink-0 items-center justify-center gap-1.5 text-[12px] font-semibold cursor-pointer px-3 py-[7px] rounded-[9px]"
                 >
                   <Plus size={13} className="shrink-0" /> Not Ekle
                 </button>
@@ -358,11 +359,11 @@ export function ClientDetailScreen({
                   {clientNotes.map((n) => (
                     <div key={n.id} className="group" style={{ padding: "12px 14px", borderRadius: 13, background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
                       <div className="flex items-center justify-between mb-1.5 gap-2">
-                        <span className="numeral text-[10.5px] text-(--color-text-soft)">
+                        <span className="numeral text-[12px] text-(--color-text-soft)">
                           {shortDate(new Date(n.createdAt))}
                         </span>
                         <span className="flex items-center gap-2">
-                          {n.noteMode && <Tag tone="teal">{n.noteMode.toUpperCase()}</Tag>}
+                          {n.noteMode && <Tag tone="teal">{NOTE_MODE_LABELS[n.noteMode]}</Tag>}
                           {/* Dokunmatikte "hover" diye bir durum yok: silme
                               düğmesi telefonda hiç görünmüyordu. */}
                           <button
@@ -395,7 +396,7 @@ export function ClientDetailScreen({
               <button
                 type="button"
                 onClick={onAddGoal}
-                className="flex shrink-0 items-center gap-1 text-[11px] font-semibold text-(--color-primary) bg-transparent border-none p-0 max-lg:min-h-11 cursor-pointer hover:underline"
+                className="flex shrink-0 items-center gap-1 text-[12px] font-semibold text-(--color-primary) bg-transparent border-none p-0 max-lg:min-h-11 cursor-pointer hover:underline"
               >
                 <Plus size={12} strokeWidth={2.4} className="shrink-0" /> Hedef Ekle
               </button>
@@ -418,7 +419,7 @@ export function ClientDetailScreen({
                         <div className="text-[12.5px] font-semibold text-(--color-text-strong) truncate max-lg:whitespace-normal max-lg:line-clamp-2">
                           {g.title}
                         </div>
-                        <div className="text-[10.5px] text-(--color-text-soft) mt-0.5 truncate">
+                        <div className="text-[12px] text-(--color-text-soft) mt-0.5 truncate">
                           Hedef {g.targetValue} · şu an {g.currentValue}
                         </div>
                       </div>
@@ -498,7 +499,7 @@ export function ClientDetailScreen({
                     style={{ padding: "9px 11px", borderRadius: 11, background: "rgba(255,255,255,0.06)" }}
                   >
                     <span style={{ width: 6, height: 6, borderRadius: "50%", background: a.dot }} />
-                    <span className="text-[11.5px] font-semibold" style={{ color: "#eaf2ff" }}>{a.text}</span>
+                    <span className="text-[12px] font-semibold" style={{ color: "#eaf2ff" }}>{a.text}</span>
                   </div>
                 ))}
               </div>
@@ -536,8 +537,8 @@ function Row({ label, value, last = false }: { readonly label: string; readonly 
       className="flex items-center justify-between gap-3 py-[9px] max-lg:flex-col max-lg:items-start max-lg:gap-0.5 max-lg:py-2.5"
       style={{ borderBottom: last ? "none" : "1px solid var(--color-line-soft)" }}
     >
-      <span className="text-[11.5px] text-(--color-text-soft) shrink-0">{label}</span>
-      <span className="text-[11.5px] font-semibold text-(--color-text-strong) truncate text-right max-lg:text-left max-lg:whitespace-normal max-lg:overflow-visible max-lg:max-w-full">
+      <span className="text-[12px] text-(--color-text-soft) shrink-0">{label}</span>
+      <span className="text-[12px] font-semibold text-(--color-text-strong) truncate text-right max-lg:text-left max-lg:whitespace-normal max-lg:overflow-visible max-lg:max-w-full">
         {value}
       </span>
     </div>
@@ -713,12 +714,12 @@ function SessionHistory({
           <button
             type="button"
             onClick={onAll}
-            className="numeral shrink-0 inline-flex items-center text-[10.5px] font-semibold text-(--color-primary) bg-transparent border-none p-0 max-lg:min-h-11 cursor-pointer hover:underline"
+            className="shrink-0 inline-flex items-center text-[12px] font-semibold text-(--color-primary) bg-transparent border-none p-0 max-lg:min-h-11 cursor-pointer hover:underline"
           >
             Tümü · {total}
           </button>
         ) : (
-          <span className="numeral shrink-0 text-[10.5px] font-semibold text-(--color-text-soft)">{total} seans</span>
+          <span className="shrink-0 text-[12px] font-semibold text-(--color-text-soft)">{total} seans</span>
         )}
       </div>
       {sessions.length === 0 ? (
@@ -736,14 +737,14 @@ function SessionHistory({
               {/* Tarih masaüstünde kendi sütununda; telefonda 62px'lik bu sütun
                   oyun adına 100px bırakıyor, başlık "H…"ye kadar kırpılıyordu.
                   Dar ekranda tarih alt satıra, açıklamanın önüne geçer. */}
-              <span className="numeral shrink-0 w-[62px] max-lg:hidden text-[11px] font-medium text-(--color-text-soft)">
+              <span className="numeral shrink-0 w-[62px] max-lg:hidden text-[12px] font-medium text-(--color-text-soft)">
                 {shortDate(new Date(s.playedAt))}
               </span>
               {/* Alan rengi — hangi beceriye çalışıldığı listede renkten okunur */}
               <span className="shrink-0" style={{ width: 3, height: 26, borderRadius: 2, background: domainColor(s.gameKey) }} />
               <div className="flex-1 min-w-0">
                 <div className="text-[12.5px] font-bold text-(--color-text-strong) truncate">{gameTitle(s.gameKey)}</div>
-                <div className="text-[10.5px] text-(--color-text-soft) truncate">
+                <div className="text-[12px] text-(--color-text-soft) truncate">
                   <span className="numeral lg:hidden">{shortDate(new Date(s.playedAt))} · </span>
                   {gameKicker(s.gameKey)}
                 </div>
@@ -765,7 +766,7 @@ function SessionHistory({
                         sütununu 130px'e çıkarıp oyun adını kırpıyordu. Dar
                         ekranda yalnızca normalize yüzde kalır — hedefe uzaklığı
                         söyleyen kısım o. */}
-                    <span className="numeral block text-[9px] text-(--color-text-muted) mt-1 whitespace-nowrap">
+                    <span className="block text-[12px] text-(--color-text-soft) mt-1 whitespace-nowrap">
                       <span className="max-md:hidden">
                         {GAME_SCORE_SCALE[s.gameKey as keyof typeof GAME_SCORE_SCALE]?.unit ?? "puan"} ·{" "}
                       </span>

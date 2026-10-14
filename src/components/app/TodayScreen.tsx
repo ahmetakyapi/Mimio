@@ -85,8 +85,8 @@ export function TodayScreen({
   return (
     <div className="flex flex-col gap-4 lg:gap-5 lg:h-full lg:min-h-0">
       <ScreenHeader
-        eyebrow={dateLabel}
-        title={`${greeting(now)}, ${therapistFirstName}.`}
+        meta={dateLabel}
+        title={`${greeting(now)}, ${therapistFirstName}`}
         sub={
           agenda.length === 0 ? (
             <>Bugün için planlanmış seans yok — <button type="button" onClick={() => onNavigate("weekly-plan")} className="font-bold text-(--color-primary) bg-transparent border-none p-0 cursor-pointer hover:underline">haftalık plana</button> bir slot ekleyebilirsin.</>
@@ -125,10 +125,10 @@ export function TodayScreen({
               ortasından sarıyordu; `flex-wrap` ile rozet bütün hâlde alt
               satıra iner. */}
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 mb-2.5 lg:mb-3">
-            <span className="text-[11px] font-semibold text-(--color-text-soft)">Bugünün Seansı</span>
+            <span className="text-[12px] font-semibold text-(--color-text-soft)">Bugünün Seansı</span>
             {doneCount > 0 && (
-              <span className="numeral text-[10px] font-semibold shrink-0" style={{ color: "var(--color-accent-green)" }}>
-                {doneCount} tamam
+              <span className="text-[12px] font-semibold shrink-0" style={{ color: "var(--color-accent-green)" }}>
+                {doneCount} tamamlandı
               </span>
             )}
           </div>
@@ -159,10 +159,10 @@ export function TodayScreen({
 
         <Card pad="p-[15px_15px] lg:p-[17px_18px]">
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 mb-2.5 lg:mb-3">
-            <span className="text-[11px] font-semibold text-(--color-text-soft)">Ortalama Skor</span>
+            <span className="text-[12px] font-semibold text-(--color-text-soft)">Ortalama Skor</span>
             {scoreDelta !== null && scoreDelta !== 0 && (
               <span
-                className="numeral text-[10px] font-semibold shrink-0"
+                className="numeral text-[12px] font-semibold shrink-0"
                 style={{ color: scoreDelta > 0 ? "var(--color-accent-green)" : "var(--color-accent-red)" }}
               >
                 {scoreDelta > 0 ? "+" : "−"}{Math.abs(scoreDelta)}
@@ -186,8 +186,8 @@ export function TodayScreen({
 
         <Card className="max-lg:col-span-2" pad="p-[15px_15px] lg:p-[17px_18px]">
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 mb-2.5 lg:mb-3">
-            <span className="text-[11px] font-semibold text-(--color-text-soft)">Aktif Danışan</span>
-            <span className="numeral text-[10px] font-semibold text-(--color-text-soft) shrink-0">{clients.length} kişi</span>
+            <span className="text-[12px] font-semibold text-(--color-text-soft)">Aktif Danışan</span>
+            <span className="text-[12px] font-semibold text-(--color-text-soft) shrink-0">{clients.length} kişi</span>
           </div>
           {clients.length === 0 ? (
             <button
@@ -210,7 +210,7 @@ export function TodayScreen({
                 ))}
                 {clients.length > 4 && (
                   <span
-                    className="numeral grid place-items-center text-[11px] font-semibold"
+                    className="numeral grid place-items-center text-[12px] font-semibold"
                     style={{
                       width: 32,
                       height: 32,
@@ -225,7 +225,7 @@ export function TodayScreen({
                   </span>
                 )}
               </div>
-              <div className="mt-[11px] max-lg:mt-0 max-lg:min-w-0 text-[11px] text-(--color-text-soft)">
+              <div className="mt-[11px] max-lg:mt-0 max-lg:min-w-0 text-[12px] text-(--color-text-soft)">
                 {(() => {
                   const stale = clients.filter((c) => {
                     const m = metricsFor(c, sessions);
@@ -251,10 +251,10 @@ export function TodayScreen({
         >
           <div className="relative">
             <div className="flex items-center justify-between gap-2 mb-3">
-              <span className="on-signature-soft text-[11px] font-semibold">Sıradaki Seans</span>
+              <span className="on-signature-soft text-[12px] font-semibold">Sıradaki Seans</span>
               {next?.time && (
                 <span
-                  className="numeral on-signature text-[10px] font-semibold shrink-0"
+                  className="numeral on-signature text-[12px] font-semibold shrink-0"
                   style={{ padding: "2px 7px", borderRadius: 6, background: "rgba(255,255,255,0.2)" }}
                 >
                   {next.time}
@@ -266,7 +266,7 @@ export function TodayScreen({
                 <div className="font-display on-signature font-semibold text-[17px] lg:text-[19px] max-lg:leading-[1.2] tracking-[-0.025em] mb-[3px]">
                   {next.clientName}
                 </div>
-                <div className="on-signature-soft text-[11.5px] mb-3">
+                <div className="on-signature-soft text-[12px] mb-3">
                   {gameTitle(next.gameKey)} · {next.goal}
                 </div>
                 <button
@@ -283,7 +283,7 @@ export function TodayScreen({
                 <div className="font-display on-signature font-semibold text-[17px] lg:text-[19px] max-lg:leading-[1.2] tracking-[-0.025em] mb-[3px]">
                   {doneCount > 0 ? "Gün Tamamlandı" : "Boş Gün"}
                 </div>
-                <div className="on-signature-soft text-[11.5px] mb-3">
+                <div className="on-signature-soft text-[12px] mb-3">
                   {doneCount > 0 ? `${doneCount} seans kaydedildi` : "Plana seans ekleyerek başla"}
                 </div>
                 <button
@@ -316,8 +316,8 @@ export function TodayScreen({
               <Sparkles size={15} strokeWidth={1.9} style={{ color: "var(--color-primary)" }} />
               <CardTitle className="!text-[13.5px]">Akıllı Öneriler</CardTitle>
               {insights.length > 0 && (
-                <span className="numeral ml-auto text-[9px] font-semibold text-(--color-primary-ink)">
-                  {insights.length} YENİ
+                <span className="ml-auto text-[12px] font-semibold text-(--color-primary-ink)">
+                  {insights.length} yeni
                 </span>
               )}
             </div>
@@ -347,7 +347,7 @@ export function TodayScreen({
                         }}
                       />
                       <span
-                        className="numeral text-[10px] font-semibold"
+                        className="text-[12px] font-semibold"
                         style={{
                           color:
                             ins.tone === "amber"
@@ -381,7 +381,7 @@ export function TodayScreen({
             <div className="flex items-center justify-between gap-2 mb-1.5 max-lg:flex-col max-lg:items-start max-lg:gap-0.5">
               <CardTitle className="!text-[13.5px]">Hedef Radarı</CardTitle>
               {radarClient && radarClient.sessionCount > 0 && (
-                <span className="numeral text-[10px] font-medium text-(--color-text-soft) truncate max-w-full">
+                <span className="text-[12px] font-medium text-(--color-text-soft) truncate max-w-full">
                   {radarClient.client.displayName} · {radarClient.sessionCount} seans
                 </span>
               )}
@@ -452,10 +452,10 @@ function Agenda({
       <div className="flex items-start justify-between gap-2 mb-3.5 lg:mb-4">
         <div className="min-w-0">
           <CardTitle>Bugünün Akışı</CardTitle>
-          <div className="text-[11px] text-(--color-text-soft) mt-0.5">Zaman Çizelgesi · {span}</div>
+          <div className="text-[12px] text-(--color-text-soft) mt-0.5">Zaman Çizelgesi · {span}</div>
         </div>
         <span
-          className="numeral text-[10.5px] font-semibold text-(--color-primary-ink) shrink-0"
+          className="numeral text-[12px] font-semibold text-(--color-primary-ink) shrink-0"
           style={{ padding: "5px 10px", borderRadius: 8, background: "var(--color-primary-light)" }}
         >
           {items.length}
@@ -534,7 +534,7 @@ function AgendaRow({
       {/* Saat — çizelgenin dışına, sol oluğa taşar. Telefonda oluk olmadığı
           için gizlenir; aynı bilgi künye satırının başında durur. */}
       <span
-        className="numeral absolute text-[11px] font-medium max-lg:hidden"
+        className="numeral absolute text-[12px] font-medium max-lg:hidden"
         style={{ left: -60, width: 34, textAlign: "right", color: isNext ? "var(--color-primary)" : "var(--color-text-soft)" }}
       >
         {item.time ?? "—"}
@@ -570,14 +570,14 @@ function AgendaRow({
           <span className="font-bold text-[13px] text-(--color-text-strong) truncate">{item.clientName}</span>
           {isNext && (
             <span
-              className="numeral text-[9px] font-semibold shrink-0"
+              className="text-[12px] font-semibold shrink-0"
               style={{ padding: "2px 6px", borderRadius: 5, background: "var(--color-primary)", color: "var(--color-on-brand)" }}
             >
-              SIRADAKİ
+              Sıradaki
             </span>
           )}
         </div>
-        <div className="text-[11px] text-(--color-text-soft) truncate">
+        <div className="text-[12px] text-(--color-text-soft) truncate">
           {/* Saat mobilde buraya iner — oluk kalktı, bilgi kalmalı. */}
           <span
             className="numeral font-medium lg:hidden"
@@ -595,20 +595,20 @@ function AgendaRow({
           <div className="numeral text-[15px] font-semibold" style={{ color: "var(--color-accent-green)" }}>
             {item.score ?? "—"}
           </div>
-          <div className="text-[9.5px] text-(--color-text-soft)">Tamamlandı</div>
+          <div className="text-[12px] text-(--color-text-soft)">Tamamlandı</div>
         </div>
       ) : isNext ? (
         <button
           type="button"
           onClick={() => onStart(item.clientId, item.gameKey)}
-          className="btn-signature shrink-0 text-[11.5px] font-semibold cursor-pointer"
+          className="btn-signature shrink-0 text-[12px] font-semibold cursor-pointer"
           style={{ padding: "9px 14px", borderRadius: 10 }}
         >
           Başlat
         </button>
       ) : (
         <span
-          className="shrink-0 text-[10.5px] font-medium text-(--color-text-soft)"
+          className="shrink-0 text-[12px] font-medium text-(--color-text-soft)"
           style={{ padding: "5px 10px", borderRadius: 8, background: "var(--color-primary-light)" }}
         >
           Planlandı

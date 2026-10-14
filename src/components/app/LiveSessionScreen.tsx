@@ -152,7 +152,7 @@ export function LiveSessionScreen({
               </span>
               {/* Telefonda üç parça alt satıra sığmıyor; zorluk zaten aşağıdaki
                   seçicide, alt başlık da rayda duruyor — burada oyun adı yeter. */}
-              <span className="block text-[11px] text-(--color-text-soft) truncate leading-tight">
+              <span className="block text-[12px] text-(--color-text-soft) truncate leading-tight">
                 <span className="max-lg:hidden">{gameTitle} · {gameSubtitle} · {difficulty}</span>
                 <span className="lg:hidden">{gameTitle}</span>
               </span>
@@ -170,8 +170,8 @@ export function LiveSessionScreen({
               className={paused ? "" : "live-pulse"}
               style={{ width: 8, height: 8, borderRadius: "50%", background: paused ? "var(--color-text-muted)" : "var(--color-primary)" }}
             />
-            <span className="numeral text-[10px] font-semibold text-(--color-primary-ink)">
-              {paused ? "DURDU" : "CANLI"}
+            <span className="text-[12px] font-semibold text-(--color-primary-ink)">
+              {paused ? "Durdu" : "Canlı"}
             </span>
             <span className="numeral text-[15px] font-semibold text-(--color-text-strong)">{elapsed}</span>
           </span>
@@ -193,7 +193,7 @@ export function LiveSessionScreen({
                   role="radio"
                   aria-checked={on}
                   onClick={() => onDifficultyChange(d)}
-                  className={`text-[11px] font-semibold cursor-pointer border-none transition-colors max-lg:flex-1 ${on ? "text-white" : "text-(--color-text-soft) bg-transparent hover:text-(--color-text-body)"}`}
+                  className={`text-[12px] font-semibold cursor-pointer border-none transition-colors max-lg:flex-1 ${on ? "text-white" : "text-(--color-text-soft) bg-transparent hover:text-(--color-text-body)"}`}
                   style={{ padding: "6px 11px", borderRadius: 7, background: on ? "var(--gradient-signature-ink)" : undefined }}
                 >
                   {d}
@@ -234,7 +234,7 @@ export function LiveSessionScreen({
         <div className="flex-1 flex flex-col items-center min-w-0 overflow-y-auto" style={{ padding: 34 }}>
           <div className="flex items-center gap-3 mb-[22px] self-center">
             <span
-              className="text-[11px] font-semibold shrink-0"
+              className="text-[12px] font-semibold shrink-0"
               style={{ padding: "6px 13px", borderRadius: 9, background: "var(--color-primary-light)", border: "1px solid var(--color-line-strong)", color: "var(--color-primary-ink)" }}
             >
               {roundLabel}
@@ -277,7 +277,7 @@ export function LiveSessionScreen({
                   />
                 ))}
               </span>
-              <span className="numeral text-[11px] text-(--color-text-soft)">{progress.label}</span>
+              <span className="text-[12px] text-(--color-text-soft)">{progress.label}</span>
             </div>
           )}
         </div>
@@ -306,7 +306,7 @@ export function LiveSessionScreen({
                 key={m.label}
                 style={{ padding: "13px 15px", borderRadius: 14, background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}
               >
-                <div className="numeral text-[10px] font-semibold uppercase tracking-[0.08em] text-(--color-text-soft) mb-[7px]">
+                <div className="text-[12px] font-semibold text-(--color-text-soft) mb-[7px]">
                   {m.label}
                 </div>
                 <div className="flex items-baseline gap-1">
@@ -323,7 +323,7 @@ export function LiveSessionScreen({
                   >
                     {m.value}
                   </span>
-                  <span className="text-[11px] font-medium text-(--color-text-soft)">{m.unit}</span>
+                  <span className="text-[12px] font-medium text-(--color-text-soft)">{m.unit}</span>
                 </div>
               </div>
             ))}
@@ -333,10 +333,10 @@ export function LiveSessionScreen({
           {trace.length > 0 && (
             <div style={{ padding: "14px 15px", borderRadius: 14, background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
               <div className="flex items-center justify-between mb-[9px]">
-                <span className="numeral text-[10px] font-semibold uppercase tracking-[0.08em] text-(--color-text-soft)">
+                <span className="text-[12px] font-semibold text-(--color-text-soft)">
                   Tepki İzi
                 </span>
-                <span className="numeral text-[10.5px] font-semibold" style={{ color: "var(--color-accent-green)" }}>
+                <span className="numeral text-[12px] font-semibold" style={{ color: "var(--color-accent-green)" }}>
                   {correct}/{trace.length} doğru
                 </span>
               </div>
@@ -362,7 +362,7 @@ export function LiveSessionScreen({
 
           {/* İpucu kaydı — seansın klinik verisi; tek dokunuşla artar */}
           <div>
-            <div className="numeral text-[10px] font-semibold uppercase tracking-[0.08em] text-(--color-text-soft) mb-[9px]">
+            <div className="text-[12px] font-semibold text-(--color-text-soft) mb-[9px]">
               İpucu / Destek Kaydı
             </div>
             <div className="flex flex-col gap-2">
@@ -385,7 +385,7 @@ export function LiveSessionScreen({
 
           {/* Hızlı not — seans biterken SOAP notunun ham maddesi */}
           <div className="flex-1 flex flex-col min-h-0">
-            <div className="numeral text-[10px] font-semibold uppercase tracking-[0.08em] text-(--color-text-soft) mb-[9px]">
+            <div className="text-[12px] font-semibold text-(--color-text-soft) mb-[9px]">
               Hızlı Not
             </div>
             <textarea
@@ -402,7 +402,7 @@ export function LiveSessionScreen({
                   type="button"
                   onClick={() => addTag(t)}
                   disabled={tagsUsed.includes(t)}
-                  className="text-[10.5px] font-semibold cursor-pointer transition-colors text-(--color-text-body) hover:text-(--color-primary) disabled:opacity-40 disabled:cursor-default"
+                  className="text-[12px] font-semibold cursor-pointer transition-colors text-(--color-text-body) hover:text-(--color-primary) disabled:opacity-40 disabled:cursor-default"
                   style={{ padding: "6px 11px", borderRadius: 9, background: "var(--color-primary-light)", border: "1px solid var(--color-line)" }}
                 >
                   + {t}

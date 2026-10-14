@@ -128,7 +128,7 @@ export function SessionTrendChart({ sessions, days: initialDays = 30 }: Props) {
               key={w.days}
               type="button"
               onClick={() => setWindowDays(w.days)}
-              className="px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer border-none transition-colors"
+              className="px-2.5 py-1 rounded-md text-[12px] font-bold cursor-pointer border-none transition-colors"
               style={{
                 background: windowDays === w.days ? "var(--color-primary)" : "transparent",
                 color: windowDays === w.days ? "#fff" : "var(--color-text-soft)",
@@ -161,7 +161,7 @@ export function SessionTrendChart({ sessions, days: initialDays = 30 }: Props) {
                   style={{ top: `${100 - v}%` }}
                   aria-hidden="true"
                 >
-                  <span className="absolute right-full pr-2 -translate-y-1/2 text-[10px] text-(--color-text-muted) numeral">
+                  <span className="absolute right-full pr-2 -translate-y-1/2 text-[12px] text-(--color-text-muted) numeral">
                     {v}
                   </span>
                   <span

@@ -154,7 +154,7 @@ export function GameLibraryScreen({
                     </>
                   ) : (
                     <span className="min-w-0 flex-1 truncate text-left text-[12.5px] font-semibold text-(--color-text-soft) pl-2">
-                      Danışan seç
+                      Danışan Seç
                     </span>
                   )}
                   <ChevronDown size={13} className="shrink-0 text-(--color-text-muted)" />
@@ -309,7 +309,7 @@ export function GameLibraryScreen({
 
               <div className="flex flex-col flex-1 min-h-0 min-w-0">
                 <span
-                  className="self-start text-[10px] font-semibold mb-[9px]"
+                  className="self-start text-[12px] font-semibold mb-[9px]"
                   style={{
                     padding: "4px 10px",
                     borderRadius: 7,
@@ -327,7 +327,7 @@ export function GameLibraryScreen({
                 <h2 className="font-display m-0 mb-1 text-[15px] font-bold text-(--color-text-strong) tracking-[-0.02em]">
                   {g.title}
                 </h2>
-                <p className="m-0 mb-[9px] text-[11px] leading-[1.45] text-(--color-text-soft)">{meta.source}</p>
+                <p className="m-0 mb-[9px] text-[12px] leading-[1.45] text-(--color-text-soft)">{meta.source}</p>
 
                 {/* Ölçü satırı dar kapta sarar: `ml-auto` telefonda kalkıyor,
                     zorluk aralığı sayıların hemen ardına geçiyor ve yalnızca
@@ -338,15 +338,15 @@ export function GameLibraryScreen({
                     <span className="numeral block text-[13px] font-semibold text-(--color-text-strong) leading-none">
                       {st?.count ?? 0}
                     </span>
-                    <span className="numeral block text-[9px] text-(--color-text-soft) mt-1">oturum</span>
+                    <span className="block text-[12px] text-(--color-text-soft) mt-1">oturum</span>
                   </span>
                   <span>
                     <span className="numeral block text-[13px] font-semibold leading-none" style={{ color: avg === null ? "var(--color-text-muted)" : "var(--color-primary)" }}>
                       {avg ?? "—"}
                     </span>
-                    <span className="numeral block text-[9px] text-(--color-text-soft) mt-1">ort. skor</span>
+                    <span className="block text-[12px] text-(--color-text-soft) mt-1">ort. skor</span>
                   </span>
-                  <span className="numeral ml-auto text-[10px] font-medium text-(--color-text-soft) max-[560px]:ml-0">
+                  <span className="ml-auto text-[12px] font-medium text-(--color-text-soft) max-[560px]:ml-0">
                     {difficultyRange(avg)}
                   </span>
                 </div>
@@ -362,7 +362,11 @@ export function GameLibraryScreen({
                 type="button"
                 onClick={() => onStart(key)}
                 aria-label={`${g.title} seansını başlat`}
-                className="btn-signature w-full text-[11.5px] font-semibold cursor-pointer mt-2 p-[9px] max-[560px]:col-span-2 max-[560px]:mt-[11px]"
+                /* Tint düğme, degrade değil: imza degradesi sayfada tek birincil
+                   eylemde durur ("Sırayı Başlat"). Yedi kartın yedisi de dolu
+                   degrade taşıyınca ızgara düğme duvarına dönüyor, öneri
+                   bandındaki asıl eylem kayboluyordu. */
+                className="w-full text-[12px] font-semibold cursor-pointer mt-2 p-[9px] border-none transition-colors bg-(--color-primary-light) text-(--color-primary-ink) hover:bg-(--color-primary) hover:text-(--color-on-brand) max-[560px]:col-span-2 max-[560px]:mt-[11px]"
                 style={{ borderRadius: 11 }}
               >
                 Seansı Başlat

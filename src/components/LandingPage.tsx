@@ -537,8 +537,8 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 className="btn-signature text-sm font-semibold px-5 py-2.5 rounded-xl"
               >
                 <span className="roll">
-                  <span>Ücretsiz Başla</span>
-                  <span aria-hidden="true">Ücretsiz Başla</span>
+                  <span>Hemen Başla</span>
+                  <span aria-hidden="true">Hemen Başla</span>
                 </span>
               </button>
             </Magnetic>
@@ -643,7 +643,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 }}
                 className="btn-signature w-full py-3.5 text-center font-semibold rounded-xl"
               >
-                Ücretsiz Başla
+                Hemen Başla
               </button>
             </div>
           </motion.div>
@@ -727,12 +727,11 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                     <button
                       type="button"
                       onClick={onRegister}
-                      data-cursor="Başla"
                       className="btn-signature group flex items-center justify-center gap-2.5 font-semibold px-7 py-3.5 rounded-xl text-sm w-full sm:w-auto"
                     >
                       <span className="roll">
-                        <span>Ücretsiz Başla</span>
-                        <span aria-hidden="true">Ücretsiz Başla</span>
+                        <span>Hemen Başla</span>
+                        <span aria-hidden="true">Hemen Başla</span>
                       </span>
                       <ArrowRight
                         size={16}
@@ -794,7 +793,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
           className="hidden lg:flex absolute bottom-8 left-1/2 -translate-x-1/2 flex-col items-center gap-3 text-(--color-text-muted) hover:text-(--color-text-strong) transition-colors"
           aria-label="Aşağı kaydır"
         >
-          <span className="numeral text-[10.5px] uppercase tracking-[0.2em]">Kaydır</span>
+          <span className="text-[12px]">Kaydır</span>
           <span className="scroll-cue" aria-hidden="true" />
         </motion.button>
       </section>
@@ -1013,7 +1012,6 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             <div
               className="rounded-2xl md:rounded-3xl overflow-hidden border border-(--color-line-strong)"
               style={{ boxShadow: "var(--shadow-lg)" }}
-              data-cursor="Demo"
             >
               {mounted ? (
                 <Image
@@ -1059,7 +1057,8 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             className="max-w-2xl mb-8 sm:mb-12"
           >
             <h2 className="text-[clamp(1.875rem,8vw,2.5rem)] md:text-6xl text-(--color-text-strong) mb-3 sm:mb-4">
-              <MaskLines lines={[<>Haftayı <span className="accent-line">Bir Bakışta</span></>, "Kurun"]} />
+              {/* İki satır, ikincisi vurgulu — "Kurun" tek başına son satıra düşüyordu. */}
+              <MaskLines lines={["Haftanın Planı", <span key="a" className="accent-line">Bir Bakışta</span>]} />
             </h2>
             <motion.p
               variants={fadeUp}
@@ -1090,10 +1089,10 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             className="section-head section-head-center"
           >
             <h2 className="section-title">
-              <MaskLines lines={["Üç adımda başlayın"]} />
+              <MaskLines lines={["Üç Adımda Başlayın"]} />
             </h2>
             <motion.p variants={fadeUp} className="section-sub">
-              Kurulum yok, kart bilgisi yok. Hesabı açtığınız gün ilk seansı oynatabilirsiniz.
+              Kurulum gerekmez; hesabı açtığınız gün ilk seansı oynatabilirsiniz.
             </motion.p>
           </motion.div>
           {/*
@@ -1168,7 +1167,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             className="max-w-2xl mb-8 sm:mb-10"
           >
             <h2 className="text-[clamp(1.875rem,8vw,2.5rem)] md:text-6xl text-(--color-text-strong) mb-3 sm:mb-4">
-              <MaskLines lines={["Kimler İçin", "Tasarlandı?"]} />
+              <MaskLines lines={["Hangi Uzmanlar", "İçin Tasarlandı?"]} />
             </h2>
             <motion.p
               variants={fadeUp}
@@ -1300,7 +1299,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             {/* Keşfet — dokunma hedefleri zaten 44px'e yükseltiliyor; araya
                 ayrıca 12px koyunca liste telefonda gereksiz uzuyordu. */}
             <div className="flex flex-col gap-1 sm:gap-3">
-              <p className="text-xs font-bold uppercase tracking-widest text-(--color-text-muted)">
+              <p className="text-xs font-semibold text-(--color-text-soft)">
                 Keşfet
               </p>
               {NAV_LINKS.map((l) => (
@@ -1321,7 +1320,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
 
             {/* Başlayın */}
             <div className="flex flex-col gap-3">
-              <p className="text-xs font-bold uppercase tracking-widest text-(--color-text-muted)">
+              <p className="text-xs font-semibold text-(--color-text-soft)">
                 Başlayın
               </p>
               <p className="text-sm text-(--color-text-soft) leading-relaxed">
@@ -1334,7 +1333,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                   onClick={onRegister}
                   className="btn-signature text-sm font-semibold px-5 py-2.5 rounded-xl text-center"
                 >
-                  Ücretsiz Başla
+                  Hemen Başla
                 </button>
                 <button
                   type="button"
@@ -1415,12 +1414,11 @@ function ClosingCTA({ onLogin, onRegister }: Props) {
                 <button
                   type="button"
                   onClick={onRegister}
-                  data-cursor="Başla"
                   className="btn-light group flex items-center justify-center gap-2.5 font-semibold px-7 sm:px-11 py-4 sm:py-5 rounded-2xl text-[0.9375rem] sm:text-base w-full sm:w-auto"
                 >
                   <span className="roll">
-                    <span>Ücretsiz Başla</span>
-                    <span aria-hidden="true">Ücretsiz Başla</span>
+                    <span>Hemen Başla</span>
+                    <span aria-hidden="true">Hemen Başla</span>
                   </span>
                   <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
                 </button>
@@ -1444,7 +1442,7 @@ function ClosingCTA({ onLogin, onRegister }: Props) {
               style={{ color: "rgba(234,242,255,0.72)" }}
             >
               {[
-                { icon: CheckCircle2, text: "Ücretsiz başla" },
+                { icon: CheckCircle2, text: "Tarayıcıda çalışır" },
                 { icon: Clock, text: "Kurulum gerektirmez" },
                 { icon: Shield, text: "Güvenli veri" },
               ].map((t) => (

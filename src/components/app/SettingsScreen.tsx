@@ -101,7 +101,7 @@ export function SettingsScreen({
               <span className="font-display block text-[14px] font-bold tracking-[-0.02em] text-(--color-text-strong) truncate">
                 {therapist?.displayName ?? "Terapist"}
               </span>
-              <span className="block text-[11px] text-(--color-text-soft) truncate">
+              <span className="block text-[12px] text-(--color-text-soft) truncate">
                 {[therapist?.specialty || "Ergoterapist", therapist?.clinicName, `${clientCount} danışan`].filter(Boolean).join(" · ")}
               </span>
             </span>
@@ -152,7 +152,7 @@ export function SettingsScreen({
         {/* ── Görünüm ── */}
         <Card pad="p-[17px_18px] lg:p-[20px_22px]">
           <Eyebrow className="mb-1">Görünüm</Eyebrow>
-          <p className="m-0 mb-3.5 text-[11px] text-(--color-text-soft)">Tema seçimi cihaz başına saklanır.</p>
+          <p className="m-0 mb-3.5 text-[12px] text-(--color-text-soft)">Tema seçimi cihaz başına saklanır.</p>
 
           <div className="grid gap-[11px]" style={{ gridTemplateColumns: "repeat(3, minmax(0,1fr))" }}>
             {THEMES.map(({ key, label, Icon }) => {
@@ -172,7 +172,7 @@ export function SettingsScreen({
                   }}
                 >
                   <Icon size={17} strokeWidth={1.9} style={{ color: on ? "var(--color-primary)" : "var(--color-text-soft)" }} />
-                  <span className={`text-[11.5px] ${on ? "font-semibold text-(--color-primary-ink)" : "font-medium text-(--color-text-body)"}`}>
+                  <span className={`text-[12px] ${on ? "font-semibold text-(--color-primary-ink)" : "font-medium text-(--color-text-body)"}`}>
                     {label}
                   </span>
                 </button>
@@ -195,12 +195,12 @@ export function SettingsScreen({
             <Eye size={16} strokeWidth={1.9} className="text-(--color-text-soft)" />
             <span className="flex-1 min-w-0">
               <span className="block text-[12.5px] font-medium text-(--color-text-body)">Yüksek Kontrast</span>
-              <span className="block text-[10.5px] text-(--color-text-soft)">Degrade ve doku kapalı, kenarlar keskin</span>
+              <span className="block text-[12px] text-(--color-text-soft)">Degrade ve doku kapalı, kenarlar keskin</span>
             </span>
             {theme === "high-contrast" && <Check size={15} style={{ color: "var(--color-primary)" }} />}
           </button>
 
-          <p className="m-0 mt-3 text-[10.5px] leading-[1.5] text-(--color-text-muted)">
+          <p className="m-0 mt-3 text-[12px] leading-[1.5] text-(--color-text-muted)">
             Oyun ekranları tema değişiminden bağımsız olarak koyu kalır — çocuğun gördüğü yüzey
             terapistin tercihine göre değişmemeli.
           </p>
@@ -240,7 +240,7 @@ export function SettingsScreen({
             </span>
             <div className="min-w-0">
               <CardTitle className="!text-[12.5px] block">{databaseStatus.provider}</CardTitle>
-              <p className="m-0 mt-0.5 text-[11px] leading-[1.5] text-(--color-text-soft)">{databaseStatus.message}</p>
+              <p className="m-0 mt-0.5 text-[12px] leading-[1.5] text-(--color-text-soft)">{databaseStatus.message}</p>
             </div>
           </div>
 
@@ -305,7 +305,7 @@ function Field({ label, value, muted = false, mono = false, last = false }: {
       className="flex max-lg:flex-col max-lg:items-start max-lg:gap-0.5 items-center justify-between gap-3"
       style={{ padding: "9px 0", borderBottom: last ? "none" : "1px solid var(--color-line-soft)" }}
     >
-      <span className="text-[11.5px] text-(--color-text-soft) shrink-0">{label}</span>
+      <span className="text-[12px] text-(--color-text-soft) shrink-0">{label}</span>
       <span className={`text-[12.5px] font-semibold truncate max-lg:whitespace-normal max-lg:text-left text-right ${mono ? "numeral" : ""} ${muted ? "text-(--color-text-muted)" : "text-(--color-text-strong)"}`}>
         {value}
       </span>
@@ -329,7 +329,7 @@ function Toggle({ label, desc, on, onChange, disabled = false, last = false }: {
     >
       <span className="flex-1 min-w-0">
         <span className="block text-[12.5px] font-semibold text-(--color-text-strong)">{label}</span>
-        <span className="block text-[10.5px] text-(--color-text-soft) mt-0.5">{desc}</span>
+        <span className="block text-[12px] text-(--color-text-soft) mt-0.5">{desc}</span>
       </span>
       <span
         className="shrink-0 relative transition-colors"

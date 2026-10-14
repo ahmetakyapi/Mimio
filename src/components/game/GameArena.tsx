@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 export type ArenaCueState = "idle" | "watch" | "act" | "correct" | "wrong" | "done";
 
 export interface ArenaStat {
-  /** Kısa büyük harf etiket — "SERİ", "TUR", "SKOR" */
+  /** Kısa etiket, Title Case yazılır — "Seri", "Tur", "En İyi" */
   readonly label: string;
   readonly value: string | number;
   /** Vurgulu gösterim (oyunun ana metriği) */

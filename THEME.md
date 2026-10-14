@@ -170,9 +170,16 @@ Aile seçimi tasarım dokümanından değil, ekosistem tipografi etüdünden gel
 kullanıyordu, Schibsted Grotesk'in haber-editoryal kökeni klinik tona daha
 yakın duruyor ve diğer projelerle ortak bir zemin kuruyor.
 
-**Metin düzeni:** başlık, alt başlık, düğme ve sekme etiketleri Title Case
-(`Yeni Danışan`); gövde cümleleri ve mono mikro etiketler cümle düzeninde
-kalır (`bağımsızlık 4/5`). Gerekçe ve Türkçe tuzakları: global CLAUDE.md.
+**Metin düzeni:** başlık, alt başlık, düğme, sekme ve etiketler Title Case
+(`Yeni Danışan`, `Alan Dengesi`); gövde cümleleri ve sayı + isim kalıbındaki
+kısa satırlar cümle düzeninde kalır (`bağımsızlık 4/5`, `3 seans`). Başlıkta
+sonda nokta yok (`İyi Akşamlar, Ahmet`). Gerekçe ve Türkçe tuzakları: global
+CLAUDE.md.
+
+**Okunur etiketler (Ekim 2026):** 12px'in altında metin yok, versal
+(`uppercase`) ve geniş harf aralıklı küçük etiket yok. Etiket gövde ailesinde,
+normal harf, `font-semibold`, `--color-text-soft` ya da daha koyu. Mono
+(`.numeral`) yalnızca sayıda: saat, skor, tarih — sözcük etiketinde değil.
 
 | Sınıf | Ne yapar |
 |-------|---------|
@@ -278,7 +285,6 @@ ortak hareket dili. Bileşenler `src/components/motion/`, stiller
 | Açılış — "Bloklar" | `Intro.tsx` | Sayaç yok. Sıra Hafızası'nın yumuşak blokları M'nin çizgisini izleyerek düşer, kenetlenip monogramı kurar; kelime markası yükselir, altında seans eğrisi çizilir; ardından ekranı örten blok ızgarası merkezden dışa blok blok küçülüp kahramanı açar (~2,2 sn). Kurulum saf CSS (transform/opacity/clip-path), zemin temayı izler. Oturum başına bir kez (`sessionStorage: mimio-intro-seen` → boyamadan önce `html[data-intro=skip]`); hareket azaltmada yok; betik çalışmazsa CSS 4,2 sn'de perdeyi kaldırır. |
 | Geçiş perdesi | `PageTransition.tsx` | Beş sütun alttan kapanır, görünüm değişir, yukarı doğru açılır. `usePageTransition().run(swap, etiket)` |
 | Yumuşak kaydırma | `SmoothScroll.tsx` | Lenis — yalnızca tanıtımda, yalnızca tekerlek. Programatik kaydırma `smoothScrollTo()` üzerinden. |
-| İmleç | `Cursor.tsx` | Nokta + yaylı halka; `data-cursor="Etiket"` taşıyan öğede halka etiketle dolar. Sistem imleci gizlenmez. |
 | Metin / sayı | `Reveal.tsx` | `MaskLines` (satır maskesi), `Rise`, `ScrubWords` (kaydırmayla aydınlanan manifesto), `CountUp`, `VelocityMarquee`, `ScrollPerspective`, `ScrollRail` |
 
 Uygulama içinde hareket ölçülüdür: görünüm değişiminde içerik `.view-enter`
@@ -286,12 +292,14 @@ ile yükselir, kenar çubuğu ve alt sekme seçimi `layoutId` ile kayar, giriş
 ekranı `.stagger-in` ile parça parça gelir. Seans ekranlarında süs hareketi yok.
 
 **Eğriler:** `--ease-out` (giriş) ve `--ease-curtain` (perde, maske).
-**Erişilebilirlik:** `prefers-reduced-motion` altında perde, Lenis, imleç ve
+**Erişilebilirlik:** `prefers-reduced-motion` altında perde, Lenis ve
 kaydırmaya bağlı dönüşümler kapanır; içerik doğrudan görünür. Yüksek
-kontrast temasında imleç ve dekoratif ışıklar çizilmez.
+kontrast temasında dekoratif ışıklar çizilmez.
+**Özel imleç yok** (Ekim 2026, sahibinin kuralı): nokta + halka imleç
+kaldırıldı; her yerde sistemin imleci.
 **Bölüm başlıkları** göz kapağı (başlık üstünde versal küçük etiket, numaralı
 bölüm etiketi, rozet-başlık) taşımaz: başlık + açıklama yeter. Uygulamada
-`ScreenHeader`ın üst satırı yalnızca veri taşıdığında (tarih, hafta, sayım,
-seçili danışan) kullanılır.
+ekranın verisi (tarih, hafta, sayım, seçili danışan) `ScreenHeader`ın `meta`
+alanıyla başlığın ALTINA, alt satırın başına yazılır.
 **Kapanış paneli ve geçiş perdesi** temadan bağımsız koyu (`--ink-deep`) zemin
 taşır; üzerindeki metin her zaman beyaz ailesidir.

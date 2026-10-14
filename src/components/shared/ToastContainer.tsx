@@ -68,7 +68,7 @@ export function ToastContainer() {
             animation: "page-fade-in 0.3s ease both",
             minWidth: "180px",
           }}>
-          <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-black shrink-0"
+          <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[12px] sm:text-xs font-black shrink-0"
             style={{ background: "rgba(255,255,255,0.25)" }} aria-hidden="true">{icons[t.type]}</span>
           {t.message}
         </div>

@@ -142,7 +142,7 @@ export function WeeklyPlanScreen({
   return (
     <div className="flex flex-col gap-4 h-full min-h-0">
       <ScreenHeader
-        eyebrow={weekLabel}
+        meta={weekLabel}
         title="Haftalık Plan"
         sub={`${planned} seans planlandı · ${weekCapacity} slot kapasite · doluluk %${fillPct}`}
         actions={
@@ -189,12 +189,12 @@ export function WeeklyPlanScreen({
         style={{ borderRadius: 13, background: "var(--color-surface)", border: "1px solid var(--color-line)" }}
       >
         {DOMAIN_ORDER.map((k) => (
-          <span key={k} className="inline-flex items-center gap-1.5 text-[11px] font-medium text-(--color-text-body)">
+          <span key={k} className="inline-flex items-center gap-1.5 text-[12px] font-medium text-(--color-text-body)">
             <span style={{ width: 9, height: 9, borderRadius: 3, background: DOMAIN_META[k].color }} />
             {DOMAIN_META[k].label}
           </span>
         ))}
-        <span className="ml-auto hidden lg:inline-flex items-center gap-[7px] text-[11px] font-medium text-(--color-text-soft)">
+        <span className="ml-auto hidden lg:inline-flex items-center gap-[7px] text-[12px] font-medium text-(--color-text-soft)">
           <GripVertical size={13} />
           Güne Tıklayarak Seans Ekle
         </span>
@@ -237,23 +237,23 @@ export function WeeklyPlanScreen({
                     } ${empty ? "max-lg:flex-1 max-lg:min-w-0 lg:border-b lg:pb-[7px]" : "border-b pb-[7px]"}`}
                   >
                     <div className="flex items-baseline gap-[5px]">
-                      <span className={`text-[11px] lg:text-[10.5px] font-semibold ${isToday ? "text-(--color-primary)" : "text-(--color-text-soft)"}`}>
+                      <span className={`text-[12px] font-semibold ${isToday ? "text-(--color-primary)" : "text-(--color-text-soft)"}`}>
                         {DAY_LABELS[day]}
                       </span>
                       <span className="figure text-[15px] text-(--color-text-strong)">{dayDates[i].getDate()}</span>
                       {isToday && (
-                        <span className="numeral text-[9.5px] lg:text-[8.5px] font-semibold text-(--color-primary) lg:hidden">bugün</span>
+                        <span className="text-[12px] font-semibold text-(--color-primary) lg:hidden">bugün</span>
                       )}
                       {/* Sayaç telefonda 8px'te okunmuyordu; küçük bir sayı
                           rozeti oldu. Boş günde hiç basılmaz — yanındaki
                           "Seans Ekle" satırı zaten "burada seans yok" diyor. */}
                       {!empty && (
-                        <span className="numeral ml-auto shrink-0 rounded-full px-[7px] py-[2px] text-[9.5px] font-semibold text-(--color-text-soft) lg:hidden" style={{ background: "var(--color-surface-strong)" }}>
+                        <span className="ml-auto shrink-0 rounded-full px-[7px] py-[2px] text-[12px] font-semibold text-(--color-text-soft) lg:hidden" style={{ background: "var(--color-surface-strong)" }}>
                           {list.length} seans
                         </span>
                       )}
                     </div>
-                    <span className="numeral hidden lg:block mt-[3px] text-[8px] font-medium text-(--color-text-muted)">
+                    <span className="hidden lg:block mt-[3px] text-[12px] font-medium text-(--color-text-soft)">
                       {list.length} seans
                     </span>
                   </div>
@@ -289,7 +289,7 @@ export function WeeklyPlanScreen({
                       }}
                     >
                       <Plus size={12} />
-                      <span className="text-[11px] font-semibold whitespace-nowrap lg:hidden">Seans Ekle</span>
+                      <span className="text-[12px] font-semibold whitespace-nowrap lg:hidden">Seans Ekle</span>
                     </button>
                   </div>
                 </div>
@@ -310,7 +310,7 @@ export function WeeklyPlanScreen({
             </div>
             {idle ? (
               <>
-                <p className="m-0 mb-3 text-[11.5px] leading-[1.5] text-(--color-text-body)">
+                <p className="m-0 mb-3 text-[12px] leading-[1.5] text-(--color-text-body)">
                   <strong className="font-bold text-(--color-text-strong)">{idle.c.displayName}</strong>{" "}
                   {idle.m.lastPlayedAt ? `${relativeDay(idle.m.lastPlayedAt)} seans gördü` : "hiç seans görmedi"}.
                   Bu haftaya bir slot eklemek dengeyi düzeltir.
@@ -319,7 +319,7 @@ export function WeeklyPlanScreen({
                   <button
                     type="button"
                     onClick={() => setComposer(todayKey)}
-                    className="btn-signature flex-1 text-[11.5px] font-semibold cursor-pointer"
+                    className="btn-signature flex-1 text-[12px] font-semibold cursor-pointer"
                     style={{ padding: 8, borderRadius: 9 }}
                   >
                     Ekle
@@ -327,7 +327,7 @@ export function WeeklyPlanScreen({
                   <button
                     type="button"
                     onClick={() => onNavigate("clients")}
-                    className="text-[11.5px] font-semibold text-(--color-text-body) cursor-pointer transition-colors hover:text-(--color-primary)"
+                    className="text-[12px] font-semibold text-(--color-text-body) cursor-pointer transition-colors hover:text-(--color-primary)"
                     style={{ padding: "8px 13px", borderRadius: 9, background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}
                   >
                     Profili Aç
@@ -335,7 +335,7 @@ export function WeeklyPlanScreen({
                 </div>
               </>
             ) : (
-              <p className="m-0 text-[11.5px] leading-[1.5] text-(--color-text-body)">
+              <p className="m-0 text-[12px] leading-[1.5] text-(--color-text-body)">
                 Tüm danışanlar son 4 gün içinde seans gördü. Plan dengeli görünüyor.
               </p>
             )}
@@ -346,15 +346,15 @@ export function WeeklyPlanScreen({
             {balance.map((b) => (
               <div key={b.key} className="mb-[9px]">
                 <div className="flex justify-between mb-1">
-                  <span className="text-[12px] lg:text-[11px] font-semibold text-(--color-text-body)">{b.label}</span>
-                  <span className="numeral text-[11px] lg:text-[10.5px] text-(--color-text-soft)">%{b.pct}</span>
+                  <span className="text-[12px] font-semibold text-(--color-text-body)">{b.label}</span>
+                  <span className="numeral text-[12px] text-(--color-text-soft)">%{b.pct}</span>
                 </div>
                 <MeterBar pct={Math.min(100, b.pct * 2)} height={5} color={b.color} />
               </div>
             ))}
             {underserved && (
               <div
-                className="text-[11.5px] lg:text-[10.5px] leading-[1.45]"
+                className="text-[12px] leading-[1.45]"
                 style={{
                   padding: "9px 11px",
                   borderRadius: 10,
@@ -380,10 +380,10 @@ export function WeeklyPlanScreen({
                   style={{ padding: "8px 0", borderBottom: "1px solid var(--color-line-soft)", border: "none", borderBottomWidth: 1, borderBottomStyle: "solid" }}
                 >
                   <span className="flex-1 min-w-0">
-                    <span className="block text-[12px] lg:text-[11.5px] font-bold text-(--color-text-strong) truncate group-hover:text-(--color-primary) transition-colors">
+                    <span className="block text-[12px] font-bold text-(--color-text-strong) truncate group-hover:text-(--color-primary) transition-colors">
                       {p.name}
                     </span>
-                    <span className="block text-[10.5px] lg:text-[10px] text-(--color-text-soft) mt-px truncate">
+                    <span className="block text-[12px] text-(--color-text-soft) mt-px truncate">
                       {p.duration} hafta · {p.frequency}
                     </span>
                   </span>
@@ -463,7 +463,7 @@ function PlanBlock({
       >
         {block.entry.time && (
           <span
-            className="numeral block text-[10.5px] lg:text-[9px] font-semibold mb-[3px] lg:mb-[3px] max-lg:mb-0 max-lg:shrink-0"
+            className="numeral block text-[12px] font-semibold mb-[3px] lg:mb-[3px] max-lg:mb-0 max-lg:shrink-0"
             style={{ color }}
           >
             {block.entry.time}
@@ -473,8 +473,8 @@ function PlanBlock({
           {/* Masaüstünde sütun 55px: ad kesilmek zorunda. Telefonda kesmek
               yerine iki satıra sarar — "Mehmet Ali Kayalıoğ…" 320px'te
               kimin seansı olduğunu söylemiyordu. */}
-          <span className="block text-[12px] lg:text-[11px] font-bold text-(--color-text-strong) lg:truncate max-lg:line-clamp-2 max-lg:leading-[1.25]">{block.clientName}</span>
-          <span className="block text-[10.5px] lg:text-[9.5px] text-(--color-text-soft) mt-px truncate">
+          <span className="block text-[12px] font-bold text-(--color-text-strong) lg:truncate max-lg:line-clamp-2 max-lg:leading-[1.25]">{block.clientName}</span>
+          <span className="block text-[12px] text-(--color-text-soft) mt-px truncate">
             {gameTitle(block.entry.gameKey)}
           </span>
         </span>
@@ -578,7 +578,7 @@ function ProtocolPanel({
     );
   }
 
-  const label = "block text-[11px] font-bold uppercase tracking-widest text-(--color-text-muted) mb-1.5";
+  const label = "block text-[12px] font-semibold text-(--color-text-soft) mb-1.5";
 
   return (
     <Portal>
@@ -590,12 +590,12 @@ function ProtocolPanel({
         >
           <div className="flex items-start justify-between gap-4 mb-4">
             <div className="min-w-0">
-              <span className="block text-[11px] font-bold uppercase tracking-widest" style={{ color: protocol.color }}>
+              <span className="block text-[12px] font-semibold" style={{ color: protocol.color }}>
                 {protocol.domain}
               </span>
               <CardTitle className="block mt-1 !text-[15px]">{protocol.name}</CardTitle>
               <p className="text-[12.5px] text-(--color-text-soft) mt-1.5 mb-0 leading-relaxed">{protocol.description}</p>
-              <p className="text-[11.5px] text-(--color-text-muted) mt-2 mb-0">
+              <p className="text-[12px] text-(--color-text-muted) mt-2 mb-0">
                 {protocol.duration} hafta · {protocol.frequency} · {protocol.targetGroup}
               </p>
             </div>
@@ -631,7 +631,7 @@ function ProtocolPanel({
               <p className="text-[13px] font-bold text-(--color-text-strong) m-0 mb-2.5">{week.focus}</p>
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {week.games.map((g) => (
-                  <span key={g} className="text-[11.5px] font-semibold px-2.5 py-1 rounded-full text-(--color-primary-ink)" style={{ background: "var(--color-primary-light)" }}>
+                  <span key={g} className="text-[12px] font-semibold px-2.5 py-1 rounded-full text-(--color-primary-ink)" style={{ background: "var(--color-primary-light)" }}>
                     {gameTitle(g as PlatformGameKey)}
                   </span>
                 ))}
@@ -737,7 +737,7 @@ function Composer({
   
           <div className="flex flex-col gap-3">
             <label className="flex flex-col gap-1.5">
-              <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Danışan</span>
+              <span className="text-[12px] font-semibold text-(--color-text-soft)">Danışan</span>
               <select value={clientId} onChange={(e) => setClientId(e.target.value)} className={field} style={fieldStyle}>
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>{c.displayName}</option>
@@ -746,7 +746,7 @@ function Composer({
             </label>
   
             <label className="flex flex-col gap-1.5">
-              <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Oyun</span>
+              <span className="text-[12px] font-semibold text-(--color-text-soft)">Oyun</span>
               <select value={gameKey} onChange={(e) => setGameKey(e.target.value as PlatformGameKey)} className={field} style={fieldStyle}>
                 {GAME_TABS.map((g) => {
                   const d = gameDomain(g.key as PlatformGameKey);
@@ -763,11 +763,11 @@ function Composer({
                 alanını 116px'e düşürüyor, yerleşik saat seçici kırpılıyordu. */}
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
               <label className="flex flex-col gap-1.5">
-                <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Saat</span>
+                <span className="text-[12px] font-semibold text-(--color-text-soft)">Saat</span>
                 <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={field} style={fieldStyle} />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-[11.5px] font-semibold text-(--color-text-soft)">Hedef</span>
+                <span className="text-[12px] font-semibold text-(--color-text-soft)">Hedef</span>
                 <input
                   type="text"
                   value={goal}

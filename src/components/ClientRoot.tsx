@@ -8,7 +8,6 @@ import { AppLoadingSkeleton } from "./ui/LoadingSkeleton";
 import { IntroProvider } from "./motion/Intro";
 import { PageTransitionProvider, usePageTransition } from "./motion/PageTransition";
 import { SmoothScroll } from "./motion/SmoothScroll";
-import { Cursor } from "./motion/Cursor";
 
 // Lazy load the main app to reduce initial bundle
 const MimioApp = lazy(() =>
@@ -60,7 +59,7 @@ function RootViews() {
     run(() => {
       setInitialAppView(view);
       setTopView("app");
-    }, view === "login" ? "Giriş" : "Hesap oluştur");
+    }, view === "login" ? "Giriş" : "Hesap Oluştur");
 
   return (
     <ErrorBoundary>
@@ -73,7 +72,6 @@ function RootViews() {
       {topView === "landing" ? (
         <IntroProvider enabled>
           <SmoothScroll>
-            <Cursor />
             <LandingPage
               onLogin={() => enterApp("login")}
               onRegister={() => enterApp("register")}

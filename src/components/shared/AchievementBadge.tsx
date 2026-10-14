@@ -73,7 +73,7 @@ interface AchievementBadgeProps {
 
 export function AchievementBadge({ achievement, earned, earnedAt, size = "md", onClick }: AchievementBadgeProps) {
   const Icon = achievement.icon;
-  const sizeMap = { sm: { box: 40, icon: 16, text: "text-[10px]" }, md: { box: 56, icon: 22, text: "text-xs" }, lg: { box: 72, icon: 28, text: "text-sm" } };
+  const sizeMap = { sm: { box: 40, icon: 16, text: "text-[12px]" }, md: { box: 56, icon: 22, text: "text-xs" }, lg: { box: 72, icon: 28, text: "text-sm" } };
   const s = sizeMap[size];
 
   return (
@@ -104,7 +104,7 @@ export function AchievementBadge({ achievement, earned, earnedAt, size = "md", o
         {achievement.title}
       </span>
       {earned && earnedAt && size === "lg" && (
-        <span className="text-[9px] text-(--color-text-muted)">{new Date(earnedAt).toLocaleDateString("tr-TR")}</span>
+        <span className="text-[12px] text-(--color-text-muted)">{new Date(earnedAt).toLocaleDateString("tr-TR")}</span>
       )}
     </button>
   );
@@ -165,7 +165,7 @@ export function AchievementPanel({ stats, earned, onEarn }: AchievementPanelProp
           </svg>
           <span className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="numeral text-lg font-bold leading-none text-(--color-text-strong)">{earnedCount}</span>
-            <span className="numeral text-[10px] text-(--color-text-muted) leading-none mt-0.5">/{ACHIEVEMENTS.length}</span>
+            <span className="numeral text-[12px] text-(--color-text-muted) leading-none mt-0.5">/{ACHIEVEMENTS.length}</span>
           </span>
         </div>
         <div className="min-w-0">
@@ -192,7 +192,7 @@ export function AchievementPanel({ stats, earned, onEarn }: AchievementPanelProp
               <Icon size={20} style={{ color: "var(--color-text-inverse)" }} />
             </div>
             <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-widest m-0" style={{ color: ach.color }}>Yeni başarım</p>
+              <p className="text-[12px] font-semibold m-0" style={{ color: ach.color }}>Yeni Başarım</p>
               <p className="text-sm font-bold text-(--color-text-strong) m-0">{ach.title}</p>
             </div>
           </div>
@@ -207,8 +207,8 @@ export function AchievementPanel({ stats, earned, onEarn }: AchievementPanelProp
         return (
           <section key={cat.key}>
             <div className="flex items-baseline gap-2 mb-3">
-              <h4 className="text-[11px] font-black uppercase tracking-[0.16em] m-0" style={{ color: cat.color }}>{cat.label}</h4>
-              <span className="numeral text-[11px] text-(--color-text-muted)">{catEarned}/{items.length}</span>
+              <h4 className="text-[12px] font-semibold m-0" style={{ color: cat.color }}>{cat.label}</h4>
+              <span className="numeral text-[12px] text-(--color-text-muted)">{catEarned}/{items.length}</span>
               <span className="flex-1 h-px" style={{ background: "var(--color-line)" }} />
             </div>
 
@@ -250,16 +250,16 @@ export function AchievementPanel({ stats, earned, onEarn }: AchievementPanelProp
                           {ach.title}
                         </strong>
                         {isEarned && (
-                          <span className="text-[10px] shrink-0" style={{ color: ach.color }}>✓</span>
+                          <span className="text-[12px] shrink-0" style={{ color: ach.color }}>✓</span>
                         )}
                       </div>
-                      <p className="text-[11px] text-(--color-text-muted) m-0 mt-0.5 leading-snug">
+                      <p className="text-[12px] text-(--color-text-muted) m-0 mt-0.5 leading-snug">
                         {ach.description}
                       </p>
 
                       {isEarned ? (
                         e?.earnedAt && (
-                          <p className="numeral text-[10px] text-(--color-text-muted) m-0 mt-1.5">
+                          <p className="numeral text-[12px] text-(--color-text-muted) m-0 mt-1.5">
                             {new Date(e.earnedAt).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
                           </p>
                         )
@@ -271,7 +271,7 @@ export function AchievementPanel({ stats, earned, onEarn }: AchievementPanelProp
                               style={{ width: `${pct}%`, background: ach.color, opacity: 0.7 }}
                             />
                           </div>
-                          <span className="numeral text-[10px] text-(--color-text-muted) shrink-0">
+                          <span className="numeral text-[12px] text-(--color-text-muted) shrink-0">
                             {Math.min(current, target)}/{target} {ach.unit}
                           </span>
                         </div>

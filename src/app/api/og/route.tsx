@@ -46,7 +46,7 @@ async function loadDisplayFont(): Promise<ArrayBuffer | null> {
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const title = searchParams.get("title") ?? "Terapi seanslarını oyuna dönüştür.";
+  const title = searchParams.get("title") ?? "Terapi Seanslarını Oyuna Dönüştür";
   const subtitle =
     searchParams.get("subtitle") ??
     "Danışan takibi, haftalık plan, kanıta dayalı oyunlar ve yazdırılabilir raporlar — tek platformda.";

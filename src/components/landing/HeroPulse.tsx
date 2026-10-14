@@ -125,10 +125,10 @@ export function HeroPulse() {
             className="live-pulse w-1.5 h-1.5 rounded-full shrink-0"
             style={{ background: "var(--color-accent-green)" }}
           />
-          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-(--color-text-muted)">
-            Canlı seans
+          <span className="text-[12px] font-semibold text-(--color-text-soft)">
+            Canlı Seans
           </span>
-          <span className="numeral ml-auto text-[11px] text-(--color-text-soft)">14:32</span>
+          <span className="numeral ml-auto text-[12px] text-(--color-text-soft)">14:32</span>
         </header>
 
         <div className="px-6 pt-5">
@@ -148,7 +148,7 @@ export function HeroPulse() {
               </p>
             </div>
             <span
-              className="ml-auto shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-lg"
+              className="ml-auto shrink-0 text-[12px] font-bold px-2.5 py-1 rounded-lg"
               style={{ background: "var(--color-primary-light)", color: "var(--color-primary-ink)" }}
             >
               6–8 yaş
@@ -158,8 +158,8 @@ export function HeroPulse() {
 
         {/* Tek ölçüm, büyük. Kahramanın söylediği şey bu. */}
         <div className="px-6 pt-6">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-(--color-text-muted) m-0">
-            Blok açıklığı
+          <p className="text-[12px] font-semibold text-(--color-text-soft) m-0">
+            Blok Açıklığı
           </p>
           <div className="flex items-end gap-3 mt-2">
             <motion.strong
@@ -175,13 +175,13 @@ export function HeroPulse() {
               initial={reduced ? false : { opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.62, ease: EASE }}
-              className="ml-auto mb-1.5 numeral text-[12px] font-bold px-2.5 py-1 rounded-lg"
+              className="ml-auto mb-1.5 text-[12px] font-semibold px-2.5 py-1 rounded-lg"
               style={{
                 background: "color-mix(in srgb, var(--color-accent-green) 14%, transparent)",
                 color: "var(--color-accent-green)",
               }}
             >
-              +{SPAN_GAIN} · son 8 seans
+              <span className="numeral">+{SPAN_GAIN}</span> · son 8 seans
             </motion.span>
           </div>
         </div>
@@ -259,7 +259,7 @@ export function HeroPulse() {
               <p className="numeral text-[18px] font-bold text-(--color-text-strong) m-0 leading-none">
                 {s.v}
               </p>
-              <p className="text-[11px] text-(--color-text-muted) m-0 mt-1.5 leading-none">{s.l}</p>
+              <p className="text-[12px] text-(--color-text-muted) m-0 mt-1.5 leading-none">{s.l}</p>
             </div>
           ))}
         </div>
