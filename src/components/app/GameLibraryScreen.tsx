@@ -16,7 +16,7 @@
 import { useMemo, useState } from "react";
 import { Sparkles, ChevronDown, Layers } from "lucide-react";
 import type { ClientProfile, RecentSessionEntry, PlatformGameKey } from "@/lib/platform-data";
-import { GAME_TABS } from "@/lib/game-constants";
+import { GAME_TABS, normalizeScore } from "@/lib/game-constants";
 import { DOMAIN_META, DOMAIN_ORDER, gameDomain, type DomainKey } from "@/lib/deniz-derive";
 import { Avatar, ScreenHeader, SegmentedControl } from "./primitives";
 
@@ -59,14 +59,23 @@ export function GameLibraryScreen({
   const [filter, setFilter] = useState<Filter>("all");
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  /* Oyun başına oturum ve ortalama — seçili danışan varsa ona daralır. */
+  /*
+   * Oyun başına oturum ve ortalama — seçili danışan varsa ona daralır.
+   *
+   * Ortalama normalize skordan (0-100) hesaplanır, ham puandan değil. Oyunlar
+   * aynı birimde puanlamıyor (Sıra Hafızası dizi uzunluğu ≈3-12, Kart Eşle
+   * 50-280 puan); ham ortalama hem uygulamanın geri kalanındaki 0-100
+   * ölçeğiyle çelişiyordu hem de aşağıdaki zorluk aralığını ve önerilen
+   * sırayı bozuyordu: Sıra Hafızası her zaman "en zayıf", Kart Eşle her
+   * zaman "en güçlü" görünüyordu.
+   */
   const stats = useMemo(() => {
     const scope = activeClient ? sessions.filter((s) => s.clientId === activeClient.id) : sessions;
     const map = new Map<string, { count: number; total: number }>();
     for (const s of scope) {
       const cur = map.get(s.gameKey) ?? { count: 0, total: 0 };
       cur.count += 1;
-      cur.total += s.score;
+      cur.total += normalizeScore(s.gameKey as PlatformGameKey, s.score) * 100;
       map.set(s.gameKey, cur);
     }
     return map;
@@ -89,7 +98,7 @@ export function GameLibraryScreen({
     const byGame = new Map<string, number[]>();
     for (const s of mine) {
       const arr = byGame.get(s.gameKey) ?? [];
-      arr.push(s.score);
+      arr.push(normalizeScore(s.gameKey as PlatformGameKey, s.score) * 100);
       byGame.set(s.gameKey, arr);
     }
     const ranked = Array.from(byGame.entries())

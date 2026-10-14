@@ -675,10 +675,19 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
    * Eşle (50-280 puan) var. Ham puanlarla çubuk genişliği yüzde olarak
    * çizilince Kart Eşle her zaman taşıyor, Fark Avcısı hep sıfıra yapışıyordu.
    */
-  function buildDomainGains(mine: readonly RecentSessionEntry[]) {
+  /*
+   * Seans sonu "Alan Kazanımı": alanın son ölçümü, önceki dört ölçümün
+   * ortalamasına karşı. Oynanan oyunun alanı listenin başına alınır —
+   * önceden sıra sabitti ve motor bir seansın ardından ekranda yalnızca
+   * Görsel ve Bellek satırları duruyor, seansın kendisiyle ilgisi olmayan
+   * alanlar "kazanım" gibi okunuyordu.
+   */
+  function buildDomainGains(mine: readonly RecentSessionEntry[], playedKey: GameKey) {
     const out: Array<{ label: string; from: number; to: number; color: string }> = [];
     const norm = (s: RecentSessionEntry) => Math.round(normalizeScore(s.gameKey as GameKey, s.score) * 100);
-    for (const key of DOMAIN_ORDER) {
+    const playedDomain = gameDomain(playedKey);
+    const order = playedDomain ? [playedDomain, ...DOMAIN_ORDER.filter((k) => k !== playedDomain)] : DOMAIN_ORDER;
+    for (const key of order) {
       const inDomain = mine.filter((x) => gameDomain(x.gameKey) === key);
       if (inDomain.length < 2) continue;
       const to = norm(inDomain[0]);
@@ -2424,7 +2433,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                 { label: "Süre", value: last?.durationSeconds ? formatElapsed(last.durationSeconds) : formatElapsed(gameElapsed), unit: "dk:sn" },
                 { label: "Tur", value: rounds.length ? `${okCount}/${rounds.length}` : "—", unit: "doğru", deltaTone: "neutral" },
               ]}
-              gains={buildDomainGains(mine)}
+              gains={buildDomainGains(mine, gameKey)}
               nextHint={normalized >= 85 ? "Bir sonraki seansta zorluk artırılabilir." : "Mevcut zorlukta bir seans daha önerilir."}
               rounds={rounds}
               soap={reviewSoap}

@@ -83,15 +83,31 @@ const DEMO_THERAPIST = {
   specialty: "Ergoterapist",
 };
 
+/*
+ * `typicalMax`: oyunun ham skor ölçeği — `src/lib/game-constants.ts` →
+ * `GAME_SCORE_SCALE` ile AYNI kalmalı (betik TS içe aktaramıyor).
+ *
+ * Oyunlar aynı birimde puanlamıyor: Sıra Hafızası dizi uzunluğu (≈3-12),
+ * Kart Eşle hamle cezasından türeyen puan (50-280). Seed eskiden her oyuna
+ * 20-99 arası tek bir ölçekle yazıyordu; normalize edilince dizi uzunluğu,
+ * hedef tarama ve fark avcısı seansları hep %100'e dayanıyor, karışık oyun
+ * oynayan danışanın eğrisi %100 ile %25 arasında zikzak çiziyordu. Danışan
+ * hikâyeleri (plato, yükseliş, düşüş) ekranda hiç okunmuyordu.
+ */
 const GAMES = {
-  memory:     { label: "Sıra Hafızası", domain: "memory" },
-  pairs:      { label: "Kart Eşle",     domain: "visual" },
-  pulse:      { label: "Mavi Nabız",    domain: "motor" },
-  route:      { label: "Komut Rotası",  domain: "motor" },
-  difference: { label: "Fark Avcısı",   domain: "visual" },
-  scan:       { label: "Hedef Tarama",  domain: "attention" },
-  logic:      { label: "Dizi Mantık",   domain: "cognitive" },
+  memory:     { label: "Sıra Hafızası", domain: "memory",    typicalMax: 12 },
+  pairs:      { label: "Kart Eşle",     domain: "visual",    typicalMax: 280 },
+  pulse:      { label: "Mavi Nabız",    domain: "motor",     typicalMax: 200 },
+  route:      { label: "Komut Rotası",  domain: "motor",     typicalMax: 200 },
+  difference: { label: "Fark Avcısı",   domain: "visual",    typicalMax: 16 },
+  scan:       { label: "Hedef Tarama",  domain: "attention", typicalMax: 20 },
+  logic:      { label: "Dizi Mantık",   domain: "cognitive", typicalMax: 128 },
 };
+
+/** Performans yüzdesini (0-100) oyunun kendi ham ölçeğine çevirir. */
+function toRawScore(gameKey, pct) {
+  return Math.max(1, Math.round((pct / 100) * GAMES[gameKey].typicalMax));
+}
 
 /*
  * Her danışanın bir "hikâyesi" var; ekranlar bu hikâyeleri okuyor:
@@ -296,8 +312,9 @@ const SESSION_NOTES = {
 };
 
 /**
- * Danışanın skor eğrisi. Düz rastgele sayı kullanılmıyor: gelişim eğrisi
- * ekranı ancak bir eğilim varsa anlamlı okunuyor.
+ * Danışanın performans eğrisi (0-100, normalize ölçek). Düz rastgele sayı
+ * kullanılmıyor: gelişim eğrisi ekranı ancak bir eğilim varsa anlamlı
+ * okunuyor. Kayda geçen ham skor `toRawScore` ile oyunun ölçeğine çevrilir.
  */
 function scoreCurve(client, i, total, rand) {
   const t = total > 1 ? i / (total - 1) : 1;
@@ -459,16 +476,17 @@ for (let ci = 0; ci < CLIENTS.length; ci += 1) {
     playedAt.setHours(9 + ((i * 3) % 8), (i % 4) * 15, 0, 0);
 
     const gameKey = c.games[i % c.games.length];
-    const score = scoreCurve(c, i, c.sessions, rand);
+    const pct = scoreCurve(c, i, c.sessions, rand);
+    const score = toRawScore(gameKey, pct);
 
     /* Seans sonu ekranındaki yıldız değerlendirmesi ara sıra doldurulmuş
        olsun — her seansta olması gerçekçi değil, hiç olmaması da. */
     const metadata = rand() < 0.4
-      ? { satisfactionRating: score >= 75 ? 5 : score >= 60 ? 4 : 3 }
+      ? { satisfactionRating: pct >= 75 ? 5 : pct >= 60 ? 4 : 3 }
       : {};
 
     /* Gözlem satırı üç seansta bire yakın; metin skorun bandından seçilir. */
-    const band = score >= 78 ? "high" : score >= 58 ? "mid" : "low";
+    const band = pct >= 78 ? "high" : pct >= 58 ? "mid" : "low";
     const pool = SESSION_NOTES[band];
     const sessionNote = rand() < 0.34 ? pool[Math.floor(rand() * pool.length)] : null;
 
