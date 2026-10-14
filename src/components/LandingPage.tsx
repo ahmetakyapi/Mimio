@@ -1392,7 +1392,7 @@ function ClosingCTA({ onLogin, onRegister }: Props) {
     <section id="cta" ref={ref} className="relative">
       <motion.div
         className="cta-panel py-[clamp(5rem,14vw,11rem)]"
-        style={reduced ? undefined : { clipPath }}
+        style={reduced ? { clipPath: "none" } : { clipPath }}
       >
         <div className="relative z-[1] max-w-5xl mx-auto text-center px-(--gutter) flex flex-col items-center gap-6 sm:gap-9">
           <h2 className="text-[clamp(2.25rem,9vw,6.5rem)] leading-[0.98] tracking-[-0.05em] m-0" style={{ color: "#ffffff" }}>
@@ -1472,7 +1472,7 @@ function FooterWord() {
   const y = useTransform(scrollYProgress, [0, 1], ["45%", "0%"]);
   return (
     <div ref={ref} aria-hidden="true" className="overflow-hidden -mx-(--gutter) sm:mx-0 mb-4 flex justify-center">
-      <motion.span className="footer-word block" style={reduced ? undefined : { y }}>
+      <motion.span className="footer-word block" style={reduced ? { y: "0%" } : { y }}>
         Mimio
       </motion.span>
     </div>

@@ -617,9 +617,11 @@ body {
   transition: color 0.3s ease, background-color 0.3s ease;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+@layer base {
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 }
 
 /* Başlıklar satır sonlarında dengeli sarsın (tek kelimelik yetim satır olmasın).
@@ -667,20 +669,34 @@ h4 { letter-spacing: -0.015em; }
   font-synthesis-weight: none;
 }
 
-button, input, textarea, select {
-  font: inherit;
-  -webkit-appearance: none;
-  appearance: none;
-}
+/*
+ * Öğe sıfırlamaları `@layer base` içinde.
+ *
+ * Katmansız yazıldıklarında Tailwind v4'ün katmanlı yardımcılarını
+ * özgüllükten bağımsız olarak eziyorlardı: `font: inherit` her düğme ve
+ * alandaki `text-[12.5px]` / `font-semibold` sınıfını siliyor, düğmeler
+ * gövdenin 16px / 400'üne düşüyordu ("Haftayı Gör", filtre çipleri, oyun
+ * kartlarının "Seansı Başlat"ı çevresindeki metinden iri ve ince duruyordu).
+ * `img { display: block }` de aynı yoldan `hidden` / `inline-block`
+ * yardımcılarını bastırırdı. Katman içinde sıfırlama yalnızca sınıf
+ * yokken geçerli; sınıf varsa sınıf kazanır.
+ */
+@layer base {
+  button, input, textarea, select {
+    font: inherit;
+    -webkit-appearance: none;
+    appearance: none;
+  }
 
-button {
-  cursor: pointer;
-  touch-action: manipulation;
-}
+  button {
+    cursor: pointer;
+    touch-action: manipulation;
+  }
 
-img {
-  max-width: 100%;
-  display: block;
+  img {
+    max-width: 100%;
+    display: block;
+  }
 }
 
 ::selection {

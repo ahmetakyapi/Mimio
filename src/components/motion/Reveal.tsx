@@ -35,6 +35,15 @@ export const EASE_OUT = [0.22, 1, 0.36, 1] as const;
  * baştan kuruyordu. Tercih ancak bileşen yerleştikten sonra devreye girer;
  * hareket azaltma kullanıcısı için içerik o an süresiz (0 sn) açılır.
  */
+/*
+ * Dikkat: bu kanca ilk karede `false` döner (hidrasyon güvenliği), hareket
+ * azaltma tercihi bir sonraki karede gelir. O arada Framer kaydırma
+ * değerlerini öğeye satır içi stil olarak yazmış oluyor; `style` sonra
+ * `undefined` yapılınca Framer o stili SİLMİYOR. Azaltılmış dalda bu yüzden
+ * nötr değerler açıkça verilir (`{ opacity: 1, y: 0 }`) — aksi hâlde
+ * manifesto metni hareket azaltan ziyaretçide %14 opaklıkta takılı
+ * kalıyordu.
+ */
 export function useReducedMotionSafe(): boolean {
   const reduced = useReducedMotion();
   const [mounted, setMounted] = useState(false);
@@ -186,7 +195,7 @@ function ScrubWord({
   return (
     <span className="scrub-word">
       <motion.span
-        style={reduced ? undefined : { opacity, y }}
+        style={reduced ? { opacity: 1, y: 0 } : { opacity, y }}
         className={accent ? "scrub-accent" : undefined}
       >
         {children}
@@ -304,7 +313,7 @@ export function ScrollPerspective({ children, className }: { readonly children: 
   return (
     <div ref={ref} className={className} style={{ perspective: 1600 }}>
       <motion.div
-        style={reduced ? undefined : { rotateX, scale, y, opacity, transformOrigin: "50% 0%" }}
+        style={reduced ? { rotateX: 0, scale: 1, y: 0, opacity: 1 } : { rotateX, scale, y, opacity, transformOrigin: "50% 0%" }}
       >
         {children}
       </motion.div>

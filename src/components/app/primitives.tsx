@@ -49,6 +49,21 @@ export function CardTitle({ children, className = "" }: { readonly children: Rea
 
 /* ── Avatar ────────────────────────────────────────────────────────────── */
 
+/*
+ * Degradeler adlarıyla, tek tek yazılı. `var(--gradient-avatar-${n})`
+ * biçimindeki dinamik ad Tailwind v4'ün tarayıcısına görünmüyor; v4 de
+ * kaynakta geçmeyen `@theme` değişkenlerini çıktıdan atıyor. Sonuç: koyu
+ * temada (değerler `@theme`'den geliyor) 1, 2 ve 4 numaralı degradeler hiç
+ * üretilmiyordu ve danışanların çoğunun avatarı zeminsiz bir harfe
+ * dönüşüyordu. Açık tema etkilenmiyordu, çünkü onun değerleri düz CSS.
+ */
+const AVATAR_GRADIENTS = [
+  "var(--gradient-avatar-1)",
+  "var(--gradient-avatar-2)",
+  "var(--gradient-avatar-3)",
+  "var(--gradient-avatar-4)",
+] as const;
+
 /**
  * Danışan avatarı. Degrade, id'nin hash'inden seçilir; aynı kişi her ekranda
  * aynı rengi taşır. Fotoğraf yok — klinik kayıtta çocuk fotoğrafı tutmak
@@ -73,7 +88,7 @@ export function Avatar({
   const seed = id ?? name;
   let h = 0;
   for (let i = 0; i < seed.length; i += 1) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  const variant = (h % 4) + 1;
+  const gradient = AVATAR_GRADIENTS[h % AVATAR_GRADIENTS.length];
 
   return (
     <span
@@ -83,7 +98,7 @@ export function Avatar({
         width: size,
         height: size,
         borderRadius: radius,
-        background: `var(--gradient-avatar-${variant})`,
+        background: gradient,
         /* Beyaz sabit yazılıydı; yüksek kontrast temasında avatar zemini sarıya
            döndüğü için baş harf 1.07:1'e düşüp kayboluyordu. */
         color: "var(--color-on-brand)",
