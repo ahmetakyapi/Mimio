@@ -3427,3 +3427,7 @@ article:hover .game-thumb::after { opacity: 0.7; }
 @keyframes arena-ghost-wave { 0%, 100% { opacity: 0; } 30% { opacity: 1; } 60% { opacity: 0; } }
 .arena-idle-label { margin: 0; font-size: 0.8125rem; color: rgba(234, 242, 255, 0.55); }
 @media (prefers-reduced-motion: reduce) { .arena-ghost::after { animation: none; } }
+/* Yüksek kontrast: arena saf siyah, vurgu temanın kendi rengi. */
+html[data-theme='high-contrast'] .section-games { --color-primary: inherit; --edge-h: 0px; }
+html[data-theme='high-contrast'] .section-games::before { background: #000; border-block: 2px solid var(--color-line-strong); }
+html[data-theme='high-contrast'] .section-games .accent-line { color: var(--color-primary); }
