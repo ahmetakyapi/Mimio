@@ -165,15 +165,18 @@ export function SettingsScreen({
                   aria-pressed={on}
                   className="flex flex-col items-center gap-2 cursor-pointer transition-colors"
                   style={{
-                    padding: "14px 8px",
+                    padding: "8px 8px 11px",
                     borderRadius: 13,
                     background: on ? "var(--gradient-signature-soft)" : "var(--color-surface-strong)",
                     border: `1px solid ${on ? "var(--color-line-strong)" : "var(--color-line)"}`,
                   }}
                 >
-                  <Icon size={17} strokeWidth={1.9} style={{ color: on ? "var(--color-primary)" : "var(--color-text-soft)" }} />
-                  <span className={`text-[12px] ${on ? "font-semibold text-(--color-primary-ink)" : "font-medium text-(--color-text-body)"}`}>
-                    {label}
+                  <ThemeSwatch kind={key} />
+                  <span className="flex items-center gap-1.5">
+                    <Icon size={14} strokeWidth={1.9} style={{ color: on ? "var(--color-primary)" : "var(--color-text-soft)" }} />
+                    <span className={`text-[12px] ${on ? "font-semibold text-(--color-primary-ink)" : "font-medium text-(--color-text-body)"}`}>
+                      {label}
+                    </span>
                   </span>
                 </button>
               );
@@ -354,4 +357,36 @@ function initials(name: string) {
   if (!p.length) return "T";
   if (p.length === 1) return p[0].slice(0, 2).toLocaleUpperCase("tr-TR");
   return (p[0][0] + p[p.length - 1][0]).toLocaleUpperCase("tr-TR");
+}
+
+
+/**
+ * Tema önizlemesi: uygulamanın küçültülmüş penceresi — kenar çubuğu, başlık
+ * çizgisi, iki kart ve imza rengindeki birincil düğme. Renkler bilerek sabit:
+ * önizleme o an etkin temadan bağımsız olarak *o temanın* nasıl göründüğünü
+ * göstermeli. "Sistem" çapraz ikiye bölünür.
+ */
+function ThemeSwatch({ kind }: { readonly kind: string }) {
+  const pane = (bg: string, side: string, card: string, line: string) => (
+    <>
+      <span className="absolute inset-y-0 left-0 w-[24%]" style={{ background: side }} />
+      <span className="absolute left-[32%] right-[10%] top-[16%] h-[7%] rounded-full" style={{ background: line }} />
+      <span className="absolute left-[32%] w-[27%] top-[34%] bottom-[14%] rounded-[4px]" style={{ background: card }} />
+      <span className="absolute left-[63%] right-[10%] top-[34%] bottom-[44%] rounded-[4px]" style={{ background: card }} />
+      <span className="absolute left-[63%] right-[10%] top-[62%] bottom-[14%] rounded-[4px]" style={{ background: "linear-gradient(135deg,#2b62f5,#17c2e0)" }} />
+      <span className="absolute inset-0 -z-10" style={{ background: bg }} />
+    </>
+  );
+  const light = pane("#eef3fa", "#ffffff", "#ffffff", "rgba(15,32,51,.18)");
+  const dark = pane("#050b16", "#0b1626", "#13223a", "rgba(234,242,255,.22)");
+  return (
+    <span aria-hidden="true" className="relative block w-full aspect-[16/10] rounded-[9px] overflow-hidden isolate" style={{ boxShadow: "inset 0 0 0 1px var(--color-line)" }}>
+      {kind === "dark" ? dark : kind === "light" ? light : (
+        <>
+          <span className="absolute inset-0">{light}</span>
+          <span className="absolute inset-0" style={{ clipPath: "polygon(100% 0, 100% 100%, 0 100%)" }}>{dark}</span>
+        </>
+      )}
+    </span>
+  );
 }

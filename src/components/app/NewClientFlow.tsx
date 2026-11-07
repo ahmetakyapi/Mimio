@@ -23,6 +23,7 @@ import { INDEPENDENCE_STEPS } from "@/lib/deniz-derive";
 import { Avatar, Eyebrow } from "./primitives";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { Portal } from "@/components/ui/Portal";
+import Image from "next/image";
 
 const AREAS = ["Pediatrik", "Nörolojik", "Nöroçeşitlilik & Otizm", "Geriatrik", "İş & Okul"] as const;
 
@@ -135,7 +136,7 @@ export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
          * `vh` yerine `dvh`: iOS'ta adres çubuğu açıkken 90vh ekrandan taşar.
          */}
         <div
-          className="relative flex flex-col w-full max-w-[700px] min-w-0 max-h-[90dvh]"
+          className="relative flex w-full max-w-[700px] lg:max-w-[1040px] min-w-0 max-h-[90dvh] overflow-hidden"
           style={{
             borderRadius: 26,
             background: "var(--color-surface-strong)",
@@ -143,6 +144,7 @@ export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
             boxShadow: "var(--shadow-lg)",
           }}
         >
+          <div className="flex flex-col flex-1 min-w-0 min-h-0">
           {/* Başlık + adım göstergesi */}
           <div className="flex items-start justify-between gap-4 max-lg:gap-2 px-[26px] pt-6 max-lg:px-4 max-lg:pt-4">
             <div className="min-w-0">
@@ -431,8 +433,92 @@ export function NewClientFlow({ clinicName, onClose, onSubmit }: Props) {
               {step === 3 ? "Danışanı Oluştur" : "Devam"}
             </button>
           </div>
+          </div>
+          <ClientPreview d={d} clinicName={clinicName} />
         </div>
       </div>
     </Portal>
+  );
+}
+
+
+/* Hedefin önerdiği oyunların okunur adı — önizlemede tahta görselinin altı. */
+const GAME_NAME: Record<string, string> = {
+  memory: "Sıra Hafızası", pairs: "Kart Eşle", pulse: "Mavi Nabız", route: "Komut Rotası",
+  difference: "Fark Avcısı", scan: "Hedef Tarama", logic: "Dizi Mantık",
+};
+
+/**
+ * Canlı önizleme (dev-starter rules/live-preview.md): terapist yazdıkça
+ * danışanın listede ve profilde nasıl görüneceği yanda kurulur. Boş alan
+ * soluk bir yer tutucuyla durur — kart hiçbir an "eksik" görünmez, yalnızca
+ * henüz yazılmamıştır. Önerilen oyunlar hedefe göre gerçek tahta
+ * görselleriyle gelir: seçim yapılınca sonucun ne olacağı görülür.
+ */
+function ClientPreview({ d, clinicName }: { readonly d: NewClientDraft; readonly clinicName: string }) {
+  const goal = GOALS.find((g) => g.title === d.primaryGoal);
+  const name = d.displayName.trim();
+  return (
+    <aside className="client-preview max-lg:hidden" aria-label="Danışan kartı önizlemesi">
+      <span className="client-preview-label">Canlı önizleme</span>
+      <div className="client-preview-card">
+        <div className="flex items-center gap-3.5">
+          <Avatar name={name || "?"} id={name || "preview"} size={52} radius={16} />
+          <div className="min-w-0">
+            <div className={`font-display text-[19px] font-bold tracking-[-0.025em] truncate ${name ? "text-(--color-text-strong)" : "text-(--color-text-muted)"}`}>
+              {name || "Ad Soyad"}
+            </div>
+            <div className="text-[12px] text-(--color-text-soft) mt-0.5">
+              {d.ageGroup} yaş · {d.area}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-2.5">
+          <div className="client-preview-cell">
+            <span className="client-preview-k">Birincil hedef</span>
+            <span className={`client-preview-v ${goal ? "" : "text-(--color-text-muted)!"}`}>{goal?.title ?? "Seçilmedi"}</span>
+          </div>
+          <div className="client-preview-cell">
+            <span className="client-preview-k">Sıklık</span>
+            <span className="client-preview-v">{d.frequency}</span>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <span className="client-preview-k">Bağımsızlık · {INDEPENDENCE_STEPS[d.independence - 1]}</span>
+          <span className="flex gap-1 mt-2">
+            {INDEPENDENCE_STEPS.map((_, i) => (
+              <span
+                key={i}
+                className="flex-1 h-1.5 rounded-full transition-colors duration-300"
+                style={{ background: i < d.independence ? (i === d.independence - 1 ? "var(--gradient-bar)" : "color-mix(in srgb, var(--color-primary) 55%, transparent)") : "var(--color-line-strong)" }}
+              />
+            ))}
+          </span>
+        </div>
+
+        <div className="mt-5">
+          <span className="client-preview-k">{goal ? `Önerilen oyunlar · ${goal.games.length}` : "Önerilen oyunlar"}</span>
+          {goal ? (
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              {goal.games.map((g) => (
+                <span key={g} className="block">
+                  <span className="client-preview-thumb">
+                    <Image src={`/games/${g}.webp`} alt="" fill sizes="96px" className="object-cover" />
+                  </span>
+                  <span className="block mt-1 text-[12px] font-semibold text-(--color-text-body) truncate">{GAME_NAME[g] ?? g}</span>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="m-0 mt-2 text-[12px] leading-[1.5] text-(--color-text-muted)">
+              Hedef seçildiğinde eşleşen oyunlar burada görünür.
+            </p>
+          )}
+        </div>
+      </div>
+      <p className="m-0 mt-auto pt-4 text-[12px] text-(--color-text-muted)">{clinicName} · kayıt yalnızca bu klinikte görünür</p>
+    </aside>
   );
 }

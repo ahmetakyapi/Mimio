@@ -255,7 +255,17 @@ export function ActivityLibraryScreen({ onAddToPlan }: Props) {
                       {a.evidenceBase && (
                         <>
                           <Chip tone="violet" className="lg:hidden">Kanıt Atfı</Chip>
-                          <Chip tone="violet" className="max-lg:hidden">{a.evidenceBase}</Chip>
+                          {/* Masaüstünde künye bir alıntı gibi okunur: mor dolgulu
+                              levha yerine alan renginde ince sol çizgi. Otuz beş
+                              satırın otuz beşi de renkli kutu taşıyınca liste
+                              tek bir mor duvara dönüşüyordu. */}
+                          <span
+                            className="activity-cite max-lg:hidden"
+                            style={{ ["--cite" as string]: a.domainColor }}
+                          >
+                            <span className="activity-cite-label">Kaynak</span>
+                            {a.evidenceBase}
+                          </span>
                         </>
                       )}
                     </span>
