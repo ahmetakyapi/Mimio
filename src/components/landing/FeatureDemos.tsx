@@ -85,8 +85,8 @@ export function ClientStackDemo({ offset = 0 }: { offset?: number }) {
     <div ref={ref}>
       <Frame className="h-[12rem] p-3 sm:p-4">
         <div className="flex items-center justify-between mb-2.5 px-1">
-          <span className="text-[11px] font-semibold text-(--color-text-soft)">Danışanlar</span>
-          <span className="numeral text-[11px] font-semibold text-(--color-primary-ink) px-2 py-0.5 rounded-full bg-(--color-primary-light)">
+          <span className="text-[12px] font-semibold text-(--color-text-soft)">Danışanlar</span>
+          <span className="numeral text-[12px] font-semibold text-(--color-primary-ink) px-2 py-0.5 rounded-full bg-(--color-primary-light)">
             Aktif · 8
           </span>
         </div>
@@ -112,7 +112,7 @@ export function ClientStackDemo({ offset = 0 }: { offset?: number }) {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[12.5px] font-semibold text-(--color-text-strong) leading-tight truncate">{c.name}</span>
-                  <span className="block text-[11px] text-(--color-text-muted) leading-tight truncate">{c.meta}</span>
+                  <span className="block text-[12px] text-(--color-text-muted) leading-tight truncate">{c.meta}</span>
                 </span>
                 <span className="flex gap-[3px] shrink-0" title={`bağımsızlık ${c.level}/5`}>
                   {Array.from({ length: 5 }, (_, k) => (
@@ -128,7 +128,7 @@ export function ClientStackDemo({ offset = 0 }: { offset?: number }) {
                     initial={{ opacity: 0, x: 6 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.35, duration: 0.4, ease: EASE }}
-                    className="hidden sm:inline text-[10px] font-semibold text-(--color-accent-green) shrink-0"
+                    className="hidden sm:inline text-[12px] font-semibold text-(--color-accent-green) shrink-0"
                   >
                     Yeni seans
                   </motion.span>
@@ -195,7 +195,7 @@ export function CorsiDemo({ offset = 0 }: { offset?: number }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.35, ease: EASE }}
-              className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full"
+              className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 text-[12px] font-semibold px-2.5 py-1 rounded-full"
               style={{ background: "rgba(25,209,155,0.16)", color: "#7ef0c8", border: "1px solid rgba(25,209,155,0.3)" }}
             >
               <Check size={12} strokeWidth={2.5} /> Dizi doğru · span {3 + (round % 3)}
@@ -231,7 +231,7 @@ export function WeekPlanDemo({ offset = 0 }: { offset?: number }) {
         <div className="grid grid-cols-7 gap-1 h-[8.25rem]">
           {DAYS.map((d, di) => (
             <div key={di} className="flex flex-col gap-1 min-w-0">
-              <span className={`text-[10px] font-semibold text-center ${di === 2 ? "text-(--color-primary-ink)" : "text-(--color-text-muted)"}`}>{d}</span>
+              <span className={`text-[12px] font-semibold text-center ${di === 2 ? "text-(--color-primary-ink)" : "text-(--color-text-muted)"}`}>{d}</span>
               <div
                 className="flex-1 rounded-md flex flex-col gap-1 p-[3px] transition-colors duration-500"
                 style={{
@@ -266,8 +266,8 @@ export function WeekPlanDemo({ offset = 0 }: { offset?: number }) {
           ))}
         </div>
         <motion.span
-          className="absolute bottom-3 left-3 right-3 text-[10.5px] text-(--color-text-soft) flex items-center gap-1.5"
-          animate={{ opacity: placed ? 1 : 0.35 }}
+          className="absolute bottom-3 left-3 right-3 text-[12px] text-(--color-text-soft) flex items-center gap-1.5"
+          animate={{ opacity: placed ? 1 : 0.6 }}
           transition={{ duration: 0.4 }}
         >
           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "var(--color-domain-visual)" }} />
@@ -295,8 +295,8 @@ export function ProgressReadDemo({ offset = 0 }: { offset?: number }) {
     <div ref={ref}>
       <Frame className="h-[12rem] px-3 pt-3 sm:px-4 sm:pt-4">
         <div className="flex items-baseline justify-between mb-1">
-          <span className="text-[11px] font-semibold text-(--color-text-soft)">Normalize skor · 12 seans</span>
-          <span className="numeral text-[11px] font-semibold text-(--color-accent-green)">↗ +39</span>
+          <span className="text-[12px] font-semibold text-(--color-text-soft)">Normalize skor · 12 seans</span>
+          <span className="numeral text-[12px] font-semibold text-(--color-accent-green)">↗ +39</span>
         </div>
         <div className="relative" style={{ height: H }}>
           <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full h-full overflow-visible">
@@ -356,7 +356,7 @@ export function ProgressReadDemo({ offset = 0 }: { offset?: number }) {
             transition={{ duration: 0.8, ease: EASE }}
           />
           <motion.span
-            className="absolute -translate-x-1/2 numeral text-[11px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap"
+            className="absolute -translate-x-1/2 numeral text-[12px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap"
             style={{ top: -2, background: "var(--color-text-strong)", color: "var(--color-text-inverse)" }}
             animate={{ left: `${Math.min(88, Math.max(12, (px / W) * 100))}%`, y: Math.max(0, py - 34) }}
             transition={{ duration: 0.8, ease: EASE }}
@@ -394,8 +394,8 @@ export function NoteTypingDemo({ offset = 0 }: { offset?: number }) {
     <div ref={ref}>
       <Frame className="h-[12rem] p-3 sm:p-4 flex flex-col">
         <div className="flex items-center gap-2 mb-2.5">
-          <span className="numeral text-[10.5px] font-semibold px-1.5 py-0.5 rounded bg-(--color-primary-light) text-(--color-primary-ink)">S</span>
-          <span className="text-[11px] font-semibold text-(--color-text-soft)">Gözlem · bugün 10:42</span>
+          <span className="numeral text-[12px] font-semibold px-1.5 py-0.5 rounded bg-(--color-primary-light) text-(--color-primary-ink)">S</span>
+          <span className="text-[12px] font-semibold text-(--color-text-soft)">Gözlem · bugün 10:42</span>
         </div>
         <p className="text-[12.5px] leading-relaxed text-(--color-text-body) m-0 min-h-[3.6em]">
           {shown}
@@ -405,7 +405,7 @@ export function NoteTypingDemo({ offset = 0 }: { offset?: number }) {
           {["Dikkat", "İnce motor", "Bağımsız"].map((tag, i) => (
             <motion.span
               key={tag}
-              className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full text-(--color-text-soft)"
+              className="text-[12px] font-semibold px-2 py-0.5 rounded-full text-(--color-text-soft)"
               style={{ border: "1px solid var(--color-line)" }}
               animate={{ opacity: active && t < note.length ? 0.45 : 1 }}
               transition={{ duration: 0.3, delay: i * 0.06 }}
@@ -431,7 +431,7 @@ export function PrivacyMaskDemo({ offset = 0 }: { offset?: number }) {
     <div ref={ref}>
       <Frame className="h-[12rem] p-3 sm:p-4 flex flex-col justify-center gap-3">
         <div className="rounded-xl p-3" style={{ background: "var(--color-surface-strong)", border: "1px solid var(--color-line)" }}>
-          <span className="block text-[10.5px] text-(--color-text-muted) mb-1">Aile raporu · danışan</span>
+          <span className="block text-[12px] text-(--color-text-muted) mb-1">Aile raporu · danışan</span>
           <span className="flex items-center justify-between gap-2">
             <span className="numeral text-[15px] font-semibold text-(--color-text-strong) tracking-wide flex">
               {FULL.split("").map((ch, i) => (
@@ -465,7 +465,7 @@ export function PrivacyMaskDemo({ offset = 0 }: { offset?: number }) {
             </motion.span>
           </span>
         </div>
-        <span className="text-[11px] text-(--color-text-soft) flex items-center gap-1.5 px-1">
+        <span className="text-[12px] text-(--color-text-soft) flex items-center gap-1.5 px-1">
           <span className="w-1.5 h-1.5 rounded-full" style={{ background: masked ? "var(--color-accent-green)" : "var(--color-text-muted)" }} />
           {masked ? "İsim maskeleme açık" : "Yalnızca terapist görür"}
         </span>

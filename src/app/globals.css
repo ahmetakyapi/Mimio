@@ -3190,6 +3190,9 @@ html[data-theme='light'] .section-games {
   z-index: -1;
   pointer-events: none;
   background:
+    /* Blok kenarının tam satırıyla birleşen üst ve alt şerit saf mürekkep:
+       halenin ilk pikseli kenarla aynı tonda başlar, dikiş görünmez. */
+    linear-gradient(180deg, var(--ink-deep), transparent 9rem, transparent calc(100% - 9rem), var(--ink-deep)),
     radial-gradient(ellipse 70% 50% at 50% 12%, rgba(77, 125, 255, 0.16), transparent 70%),
     radial-gradient(ellipse 50% 40% at 85% 90%, rgba(42, 214, 239, 0.08), transparent 70%),
     var(--ink-deep);
