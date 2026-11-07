@@ -1271,18 +1271,6 @@ html[data-modal-open] .app-scroll {
   .live-pulse { animation: none; }
 }
 
-/* ── Games showcase section backgrounds (theme-aware) ── */
-.section-games {
-  background:
-    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(77, 125, 255, 0.14), transparent),
-    var(--color-games-section);
-}
-
-html[data-theme='light'] .section-games {
-  background:
-    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(43, 98, 245, 0.08), transparent),
-    var(--color-games-section);
-}
 
 /* ── Game tile preview image background (LandingPage mockup) ── */
 .game-tile-preview {
@@ -3135,3 +3123,311 @@ html[data-theme='high-contrast'] .cta-accent { color: var(--color-primary); }
   60%, 100% { transform: translateY(100%); }
 }
 @media (prefers-reduced-motion: reduce) { .scroll-cue::after { animation: none; transform: none; } }
+
+/* ══════════════════════════════════════════════════════════════
+   Özellik kartı görselleri (landing/FeatureDemos.tsx)
+   Kartın içinde bir "kuyu": kart yüzeyinden bir basamak içeride,
+   kılcal çizgili. Oyun görseli (Corsi) her temada koyu — arena dili.
+   ══════════════════════════════════════════════════════════════ */
+.feature-demo {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-primary) 4%, transparent), transparent 70%),
+    var(--color-page-bg);
+  border: 1px solid var(--color-line-soft);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--color-text-strong) 5%, transparent);
+}
+.feature-demo-ink {
+  background:
+    radial-gradient(70% 80% at 50% 40%, rgba(77, 125, 255, 0.22), transparent 70%),
+    var(--ink-deep);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+html[data-theme='high-contrast'] .feature-demo { background: var(--color-page-bg); border-color: var(--color-line-strong); }
+.note-caret {
+  display: inline-block;
+  width: 1.5px;
+  height: 1.05em;
+  margin-left: 1px;
+  vertical-align: -0.15em;
+  background: var(--color-primary);
+  animation: note-caret 1s steps(1) infinite;
+}
+@keyframes note-caret { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .note-caret { animation: none; } }
+
+/* ══════════════════════════════════════════════════════════════
+   Oyun arenası — her temada koyu (BlockEdge.tsx)
+   Arena uygulamada da temadan bağımsız koyu; tanıtımda okur ona
+   girdiğinde zemin de koyulaşır. Değişkenler bölümün kendisinde
+   yeniden tanımlanır: html'deki tema değerleri kalıtımla gelmez.
+   ══════════════════════════════════════════════════════════════ */
+.section-games,
+html[data-theme='light'] .section-games {
+  --color-games-section: var(--ink-deep);
+  --color-games-text: #ffffff;
+  --color-games-text-soft: #8ea3bc;
+  --color-games-card-bg: rgba(255, 255, 255, 0.045);
+  --color-games-card-border: rgba(255, 255, 255, 0.09);
+  --color-games-card-hover: rgba(255, 255, 255, 0.085);
+  --color-games-tile-from: rgba(14, 26, 43, 0.9);
+  --color-games-tile-to: rgba(5, 11, 22, 0.95);
+  --color-games-badge-bg: rgba(255, 255, 255, 0.10);
+  --color-games-badge-border: rgba(255, 255, 255, 0.20);
+  --color-primary: #6b93ff;
+  --color-primary-ink: #a8c2ff;
+  --edge-cols: 32;
+  --edge-h: calc(100vw / var(--edge-cols) * 3);
+  color-scheme: dark;
+  isolation: isolate;
+  background: transparent;
+}
+/* Koyu zemin, blok kenarlarının yüksekliği kadar içeriden başlar: kenar
+   bölümün kendi payında durur, komşu bölümün metnine taşmaz. */
+.section-games::before {
+  content: "";
+  position: absolute;
+  inset: var(--edge-h) 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    /* Blok kenarının tam satırıyla birleşen üst ve alt şerit saf mürekkep:
+       halenin ilk pikseli kenarla aynı tonda başlar, dikiş görünmez. */
+    linear-gradient(180deg, var(--ink-deep), transparent 9rem, transparent calc(100% - 9rem), var(--ink-deep)),
+    radial-gradient(ellipse 70% 50% at 50% 12%, rgba(77, 125, 255, 0.16), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 85% 90%, rgba(42, 214, 239, 0.08), transparent 70%),
+    var(--ink-deep);
+}
+.section-games.section { padding-block: calc(var(--space-section) + var(--edge-h) * 0.6); }
+/* Blok boyu ekranla büyümez: sütun sayısı artar (≈40–48 px blok). */
+@media (max-width: 767px) { .section-games, html[data-theme='light'] .section-games { --edge-cols: 12; } }
+@media (min-width: 768px) and (max-width: 1279px) { .section-games, html[data-theme='light'] .section-games { --edge-cols: 24; } }
+@media (min-width: 1680px) { .section-games, html[data-theme='light'] .section-games { --edge-cols: 40; } }
+@media (min-width: 2100px) { .section-games, html[data-theme='light'] .section-games { --edge-cols: 48; } }
+.section-games .accent-line { color: #8fb0ff; }
+
+.block-edge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  pointer-events: none;
+  z-index: -1;
+  view-timeline-name: --edge;
+}
+.block-edge-top { top: 0; }
+.block-edge-bottom { bottom: 0; }
+.block-edge-cell {
+  /* Yarım piksel taşma: bitişik bloklar arasında kıl çizgisi kalmasın. */
+  margin: -0.5px;
+  aspect-ratio: 1;
+  background: var(--ink-deep);
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .block-edge-cell {
+      animation: block-in linear both;
+      animation-timeline: --edge;
+    }
+    .block-edge-top .block-edge-cell {
+      animation-range: entry calc(var(--o) * 70%) entry calc(var(--o) * 70% + 30%);
+    }
+    .block-edge-bottom .block-edge-cell {
+      animation-name: block-drip;
+      animation-range: entry calc(var(--o) * 60%) entry calc(var(--o) * 60% + 40%);
+    }
+  }
+}
+/* Opaklık ilk çeyrekte tamamlanır: yarı saydam koyu blok açık zeminde
+   gri bir hayalet gibi okunuyordu. Geri kalan yol yalnızca büyüme. */
+@keyframes block-in {
+  0% { opacity: 0; transform: translateY(40%) scale(0.45); }
+  25% { opacity: 1; }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes block-drip {
+  0% { opacity: 0; transform: translateY(-40%) scale(0.45); }
+  25% { opacity: 1; }
+  100% { opacity: 1; transform: none; }
+}
+.games-pinned { padding-block: var(--edge-h); }
+@media (max-width: 2099px) { .block-edge-cell[data-tier='e'] { display: none; } }
+@media (max-width: 1679px) { .block-edge-cell[data-tier='d'] { display: none; } }
+@media (max-width: 1279px) { .block-edge-cell[data-tier='c'] { display: none; } }
+@media (max-width: 767px) { .block-edge-cell[data-tier='b'] { display: none; } }
+html[data-theme='high-contrast'] .block-edge { display: none; }
+
+/* ── Kapanış paneli: Corsi blok zemini (CtaBlocks.tsx) ── */
+.cta-blocks {
+  --fx: 50%;
+  --fy: 50%;
+  position: absolute;
+  inset: clamp(1rem, 3vw, 2.5rem);
+  z-index: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  gap: clamp(6px, 0.9vw, 14px);
+  align-content: center;
+}
+.cta-block {
+  aspect-ratio: 1;
+  border-radius: clamp(6px, 0.8vw, 12px);
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.045);
+  transition: background-color 0.5s var(--ease-out), border-color 0.5s var(--ease-out), transform 0.5s var(--ease-out), box-shadow 0.5s var(--ease-out);
+}
+.cta-block[data-trail] {
+  background: rgba(77, 125, 255, 0.12);
+  border-color: rgba(107, 147, 255, 0.28);
+}
+.cta-block[data-lit] {
+  background: rgba(42, 214, 239, 0.55);
+  border-color: rgba(143, 233, 247, 0.8);
+  box-shadow: 0 0 40px rgba(42, 214, 239, 0.45);
+  transform: scale(1.04);
+  transition-duration: 0.16s;
+}
+/* İmleç feneri: kenar çizgileri imlecin çevresinde belirginleşir. */
+@media (hover: hover) and (pointer: fine) {
+  .cta-blocks::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(260px circle at var(--fx) var(--fy), rgba(143, 176, 255, 0.10), transparent 70%);
+  }
+}
+@media (max-width: 767px) {
+  .cta-blocks { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .cta-block:nth-child(n + 43) { display: none; }
+}
+html[data-theme='high-contrast'] .cta-blocks { display: none; }
+@media (max-width: 767px) {
+  /* Dar ekranda dizi düğmelerin arkasına da düşebiliyor: ışık kısılır. */
+  .cta-block[data-lit] { background: rgba(42, 214, 239, 0.28); box-shadow: none; }
+}
+
+/* ── "Üç Adımda Başlayın" yatay hattı (lg) ── */
+.steps-rail-x {
+  background: var(--color-line);
+  overflow: hidden;
+}
+.steps-rail-x::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--gradient-bar);
+  transform-origin: left;
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .steps-rail-x::after {
+      animation: rail-draw linear both;
+      animation-timeline: view();
+      animation-range: entry 60% cover 55%;
+    }
+  }
+}
+@keyframes rail-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* ── Oyun kitaplığı kart önizlemesi ── */
+.game-thumb {
+  background: var(--ink-deep);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.game-thumb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg, transparent 45%, color-mix(in srgb, var(--thumb-accent) 32%, transparent) 100%),
+    linear-gradient(180deg, rgba(5, 11, 22, 0.15), rgba(5, 11, 22, 0.35));
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--thumb-accent) 60%, transparent);
+  transition: opacity 0.4s var(--ease-out);
+}
+article:hover .game-thumb::after { opacity: 0.7; }
+
+/* ── Corsi tahtası (brand/CorsiBoard.tsx) ── */
+.corsi-board { display: flex; align-items: flex-end; gap: 22px; }
+.corsi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 58px);
+  gap: 10px;
+  padding: 14px;
+  border-radius: 22px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-card);
+}
+.corsi-cell {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 13px;
+  background: var(--color-primary-light);
+  border: 1px solid var(--color-line-soft);
+  transition: background 0.45s var(--ease-out), transform 0.45s var(--ease-out), box-shadow 0.45s var(--ease-out);
+}
+.corsi-cell[data-trail] {
+  background: color-mix(in srgb, var(--color-primary) 22%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+.corsi-cell[data-lit] {
+  background: var(--gradient-signature);
+  transform: scale(1.06);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--color-signature-from) 40%, transparent);
+  transition-duration: 0.14s;
+}
+.corsi-order {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary-ink);
+  animation: corsi-order-in 0.4s var(--ease-out) both;
+}
+@keyframes corsi-order-in { from { opacity: 0; transform: translateY(4px); } }
+.corsi-read { display: flex; flex-direction: column; gap: 10px; padding-bottom: 6px; }
+.corsi-read-value { display: block; font-size: 44px; line-height: 0.9; letter-spacing: -0.04em; color: var(--color-text-strong); }
+.corsi-read-label { display: block; font-size: 12px; color: var(--color-text-soft); margin-top: 4px; }
+.corsi-ok {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-accent-green);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.35s var(--ease-out), transform 0.35s var(--ease-out);
+}
+.corsi-ok.is-on { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .corsi-order { animation: none; } }
+
+/* ── Arena: tur öncesi kapalı tahta (GameArena.tsx → ArenaIdle) ── */
+.arena-idle { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.9rem; }
+.arena-idle-grid { --reserve: 2.5rem; }
+.arena-ghost {
+  position: relative;
+  overflow: hidden;
+  border-radius: clamp(10px, 1.4vh, 16px);
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.02)),
+    rgba(14, 26, 43, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+.arena-ghost::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(60% 60% at 50% 40%, rgba(107, 147, 255, 0.22), transparent 70%);
+  opacity: 0;
+  animation: arena-ghost-wave 3.2s var(--ease-out) var(--d, 0s) infinite;
+}
+@keyframes arena-ghost-wave { 0%, 100% { opacity: 0; } 30% { opacity: 1; } 60% { opacity: 0; } }
+.arena-idle-label { margin: 0; font-size: 0.8125rem; color: rgba(234, 242, 255, 0.55); }
+@media (prefers-reduced-motion: reduce) { .arena-ghost::after { animation: none; } }
+/* Yüksek kontrast: arena saf siyah, vurgu temanın kendi rengi. */
+html[data-theme='high-contrast'] .section-games { --color-primary: inherit; --edge-h: 0px; }
+html[data-theme='high-contrast'] .section-games::before { background: #000; border-block: 2px solid var(--color-line-strong); }
+html[data-theme='high-contrast'] .section-games .accent-line { color: var(--color-primary); }

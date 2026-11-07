@@ -12,6 +12,7 @@
  * meselesi — veri nerede duruyor sorusunun ilk yanıtı.
  */
 
+import { CorsiBoard } from "../brand/CorsiBoard";
 import { useState, type FormEvent } from "react";
 import { Eye, EyeOff, Check } from "lucide-react";
 import { BlockMark } from "@/components/brand/BlockMark";
@@ -82,8 +83,11 @@ export function AuthScreen({
           </span>
         </button>
 
+        {/* Markanın nesnesi işini yapıyor: tahta bir Corsi dizisi oynatır. */}
+        <CorsiBoard className="mt-auto" />
+
         {/* Tanıtım manşeti destekleyici içerik; sayfanın h1'i formda. */}
-        <h2 className="m-0 mt-auto mb-4 text-[clamp(1.75rem,2.9vw,2.25rem)] leading-[1.08] text-(--color-text-strong)">
+        <h2 className="m-0 mt-12 mb-4 text-[clamp(1.75rem,2.9vw,2.25rem)] leading-[1.08] text-(--color-text-strong)">
           Terapi Seanslarını<br />
           <span style={{ color: "var(--color-primary)" }}>Oyuna Dönüştür</span>
         </h2>

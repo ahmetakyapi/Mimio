@@ -34,7 +34,9 @@ import {
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { HeroPulse } from "./landing/HeroPulse";
+import { CtaBlocks } from "./landing/CtaBlocks";
 import { WeekRhythmPanel } from "./landing/WeekRhythmPanel";
+import { ClientStackDemo, CorsiDemo, NoteTypingDemo, PrivacyMaskDemo, ProgressReadDemo, WeekPlanDemo } from "./landing/FeatureDemos";
 import { BlockMark, BrandLockup } from "./brand/BlockMark";
 import { HERO_STATS, PLATFORM_STATS } from "@/lib/platform-stats";
 import {
@@ -87,6 +89,7 @@ const FEATURES = [
     body: "Tüm hastalarınızın bilgilerini, seans geçmişlerini ve kişisel notlarınızı güvenle saklayın.",
     color: "var(--color-primary)",
     size: "large" as const,
+    demo: ClientStackDemo,
   },
   {
     icon: Gamepad2,
@@ -94,6 +97,7 @@ const FEATURES = [
     body: `${PLATFORM_STATS.gameCount} bilişsel ve motor beceri oyunuyla çocukların seanslara katılımını artırın.`,
     color: "var(--color-primary-ink)",
     size: "small" as const,
+    demo: CorsiDemo,
   },
   {
     icon: CalendarDays,
@@ -101,6 +105,7 @@ const FEATURES = [
     body: "Her danışan için kişiselleştirilmiş terapi programları oluşturun.",
     color: "var(--color-accent-violet)",
     size: "small" as const,
+    demo: WeekPlanDemo,
   },
   {
     icon: TrendingUp,
@@ -108,6 +113,7 @@ const FEATURES = [
     body: "Oyun skorları ve seans verileriyle danışan gelişimini grafikler üzerinden takip edin.",
     color: "var(--color-accent-amber)",
     size: "large" as const,
+    demo: ProgressReadDemo,
   },
   {
     icon: FileText,
@@ -115,6 +121,7 @@ const FEATURES = [
     body: "Her seansın detaylı gözlemlerini kolayca kaydedin ve geçmişe dönük inceleyin.",
     color: "var(--color-accent-green)",
     size: "small" as const,
+    demo: NoteTypingDemo,
   },
   {
     icon: ShieldCheck,
@@ -122,6 +129,7 @@ const FEATURES = [
     body: "Klinik standartlara uygun veri güvenliği ile danışan bilgileriniz koruma altında.",
     color: "var(--color-accent-red)",
     size: "small" as const,
+    demo: PrivacyMaskDemo,
   },
 ];
 
@@ -910,9 +918,10 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             }}
             className="spotlight-grid grid sm:grid-cols-2 md:grid-cols-4 gap-4"
           >
-            {FEATURES.map((f) => {
+            {FEATURES.map((f, fi) => {
               const Icon = f.icon;
               const isLarge = f.size === "large";
+              const Demo = f.demo;
               return (
                 <motion.div
                   key={f.title}
@@ -921,50 +930,35 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                     isLarge ? "sm:col-span-2 md:col-span-2" : "md:col-span-1"
                   }
                 >
-                  <TiltCard max={7}>
+                  <TiltCard max={5} className="h-full">
                     {/*
-                      Geniş hücreler kalıcı bir ton taşır. Altı hücrenin altısı
-                      da cam + metinken ızgara tek bir gri blok gibi okunuyor,
-                      "large/small" ayrımı yalnızca genişlikten anlaşılıyordu.
-                      Ton hücrenin kendi alan renginden türer, yani dekorasyon
-                      değil; hangi hücrenin ızgaranın çapası olduğunu söyler.
-                      Dar hücrelerde ton yok — hepsine verilince ayrım kaybolur.
+                      Kart üstte işini oynayan bir görsel, altta başlık ve tek
+                      cümle taşır (bkz. FeatureDemos). İkon artık başlığın
+                      yanında küçük bir işaret: kartı tanıtan şey görsel.
+                      Geniş hücrelerin kalıcı tonu korunur — ızgaranın çapası.
                     */}
                     <div
-                      className="spotlight-card glass rounded-2xl sm:rounded-3xl p-[1.125rem] sm:p-7 relative overflow-hidden group cursor-default transition-all duration-300 h-full"
+                      className="spotlight-card glass rounded-2xl sm:rounded-3xl p-2.5 sm:p-3 relative overflow-hidden group cursor-default transition-[border-color,box-shadow] duration-300 h-full flex flex-col"
                       style={
                         isLarge
                           ? {
-                              backgroundImage: `radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, ${f.color} 11%, transparent), transparent 62%)`,
+                              backgroundImage: `radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, ${f.color} 9%, transparent), transparent 62%)`,
                             }
                           : undefined
                       }
                     >
-                      <div
-                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10"
-                        style={{
-                          background: `radial-gradient(circle at 0% 0%, color-mix(in srgb, ${f.color} 8%, transparent), transparent 50%)`,
-                        }}
-                      />
-                      <div
-                        className="tilt-layer-1 w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center mb-3 sm:mb-5 transition-transform duration-300"
-                        style={{
-                          background: `color-mix(in srgb, ${f.color} 9%, transparent)`,
-                          border: `1px solid color-mix(in srgb, ${f.color} 15%, transparent)`,
-                        }}
-                      >
-                        <Icon size={22} style={{ color: f.color }} />
+                      <div className="tilt-layer-1">
+                        <Demo offset={fi * 420} />
                       </div>
-                      <h3 className="tilt-layer-2 font-bold text-(--color-text-strong) mb-1.5 sm:mb-2 text-[1.0625rem] sm:text-lg">
-                        {f.title}
-                      </h3>
-                      <p className="text-[0.8125rem] sm:text-sm text-(--color-text-soft) leading-relaxed">
-                        {f.body}
-                      </p>
-                      <div
-                        className="absolute -top-12 -right-12 w-32 h-32 rounded-full opacity-0 group-hover:opacity-30 transition-opacity duration-500"
-                        style={{ background: f.color, filter: "blur(40px)" }}
-                      />
+                      <div className="px-2 pt-4 pb-2 sm:px-3 sm:pt-5 sm:pb-3 flex-1 flex flex-col">
+                        <h3 className="tilt-layer-2 font-bold text-(--color-text-strong) mb-1.5 text-[1.0625rem] sm:text-lg flex items-center gap-2 m-0">
+                          <Icon size={17} aria-hidden="true" style={{ color: f.color }} strokeWidth={2.25} />
+                          {f.title}
+                        </h3>
+                        <p className="text-[0.8125rem] sm:text-sm text-(--color-text-soft) leading-relaxed m-0">
+                          {f.body}
+                        </p>
+                      </div>
                     </div>
                   </TiltCard>
                 </motion.div>
@@ -1107,19 +1101,22 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             whileInView="visible"
             viewport={REVEAL_VIEWPORT}
             variants={stagger}
-            className="relative mx-auto max-w-2xl list-none p-0 m-0 flex flex-col gap-7 sm:gap-9"
+            className="relative mx-auto max-w-2xl lg:max-w-none list-none p-0 m-0 flex flex-col gap-7 sm:gap-9 lg:grid lg:grid-cols-3 lg:gap-12"
           >
-            <ScrollRail className="absolute left-[1.375rem] top-6 bottom-6 w-px overflow-hidden" />
+            <ScrollRail className="absolute left-[1.375rem] top-6 bottom-6 w-px overflow-hidden lg:hidden" />
+            {/* Geniş ekranda adımlar yan yana; aradaki hat kaydırmayla
+                soldan sağa çizilir ve son adımın ikonunda biter. */}
+            <span aria-hidden="true" className="steps-rail-x hidden lg:block absolute top-[1.375rem] left-[1.375rem] right-[calc((100%-6rem)/3-1.375rem)] h-px" />
             {STEPS.map((step) => {
               const StepIcon = step.icon;
               return (
                 <motion.li
                   key={step.num}
                   variants={fadeUp}
-                  className="relative flex items-start gap-4 sm:gap-5"
+                  className="relative flex items-start gap-4 sm:gap-5 lg:flex-col lg:gap-6"
                 >
                   <div
-                    className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center"
+                    className="relative z-[1] w-11 h-11 shrink-0 rounded-xl flex items-center justify-center"
                     style={{
                       background: "var(--color-surface-strong)",
                       border: `1px solid color-mix(in srgb, ${step.color} 24%, transparent)`,
@@ -1127,11 +1124,14 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                   >
                     <StepIcon size={20} style={{ color: step.color }} aria-hidden="true" />
                   </div>
-                  <div className="min-w-0 pt-1.5">
-                    <h3 className="font-bold text-(--color-text-strong) text-base m-0 mb-1">
+                  <div className="min-w-0 pt-1.5 lg:pt-0">
+                    <span aria-hidden="true" className="hidden lg:block numeral text-[3.25rem] leading-none tracking-[-0.04em] text-(--color-line-strong) mb-4">
+                      {step.num}
+                    </span>
+                    <h3 className="font-bold text-(--color-text-strong) text-base lg:text-xl m-0 mb-1 lg:mb-2">
                       {step.title}
                     </h3>
-                    <p className="text-[0.8125rem] sm:text-sm text-(--color-text-soft) leading-relaxed m-0">
+                    <p className="text-[0.8125rem] sm:text-sm lg:text-[0.9375rem] text-(--color-text-soft) leading-relaxed m-0">
                       {step.body}
                     </p>
                   </div>
@@ -1393,6 +1393,7 @@ function ClosingCTA({ onLogin, onRegister }: Props) {
         className="cta-panel py-[clamp(5rem,14vw,11rem)]"
         style={reduced ? { clipPath: "none" } : { clipPath }}
       >
+        <CtaBlocks />
         <div className="relative z-[1] max-w-5xl mx-auto text-center px-(--gutter) flex flex-col items-center gap-6 sm:gap-9">
           <h2 className="text-[clamp(2.25rem,9vw,6.5rem)] leading-[0.98] tracking-[-0.05em] m-0" style={{ color: "#ffffff" }}>
             <MaskLines

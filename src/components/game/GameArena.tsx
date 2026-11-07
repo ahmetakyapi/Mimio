@@ -139,3 +139,24 @@ export function GameArena({
     </section>
   );
 }
+
+/**
+ * Tur başlamadan önceki tahta: kapalı kartların silueti.
+ *
+ * Önceden boş koyu alanın ortasında tek satır metin duruyordu ("Deste henüz
+ * açılmadı") — danışan ne bekleyeceğini görmüyordu. Artık tahtanın kendisi
+ * kapalı hâlde görünür; üzerinden yavaş bir ışık dalgası geçer, Başlat'a
+ * basılınca aynı ızgara gerçek kartlarla dolar.
+ */
+export function ArenaIdle({ cols, rows, label }: { readonly cols: number; readonly rows: number; readonly label: string }) {
+  return (
+    <div className="arena-idle">
+      <div className="arena-grid arena-idle-grid" aria-hidden="true" style={{ ["--cols" as string]: cols, ["--rows" as string]: rows }}>
+        {Array.from({ length: cols * rows }, (_, i) => (
+          <span key={i} className="arena-ghost" style={{ ["--d" as string]: `${((i % cols) + Math.floor(i / cols)) * 0.12}s` }} />
+        ))}
+      </div>
+      <p className="arena-idle-label">{label}</p>
+    </div>
+  );
+}
