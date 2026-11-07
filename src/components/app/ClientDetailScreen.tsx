@@ -33,6 +33,7 @@ import {
 } from "@/lib/deniz-derive";
 import { normalizeScore, GAME_SCORE_SCALE } from "@/lib/game-constants";
 import { SessionTrendChart } from "@/components/shared/SessionTrendChart";
+import { GrowthCurve } from "@/components/shared/GrowthCurve";
 import { Avatar, Card, CardTitle, Eyebrow, ScoreRing, ScreenHeader, SegmentedControl, Tag, btnGhost } from "./primitives";
 
 const TARGET_SCORE = 85;
@@ -238,13 +239,23 @@ export function ClientDetailScreen({
                   >
                     {step}
                   </span>
-                  <span
-                    className="flex-1 rounded-full"
-                    style={{
-                      height: 6,
-                      background: current ? "var(--gradient-bar)" : reached ? "var(--color-primary)" : "var(--color-line-strong)",
-                    }}
-                  />
+                  {/* Basamak: her kademe bir öncekinden uzun — ölçek bir
+                      merdiven gibi okunur, danışanın durduğu basamak parlar. */}
+                  <span className="flex-1 flex items-center" style={{ height: 8 }}>
+                    <span
+                      className="rounded-full"
+                      style={{
+                        height: current ? 8 : 6,
+                        width: `${20 + step * 16}%`,
+                        background: current
+                          ? "var(--gradient-bar)"
+                          : reached
+                            ? "color-mix(in srgb, var(--color-primary) 55%, transparent)"
+                            : "var(--color-line-strong)",
+                        boxShadow: current ? "0 0 0 3px color-mix(in srgb, var(--color-primary) 14%, transparent)" : undefined,
+                      }}
+                    />
+                  </span>
                   <span
                     className="text-[12px] shrink-0"
                     style={{
@@ -317,7 +328,7 @@ export function ClientDetailScreen({
                     />
                   </div>
                 </div>
-                <GrowthCurve sessions={curve} />
+                <GrowthCurve sessions={curve} target={TARGET_SCORE} />
               </Card>
 
               <SessionHistory sessions={m.sessions.slice().reverse().slice(0, 6)} total={m.sessionCount} onAll={() => setTab("sessions")} />
@@ -470,7 +481,7 @@ export function ClientDetailScreen({
             veri kartlarından ayırsın.
           */}
           <div
-            className="rounded-[18px] relative overflow-hidden flex-1 p-[18px_20px] max-lg:p-[16px_14px]"
+            className="rounded-[18px] relative overflow-hidden p-[18px_20px] max-lg:p-[16px_14px]"
             style={{ background: "#0a1524" }}
           >
             <div
@@ -541,156 +552,6 @@ function Row({ label, value, last = false }: { readonly label: string; readonly 
       <span className="text-[12px] font-semibold text-(--color-text-strong) truncate text-right max-lg:text-left max-lg:whitespace-normal max-lg:overflow-visible max-lg:max-w-full">
         {value}
       </span>
-    </div>
-  );
-}
-
-/** Grafik kabının gerçek piksel genişliği. 0 = henüz ölçülmedi. */
-function useBoxWidth() {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [width, setWidth] = useState(0);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return undefined;
-    const ro = new ResizeObserver((entries) => {
-      const rect = entries[0]?.contentRect;
-      if (rect) setWidth(Math.round(rect.width));
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  return [ref, width] as const;
-}
-
-/* Grafiğin geometrisi birim cinsinden yazılıyor; birimin kaç piksele
-   denk düştüğü viewBox'a bağlı. Dar kapta birim = piksel olduğu için
-   punto da doğrudan piksel: 11 birim ekranda 11px. */
-const CURVE_H = 158;
-const CURVE_W_DESKTOP = 560;
-/* Bu genişliğin altındaki kap "dar" sayılır ve birim piksele eşitlenir.
-   Eşik doğrudan masaüstü viewBox'ı: 420 olduğunda 420-560 birim arasındaki
-   kaplar sabit 560 birimlik çizimi *küçülterek* basıyordu (ölçek 0.75-0.99),
-   8.5 birimlik eksen etiketi 480px'lik bir katlanabilir telefonda 7px'e
-   iniyordu. Eşik 560'a çekilince küçülme bandı tamamen kalkar: kap ya
-   birebir ölçekte (dar) ya da büyütülerek (geniş) çizilir. */
-const CURVE_NARROW_MAX = CURVE_W_DESKTOP;
-
-/**
- * Gelişim Eğrisi. Hedef çizgisi kesikli — ölçülen değer değil, hedeflenen.
- * Bu ayrım olmadan grafik "ulaşıldı mı?" sorusunu cevaplamıyor.
- *
- * viewBox artık kabın darlığına göre seçiliyor. Sabit 560 birimlik viewBox
- * %100 genişlikte çizilirken telefonda kap ~250px'e düşüyor, ölçek 0.45'e
- * iniyordu: 8.5 birimlik eksen etiketleri ekranda 4px basıyor, S1…S10 ile
- * "hedef 85" okunmuyordu. Kap 560'ın altındaysa viewBox ölçülen piksel
- * genişliğine eşitlenir (ölçek tam 1) ve punto 11px'e çıkar. Kap geniş
- * olduğunda eski çizim birebir korunur.
- */
-function GrowthCurve({ sessions }: { readonly sessions: readonly RecentSessionEntry[] }) {
-  const [boxRef, boxW] = useBoxWidth();
-
-  /* Ölçüm gelmeden çizmiyoruz: ilk kare 560 birimle basılıp sonra küçülünce
-     grafik gözle görülür biçimde zıplıyor. */
-  const measured = boxW > 0;
-  const narrow = measured && boxW < CURVE_NARROW_MAX;
-  const W = narrow ? boxW : CURVE_W_DESKTOP;
-  const H = CURVE_H;
-  const pad = { l: narrow ? 30 : 26, r: 12, t: 12, b: narrow ? 26 : 22 };
-  /* Geniş kapta viewBox büyütülerek basılıyor, yani birim > piksel; yine de
-     taban 10 birimin altına inmiyor ki eşik hemen üstündeki (560-620px)
-     kaplarda etiket 10px'in altına düşmesin. */
-  const axisFs = narrow ? 11 : 10;
-  const targetFs = narrow ? 11 : 10.5;
-
-  if (sessions.length < 2) {
-    return (
-      <div className="grid place-items-center text-[12px] text-(--color-text-soft)" style={{ height: H }}>
-        Eğri için en az iki seans gerekiyor.
-      </div>
-    );
-  }
-
-  const xs = sessions.map((_, i) => pad.l + (i * (W - pad.l - pad.r)) / (sessions.length - 1));
-  const y = (v: number) => pad.t + (1 - v / 100) * (H - pad.t - pad.b);
-  /* Eksen 0-100; noktalar normalize skordan. Ham puanla çizildiğinde bir
-     Kart Eşle seansı (280) grafiğin dışına taşıyordu. */
-  const norm = (s: RecentSessionEntry) => Math.round(normalizeScore(s.gameKey as never, s.score) * 100);
-  const pts = sessions.map((s, i) => `${xs[i].toFixed(1)} ${y(norm(s)).toFixed(1)}`);
-  const line = `M${pts.join(" L")}`;
-  const area = `${line} L${xs[xs.length - 1]} ${H - pad.b} L${xs[0]} ${H - pad.b} Z`;
-
-  /* Etiketler punto büyüyünce birbirine giriyor: iki komşu etiket arası en
-     az ~2.6 kadem olacak biçimde seyreltilir. Sayım sondan yapılır ki son
-     seans (S10) her zaman yazılı kalsın. */
-  const gapPerPoint = (W - pad.l - pad.r) / (sessions.length - 1);
-  const labelEvery = narrow
-    ? Math.max(1, Math.ceil((axisFs * 2.6) / gapPerPoint))
-    : sessions.length <= 12
-      ? 1
-      : 2;
-  const labelPhase = narrow ? (sessions.length - 1) % labelEvery : 0;
-
-  return (
-    <div ref={boxRef} className="w-full">
-      {!measured ? (
-        <div style={{ height: H }} />
-      ) : (
-        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: H }} className="block" role="img" aria-label="Gelişim Eğrisi">
-          <defs>
-            <linearGradient id="growth-fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.26" />
-              <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-
-          {[0, 25, 50, 75, 100].map((v) => (
-            <g key={v}>
-              <line x1={pad.l} x2={W - pad.r} y1={y(v)} y2={y(v)} stroke="var(--color-line-soft)" strokeWidth={1} />
-              <text x={pad.l - 6} y={y(v)} textAnchor="end" dominantBaseline="middle" className="numeral" style={{ fontSize: axisFs, fill: "var(--color-text-muted)" }}>
-                {v}
-              </text>
-            </g>
-          ))}
-
-          {/* Hedef */}
-          <line
-            x1={pad.l}
-            x2={W - pad.r}
-            y1={y(TARGET_SCORE)}
-            y2={y(TARGET_SCORE)}
-            stroke="var(--color-accent-green)"
-            strokeWidth={1.5}
-            strokeDasharray="5 4"
-            opacity={0.75}
-          />
-          {/* Etiket dar ekranda sola geçer: sağ uçta son seansın noktası ve
-              eğrinin tepesi 11px'lik yazının üstüne biniyordu. */}
-          <text
-            x={narrow ? pad.l + 3 : W - pad.r}
-            y={y(TARGET_SCORE) - 5}
-            textAnchor={narrow ? "start" : "end"}
-            className="numeral"
-            style={{ fontSize: targetFs, fontWeight: 600, fill: "var(--color-accent-green)" }}
-          >
-            hedef {TARGET_SCORE}
-          </text>
-
-          <path d={area} fill="url(#growth-fill)" />
-          <path d={line} fill="none" stroke="var(--color-primary)" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
-          {sessions.map((s, i) => (
-            <circle key={s.id} cx={xs[i]} cy={y(norm(s))} r={3.4} fill="var(--color-signature-to)" stroke="var(--color-surface-strong)" strokeWidth={2} />
-          ))}
-          {sessions.map((s, i) =>
-            i % labelEvery === labelPhase ? (
-              <text key={`l-${s.id}`} x={xs[i]} y={H - (narrow ? 8 : 6)} textAnchor="middle" className="numeral" style={{ fontSize: axisFs, fill: "var(--color-text-muted)" }}>
-                S{i + 1}
-              </text>
-            ) : null,
-          )}
-        </svg>
-      )}
     </div>
   );
 }

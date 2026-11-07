@@ -26,12 +26,13 @@
  *   · Kontrol / paylaşım / başlık → `max-lg:`   (bunlar zaten yazdırmada gizli)
  */
 
+import { GrowthCurve } from "@/components/shared/GrowthCurve";
 import { useMemo, useState } from "react";
 import { Download, FileText, Share2 } from "lucide-react";
 import type { ClientProfile, RecentSessionEntry, ClientGoal } from "@/lib/platform-data";
 import { gameTitle, metricsFor, INDEPENDENCE_STEPS, independenceOf } from "@/lib/deniz-derive";
 import { normalizeScore } from "@/lib/game-constants";
-import { Avatar, Eyebrow, ScreenHeader, Sparkline, StepBar, btnGhost } from "./primitives";
+import { Avatar, Eyebrow, ScreenHeader, StepBar, btnGhost } from "./primitives";
 import { BlockMark } from "@/components/brand/BlockMark";
 
 type SectionKey = "summary" | "curve" | "games" | "goals" | "independence" | "raw" | "family";
@@ -338,18 +339,13 @@ export function ProgressReportScreen({
 
             {on("curve") && m && m.series.length >= 3 && (
               <div className={`glass rounded-[18px] ${CARD_PAD}`}>
-                <h3 className="font-display m-0 mb-3 text-[14px] font-bold tracking-[-0.02em] text-(--color-text-strong)">Gelişim Eğrisi</h3>
-                {/* Sparkline `preserveAspectRatio="none"` çiziyor: 620 birimlik
-                    viewBox 250px'lik telefon kabına oturunca yatay ölçek 0,4'e
-                    düşüyor, uç noktadaki daire ince bir dikey çizgiye
-                    dönüşüyordu. Dar ekranda kabına yakın bir viewBox veriliyor;
-                    grafik iki durumda da kabına sığar, oranı bozulmaz. */}
-                <div className="max-[560px]:hidden">
-                  <Sparkline series={m.series} id="report-curve" width={620} height={90} />
+                <div className="flex items-baseline justify-between gap-3 mb-3">
+                  <h3 className="font-display m-0 text-[14px] font-bold tracking-[-0.02em] text-(--color-text-strong)">Gelişim Eğrisi</h3>
+                  <span className="text-[12px] text-(--color-text-soft)">{scoped.length} seans · normalize skor</span>
                 </div>
-                <div className="hidden max-[560px]:block">
-                  <Sparkline series={m.series} id="report-curve-sm" width={300} height={74} />
-                </div>
+                {/* Danışan detayıyla aynı eğri: hedef bandı, son değer ve seans
+                    okuyucusu. Rapor yazdırılırken de aynı biçimde basılır. */}
+                <GrowthCurve sessions={scoped} />
               </div>
             )}
 
@@ -491,7 +487,7 @@ export function ProgressReportScreen({
 
             {on("family") && (
               <div
-                className={`rounded-[18px] flex-1 ${PANEL_PAD}`}
+                className={`rounded-[18px] ${PANEL_PAD}`}
                 style={{ background: "var(--gradient-signature-soft)", border: "1px solid var(--color-line-strong)" }}
               >
                 <Eyebrow className="!text-(--color-primary-ink) mb-2.5">Aile Önerileri</Eyebrow>
