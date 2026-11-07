@@ -310,12 +310,18 @@ export function ScoreRing({ value, size = 58 }: { readonly value: number; readon
  */
 export function Radar({
   axes,
+  compare,
   size = 190,
   id,
+  labels = true,
 }: {
   readonly axes: ReadonlyArray<{ label: string; value: number }>;
+  /** Kıyas profili (ör. önceki dönem) — kesikli çizilir. */
+  readonly compare?: ReadonlyArray<{ label: string; value: number }>;
   readonly size?: number;
   readonly id: string;
+  /** false: etiketsiz kompakt radar (değerler yanda bir listede okunur). */
+  readonly labels?: boolean;
 }) {
   const n = axes.length;
   const cx = size / 2;
@@ -327,7 +333,7 @@ export function Radar({
    * viewBox biriminde 9.5'ten 11'e çıktı — dar kapta 9.5 birim gerçek
    * ekranda 9px'in altına iniyordu.
    */
-  const R = size * 0.3;
+  const R = labels ? size * 0.3 : size * 0.46;
   const labelRatio = 1.2;
   const gid = `rad-${id}`;
 
@@ -337,26 +343,38 @@ export function Radar({
   };
   const ring = (ratio: number) =>
     Array.from({ length: n }, (_, i) => point(i, ratio).map((v) => v.toFixed(1)).join(",")).join(" ");
-  const shape = axes.map((ax, i) => point(i, Math.max(0, Math.min(100, ax.value)) / 100).map((v) => v.toFixed(1)).join(",")).join(" ");
+  const shapeOf = (xs: ReadonlyArray<{ value: number }>) =>
+    xs.map((ax, i) => point(i, Math.max(0, Math.min(100, ax.value)) / 100).map((v) => v.toFixed(1)).join(",")).join(" ");
+  const shape = shapeOf(axes);
 
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full" aria-hidden="true">
+    <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full overflow-visible" aria-hidden="true">
       <defs>
         <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.45" />
           <stop offset="100%" stopColor="var(--color-signature-to)" stopOpacity="0.28" />
         </linearGradient>
       </defs>
-      {[1, 0.667, 0.333].map((r) => (
-        <polygon key={r} points={ring(r)} fill="none" stroke="var(--color-line-strong)" strokeWidth={1} />
+      {[1, 0.75, 0.5, 0.25].map((r) => (
+        <polygon key={r} points={ring(r)} fill={r === 1 ? "color-mix(in srgb, var(--color-primary) 3%, transparent)" : "none"} stroke="var(--color-line-strong)" strokeWidth={r === 1 ? 1 : 0.8} strokeOpacity={r === 1 ? 1 : 0.7} />
       ))}
+      {axes.map((ax, i) => {
+        const [ex, ey] = point(i, 1);
+        return <line key={`s-${ax.label}`} x1={cx} y1={cy} x2={ex} y2={ey} stroke="var(--color-line)" strokeWidth={0.8} />;
+      })}
+      {compare && (
+        <polygon points={shapeOf(compare)} fill="none" stroke="var(--color-text-muted)" strokeWidth={1.4} strokeDasharray="3 3" strokeLinejoin="round" />
+      )}
       <polygon points={shape} fill={`url(#${gid})`} stroke="var(--color-primary)" strokeWidth={2} strokeLinejoin="round" />
       {axes.map((ax, i) => {
         const [px, py] = point(i, Math.max(0, Math.min(100, ax.value)) / 100);
         return <circle key={ax.label} cx={px} cy={py} r={3.2} fill="var(--color-primary)" />;
       })}
-      {axes.map((ax, i) => {
-        const [rawX, py] = point(i, labelRatio);
+      {labels && axes.map((ax, i) => {
+        const [rawX, rawY] = point(i, labelRatio);
+        /* İki satırlık etiket (ad + değer) ortalanır: üst eksende yukarı, alt
+           eksenlerde aşağı kaydırılır ki çokgenle çakışmasın. */
+        const py = rawY < cy - 4 ? rawY - 8 : rawY > cy + 4 ? rawY - 2 : rawY - 6;
         const anchor = rawX > cx + 4 ? "start" : rawX < cx - 4 ? "end" : "middle";
         /* Etiket hiçbir zaman viewBox'ın dışına çıkmasın: uçlarda hizaya
            göre kenardan 2 birim içeride durur. */
@@ -371,6 +389,9 @@ export function Radar({
             style={{ font: "600 11px var(--font-sans)", fill: "var(--color-text-soft)" }}
           >
             {ax.label}
+            <tspan x={px} dy="1.25em" className="numeral" style={{ font: "600 11px var(--font-mono)", fill: "var(--color-text-strong)" }}>
+              {Math.round(ax.value)}
+            </tspan>
           </text>
         );
       })}

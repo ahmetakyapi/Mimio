@@ -3738,3 +3738,21 @@ html[data-theme='dark'] .hero-stage {
 .growth-tip-game { font-size: 12px; font-weight: 700; color: var(--color-text-strong); }
 .growth-tip-date { font-size: 12px; color: var(--color-text-soft); }
 @media (prefers-reduced-motion: reduce) { .growth-tip { animation: none; } }
+
+/* ── Aktivite kitaplığı: kanıt atfı alıntısı ── */
+.activity-cite {
+  flex-basis: 100%;
+  display: block;
+  margin-top: 4px;
+  padding: 2px 0 2px 12px;
+  border-left: 2px solid color-mix(in srgb, var(--cite) 70%, transparent);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--color-text-soft);
+}
+.activity-cite-label {
+  display: inline-block;
+  margin-right: 8px;
+  font-weight: 700;
+  color: var(--cite);
+}

@@ -378,11 +378,18 @@ export function TodayScreen({
           <Card className="lg:flex-1 flex flex-col lg:min-h-0" pad="p-[16px_16px] lg:p-[19px_21px]">
             {/* Dar kapta başlık ve künye aynı satırda ikiye bölünüyordu;
                 telefonda alt alta, künye tek satırda kısalarak. */}
-            <div className="flex items-center justify-between gap-2 mb-1.5 max-lg:flex-col max-lg:items-start max-lg:gap-0.5">
+            <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 mb-1.5 max-lg:flex-col max-lg:items-start max-lg:gap-0.5">
               <CardTitle className="!text-[13.5px]">Hedef Radarı</CardTitle>
               {radarClient && radarClient.sessionCount > 0 && (
                 <span className="text-[12px] font-medium text-(--color-text-soft) truncate max-w-full">
                   {radarClient.client.displayName} · {radarClient.sessionCount} seans
+                </span>
+              )}
+              {/* Kıyas lejandı: kesikli ilk yarı, dolu son yarı. */}
+              {radarClient && radarClient.sessions.length >= 4 && (
+                <span className="basis-full flex items-center gap-3.5 text-[12px] text-(--color-text-soft)">
+                  <span className="flex items-center gap-1.5"><span className="inline-block w-4 border-t-[1.5px] border-dashed border-(--color-text-muted)" />İlk yarı</span>
+                  <span className="flex items-center gap-1.5"><span className="inline-block w-4 h-[3px] rounded-full bg-(--color-primary)" />Son yarı</span>
                 </span>
               )}
             </div>
@@ -391,9 +398,9 @@ export function TodayScreen({
                 "Dikkat") kutunun dışına düşüp kırpılıyordu. Sabit yükseklik
                 veriyoruz: viewBox yüksekliğe göre oturur, yanlarda kalan boşluk
                 etiketlere yer açar — kart da yarı yarıya kısalır. */}
-            <div className="lg:flex-1 lg:min-h-0 grid place-items-center max-lg:h-[168px] max-lg:mt-1">
+            <div className="lg:flex-1 lg:min-h-0 flex items-center max-lg:mt-2">
               {radarClient && radarClient.sessionCount > 0 ? (
-                <Radar id="today" size={200} axes={radarAxes(radarClient.sessions)} />
+                <RadarPanel sessions={radarClient.sessions} />
               ) : (
                 <p className="m-0 text-center text-[12px] text-(--color-text-soft)">
                   Radar için en az bir seans gerekiyor.
@@ -614,6 +621,49 @@ function AgendaRow({
           Planlandı
         </span>
       )}
+    </div>
+  );
+}
+
+
+/**
+ * Radar + alan listesi. Kart masaüstünde ~130px yükseklik bırakıyor; etiketli
+ * bir radar bu boyda ya kabından taşıyor ya da 7px'lik etiketlere iniyordu.
+ * Radar etiketsiz bir şekil olarak solda durur, beş alanın değeri ve ilk
+ * yarıdan son yarıya farkı sağda okunur: şekil profili, liste sayıyı söyler.
+ */
+function RadarPanel({ sessions }: { readonly sessions: readonly RecentSessionEntry[] }) {
+  const half = Math.floor(sessions.length / 2);
+  const canCompare = sessions.length >= 4;
+  const now = radarAxes(canCompare ? sessions.slice(half) : sessions);
+  const before = canCompare ? radarAxes(sessions.slice(0, half)) : undefined;
+  return (
+    <div className="w-full grid grid-cols-[minmax(96px,128px)_minmax(0,1fr)] gap-4 items-center">
+      <div className="aspect-square w-full">
+        <Radar id="today" size={200} axes={now} compare={before} labels={false} />
+      </div>
+      <ul className="list-none m-0 p-0 flex flex-col gap-[5px] min-w-0">
+        {now.map((ax, i) => {
+          const d = before ? ax.value - before[i].value : 0;
+          return (
+            <li key={ax.label} className="flex items-center gap-2 text-[12px] min-w-0">
+              <span className="truncate flex-1 text-(--color-text-soft)">{ax.label}</span>
+              <span className="w-14 h-1 rounded-full bg-(--color-line) overflow-hidden shrink-0">
+                <span className="block h-full rounded-full origin-left" style={{ transform: `scaleX(${ax.value / 100})`, background: "var(--gradient-bar)" }} />
+              </span>
+              <span className="numeral w-7 text-right font-semibold text-(--color-text-strong) shrink-0">{ax.value}</span>
+              {before && (
+                <span
+                  className="numeral w-8 text-right shrink-0"
+                  style={{ color: d > 2 ? "var(--color-accent-green)" : d < -2 ? "var(--color-accent-red)" : "var(--color-text-muted)" }}
+                >
+                  {d > 0 ? "+" : ""}{d}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
