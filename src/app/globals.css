@@ -3326,3 +3326,101 @@ html[data-theme='high-contrast'] .cta-blocks { display: none; }
   }
 }
 @keyframes rail-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* ── Oyun kitaplığı kart önizlemesi ── */
+.game-thumb {
+  background: var(--ink-deep);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.game-thumb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg, transparent 45%, color-mix(in srgb, var(--thumb-accent) 32%, transparent) 100%),
+    linear-gradient(180deg, rgba(5, 11, 22, 0.15), rgba(5, 11, 22, 0.35));
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--thumb-accent) 60%, transparent);
+  transition: opacity 0.4s var(--ease-out);
+}
+article:hover .game-thumb::after { opacity: 0.7; }
+
+/* ── Corsi tahtası (brand/CorsiBoard.tsx) ── */
+.corsi-board { display: flex; align-items: flex-end; gap: 22px; }
+.corsi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 58px);
+  gap: 10px;
+  padding: 14px;
+  border-radius: 22px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-card);
+}
+.corsi-cell {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 13px;
+  background: var(--color-primary-light);
+  border: 1px solid var(--color-line-soft);
+  transition: background 0.45s var(--ease-out), transform 0.45s var(--ease-out), box-shadow 0.45s var(--ease-out);
+}
+.corsi-cell[data-trail] {
+  background: color-mix(in srgb, var(--color-primary) 22%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+.corsi-cell[data-lit] {
+  background: var(--gradient-signature);
+  transform: scale(1.06);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--color-signature-from) 40%, transparent);
+  transition-duration: 0.14s;
+}
+.corsi-order {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary-ink);
+  animation: corsi-order-in 0.4s var(--ease-out) both;
+}
+@keyframes corsi-order-in { from { opacity: 0; transform: translateY(4px); } }
+.corsi-read { display: flex; flex-direction: column; gap: 10px; padding-bottom: 6px; }
+.corsi-read-value { display: block; font-size: 44px; line-height: 0.9; letter-spacing: -0.04em; color: var(--color-text-strong); }
+.corsi-read-label { display: block; font-size: 12px; color: var(--color-text-soft); margin-top: 4px; }
+.corsi-ok {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-accent-green);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.35s var(--ease-out), transform 0.35s var(--ease-out);
+}
+.corsi-ok.is-on { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .corsi-order { animation: none; } }
+
+/* ── Arena: tur öncesi kapalı tahta (GameArena.tsx → ArenaIdle) ── */
+.arena-idle { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.9rem; }
+.arena-idle-grid { --reserve: 2.5rem; }
+.arena-ghost {
+  position: relative;
+  overflow: hidden;
+  border-radius: clamp(10px, 1.4vh, 16px);
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.02)),
+    rgba(14, 26, 43, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+.arena-ghost::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(60% 60% at 50% 40%, rgba(107, 147, 255, 0.22), transparent 70%);
+  opacity: 0;
+  animation: arena-ghost-wave 3.2s var(--ease-out) var(--d, 0s) infinite;
+}
+@keyframes arena-ghost-wave { 0%, 100% { opacity: 0; } 30% { opacity: 1; } 60% { opacity: 0; } }
+.arena-idle-label { margin: 0; font-size: 0.8125rem; color: rgba(234, 242, 255, 0.55); }
+@media (prefers-reduced-motion: reduce) { .arena-ghost::after { animation: none; } }

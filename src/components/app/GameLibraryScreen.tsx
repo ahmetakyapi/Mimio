@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 /*
  * Oyun Kitaplığı — tasarım dokümanı 1l/1m.
  *
@@ -295,16 +297,27 @@ export function GameLibraryScreen({
               key={g.key}
               className="glass rounded-[18px] flex flex-col self-start p-[14px] max-[560px]:grid max-[560px]:grid-cols-[68px_minmax(0,1fr)] max-[560px]:items-start max-[560px]:gap-x-3 max-[560px]:p-3"
             >
-              {/* Önizleme — oyunun görsel imzası, ekran görüntüsü değil şema */}
+              {/* Önizleme — oyunun gerçek tahtası (tanıtımdaki aynı görüntü).
+                  Arena her temada koyu: terapist kartta gördüğü tahtayı
+                  birazdan danışanın ekranında aynen görür. Alt kenardaki
+                  hale oyunun beceri alanının rengini taşır. */}
               <div
-                className="grid place-items-center shrink-0 mb-[11px] h-[78px] max-[560px]:h-[68px] max-[560px]:mb-0"
-                style={{
-                  borderRadius: 14,
-                  background:
-                    "linear-gradient(150deg, color-mix(in srgb, var(--color-primary) 7%, transparent), color-mix(in srgb, var(--color-signature-to) 5%, transparent))",
-                }}
+                className="game-thumb group/thumb relative shrink-0 mb-[11px] h-[124px] overflow-hidden max-[560px]:h-[68px] max-[560px]:mb-0"
+                style={{ borderRadius: 14, ["--thumb-accent" as string]: color }}
               >
-                <GamePreview gameKey={g.key} />
+                {SHOTS.has(g.key) ? (
+                  <Image
+                    src={`/games/${g.key}.webp`}
+                    alt=""
+                    fill
+                    sizes="(max-width: 560px) 68px, (max-width: 1024px) 45vw, 300px"
+                    className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/thumb:scale-[1.06]"
+                  />
+                ) : (
+                  <div className="absolute inset-0 grid place-items-center">
+                    <GamePreview gameKey={g.key} />
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col flex-1 min-h-0 min-w-0">
@@ -427,6 +440,9 @@ function GamePreview({ gameKey }: { readonly gameKey: string }) {
 }
 
 /* Her oyunun tahta şekli ve hangi hücrenin "yandığı". */
+/* public/games altında gerçek tahta görüntüsü olan oyunlar. */
+const SHOTS = new Set(["memory", "pairs", "pulse", "route", "difference", "scan", "logic"]);
+
 const PREVIEW: Record<string, { cols: number; rows: number; on: number[]; round?: boolean }> = {
   memory:     { cols: 3, rows: 3, on: [4] },
   pairs:      { cols: 2, rows: 3, on: [1, 3] },

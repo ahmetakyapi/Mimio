@@ -11,7 +11,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { GameArena } from "./game/GameArena";
+import { ArenaIdle, GameArena } from "./game/GameArena";
 import { BlockMark } from "./brand/BlockMark";
 import {
   ARENA_KEYBOARD_HINT,
@@ -2689,7 +2689,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     })() : null}
                   >
                     {pairsState.tiles.length === 0 ? (
-                      <p className="text-sm text-white/60 m-0">Deste henüz açılmadı.</p>
+                      <ArenaIdle cols={4} rows={4} label="Deste kapalı · Başlat ile açılır" />
                     ) : (
                     <div className="arena-grid" style={{ ["--cols" as string]: 4, ["--rows" as string]: Math.ceil(pairsState.tiles.length / 4) }}>
                       {pairsState.tiles.map((tile, index) => {
@@ -2938,7 +2938,7 @@ export function MimioApp({ initialAppView = "login", onLogout }: MimioAppProps =
                     })() : null}
                   >
                     {differenceState.tiles.length === 0 ? (
-                      <p className="text-sm text-white/60 m-0">Tur henüz başlamadı.</p>
+                      <ArenaIdle cols={3} rows={2} label="Kartlar hazır · Başlat ile tur açılır" />
                     ) : (
                     <div className="arena-grid" style={{ ["--cols" as string]: 3, ["--rows" as string]: 2 }}>
                       {differenceState.tiles.map((tile, index) => {
