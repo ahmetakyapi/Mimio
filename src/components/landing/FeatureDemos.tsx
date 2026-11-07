@@ -195,7 +195,7 @@ export function CorsiDemo({ offset = 0 }: { offset?: number }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.35, ease: EASE }}
-              className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 text-[12px] font-semibold px-2.5 py-1 rounded-full"
+              className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 whitespace-nowrap text-[12px] font-semibold px-2.5 py-1 rounded-full"
               style={{ background: "rgba(25,209,155,0.16)", color: "#7ef0c8", border: "1px solid rgba(25,209,155,0.3)" }}
             >
               <Check size={12} strokeWidth={2.5} /> Dizi doğru · span {3 + (round % 3)}
