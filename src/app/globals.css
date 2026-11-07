@@ -1271,18 +1271,6 @@ html[data-modal-open] .app-scroll {
   .live-pulse { animation: none; }
 }
 
-/* ── Games showcase section backgrounds (theme-aware) ── */
-.section-games {
-  background:
-    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(77, 125, 255, 0.14), transparent),
-    var(--color-games-section);
-}
-
-html[data-theme='light'] .section-games {
-  background:
-    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(43, 98, 245, 0.08), transparent),
-    var(--color-games-section);
-}
 
 /* ── Game tile preview image background (LandingPage mockup) ── */
 .game-tile-preview {
@@ -3135,3 +3123,182 @@ html[data-theme='high-contrast'] .cta-accent { color: var(--color-primary); }
   60%, 100% { transform: translateY(100%); }
 }
 @media (prefers-reduced-motion: reduce) { .scroll-cue::after { animation: none; transform: none; } }
+
+/* ══════════════════════════════════════════════════════════════
+   Özellik kartı görselleri (landing/FeatureDemos.tsx)
+   Kartın içinde bir "kuyu": kart yüzeyinden bir basamak içeride,
+   kılcal çizgili. Oyun görseli (Corsi) her temada koyu — arena dili.
+   ══════════════════════════════════════════════════════════════ */
+.feature-demo {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-primary) 4%, transparent), transparent 70%),
+    var(--color-page-bg);
+  border: 1px solid var(--color-line-soft);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--color-text-strong) 5%, transparent);
+}
+.feature-demo-ink {
+  background:
+    radial-gradient(70% 80% at 50% 40%, rgba(77, 125, 255, 0.22), transparent 70%),
+    var(--ink-deep);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+html[data-theme='high-contrast'] .feature-demo { background: var(--color-page-bg); border-color: var(--color-line-strong); }
+.note-caret {
+  display: inline-block;
+  width: 1.5px;
+  height: 1.05em;
+  margin-left: 1px;
+  vertical-align: -0.15em;
+  background: var(--color-primary);
+  animation: note-caret 1s steps(1) infinite;
+}
+@keyframes note-caret { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .note-caret { animation: none; } }
+
+/* ══════════════════════════════════════════════════════════════
+   Oyun arenası — her temada koyu (BlockEdge.tsx)
+   Arena uygulamada da temadan bağımsız koyu; tanıtımda okur ona
+   girdiğinde zemin de koyulaşır. Değişkenler bölümün kendisinde
+   yeniden tanımlanır: html'deki tema değerleri kalıtımla gelmez.
+   ══════════════════════════════════════════════════════════════ */
+.section-games,
+html[data-theme='light'] .section-games {
+  --color-games-section: var(--ink-deep);
+  --color-games-text: #ffffff;
+  --color-games-text-soft: #8ea3bc;
+  --color-games-card-bg: rgba(255, 255, 255, 0.045);
+  --color-games-card-border: rgba(255, 255, 255, 0.09);
+  --color-games-card-hover: rgba(255, 255, 255, 0.085);
+  --color-games-tile-from: rgba(14, 26, 43, 0.9);
+  --color-games-tile-to: rgba(5, 11, 22, 0.95);
+  --color-games-badge-bg: rgba(255, 255, 255, 0.10);
+  --color-games-badge-border: rgba(255, 255, 255, 0.20);
+  --color-primary: #6b93ff;
+  --color-primary-ink: #a8c2ff;
+  --edge-h: calc(100vw / 32 * 3);
+  color-scheme: dark;
+  isolation: isolate;
+  background: transparent;
+}
+/* Koyu zemin, blok kenarlarının yüksekliği kadar içeriden başlar: kenar
+   bölümün kendi payında durur, komşu bölümün metnine taşmaz. */
+.section-games::before {
+  content: "";
+  position: absolute;
+  inset: var(--edge-h) 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 12%, rgba(77, 125, 255, 0.16), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 85% 90%, rgba(42, 214, 239, 0.08), transparent 70%),
+    var(--ink-deep);
+}
+.section-games.section { padding-block: calc(var(--space-section) + var(--edge-h) * 0.6); }
+@media (max-width: 767px) {
+  .section-games, html[data-theme='light'] .section-games { --edge-h: calc(100vw / 12 * 3); }
+}
+.section-games .accent-line { color: #8fb0ff; }
+
+.block-edge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  pointer-events: none;
+  z-index: -1;
+  view-timeline-name: --edge;
+}
+.block-edge-top { top: 0; }
+.block-edge-bottom { bottom: 0; }
+.block-edge-cell {
+  /* Yarım piksel taşma: bitişik bloklar arasında kıl çizgisi kalmasın. */
+  margin: -0.5px;
+  aspect-ratio: 1;
+  background: var(--ink-deep);
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .block-edge-cell {
+      animation: block-in linear both;
+      animation-timeline: --edge;
+    }
+    .block-edge-top .block-edge-cell {
+      animation-range: entry calc(var(--o) * 70%) entry calc(var(--o) * 70% + 30%);
+    }
+    .block-edge-bottom .block-edge-cell {
+      animation-name: block-drip;
+      animation-range: entry calc(var(--o) * 60%) entry calc(var(--o) * 60% + 40%);
+    }
+  }
+}
+/* Opaklık ilk çeyrekte tamamlanır: yarı saydam koyu blok açık zeminde
+   gri bir hayalet gibi okunuyordu. Geri kalan yol yalnızca büyüme. */
+@keyframes block-in {
+  0% { opacity: 0; transform: translateY(40%) scale(0.45); }
+  25% { opacity: 1; }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes block-drip {
+  0% { opacity: 0; transform: translateY(-40%) scale(0.45); }
+  25% { opacity: 1; }
+  100% { opacity: 1; transform: none; }
+}
+.games-pinned { padding-block: var(--edge-h); }
+@media (max-width: 767px) {
+  /* Telefonda 24 sütun 16px'lik kırıntı olur; desenin ilk 12 sütunu
+     iki kat büyüklükte basılır. */
+  .block-edge { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .block-edge-cell[data-wide] { display: none; }
+}
+html[data-theme='high-contrast'] .block-edge { display: none; }
+
+/* ── Kapanış paneli: Corsi blok zemini (CtaBlocks.tsx) ── */
+.cta-blocks {
+  --fx: 50%;
+  --fy: 50%;
+  position: absolute;
+  inset: clamp(1rem, 3vw, 2.5rem);
+  z-index: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  gap: clamp(6px, 0.9vw, 14px);
+  align-content: center;
+}
+.cta-block {
+  aspect-ratio: 1;
+  border-radius: clamp(6px, 0.8vw, 12px);
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.045);
+  transition: background-color 0.5s var(--ease-out), border-color 0.5s var(--ease-out), transform 0.5s var(--ease-out), box-shadow 0.5s var(--ease-out);
+}
+.cta-block[data-trail] {
+  background: rgba(77, 125, 255, 0.12);
+  border-color: rgba(107, 147, 255, 0.28);
+}
+.cta-block[data-lit] {
+  background: rgba(42, 214, 239, 0.55);
+  border-color: rgba(143, 233, 247, 0.8);
+  box-shadow: 0 0 40px rgba(42, 214, 239, 0.45);
+  transform: scale(1.04);
+  transition-duration: 0.16s;
+}
+/* İmleç feneri: kenar çizgileri imlecin çevresinde belirginleşir. */
+@media (hover: hover) and (pointer: fine) {
+  .cta-blocks::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(260px circle at var(--fx) var(--fy), rgba(143, 176, 255, 0.10), transparent 70%);
+  }
+}
+@media (max-width: 767px) {
+  .cta-blocks { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .cta-block:nth-child(n + 43) { display: none; }
+}
+html[data-theme='high-contrast'] .cta-blocks { display: none; }
+@media (max-width: 767px) {
+  /* Dar ekranda dizi düğmelerin arkasına da düşebiliyor: ışık kısılır. */
+  .cta-block[data-lit] { background: rgba(42, 214, 239, 0.28); box-shadow: none; }
+}

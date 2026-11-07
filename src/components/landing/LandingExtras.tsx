@@ -1,5 +1,6 @@
 "use client";
 
+import { BlockEdge } from "./BlockEdge";
 import {
   useEffect,
   useMemo,
@@ -1241,9 +1242,11 @@ function GamesPinned({ onLogin }: { onLogin: () => void }) {
     <section
       id="games"
       ref={sectionRef}
-      className="section-games relative"
-      style={{ height: `calc(100dvh + ${distance}px)` }}
+      className="section-games games-pinned relative"
+      style={{ height: `calc(100dvh + ${distance}px + var(--edge-h) * 2)` }}
     >
+      <BlockEdge side="top" />
+      <BlockEdge side="bottom" />
       <div className="sticky top-0 h-[100dvh] overflow-hidden flex flex-col justify-center gap-10 pt-16">
         <div className="shell shell-wide w-full flex items-end justify-between gap-6">
           <GamesHeading />
@@ -1318,6 +1321,8 @@ function GamesSnap({ onLogin }: { onLogin: () => void }) {
 
   return (
     <section id="games" className="section section-games relative">
+      <BlockEdge side="top" />
+      <BlockEdge side="bottom" />
       <div className="shell shell-wide">
         <div className="flex items-end justify-between gap-6 flex-wrap mb-8 sm:mb-10">
           <GamesHeading />
