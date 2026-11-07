@@ -33,7 +33,7 @@ import {
   Stethoscope,
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
-import { HeroPulse } from "./landing/HeroPulse";
+import { HeroStage } from "./landing/HeroStage";
 import { CtaBlocks } from "./landing/CtaBlocks";
 import { WeekRhythmPanel } from "./landing/WeekRhythmPanel";
 import { ClientStackDemo, CorsiDemo, NoteTypingDemo, PrivacyMaskDemo, ProgressReadDemo, WeekPlanDemo } from "./landing/FeatureDemos";
@@ -687,7 +687,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
           style={{ y: heroY, opacity: heroOpacity }}
           className="shell shell-wide relative"
         >
-          <div className="grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] gap-y-8 sm:gap-y-12 lg:gap-x-10 xl:gap-x-14 items-center">
+          <div className="grid lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] gap-y-2 sm:gap-y-6 lg:gap-x-6 xl:gap-x-10 items-center">
             {/* Sol — tez */}
             <div className="flex flex-col items-start gap-4 sm:gap-6">
               {/*
@@ -702,7 +702,7 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                 katlamanın altına düşüyordu. Dar ekranda ölçek viewport'la
                 akar, 640px'ten itibaren eski ölçek aynen devam eder.
               */}
-              <h1 className="text-[clamp(2rem,9vw,2.75rem)] sm:text-6xl lg:text-[4.25rem] xl:text-[4.75rem] text-(--color-text-strong) leading-[1.02] sm:leading-[0.98] m-0 tracking-[-0.045em]">
+              <h1 className="text-[clamp(2rem,9vw,2.75rem)] sm:text-6xl lg:text-[clamp(3.4rem,4.1vw,4.6rem)] text-(--color-text-strong) leading-[1.02] sm:leading-[0.98] m-0 tracking-[-0.045em]">
                 <MaskLines
                   play={introDone}
                   delay={0.1}
@@ -765,6 +765,24 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                   </button>
                 </div>
               </Rise>
+              {/* Oyunların dayandığı paradigmalar: iddia değil, kaynak. Her
+                  biri oyunun beceri alanının rengini taşır. */}
+              <Rise play={introDone} delay={0.66}>
+                <p className="hero-proof m-0 mt-1 sm:mt-3">
+                  <span className="font-semibold text-(--color-text-body)">Kanıta dayalı:</span>
+                  {[
+                    { t: "Corsi blok testi", c: "var(--color-domain-memory)" },
+                    { t: "Fitts yasası", c: "var(--color-domain-motor)" },
+                    { t: "Treisman & Gelade", c: "var(--color-domain-visual)" },
+                    { t: "Matris akıl yürütme", c: "var(--color-domain-cognitive)" },
+                  ].map((x) => (
+                    <span key={x.t} className="hero-proof-item" style={{ ["--c" as string]: x.c }}>
+                      <i aria-hidden="true" />
+                      {x.t}
+                    </span>
+                  ))}
+                </p>
+              </Rise>
             </div>
 
             {/*
@@ -781,12 +799,10 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
               initial={{ opacity: 0, y: 60, scale: 0.94 }}
               animate={introDone ? { opacity: 1, y: 0, scale: 1 } : undefined}
               transition={{ duration: 1.2, delay: 0.25, ease }}
-              style={{ y: parallaxMockY, perspective: 1200 }}
-              className="relative"
+              style={{ y: parallaxMockY }}
+              className="relative lg:-mr-4 xl:-mr-8 max-lg:-mx-2"
             >
-              <motion.div style={{ rotateX: cardRX, rotateY: cardRY, transformStyle: "preserve-3d" }}>
-                <HeroPulse />
-              </motion.div>
+              <HeroStage progress={heroEased} tiltX={cardRY} tiltY={cardRX} play={introDone} />
             </motion.div>
           </div>
         </motion.div>
@@ -1346,8 +1362,6 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             </div>
           </div>
 
-          <FooterWord />
-
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 border-t border-(--color-line-soft)">
             <p className="text-xs text-(--color-text-muted)">
               © {new Date().getFullYear()} Mimio. Tüm hakları saklıdır.
@@ -1457,23 +1471,5 @@ function ClosingCTA({ onLogin, onRegister }: Props) {
         </div>
       </motion.div>
     </section>
-  );
-}
-
-/**
- * Alt bilginin dev kelime markası. Sayfanın son ekranında yavaşça
- * yükselir — okur sayfanın dibine indiğinde marka "yerine oturur".
- */
-function FooterWord() {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const reduced = useReducedMotionSafe();
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end end"] });
-  const y = useTransform(scrollYProgress, [0, 1], ["45%", "0%"]);
-  return (
-    <div ref={ref} aria-hidden="true" className="overflow-hidden -mx-(--gutter) sm:mx-0 mb-4 flex justify-center">
-      <motion.span className="footer-word block" style={reduced ? { y: "0%" } : { y }}>
-        Mimio
-      </motion.span>
-    </div>
   );
 }
