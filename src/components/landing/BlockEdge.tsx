@@ -12,7 +12,7 @@
  * Sunucu bileşeni — desen derleme anında sabit.
  */
 
-const COLS = 32;
+const COLS = 48;
 const ROWS = 3;
 /* Satır başına doluluk: alttaki satır tam, yukarı çıktıkça seyrelir. */
 const DENSITY = [0.3, 0.62, 1] as const;
@@ -52,12 +52,12 @@ const BOTTOM = buildCells(17);
 export function BlockEdge({ side }: { readonly side: "top" | "bottom" }) {
   const cells = side === "top" ? TOP : BOTTOM;
   return (
-    <div aria-hidden="true" className={`block-edge block-edge-${side}`} style={{ ["--cols" as string]: COLS }}>
+    <div aria-hidden="true" className={`block-edge block-edge-${side}`}>
       {cells.map((cell) => (
         <span
           key={`${cell.r}-${cell.c}`}
           className="block-edge-cell"
-          data-wide={cell.c >= 12 ? "" : undefined}
+          data-tier={cell.c < 12 ? "a" : cell.c < 24 ? "b" : cell.c < 32 ? "c" : cell.c < 40 ? "d" : "e"}
           style={{
             gridColumn: cell.c + 1,
             /* Alt kenarda desen ters çevrilir: koyu bloklar aşağı sarkar. */

@@ -1101,19 +1101,22 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
             whileInView="visible"
             viewport={REVEAL_VIEWPORT}
             variants={stagger}
-            className="relative mx-auto max-w-2xl list-none p-0 m-0 flex flex-col gap-7 sm:gap-9"
+            className="relative mx-auto max-w-2xl lg:max-w-none list-none p-0 m-0 flex flex-col gap-7 sm:gap-9 lg:grid lg:grid-cols-3 lg:gap-12"
           >
-            <ScrollRail className="absolute left-[1.375rem] top-6 bottom-6 w-px overflow-hidden" />
+            <ScrollRail className="absolute left-[1.375rem] top-6 bottom-6 w-px overflow-hidden lg:hidden" />
+            {/* Geniş ekranda adımlar yan yana; aradaki hat kaydırmayla
+                soldan sağa çizilir ve son adımın ikonunda biter. */}
+            <span aria-hidden="true" className="steps-rail-x hidden lg:block absolute top-[1.375rem] left-[1.375rem] right-[calc((100%-6rem)/3-1.375rem)] h-px" />
             {STEPS.map((step) => {
               const StepIcon = step.icon;
               return (
                 <motion.li
                   key={step.num}
                   variants={fadeUp}
-                  className="relative flex items-start gap-4 sm:gap-5"
+                  className="relative flex items-start gap-4 sm:gap-5 lg:flex-col lg:gap-6"
                 >
                   <div
-                    className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center"
+                    className="relative z-[1] w-11 h-11 shrink-0 rounded-xl flex items-center justify-center"
                     style={{
                       background: "var(--color-surface-strong)",
                       border: `1px solid color-mix(in srgb, ${step.color} 24%, transparent)`,
@@ -1121,11 +1124,14 @@ export default function LandingPage({ onLogin, onRegister }: Props) {
                   >
                     <StepIcon size={20} style={{ color: step.color }} aria-hidden="true" />
                   </div>
-                  <div className="min-w-0 pt-1.5">
-                    <h3 className="font-bold text-(--color-text-strong) text-base m-0 mb-1">
+                  <div className="min-w-0 pt-1.5 lg:pt-0">
+                    <span aria-hidden="true" className="hidden lg:block numeral text-[3.25rem] leading-none tracking-[-0.04em] text-(--color-line-strong) mb-4">
+                      {step.num}
+                    </span>
+                    <h3 className="font-bold text-(--color-text-strong) text-base lg:text-xl m-0 mb-1 lg:mb-2">
                       {step.title}
                     </h3>
-                    <p className="text-[0.8125rem] sm:text-sm text-(--color-text-soft) leading-relaxed m-0">
+                    <p className="text-[0.8125rem] sm:text-sm lg:text-[0.9375rem] text-(--color-text-soft) leading-relaxed m-0">
                       {step.body}
                     </p>
                   </div>

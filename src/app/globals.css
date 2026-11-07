@@ -3175,7 +3175,8 @@ html[data-theme='light'] .section-games {
   --color-games-badge-border: rgba(255, 255, 255, 0.20);
   --color-primary: #6b93ff;
   --color-primary-ink: #a8c2ff;
-  --edge-h: calc(100vw / 32 * 3);
+  --edge-cols: 32;
+  --edge-h: calc(100vw / var(--edge-cols) * 3);
   color-scheme: dark;
   isolation: isolate;
   background: transparent;
@@ -3194,9 +3195,11 @@ html[data-theme='light'] .section-games {
     var(--ink-deep);
 }
 .section-games.section { padding-block: calc(var(--space-section) + var(--edge-h) * 0.6); }
-@media (max-width: 767px) {
-  .section-games, html[data-theme='light'] .section-games { --edge-h: calc(100vw / 12 * 3); }
-}
+/* Blok boyu ekranla büyümez: sütun sayısı artar (≈40–48 px blok). */
+@media (max-width: 767px) { .section-games, html[data-theme='light'] .section-games { --edge-cols: 12; } }
+@media (min-width: 768px) and (max-width: 1279px) { .section-games, html[data-theme='light'] .section-games { --edge-cols: 24; } }
+@media (min-width: 1680px) { .section-games, html[data-theme='light'] .section-games { --edge-cols: 40; } }
+@media (min-width: 2100px) { .section-games, html[data-theme='light'] .section-games { --edge-cols: 48; } }
 .section-games .accent-line { color: #8fb0ff; }
 
 .block-edge {
@@ -3245,12 +3248,10 @@ html[data-theme='light'] .section-games {
   100% { opacity: 1; transform: none; }
 }
 .games-pinned { padding-block: var(--edge-h); }
-@media (max-width: 767px) {
-  /* Telefonda 24 sütun 16px'lik kırıntı olur; desenin ilk 12 sütunu
-     iki kat büyüklükte basılır. */
-  .block-edge { grid-template-columns: repeat(12, minmax(0, 1fr)); }
-  .block-edge-cell[data-wide] { display: none; }
-}
+@media (max-width: 2099px) { .block-edge-cell[data-tier='e'] { display: none; } }
+@media (max-width: 1679px) { .block-edge-cell[data-tier='d'] { display: none; } }
+@media (max-width: 1279px) { .block-edge-cell[data-tier='c'] { display: none; } }
+@media (max-width: 767px) { .block-edge-cell[data-tier='b'] { display: none; } }
 html[data-theme='high-contrast'] .block-edge { display: none; }
 
 /* ── Kapanış paneli: Corsi blok zemini (CtaBlocks.tsx) ── */
@@ -3302,3 +3303,26 @@ html[data-theme='high-contrast'] .cta-blocks { display: none; }
   /* Dar ekranda dizi düğmelerin arkasına da düşebiliyor: ışık kısılır. */
   .cta-block[data-lit] { background: rgba(42, 214, 239, 0.28); box-shadow: none; }
 }
+
+/* ── "Üç Adımda Başlayın" yatay hattı (lg) ── */
+.steps-rail-x {
+  background: var(--color-line);
+  overflow: hidden;
+}
+.steps-rail-x::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--gradient-bar);
+  transform-origin: left;
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .steps-rail-x::after {
+      animation: rail-draw linear both;
+      animation-timeline: view();
+      animation-range: entry 60% cover 55%;
+    }
+  }
+}
+@keyframes rail-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
